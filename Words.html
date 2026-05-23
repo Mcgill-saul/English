@@ -392,7 +392,7 @@ th.col-check { cursor: pointer; }
 
 
 /* ════════════════ MOBILE CSS ════════════════ */
-@media (max-width: 1100px) {
+@media (max-width: 768px) {
   body.mobile { overflow: auto; height: auto; padding-bottom: 72px; }
 
   /* ── 隐藏桌面端元素 ── */
@@ -605,7 +605,7 @@ th.col-check { cursor: pointer; }
   <button class="filter-toggle-btn" id="filterToggleBtn" onclick="toggleMobileFilter()" style="display:none;">☰</button>
 
   <!-- 词库筛选（桌面端内联在 topbar；移动端独立展开面板） -->
-  <div class="filter-panel" id="filtersBar">
+  <div class="filter-panel" id="filtersBar" style="display: flex;">
     <select class="filter-sel" id="fDomain" onchange="applyFilters()"><option value="">全部领域</option><option value="Animal">Animal</option><option value="Colour">Colour</option><option value="General">General</option><option value="History">History</option><option value="Nature">Nature</option><option value="Sport">Sport</option><option value="Time">Time</option><option value="Travel">Travel</option><option value="动作">动作</option><option value="地点">地点</option><option value="娱乐">娱乐</option><option value="家居物品">家居物品</option><option value="容器">容器</option><option value="数码行为">数码行为</option><option value="方向">方向</option><option value="日常起居">日常起居</option><option value="烹饪">烹饪</option><option value="物体描述">物体描述</option><option value="物理描述">物理描述</option><option value="生活">生活</option><option value="经济">经济</option><option value="记账">记账</option><option value="身体">身体</option><option value="食物">食物</option></select>
     <select class="filter-sel" id="fScene" onchange="applyFilters()"><option value="">全部场景</option><option value="Ball Sport">Ball Sport</option><option value="Colour">Colour</option><option value="General">General</option><option value="Time">Time</option><option value="Workout">Workout</option><option value="个人物品">个人物品</option><option value="中世纪">中世纪</option><option value="交通">交通</option><option value="交通枢纽">交通枢纽</option><option value="体积">体积</option><option value="历史">历史</option><option value="厨房用品">厨房用品</option><option value="地点">地点</option><option value="家具">家具</option><option value="家居物品">家居物品</option><option value="容器">容器</option><option value="尺寸">尺寸</option><option value="数码行为">数码行为</option><option value="方向">方向</option><option value="日常起居">日常起居</option><option value="机场">机场</option><option value="游戏">游戏</option><option value="烹饪动作">烹饪动作</option><option value="电影">电影</option><option value="经济">经济</option><option value="股票">股票</option><option value="肢体动作">肢体动作</option><option value="自然地理">自然地理</option><option value="自然现象">自然现象</option><option value="行为动作">行为动作</option><option value="记账">记账</option><option value="超市">超市</option><option value="身体构造">身体构造</option><option value="酒店">酒店</option><option value="重量">重量</option><option value="食物">食物</option><option value="鸟类">鸟类</option></select>
     <select class="filter-sel" id="fTag" onchange="applyFilters()"><option value="">全部标签</option><option value="Colour">Colour</option><option value="Fruit">Fruit</option><option value="General">General</option><option value="Time">Time</option><option value="个人信息">个人信息</option><option value="个人物品">个人物品</option><option value="主食">主食</option><option value="交通">交通</option><option value="体积">体积</option><option value="健身动作">健身动作</option><option value="健身用品">健身用品</option><option value="入住">入住</option><option value="入境">入境</option><option value="公共地点">公共地点</option><option value="历史">历史</option><option value="取行李">取行李</option><option value="地名场所">地名场所</option><option value="地点">地点</option><option value="壁柜类">壁柜类</option><option value="家居物品">家居物品</option><option value="家禽">家禽</option><option value="容器">容器</option><option value="尺寸">尺寸</option><option value="建筑">建筑</option><option value="手部动作">手部动作</option><option value="数码行为">数码行为</option><option value="方向">方向</option><option value="杯子">杯子</option><option value="标识">标识</option><option value="武器">武器</option><option value="游戏类型">游戏类型</option><option value="烹饪动作">烹饪动作</option><option value="球类器材">球类器材</option><option value="球类项目">球类项目</option><option value="电影">电影</option><option value="经济">经济</option><option value="肌肉组织">肌肉组织</option><option value="股票">股票</option><option value="自然地理">自然地理</option><option value="自然现象">自然现象</option><option value="蛋类">蛋类</option><option value="行为动作">行为动作</option><option value="记账">记账</option><option value="购物">购物</option><option value="起居动作">起居动作</option><option value="身体部位">身体部位</option><option value="重量">重量</option><option value="食物套餐">食物套餐</option></select>
@@ -632,9 +632,9 @@ th.col-check { cursor: pointer; }
 
   <!-- 抽卡模式顶栏（桌面端专用，移动端隐藏） -->
   <div id="fcTopbar" style="display: none; flex: 1 1 0%; align-items: center; gap: 8px; flex-wrap: wrap;">
-    <select class="filter-sel" id="fcFDomain" onchange="fcFilterChanged()"><option value="">全部领域</option><option value="Animal">Animal</option><option value="Colour">Colour</option><option value="General">General</option><option value="History">History</option><option value="Nature">Nature</option><option value="Sport">Sport</option><option value="Time">Time</option><option value="Travel">Travel</option><option value="动作">动作</option><option value="地点">地点</option><option value="家居物品">家居物品</option><option value="数码行为">数码行为</option><option value="方向">方向</option><option value="日常起居">日常起居</option><option value="烹饪">烹饪</option><option value="物体描述">物体描述</option><option value="物理描述">物理描述</option><option value="生活">生活</option><option value="经济">经济</option><option value="记账">记账</option><option value="身体">身体</option><option value="食物">食物</option></select>
-    <select class="filter-sel" id="fcFScene" onchange="fcFilterChanged()"><option value="">全部场景</option><option value="Ball Sport">Ball Sport</option><option value="Colour">Colour</option><option value="General">General</option><option value="Time">Time</option><option value="Workout">Workout</option><option value="个人物品">个人物品</option><option value="中世纪">中世纪</option><option value="交通">交通</option><option value="交通枢纽">交通枢纽</option><option value="体积">体积</option><option value="历史">历史</option><option value="厨房用品">厨房用品</option><option value="地点">地点</option><option value="家具">家具</option><option value="家居物品">家居物品</option><option value="尺寸">尺寸</option><option value="数码行为">数码行为</option><option value="方向">方向</option><option value="日常起居">日常起居</option><option value="机场">机场</option><option value="烹饪动作">烹饪动作</option><option value="经济">经济</option><option value="肢体动作">肢体动作</option><option value="自然地理">自然地理</option><option value="自然现象">自然现象</option><option value="行为动作">行为动作</option><option value="记账">记账</option><option value="超市">超市</option><option value="身体构造">身体构造</option><option value="酒店">酒店</option><option value="重量">重量</option><option value="食物">食物</option><option value="鸟类">鸟类</option></select>
-    <select class="filter-sel" id="fcFTag" onchange="fcFilterChanged()"><option value="">全部标签</option><option value="Colour">Colour</option><option value="Fruit">Fruit</option><option value="General">General</option><option value="Time">Time</option><option value="个人信息">个人信息</option><option value="个人物品">个人物品</option><option value="主食">主食</option><option value="交通">交通</option><option value="体积">体积</option><option value="健身动作">健身动作</option><option value="健身用品">健身用品</option><option value="入住">入住</option><option value="入境">入境</option><option value="公共地点">公共地点</option><option value="历史">历史</option><option value="取行李">取行李</option><option value="地名场所">地名场所</option><option value="地点">地点</option><option value="壁柜类">壁柜类</option><option value="家居物品">家居物品</option><option value="家禽">家禽</option><option value="尺寸">尺寸</option><option value="建筑">建筑</option><option value="手部动作">手部动作</option><option value="数码行为">数码行为</option><option value="方向">方向</option><option value="杯子">杯子</option><option value="标识">标识</option><option value="武器">武器</option><option value="烹饪动作">烹饪动作</option><option value="球类器材">球类器材</option><option value="球类项目">球类项目</option><option value="经济">经济</option><option value="肌肉组织">肌肉组织</option><option value="自然地理">自然地理</option><option value="自然现象">自然现象</option><option value="蛋类">蛋类</option><option value="行为动作">行为动作</option><option value="记账">记账</option><option value="购物">购物</option><option value="起居动作">起居动作</option><option value="身体部位">身体部位</option><option value="重量">重量</option><option value="食物套餐">食物套餐</option></select>
+    <select class="filter-sel" id="fcFDomain" onchange="fcFilterChanged()"><option value="">全部领域</option><option value="Animal">Animal</option><option value="Colour">Colour</option><option value="General">General</option><option value="History">History</option><option value="Nature">Nature</option><option value="Sport">Sport</option><option value="Time">Time</option><option value="Travel">Travel</option><option value="动作">动作</option><option value="地点">地点</option><option value="娱乐">娱乐</option><option value="家居物品">家居物品</option><option value="容器">容器</option><option value="数码行为">数码行为</option><option value="方向">方向</option><option value="日常起居">日常起居</option><option value="烹饪">烹饪</option><option value="物体描述">物体描述</option><option value="物理描述">物理描述</option><option value="生活">生活</option><option value="经济">经济</option><option value="记账">记账</option><option value="身体">身体</option><option value="食物">食物</option></select>
+    <select class="filter-sel" id="fcFScene" onchange="fcFilterChanged()"><option value="">全部场景</option><option value="Ball Sport">Ball Sport</option><option value="Colour">Colour</option><option value="General">General</option><option value="Time">Time</option><option value="Workout">Workout</option><option value="个人物品">个人物品</option><option value="中世纪">中世纪</option><option value="交通">交通</option><option value="交通枢纽">交通枢纽</option><option value="体积">体积</option><option value="历史">历史</option><option value="厨房用品">厨房用品</option><option value="地点">地点</option><option value="家具">家具</option><option value="家居物品">家居物品</option><option value="容器">容器</option><option value="尺寸">尺寸</option><option value="数码行为">数码行为</option><option value="方向">方向</option><option value="日常起居">日常起居</option><option value="机场">机场</option><option value="游戏">游戏</option><option value="烹饪动作">烹饪动作</option><option value="电影">电影</option><option value="经济">经济</option><option value="股票">股票</option><option value="肢体动作">肢体动作</option><option value="自然地理">自然地理</option><option value="自然现象">自然现象</option><option value="行为动作">行为动作</option><option value="记账">记账</option><option value="超市">超市</option><option value="身体构造">身体构造</option><option value="酒店">酒店</option><option value="重量">重量</option><option value="食物">食物</option><option value="鸟类">鸟类</option></select>
+    <select class="filter-sel" id="fcFTag" onchange="fcFilterChanged()"><option value="">全部标签</option><option value="Colour">Colour</option><option value="Fruit">Fruit</option><option value="General">General</option><option value="Time">Time</option><option value="个人信息">个人信息</option><option value="个人物品">个人物品</option><option value="主食">主食</option><option value="交通">交通</option><option value="体积">体积</option><option value="健身动作">健身动作</option><option value="健身用品">健身用品</option><option value="入住">入住</option><option value="入境">入境</option><option value="公共地点">公共地点</option><option value="历史">历史</option><option value="取行李">取行李</option><option value="地名场所">地名场所</option><option value="地点">地点</option><option value="壁柜类">壁柜类</option><option value="家居物品">家居物品</option><option value="家禽">家禽</option><option value="容器">容器</option><option value="尺寸">尺寸</option><option value="建筑">建筑</option><option value="手部动作">手部动作</option><option value="数码行为">数码行为</option><option value="方向">方向</option><option value="杯子">杯子</option><option value="标识">标识</option><option value="武器">武器</option><option value="游戏类型">游戏类型</option><option value="烹饪动作">烹饪动作</option><option value="球类器材">球类器材</option><option value="球类项目">球类项目</option><option value="电影">电影</option><option value="经济">经济</option><option value="肌肉组织">肌肉组织</option><option value="股票">股票</option><option value="自然地理">自然地理</option><option value="自然现象">自然现象</option><option value="蛋类">蛋类</option><option value="行为动作">行为动作</option><option value="记账">记账</option><option value="购物">购物</option><option value="起居动作">起居动作</option><option value="身体部位">身体部位</option><option value="重量">重量</option><option value="食物套餐">食物套餐</option></select>
     <select class="filter-sel" id="fcFAttr" onchange="fcFilterChanged()"><option value="">全部属性</option><option value="ARMS">ARMS</option><option value="BACK">BACK</option><option value="CHEST">CHEST</option><option value="CORE">CORE</option><option value="LEGS">LEGS</option><option value="SHOULDERS">SHOULDERS</option><option value="介词">介词</option><option value="冷兵器">冷兵器</option><option value="动词短语">动词短语</option><option value="地名场所">地名场所</option><option value="连词">连词</option></select>
     <select class="filter-sel" id="fcFStatus" onchange="fcFilterChanged()">
       <option value="">全部状态</option>
@@ -8927,11 +8927,11 @@ I did three sets of pull-ups yesterday.</td>
 
     <!-- 主区域 -->
     <div class="fc-main">
-      <div id="fcProgress" style="font-family:'DM Mono',monospace; font-size:11px; color:var(--text3); letter-spacing:0.08em;">1 / 5</div>
+      <div id="fcProgress" style="font-family:'DM Mono',monospace; font-size:11px; color:var(--text3); letter-spacing:0.08em;">1 / 171</div>
 
       <div id="fcCard" class="fc-card" onclick="flipCard()">
         <div id="fcFront" style="text-align: center; display: flex;">
-          <div id="fcWord" class="fc-word">grey / gray</div>
+          <div id="fcWord" class="fc-word">lunge</div>
           <div id="fcPhonetic" class="fc-phonetic"></div>
           <div class="fc-hint">CLICK TO REVEAL</div>
         </div>
@@ -9794,7 +9794,7 @@ I did three sets of pull-ups yesterday.</td>
 
 <script>
 // ════════════════ DEVICE DETECTION ════════════════
-const isMobile = window.innerWidth <= 1100 || window.matchMedia('(max-width: 1100px)').matches;
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 function setBodyClass() {
   if (isMobile) {
@@ -9817,9 +9817,7 @@ function setBodyClass() {
 }
 
 // Listen for resize crossing the breakpoint
-window.matchMedia('(max-width: 1100px)').addEventListener('change', function(e) {
-  location.reload();
-});
+// UA 检测不需要监听宽度变化
 
 
 const STORAGE_KEY = 'vocab_v1';
@@ -10939,7 +10937,9 @@ function switchView(view) {
     tableEls.forEach(el => { if(el) el.style.display = ''; });
     if (!isMobile && filtersBarEl) filtersBarEl.style.display = 'flex';
     fcView.style.display = 'none';
-    tableActions.style.display = 'flex';
+    // 桌面端才恢复 tableActions，移动端保持隐藏
+    if (!isMobile) tableActions.style.display = 'flex';
+    else tableActions.style.display = 'none';
     fcTopbar.style.display = 'none';
     fcActions.style.display = 'none';
     fcDrillMode = false;
