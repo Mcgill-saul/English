@@ -10,6 +10,10 @@
 <title>英语对话练习本</title>
 
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>英语对话练习本</title>
+
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -1288,6 +1292,12 @@ body {
         .home-grid { padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px)); }
       }
     </style>
+<style>
+      @media (max-width: 768px) {
+        .app { padding-bottom: env(safe-area-inset-bottom, 0px); }
+        .home-grid { padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px)); }
+      }
+    </style>
 </head>
 <body>
 <div class="app" id="appRoot">
@@ -2327,6 +2337,30 @@ window.INITIAL_SCENES_DATA = [
         },
         "a2": null,
         "title": "问几点干的什么事"
+      },
+      {
+        "q": {
+          "en": "There's no need.",
+          "zh": "没那个必要。（觉得这事不值得做、没意义）",
+          "alts": [
+            "\"Should I call him to apologize?\" — \"There's no need. It wasn't your fault.\""
+          ]
+        },
+        "a": {
+          "en": "It's not worth it.",
+          "zh": "不值得/没必要为此费劲。（觉得做这件事是浪费时间/精力）",
+          "alts": [
+            "Don't argue with him, it's not worth it."
+          ]
+        },
+        "a2": {
+          "en": "You don't have to.",
+          "zh": "你不用这么做/没必要这么客气。（礼貌地拒绝别人的帮助或客气）",
+          "alts": [
+            "\"I can drive you home.\" — \"You don't have to, I can take the subway.\""
+          ]
+        },
+        "title": "没必要"
       }
     ],
     "vocab": [],
