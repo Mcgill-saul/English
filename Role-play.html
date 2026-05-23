@@ -6,6 +6,10 @@
 <title>英语对话练习本</title>
 
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>英语对话练习本</title>
+
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -1278,6 +1282,12 @@ body {
         .home-grid { padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px)); }
       }
     </style>
+<style>
+      @media (max-width: 768px) {
+        .app { padding-bottom: env(safe-area-inset-bottom, 0px); }
+        .home-grid { padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px)); }
+      }
+    </style>
 </head>
 <body>
 <div class="app" id="appRoot">
@@ -2184,8 +2194,8 @@ window.INITIAL_SCENES_DATA = [
   },
   {
     "id": "s1779266133358",
-    "tag": "日常对话",
-    "title": "日常对话",
+    "tag": "日常",
+    "title": "现实日常对话",
     "desc": "",
     "rounds": [
       {
@@ -2300,6 +2310,23 @@ window.INITIAL_SCENES_DATA = [
           "alts": []
         },
         "title": "帮我拿下水"
+      },
+      {
+        "q": {
+          "en": "What time did you wake up [this morning]?一般过去时才是用来问过去某个具体时间发生的事",
+          "zh": "",
+          "alts": [
+            "What time did you get up?",
+            "What time did you have lunch today?"
+          ]
+        },
+        "a": {
+          "en": "What time do you wake up? 一般现在时问的其实是习惯、规律、或者雷打不动的客观事实",
+          "zh": "",
+          "alts": []
+        },
+        "a2": null,
+        "title": "问几点干的什么事"
       }
     ],
     "vocab": [],
