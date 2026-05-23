@@ -2,18 +2,6 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>英语对话练习本</title>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>英语对话练习本</title>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>英语对话练习本</title>
-
-<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -702,49 +690,6 @@ body {
 }
 
 
-.gs-group {
-  padding: 8px 18px;
-}
-.gs-group-title {
-  font-family: 'DM Mono', monospace;
-  font-size: 11px;
-  color: var(--text3);
-  letter-spacing: 0.08em;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 4px;
-  text-transform: uppercase;
-}
-.gs-result-item {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 8px 12px;
-  border: none;
-  border-radius: 8px;
-  background: none;
-  cursor: pointer;
-  font-size: 13px;
-  font-family: 'Noto Sans SC', sans-serif;
-  color: var(--text);
-  transition: background 0.12s;
-  margin-bottom: 2px;
-}
-.gs-result-item:hover { background: var(--surface2); }
-.gs-result-type {
-  font-size: 10px;
-  color: var(--text3);
-  display: inline-block;
-  margin-right: 6px;
-  font-family: 'DM Mono', monospace;
-}
-.gs-highlight {
-  background: var(--gold-light);
-  color: var(--gold);
-  font-weight: 500;
-  padding: 0 2px;
-  border-radius: 2px;
-}
 
 /* ── 响应式设计：手机端适配（max-width: 768px） ── */
 @media (max-width: 768px) {
@@ -752,14 +697,14 @@ body {
   body {
     overflow: auto;
     height: auto;
-    background: #f2efe9; /* 调试背景色 */
+    background: var(--bg); /* 与根 bg 保持一致 */
   }
 
   .app {
     display: block;
     height: auto;
     overflow: visible;
-    background: #f2efe9; /* 调试背景色 */
+    background: var(--bg); /* 与根 bg 保持一致 */
   }
 
   /* 1. 侧边栏在手机端隐藏 */
@@ -800,7 +745,7 @@ body {
     display: flex !important; 
     width: 100%; 
     height: 100vh;
-    background: #f2efe9; /* 调试背景色 */
+    background: var(--bg); /* 与根 bg 保持一致 */
   }
   
   /* 2. 顶栏调整 */
@@ -1270,28 +1215,6 @@ body {
 }
 
 </style>
-
-
-
-
-
-
-
-
-
-
-<style>
-      @media (max-width: 768px) {
-        .app { padding-bottom: env(safe-area-inset-bottom, 0px); }
-        .home-grid { padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px)); }
-      }
-    </style>
-<style>
-      @media (max-width: 768px) {
-        .app { padding-bottom: env(safe-area-inset-bottom, 0px); }
-        .home-grid { padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px)); }
-      }
-    </style>
 <style>
       @media (max-width: 768px) {
         .app { padding-bottom: env(safe-area-inset-bottom, 0px); }
@@ -1315,7 +1238,7 @@ body {
           <option value="manual">手动排序</option>
           <option value="alpha">按名称排序 A-Z</option>
         </select>
-        <button class="home-btn-new" onclick="newSceneFromHome()">＋ 新建场景</button>  <!-- ← 主页新建按钮文字 -->
+        <button class="home-btn-new" onclick="newScene()">＋ 新建场景</button>  <!-- ← 主页新建按钮文字 -->
       </div>
     </div>
     <div class="home-grid" id="homeGrid"></div>
@@ -2530,6 +2453,7 @@ function renderSidebar() {
   scenes.forEach(s => {
     const el = document.createElement('div');
     el.className = 'scene-item' + (s.id === currentId ? ' active' : '');
+    el.dataset.sceneid = s.id;
     el.innerHTML = `<span class="scene-item-name">${esc(s.title) || '未命名场景'}</span><span class="scene-del" title="删除" data-delid="${s.id}">×</span>`;
     list.appendChild(el);
   });
@@ -2555,9 +2479,6 @@ function goHome() {
   if (mobileSel) mobileSel.value = '__home__';
 }
 
-function newSceneFromHome() {
-  newScene();
-}
 
 // 新建场景：生成唯一ID，初始化空数据，进入编辑模式
 function newScene() {
@@ -3058,8 +2979,8 @@ document.body.addEventListener('click', (e) => {
   // 左侧项目切换（home-nav-item 是主页入口，跳过，让它自己的 onclick 处理）
   const sceneItem = e.target.closest('.scene-item');
   if (sceneItem && !e.target.classList.contains('scene-del') && !sceneItem.classList.contains('home-nav-item')) {
-    const idx = Array.from(sceneItem.parentNode.children).indexOf(sceneItem);
-    selectScene(scenes[idx].id);
+    const id = sceneItem.dataset.sceneid;
+    if (id) selectScene(id);
     return;
   }
   // 左侧项目删除
@@ -3205,16 +3126,21 @@ function exportHTML() {
   saveData(scenes);
 
   // 获取当前页面的完整 <style> 内容以及整个 DOM 的基础
-  const headStyles = document.querySelector('head').innerHTML;
+  // 提取 <style> 和 <link> 标签，避免重复 meta 被导出
+  const headAssets = Array.from(document.head.children)
+    .filter(el => el.tagName === 'STYLE' || el.tagName === 'LINK')
+    .map(el => el.outerHTML).join('\n');
 
   // 直接动态组装出一个完美的纯净 HTML
   const finalDocStr = `<!DOCTYPE html>
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>英语对话练习本</title>
-${headStyles}
+${headAssets}
 </head>
 <body>
 <div class="app" id="appRoot">
@@ -3232,7 +3158,7 @@ ${headStyles}
           <option value="manual">手动排序</option>
           <option value="alpha">按名称排序 A-Z</option>
         </select>
-        <button class="home-btn-new" onclick="newSceneFromHome()">＋ 新建场景</button>  <!-- ← 主页新建按钮文字 -->
+        <button class="home-btn-new" onclick="newScene()">＋ 新建场景</button>  <!-- ← 主页新建按钮文字 -->
       </div>
     </div>
     <div class="home-grid" id="homeGrid"></div>
@@ -3414,21 +3340,12 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }, { passive: true });
 
-  document.addEventListener('touchend', function(e) {
+  function resetCardTouch(e) {
     const card = e.target.closest('.home-card, .scene-item, .vocab-chip, .round-edit');
-    if (card) {
-      card.style.transform = '';
-      card.style.opacity = '';
-    }
-  }, { passive: true });
-
-  document.addEventListener('touchcancel', function(e) {
-    const card = e.target.closest('.home-card, .scene-item, .vocab-chip, .round-edit');
-    if (card) {
-      card.style.transform = '';
-      card.style.opacity = '';
-    }
-  }, { passive: true });
+    if (card) { card.style.transform = ''; card.style.opacity = ''; }
+  }
+  document.addEventListener('touchend', resetCardTouch, { passive: true });
+  document.addEventListener('touchcancel', resetCardTouch, { passive: true });
 
   // ── 屏幕旋转适配 ──
   window.addEventListener('orientationchange', function() {
@@ -3443,7 +3360,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // ── 移动端安全区域适配 ──
   if (CSS.supports('padding-bottom', 'env(safe-area-inset-bottom)')) {
-    document.documentElement.style.setProperty('--safe-area-bottom', 'env(safe-area-inset-bottom)');
     const style = document.createElement('style');
     style.textContent = `
       @media (max-width: 768px) {
