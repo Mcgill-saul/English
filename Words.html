@@ -406,8 +406,6 @@ th.col-check { cursor: pointer; }
   .mobile .overlay,
   .mobile .expand-edit-btn,
   .mobile #tableTopbarActions,
-  .mobile #fcTopbarActions { display: none !important; }
-  .mobile #fcTopbar { display: none !important; }
 
   /* ── 顶栏适配 ── */
   .mobile .topbar { flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding: 0.5rem 0.8rem; }
@@ -497,6 +495,27 @@ th.col-check { cursor: pointer; }
   }
   .bn-tab.active { color: var(--gold); font-weight: 600; }
 
+  /* ── 抽卡模式移动端筛选面板 ── */
+  .mobile .fc-mobile-filters {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+  }
+  .mobile .fc-mobile-filters .filter-sel {
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 28px 8px 10px;
+    font-size: 13px;
+    box-sizing: border-box;
+  }
+  .mobile .fc-mobile-filters .btn-ghost {
+    min-height: 44px;
+    font-size: 13px;
+  }
+
   /* ── 抽卡模式移动端 ── */
   .mobile #flashcardView { padding-bottom: 72px; }
   .mobile #fcFront, .mobile #fcBack { padding: 24px 20px; }
@@ -567,6 +586,11 @@ th.col-check { cursor: pointer; }
 
 /* desktop class keeps everything as-is */
 .desktop { }
+/* 桌面端隐藏移动端抽卡筛选面板 */
+.desktop .fc-mobile-filters { display: none !important; }
+/* 移动端隐藏桌面端抽卡筛选 */
+.mobile #fcTopbar { display: none !important; }
+.mobile #fcTopbarActions { display: none !important; }
 
 </style>
 </head>
@@ -581,7 +605,7 @@ th.col-check { cursor: pointer; }
   <button class="filter-toggle-btn" id="filterToggleBtn" onclick="toggleMobileFilter()" style="display:none;">☰</button>
 
   <!-- 词库筛选（桌面端内联在 topbar；移动端独立展开面板） -->
-  <div class="filter-panel" id="filtersBar">
+  <div class="filter-panel" id="filtersBar" style="display: flex;">
     <select class="filter-sel" id="fDomain" onchange="applyFilters()"><option value="">全部领域</option><option value="Animal">Animal</option><option value="Colour">Colour</option><option value="General">General</option><option value="History">History</option><option value="Nature">Nature</option><option value="Sport">Sport</option><option value="Time">Time</option><option value="Travel">Travel</option><option value="动作">动作</option><option value="地点">地点</option><option value="娱乐">娱乐</option><option value="家居物品">家居物品</option><option value="容器">容器</option><option value="数码行为">数码行为</option><option value="方向">方向</option><option value="日常起居">日常起居</option><option value="烹饪">烹饪</option><option value="物体描述">物体描述</option><option value="物理描述">物理描述</option><option value="生活">生活</option><option value="经济">经济</option><option value="记账">记账</option><option value="身体">身体</option><option value="食物">食物</option></select>
     <select class="filter-sel" id="fScene" onchange="applyFilters()"><option value="">全部场景</option><option value="Ball Sport">Ball Sport</option><option value="Colour">Colour</option><option value="General">General</option><option value="Time">Time</option><option value="Workout">Workout</option><option value="个人物品">个人物品</option><option value="中世纪">中世纪</option><option value="交通">交通</option><option value="交通枢纽">交通枢纽</option><option value="体积">体积</option><option value="历史">历史</option><option value="厨房用品">厨房用品</option><option value="地点">地点</option><option value="家具">家具</option><option value="家居物品">家居物品</option><option value="容器">容器</option><option value="尺寸">尺寸</option><option value="数码行为">数码行为</option><option value="方向">方向</option><option value="日常起居">日常起居</option><option value="机场">机场</option><option value="游戏">游戏</option><option value="烹饪动作">烹饪动作</option><option value="电影">电影</option><option value="经济">经济</option><option value="股票">股票</option><option value="肢体动作">肢体动作</option><option value="自然地理">自然地理</option><option value="自然现象">自然现象</option><option value="行为动作">行为动作</option><option value="记账">记账</option><option value="超市">超市</option><option value="身体构造">身体构造</option><option value="酒店">酒店</option><option value="重量">重量</option><option value="食物">食物</option><option value="鸟类">鸟类</option></select>
     <select class="filter-sel" id="fTag" onchange="applyFilters()"><option value="">全部标签</option><option value="Colour">Colour</option><option value="Fruit">Fruit</option><option value="General">General</option><option value="Time">Time</option><option value="个人信息">个人信息</option><option value="个人物品">个人物品</option><option value="主食">主食</option><option value="交通">交通</option><option value="体积">体积</option><option value="健身动作">健身动作</option><option value="健身用品">健身用品</option><option value="入住">入住</option><option value="入境">入境</option><option value="公共地点">公共地点</option><option value="历史">历史</option><option value="取行李">取行李</option><option value="地名场所">地名场所</option><option value="地点">地点</option><option value="壁柜类">壁柜类</option><option value="家居物品">家居物品</option><option value="家禽">家禽</option><option value="容器">容器</option><option value="尺寸">尺寸</option><option value="建筑">建筑</option><option value="手部动作">手部动作</option><option value="数码行为">数码行为</option><option value="方向">方向</option><option value="杯子">杯子</option><option value="标识">标识</option><option value="武器">武器</option><option value="游戏类型">游戏类型</option><option value="烹饪动作">烹饪动作</option><option value="球类器材">球类器材</option><option value="球类项目">球类项目</option><option value="电影">电影</option><option value="经济">经济</option><option value="肌肉组织">肌肉组织</option><option value="股票">股票</option><option value="自然地理">自然地理</option><option value="自然现象">自然现象</option><option value="蛋类">蛋类</option><option value="行为动作">行为动作</option><option value="记账">记账</option><option value="购物">购物</option><option value="起居动作">起居动作</option><option value="身体部位">身体部位</option><option value="重量">重量</option><option value="食物套餐">食物套餐</option></select>
@@ -608,9 +632,9 @@ th.col-check { cursor: pointer; }
 
   <!-- 抽卡模式顶栏（桌面端专用，移动端隐藏） -->
   <div id="fcTopbar" style="display: none; flex: 1 1 0%; align-items: center; gap: 8px; flex-wrap: wrap;">
-    <select class="filter-sel" id="fcFDomain" onchange="fcFilterChanged()"><option value="">全部领域</option><option value="Animal">Animal</option><option value="Colour">Colour</option><option value="General">General</option><option value="History">History</option><option value="Nature">Nature</option><option value="Sport">Sport</option><option value="Time">Time</option><option value="Travel">Travel</option><option value="动作">动作</option><option value="地点">地点</option><option value="家居物品">家居物品</option><option value="数码行为">数码行为</option><option value="方向">方向</option><option value="日常起居">日常起居</option><option value="烹饪">烹饪</option><option value="物体描述">物体描述</option><option value="物理描述">物理描述</option><option value="生活">生活</option><option value="经济">经济</option><option value="记账">记账</option><option value="身体">身体</option><option value="食物">食物</option></select>
-    <select class="filter-sel" id="fcFScene" onchange="fcFilterChanged()"><option value="">全部场景</option><option value="Ball Sport">Ball Sport</option><option value="Colour">Colour</option><option value="General">General</option><option value="Time">Time</option><option value="Workout">Workout</option><option value="个人物品">个人物品</option><option value="中世纪">中世纪</option><option value="交通">交通</option><option value="交通枢纽">交通枢纽</option><option value="体积">体积</option><option value="历史">历史</option><option value="厨房用品">厨房用品</option><option value="地点">地点</option><option value="家具">家具</option><option value="家居物品">家居物品</option><option value="尺寸">尺寸</option><option value="数码行为">数码行为</option><option value="方向">方向</option><option value="日常起居">日常起居</option><option value="机场">机场</option><option value="烹饪动作">烹饪动作</option><option value="经济">经济</option><option value="肢体动作">肢体动作</option><option value="自然地理">自然地理</option><option value="自然现象">自然现象</option><option value="行为动作">行为动作</option><option value="记账">记账</option><option value="超市">超市</option><option value="身体构造">身体构造</option><option value="酒店">酒店</option><option value="重量">重量</option><option value="食物">食物</option><option value="鸟类">鸟类</option></select>
-    <select class="filter-sel" id="fcFTag" onchange="fcFilterChanged()"><option value="">全部标签</option><option value="Colour">Colour</option><option value="Fruit">Fruit</option><option value="General">General</option><option value="Time">Time</option><option value="个人信息">个人信息</option><option value="个人物品">个人物品</option><option value="主食">主食</option><option value="交通">交通</option><option value="体积">体积</option><option value="健身动作">健身动作</option><option value="健身用品">健身用品</option><option value="入住">入住</option><option value="入境">入境</option><option value="公共地点">公共地点</option><option value="历史">历史</option><option value="取行李">取行李</option><option value="地名场所">地名场所</option><option value="地点">地点</option><option value="壁柜类">壁柜类</option><option value="家居物品">家居物品</option><option value="家禽">家禽</option><option value="尺寸">尺寸</option><option value="建筑">建筑</option><option value="手部动作">手部动作</option><option value="数码行为">数码行为</option><option value="方向">方向</option><option value="杯子">杯子</option><option value="标识">标识</option><option value="武器">武器</option><option value="烹饪动作">烹饪动作</option><option value="球类器材">球类器材</option><option value="球类项目">球类项目</option><option value="经济">经济</option><option value="肌肉组织">肌肉组织</option><option value="自然地理">自然地理</option><option value="自然现象">自然现象</option><option value="蛋类">蛋类</option><option value="行为动作">行为动作</option><option value="记账">记账</option><option value="购物">购物</option><option value="起居动作">起居动作</option><option value="身体部位">身体部位</option><option value="重量">重量</option><option value="食物套餐">食物套餐</option></select>
+    <select class="filter-sel" id="fcFDomain" onchange="fcFilterChanged()"><option value="">全部领域</option><option value="Animal">Animal</option><option value="Colour">Colour</option><option value="General">General</option><option value="History">History</option><option value="Nature">Nature</option><option value="Sport">Sport</option><option value="Time">Time</option><option value="Travel">Travel</option><option value="动作">动作</option><option value="地点">地点</option><option value="娱乐">娱乐</option><option value="家居物品">家居物品</option><option value="容器">容器</option><option value="数码行为">数码行为</option><option value="方向">方向</option><option value="日常起居">日常起居</option><option value="烹饪">烹饪</option><option value="物体描述">物体描述</option><option value="物理描述">物理描述</option><option value="生活">生活</option><option value="经济">经济</option><option value="记账">记账</option><option value="身体">身体</option><option value="食物">食物</option></select>
+    <select class="filter-sel" id="fcFScene" onchange="fcFilterChanged()"><option value="">全部场景</option><option value="Ball Sport">Ball Sport</option><option value="Colour">Colour</option><option value="General">General</option><option value="Time">Time</option><option value="Workout">Workout</option><option value="个人物品">个人物品</option><option value="中世纪">中世纪</option><option value="交通">交通</option><option value="交通枢纽">交通枢纽</option><option value="体积">体积</option><option value="历史">历史</option><option value="厨房用品">厨房用品</option><option value="地点">地点</option><option value="家具">家具</option><option value="家居物品">家居物品</option><option value="容器">容器</option><option value="尺寸">尺寸</option><option value="数码行为">数码行为</option><option value="方向">方向</option><option value="日常起居">日常起居</option><option value="机场">机场</option><option value="游戏">游戏</option><option value="烹饪动作">烹饪动作</option><option value="电影">电影</option><option value="经济">经济</option><option value="股票">股票</option><option value="肢体动作">肢体动作</option><option value="自然地理">自然地理</option><option value="自然现象">自然现象</option><option value="行为动作">行为动作</option><option value="记账">记账</option><option value="超市">超市</option><option value="身体构造">身体构造</option><option value="酒店">酒店</option><option value="重量">重量</option><option value="食物">食物</option><option value="鸟类">鸟类</option></select>
+    <select class="filter-sel" id="fcFTag" onchange="fcFilterChanged()"><option value="">全部标签</option><option value="Colour">Colour</option><option value="Fruit">Fruit</option><option value="General">General</option><option value="Time">Time</option><option value="个人信息">个人信息</option><option value="个人物品">个人物品</option><option value="主食">主食</option><option value="交通">交通</option><option value="体积">体积</option><option value="健身动作">健身动作</option><option value="健身用品">健身用品</option><option value="入住">入住</option><option value="入境">入境</option><option value="公共地点">公共地点</option><option value="历史">历史</option><option value="取行李">取行李</option><option value="地名场所">地名场所</option><option value="地点">地点</option><option value="壁柜类">壁柜类</option><option value="家居物品">家居物品</option><option value="家禽">家禽</option><option value="容器">容器</option><option value="尺寸">尺寸</option><option value="建筑">建筑</option><option value="手部动作">手部动作</option><option value="数码行为">数码行为</option><option value="方向">方向</option><option value="杯子">杯子</option><option value="标识">标识</option><option value="武器">武器</option><option value="游戏类型">游戏类型</option><option value="烹饪动作">烹饪动作</option><option value="球类器材">球类器材</option><option value="球类项目">球类项目</option><option value="电影">电影</option><option value="经济">经济</option><option value="肌肉组织">肌肉组织</option><option value="股票">股票</option><option value="自然地理">自然地理</option><option value="自然现象">自然现象</option><option value="蛋类">蛋类</option><option value="行为动作">行为动作</option><option value="记账">记账</option><option value="购物">购物</option><option value="起居动作">起居动作</option><option value="身体部位">身体部位</option><option value="重量">重量</option><option value="食物套餐">食物套餐</option></select>
     <select class="filter-sel" id="fcFAttr" onchange="fcFilterChanged()"><option value="">全部属性</option><option value="ARMS">ARMS</option><option value="BACK">BACK</option><option value="CHEST">CHEST</option><option value="CORE">CORE</option><option value="LEGS">LEGS</option><option value="SHOULDERS">SHOULDERS</option><option value="介词">介词</option><option value="冷兵器">冷兵器</option><option value="动词短语">动词短语</option><option value="地名场所">地名场所</option><option value="连词">连词</option></select>
     <select class="filter-sel" id="fcFStatus" onchange="fcFilterChanged()">
       <option value="">全部状态</option>
@@ -8885,15 +8909,29 @@ I did three sets of pull-ups yesterday.</td>
 
 <div id="flashcardView" style="display: none;">
 
+  <!-- 移动端抽卡筛选面板（桌面端隐藏） -->
+  <div class="filter-panel fc-mobile-filters" id="fcFiltersBarMobile">
+    <select class="filter-sel" id="fcMFDomain" onchange="fcFilterChanged()"><option value="">全部领域</option></select>
+    <select class="filter-sel" id="fcMFScene" onchange="fcFilterChanged()"><option value="">全部场景</option></select>
+    <select class="filter-sel" id="fcMFTag" onchange="fcFilterChanged()"><option value="">全部标签</option></select>
+    <select class="filter-sel" id="fcMFAttr" onchange="fcFilterChanged()"><option value="">全部属性</option></select>
+    <select class="filter-sel" id="fcMFStatus" onchange="fcFilterChanged()">
+      <option value="">全部状态</option>
+      <option value="1">学习中</option>
+      <option value="2">已掌握</option>
+    </select>
+    <button class="btn btn-ghost" onclick="resetFcFilters()" style="grid-column:1/-1;">重置</button>
+  </div>
+
   <div class="fc-layout">
 
     <!-- 主区域 -->
     <div class="fc-main">
-      <div id="fcProgress" style="font-family:'DM Mono',monospace; font-size:11px; color:var(--text3); letter-spacing:0.08em;">1 / 5</div>
+      <div id="fcProgress" style="font-family:'DM Mono',monospace; font-size:11px; color:var(--text3); letter-spacing:0.08em;">1 / 171</div>
 
       <div id="fcCard" class="fc-card" onclick="flipCard()">
         <div id="fcFront" style="text-align: center; display: flex;">
-          <div id="fcWord" class="fc-word">grey / gray</div>
+          <div id="fcWord" class="fc-word">lunge</div>
           <div id="fcPhonetic" class="fc-phonetic"></div>
           <div class="fc-hint">CLICK TO REVEAL</div>
         </div>
@@ -9756,7 +9794,7 @@ I did three sets of pull-ups yesterday.</td>
 
 <script>
 // ════════════════ DEVICE DETECTION ════════════════
-const isMobile = window.matchMedia('(max-width: 768px)').matches && window.matchMedia('(pointer: coarse)').matches;
+const isMobile = window.matchMedia('(max-width: 768px)').matches;
 
 function setBodyClass() {
   if (isMobile) {
@@ -10704,15 +10742,15 @@ function loadMissed() {
 }
 function saveMissed() { localStorage.setItem(MISSED_KEY, JSON.stringify(missedWords)); }
 
-// ── 筛选（桌面读 fcF*，移动端读共享 f*）──
+// ── 筛选（桌面读 fcF*，移动端读 fcMF*）──
 function getFcFilters() {
   if (isMobile) {
     return {
-      domain: (document.getElementById('fDomain') || {}).value || '',
-      scene:  (document.getElementById('fScene')  || {}).value || '',
-      tag:    (document.getElementById('fTag')    || {}).value || '',
-      attr:   (document.getElementById('fAttr')   || {}).value || '',
-      status: (document.getElementById('fStatus') || {}).value || '',
+      domain: (document.getElementById('fcMFDomain') || {}).value || '',
+      scene:  (document.getElementById('fcMFScene')  || {}).value || '',
+      tag:    (document.getElementById('fcMFTag')    || {}).value || '',
+      attr:   (document.getElementById('fcMFAttr')   || {}).value || '',
+      status: (document.getElementById('fcMFStatus') || {}).value || '',
     };
   }
   return {
@@ -10725,12 +10763,26 @@ function getFcFilters() {
 }
 
 function saveFcFilters() {
-  if (isMobile) return;
+  if (isMobile) {
+    localStorage.setItem(FC_FILTER_KEY + '_mobile', JSON.stringify(getFcFilters()));
+    return;
+  }
   localStorage.setItem(FC_FILTER_KEY, JSON.stringify(getFcFilters()));
 }
 
 function restoreFcFilters() {
-  if (isMobile) return;
+  if (isMobile) {
+    try {
+      const f = JSON.parse(localStorage.getItem(FC_FILTER_KEY + '_mobile'));
+      if (!f) return;
+      ['fcMFDomain','fcMFScene','fcMFTag','fcMFAttr','fcMFStatus'].forEach(id => {
+        const el = document.getElementById(id);
+        const key = id.replace('fcMF','').toLowerCase();
+        if (el && f[key]) el.value = f[key];
+      });
+    } catch(e) {}
+    return;
+  }
   try {
     const f = JSON.parse(localStorage.getItem(FC_FILTER_KEY));
     if (!f) return;
@@ -10743,7 +10795,22 @@ function restoreFcFilters() {
 }
 
 function populateFcFilters() {
-  if (isMobile) return;
+  if (isMobile) {
+    const selDomain = (document.getElementById('fcMFDomain') || {}).value || '';
+    const selScene  = (document.getElementById('fcMFScene')  || {}).value || '';
+    let sceneRules = selDomain ? rules.filter(r => r.domain === selDomain) : rules;
+    let tagRules   = selDomain ? rules.filter(r => r.domain === selDomain) : rules;
+    if (selScene) tagRules = tagRules.filter(r => r.scene === selScene);
+    const domains = [...new Set(rules.map(r => r.domain).filter(Boolean))].sort();
+    const scenes  = [...new Set(sceneRules.map(r => r.scene).filter(Boolean))].sort();
+    const tags    = [...new Set(tagRules.map(r => r.tag).filter(Boolean))].sort();
+    const attrs   = [...new Set(words.map(w => w.attr).filter(Boolean))].sort();
+    fcPopulate('fcMFDomain', domains, '全部领域');
+    fcPopulate('fcMFScene',  scenes,  '全部场景');
+    fcPopulate('fcMFTag',    tags,    '全部标签');
+    fcPopulate('fcMFAttr',   attrs,   '全部属性');
+    return;
+  }
   const selDomain = document.getElementById('fcFDomain').value;
   const selScene  = document.getElementById('fcFScene').value;
 
@@ -10770,7 +10837,14 @@ function fcPopulate(id, opts, label) {
 }
 
 function resetFcFilters() {
-  if (isMobile) { resetFilters(); return; }
+  if (isMobile) {
+    ['fcMFDomain','fcMFScene','fcMFTag','fcMFAttr','fcMFStatus'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    fcFilterChanged();
+    return;
+  }
   ['fcFDomain','fcFScene','fcFTag','fcFAttr','fcFStatus'].forEach(id => document.getElementById(id).value = '');
   fcFilterChanged();
 }
@@ -10850,7 +10924,12 @@ function switchView(view) {
     if (!isMobile && filtersBarEl) filtersBarEl.style.display = 'none';
     fcView.style.display = 'flex';
     tableActions.style.display = 'none';
-    if (!isMobile) fcTopbar.style.display = 'flex';
+    // 桌面端显示 fcTopbar，移动端清除内联样式让 CSS 的 display:none 接管
+    if (!isMobile) {
+      fcTopbar.style.display = 'flex';
+    } else {
+      fcTopbar.style.display = 'none';
+    }
     fcActions.style.display = 'flex';
     loadMissed();
     populateFcFilters();
@@ -10875,11 +10954,12 @@ function switchView(view) {
       if (searchWrap) searchWrap.style.display = 'none';
       if (filterToggleBtn) filterToggleBtn.style.display = 'none';
       document.getElementById('statsBar').style.display = 'none';
-      // filtersBar 保留可见，供抽卡模式复用筛选
+      if (filtersBarEl) filtersBarEl.style.display = 'none';
     } else {
       if (searchWrap) searchWrap.style.display = '';
       if (filterToggleBtn) filterToggleBtn.style.display = 'inline-flex';
       document.getElementById('statsBar').style.display = '';
+      if (filtersBarEl) filtersBarEl.style.display = '';
     }
   }
 }
