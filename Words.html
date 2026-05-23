@@ -392,7 +392,7 @@ th.col-check { cursor: pointer; }
 
 
 /* ════════════════ MOBILE CSS ════════════════ */
-@media (max-width: 768px) {
+@media (max-width: 1100px) {
   body.mobile { overflow: auto; height: auto; padding-bottom: 72px; }
 
   /* ── 隐藏桌面端元素 ── */
@@ -9794,8 +9794,7 @@ I did three sets of pull-ups yesterday.</td>
 
 <script>
 // ════════════════ DEVICE DETECTION ════════════════
-const isMobile = window.matchMedia('(max-width: 768px)').matches;
-console.log('isMobile:', isMobile, 'width:', window.innerWidth, 'body class:', document.body.className);
+const isMobile = window.innerWidth <= 1100 || window.matchMedia('(max-width: 1100px)').matches;
 
 function setBodyClass() {
   if (isMobile) {
@@ -9818,7 +9817,7 @@ function setBodyClass() {
 }
 
 // Listen for resize crossing the breakpoint
-window.matchMedia('(max-width: 768px)').addEventListener('change', function(e) {
+window.matchMedia('(max-width: 1100px)').addEventListener('change', function(e) {
   location.reload();
 });
 
