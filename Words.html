@@ -10796,13 +10796,25 @@ function populateFcFilters() {
   if (isMobile) {
     const selDomain = (document.getElementById('fcMFDomain') || {}).value || '';
     const selScene  = (document.getElementById('fcMFScene')  || {}).value || '';
-    let sceneRules = selDomain ? rules.filter(r => r.domain === selDomain) : rules;
-    let tagRules   = selDomain ? rules.filter(r => r.domain === selDomain) : rules;
-    if (selScene) tagRules = tagRules.filter(r => r.scene === selScene);
-    const domains = [...new Set(rules.map(r => r.domain).filter(Boolean))].sort();
+    
+    // 联动逻辑：与词典页面保持一致
+    let domainRules = rules;
+    let sceneRules = rules;
+    let tagRules = rules;
+    
+    if (selDomain) {
+      sceneRules = rules.filter(r => r.domain === selDomain);
+      tagRules = rules.filter(r => r.domain === selDomain);
+    }
+    if (selScene) {
+      tagRules = tagRules.filter(r => r.scene === selScene);
+    }
+    
+    const domains = [...new Set(domainRules.map(r => r.domain).filter(Boolean))].sort();
     const scenes  = [...new Set(sceneRules.map(r => r.scene).filter(Boolean))].sort();
     const tags    = [...new Set(tagRules.map(r => r.tag).filter(Boolean))].sort();
     const attrs   = [...new Set(words.map(w => w.attr).filter(Boolean))].sort();
+    
     fcPopulate('fcMFDomain', domains, '全部领域');
     fcPopulate('fcMFScene',  scenes,  '全部场景');
     fcPopulate('fcMFTag',    tags,    '全部标签');
@@ -10848,10 +10860,8 @@ function resetFcFilters() {
 }
 
 function fcFilterChanged() {
-  if (!isMobile) {
-    populateFcFilters();
-    saveFcFilters();
-  }
+  populateFcFilters();
+  saveFcFilters();
   localStorage.removeItem(FC_PROG_KEY);
   startFlashcard(false);
 }
@@ -10930,8 +10940,9 @@ function switchView(view) {
     }
     fcActions.style.display = 'flex';
     loadMissed();
-    populateFcFilters();
-    restoreFcFilters();
+    populateFcFilters();   // 先构建全部选项，确保 restore 时 value 能命中已存在的 option
+    restoreFcFilters();    // 再恢复上次保存的筛选值
+    populateFcFilters();   // 基于恢复的值重新构建正确的级联选项
     startFlashcard(false);
   } else {
     tableEls.forEach(el => { if(el) el.style.display = ''; });
