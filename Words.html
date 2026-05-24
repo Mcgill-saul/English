@@ -129,10 +129,10 @@ th.sort-desc::after { content: ' ↓'; color: var(--gold); }
    弹性列（flex）：改 flex 后面的数字，数字越大占比越宽；min-width 是最小不压缩宽度
 ── */
 .col-status  { width: 88px;  flex-shrink: 0; }           /* 状态列宽 */
-.col-word    { width: 160px; flex-shrink: 0; }           /* 单词列宽 */
+.col-word    { width: 200px; flex-shrink: 0; }           /* 单词列宽 */
 .col-pos     { width: 80px;  flex-shrink: 0; }           /* 词性列宽 */
-.col-meaning { flex: 2; min-width: 220px; }              /* 释义列，弹性占比2 */
-.col-example { flex: 3; min-width: 220px; }              /* 例句列，弹性占比3（最宽）*/
+.col-meaning { flex: 1; min-width: 180px; }              /* 释义列，弹性占比1 */
+.col-example { flex: 4; min-width: 220px; }              /* 例句列，弹性占比4（最宽）*/
 .col-exampleZh { flex: 2; min-width: 180px; }            /* 例句释义列，弹性占比2 */
 .col-related { width: 120px; flex-shrink: 0; }           /* 关联列宽 */
 .col-tag     { width: 120px; flex-shrink: 0; }           /* 标签列宽 */
