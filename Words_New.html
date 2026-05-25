@@ -406,7 +406,6 @@ th.col-check { cursor: pointer; }
   .mobile .overlay,
   .mobile .expand-edit-btn,
   .mobile #tableTopbarActions { display: none !important; }
-  .mobile #gistBtn { display: inline-flex !important; }
 
   /* ── 顶栏适配 ── */
   .mobile .topbar { flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding: 0.5rem 0.8rem; }
@@ -604,6 +603,7 @@ th.col-check { cursor: pointer; }
     <input class="search-input" id="searchInput" placeholder="搜索单词、释义、例句…" oninput="applyFilters()">
   </div>
   <button class="filter-toggle-btn" id="filterToggleBtn" onclick="toggleMobileFilter()" style="display:none;">☰</button>
+  <button class="filter-toggle-btn" id="gistBtn" onclick="openGistPanel()" title="Gist 云同步" style="display:none;">☁</button>
 
   <!-- 词库筛选（桌面端内联在 topbar；移动端独立展开面板） -->
   <div class="filter-panel" id="filtersBar" style="display: flex;">
@@ -650,7 +650,7 @@ th.col-check { cursor: pointer; }
     <button class="btn btn-ghost" onclick="triggerCSVImport()">导入 CSV</button>
     <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCSVImport(event)">
     <button class="btn btn-ghost" onclick="exportHTML()">导出</button>
-    <button class="btn btn-ghost" id="gistBtn" onclick="openGistPanel()" title="Gist 云同步">☁</button>
+    <button class="btn btn-ghost" onclick="openGistPanel()" title="Gist 云同步">☁</button>
     <button class="btn btn-primary" onclick="openForm(null)">＋ 添加</button>
   </div>
   <div id="fcTopbarActions" style="display: none; flex-shrink: 0;">
@@ -10764,6 +10764,8 @@ function setBodyClass() {
     document.getElementById('bottomNav').style.display = 'flex';
     const filterToggle = document.getElementById('filterToggleBtn');
     if (filterToggle) filterToggle.style.display = 'inline-flex';
+    const gistBtn = document.getElementById('gistBtn');
+    if (gistBtn) gistBtn.style.display = 'inline-flex';
     // Force topbar-actions hidden on mobile
     const tableActions = document.getElementById('tableTopbarActions');
     if (tableActions) tableActions.style.display = 'none';
@@ -10775,6 +10777,8 @@ function setBodyClass() {
     document.getElementById('bottomNav').style.display = 'none';
     const filterToggle = document.getElementById('filterToggleBtn');
     if (filterToggle) filterToggle.style.display = 'none';
+    const gistBtn = document.getElementById('gistBtn');
+    if (gistBtn) gistBtn.style.display = 'none';
   }
 }
 
@@ -10952,6 +10956,7 @@ function updateGistBtn(connected) {
   if (!btn) return;
   btn.title = connected ? 'Gist 已连接 — 点击管理' : 'Gist 云同步（未配置）';
   btn.style.color = connected ? 'var(--green)' : '';
+  btn.textContent = connected ? '☁✓' : '☁';
 }
 
 function resetFilters() {
@@ -12079,14 +12084,17 @@ function switchView(view) {
     document.getElementById('bnFlashcard').classList.toggle('active', view === 'flashcard');
     const searchWrap = document.querySelector('.search-wrap');
     const filterToggleBtn = document.getElementById('filterToggleBtn');
+    const gistBtn = document.getElementById('gistBtn');
     if (view === 'flashcard') {
       if (searchWrap) searchWrap.style.display = 'none';
       if (filterToggleBtn) filterToggleBtn.style.display = 'none';
+      if (gistBtn) gistBtn.style.display = 'inline-flex';
       document.getElementById('statsBar').style.display = 'none';
       if (filtersBarEl) filtersBarEl.style.setProperty('display', 'none', 'important');
     } else {
       if (searchWrap) searchWrap.style.display = '';
       if (filterToggleBtn) filterToggleBtn.style.display = 'inline-flex';
+      if (gistBtn) gistBtn.style.display = 'inline-flex';
       document.getElementById('statsBar').style.display = '';
       if (filtersBarEl) filtersBarEl.style.removeProperty('display');
     }
