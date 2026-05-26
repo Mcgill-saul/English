@@ -10801,20 +10801,20 @@ let expandedIds = new Set();
 function load() {
   setBodyClass();
 
-  try { words = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { words = []; }
-  if (!words.length) {
-    const matrixEl = document.getElementById('data-matrix');
-    if (matrixEl && matrixEl.textContent.trim()) {
-      try { words = JSON.parse(matrixEl.textContent); } catch (e) { words = []; }
-    }
-  }
+  const isLocalFile = location.protocol === 'file:';
+  const matrixEl = document.getElementById('data-matrix');
+  const configEl = document.getElementById('config-matrix');
 
-  try { rules = JSON.parse(localStorage.getItem(CONFIG_KEY)) || []; } catch { rules = []; }
-  if (!rules.length) {
-    const configEl = document.getElementById('config-matrix');
-    if (configEl && configEl.textContent.trim()) {
-      try { rules = JSON.parse(configEl.textContent); } catch (e) { rules = []; }
-    }
+  if (isLocalFile) {
+    // 本地文件直接读 data-matrix，确保导出文件打开时显示最新数据
+    if (matrixEl && matrixEl.textContent.trim()) { try { words = JSON.parse(matrixEl.textContent); } catch(e) { words = []; } }
+    if (configEl && configEl.textContent.trim()) { try { rules = JSON.parse(configEl.textContent); } catch(e) { rules = []; } }
+  } else {
+    // 网页环境优先读 localStorage
+    try { words = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { words = []; }
+    if (!words.length && matrixEl && matrixEl.textContent.trim()) { try { words = JSON.parse(matrixEl.textContent); } catch(e) { words = []; } }
+    try { rules = JSON.parse(localStorage.getItem(CONFIG_KEY)) || []; } catch { rules = []; }
+    if (!rules.length && configEl && configEl.textContent.trim()) { try { rules = JSON.parse(configEl.textContent); } catch(e) { rules = []; } }
   }
 
   // 启动时如果配置了 Gist，自动拉取最新数据
