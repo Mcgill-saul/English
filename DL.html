@@ -1,0 +1,3061 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>运动记录看板</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  /* =====================================================
+     🎨 颜色配置区 —— 直接改颜色值即可生效
+     颜色格式：#RRGGBB 十六进制，可用取色器获取
+     推荐取色工具：https://www.google.com/search?q=color+picker
+     ===================================================== */
+
+  /* 页面背景色 */
+  --bg:      #f7f8fa;   /* 最外层底色（浅灰） */
+  --bg2:     #ffffff;   /* 卡片/列表背景（纯白） */
+  --bg3:     #f0f2f5;   /* 输入框/表头背景（灰白） */
+
+  /* 边框颜色 */
+  --border:  #e3e6ed;   /* 普通边框 */
+  --border2: #c9cfd9;   /* 较深边框 / 空值占位符颜色 */
+
+  /* 文字颜色 */
+  --text:    #1a1d24;   /* 主文字（近黑） */
+  --text2:   #5a6278;   /* 次要文字（灰） */
+  --text3:   #9ba3b5;   /* 弱提示文字（浅灰） */
+
+  /* 绿色系 —— 跑步标签 / 主按钮 / 高亮 */
+  --green:   #16a06a;   /* 主绿色 */
+  --green-lt:#e8f8f2;   /* 浅绿背景 */
+  --green-dk:#0d6644;   /* 深绿文字 */
+
+  /* 蓝色系 —— 无氧标签 / 批量选择 */
+  --blue:    #3b7ef8;   /* 主蓝色 */
+  --blue-lt: #edf3ff;   /* 浅蓝背景 */
+  --blue-dk: #1a4fba;   /* 深蓝文字 */
+
+  /* 橙色系 —— 跳绳标签 / 体感标签 */
+  --amber:   #d97706;   /* 主橙色 */
+  --amber-lt:#fef3e2;   /* 浅橙背景 */
+
+  /* 红色系 —— 删除按钮 / 今日日历边框 */
+  --coral:   #e04545;   /* 主红色 */
+  --coral-lt:#fdeaea;   /* 浅红背景 */
+
+  /* 紫色系 —— 羽毛球标签 */
+  --purple:  #7c5cf6;   /* 主紫色 */
+  --purple-lt:#f0ecff;  /* 浅紫背景 */
+
+  /* 圆角 / 阴影（一般不需要改） */
+  --radius:  8px;
+  --radius-lg: 12px;
+  --shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+  --font: "PingFang SC","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;}
+body{min-height:100vh;padding-bottom:4rem;}
+
+/* topbar */
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,0,0,0.06);}
+.topbar-title{font-size:15px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;}
+.topbar-title .dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;}
+.topbar-actions{display:flex;gap:8px;}
+
+/* main */
+.main{max-width:none;margin:0;padding:1.5rem 2.5rem 0;}
+
+/* tabs */
+.tabs{display:flex;gap:0;margin-bottom:1.5rem;border-bottom:2px solid var(--border);}
+.tab{padding:10px 18px;font-size:13.5px;cursor:pointer;color:var(--text2);border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;font-family:var(--font);}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--green);border-bottom-color:var(--green);font-weight:600;}
+
+/* metrics */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:1.5rem;}
+.metric{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;box-shadow:var(--shadow);}
+.metric-label{font-size:11px;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;}
+.metric-value{font-size:24px;font-weight:700;line-height:1;}
+.metric-unit{font-size:13px;font-weight:400;color:var(--text2);margin-left:2px;}
+.metric-sub{font-size:11px;color:var(--text3);margin-top:5px;}
+.metric.green .metric-value{color:var(--green);}
+.metric.blue .metric-value{color:var(--blue);}
+.metric.amber .metric-value{color:var(--amber);}
+.metric.coral .metric-value{color:var(--coral);}
+.metric.purple .metric-value{color:var(--purple);}
+
+/* charts */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:1.5rem;}
+.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;box-shadow:var(--shadow);}
+.chart-card.full{grid-column:1/-1;}
+.chart-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.chart-sub{font-size:12px;color:var(--text3);margin-bottom:14px;}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);}
+.legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+
+/* ── FORM ── */
+.form-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px 28px 24px;margin-bottom:1.5rem;box-shadow:var(--shadow);}
+.form-card-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+
+/* Sport selector row */
+.sport-selector{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;}
+.sport-btn{padding:7px 18px;border-radius:20px;font-size:13px;cursor:pointer;border:1.5px solid var(--border2);background:var(--bg3);color:var(--text2);transition:all .15s;font-family:var(--font);white-space:nowrap;}
+.sport-btn:hover{border-color:var(--green);color:var(--green);}
+.sport-btn.active{border-color:var(--green);color:var(--green);background:var(--green-lt);font-weight:600;}
+
+/* Uniform field grid */
+.form-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+@media(max-width:900px){.form-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:500px){.form-grid{grid-template-columns:1fr;}}
+
+/* =====================================================
+   📱 移动端适配区 —— 768px 以下手机布局，不影响桌面
+   ===================================================== */
+@media(max-width:768px){
+
+  /* ── 整体布局 ── */
+  body{ padding-bottom: 0; padding-top: 56px; } /* 顶部导航高度 */
+  .main{ padding: 0.75rem 0.75rem 2rem; }
+
+  /* ── 原顶部栏隐藏（用手机导航替代） ── */
+  .topbar{ display: none; }
+
+  /* ── 顶部 tabs 隐藏 ── */
+  .tabs{ display: none; }
+
+  /* ── 图表网格 → 单列 ── */
+  .charts-grid{ grid-template-columns: 1fr !important; }
+  .chart-card.full{ grid-column: 1 !important; }
+
+  /* ── 指标卡 → 2列 ── */
+  .metrics{ grid-template-columns: repeat(2,1fr); gap: 8px; }
+  .metric{ padding: 12px 14px; }
+  .metric-value{ font-size: 20px; }
+
+  /* ── 表单 → 单列，字段高度更易点击 ── */
+  .form-card{ padding: 14px; }
+  .form-grid{ grid-template-columns: 1fr !important; gap: 12px; }
+  .ff.span2,.ff.span4{ grid-column: 1 !important; }
+  .ff input,.ff select{
+    height: 46px;
+    font-size: 16px; /* 防止 iOS 自动缩放 */
+    padding: 10px 12px;
+  }
+  .ff textarea{ font-size: 16px; min-height: 72px; }
+  .ff label{ font-size: 12px; }
+
+  /* ── 运动类型选择器 ── */
+  .sport-selector{ gap: 6px; }
+  .sport-btn{ padding: 7px 12px; font-size: 12.5px; }
+  .feel-pill,.pill{ padding: 7px 14px; font-size: 13px; }
+
+  /* ── 全部记录 → 卡片式 ── */
+  #record-col-header{ display: none; }
+  .record-list{ border: none !important; gap: 8px; overflow-x: visible; }
+  .record-item{
+    display: block !important;
+    min-width: 0 !important;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border) !important;
+    border-radius: var(--radius-lg) !important;
+  }
+  .rc{ width: auto !important; white-space: normal !important; display: inline; }
+  .rc-actions{ display: none !important; }
+
+  /* ── 搜索行 → 竖排 ── */
+  .search-row{ flex-direction: column; gap: 8px; }
+  .search-row input,.search-row select{ width: 100%; font-size: 16px; }
+
+  /* ── 总览第一个卡片手机竖排 ── */
+  #page-dashboard .chart-card.full:first-child{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+  }
+  #page-dashboard .chart-card.full:first-child > div:nth-child(2){ /* 分割线 */
+    display: none;
+  }
+  #dash-total{ font-size: 32px !important; }
+  #dash-date-range{ font-size: 11px !important; }
+  #page-dashboard #typeChart{ height: 220px !important; }
+  .cal-grid{ grid-template-columns: 1fr !important; }
+  .cal-day{ min-height: 42px; }
+  .cal-day-num{ font-size: 11px; }
+  .cal-day-part{ font-size: 9px; }
+
+  /* ── 跑步周期卡片换行 ── */
+  .cycle-card{ flex-wrap: wrap; gap: 10px; }
+  .cycle-divider{ display: none; }
+
+  /* ── 数据管理 ── */
+  .data-section{ padding: 14px; }
+  .mobile-record-meta{ display:flex; flex-wrap:wrap; gap:8px; font-size:12.5px; color:var(--text2); }
+  .mobile-record-chip{ display:inline-flex; align-items:center; gap:3px; }
+  .mobile-record-chip .k{ color:var(--text3); font-size:11.5px; }
+}
+
+/* ── 手机顶部导航（替代顶部 tabs） ── */
+.mobile-nav{
+  display: flex;
+  position: fixed; top: 0; left: 0; right: 0;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  z-index: 200;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  height: 56px;
+}
+.mobile-nav-item{
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 6px 2px;
+  gap: 3px; cursor: pointer;
+  border: none; background: none;
+  color: var(--text3); font-family: var(--font);
+  font-size: 10px; font-weight: 500;
+  transition: color .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.mobile-nav-item.active{ color: var(--green); }
+.mobile-nav-item svg{ width: 22px; height: 22px; flex-shrink: 0; }
+/* 新增按钮与其他按钮一致 */
+.mobile-nav-add{
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 3px; cursor: pointer; border: none;
+  background: none; font-family: var(--font);
+  font-size: 10px; font-weight: 600;
+  color: var(--green);
+  -webkit-tap-highlight-color: transparent;
+  padding: 6px 2px;
+}
+.mobile-nav-add svg{ width: 22px; height: 22px; flex-shrink: 0; }
+
+/* 桌面端隐藏手机导航 */
+@media(min-width:769px){ .mobile-nav, #mobileMoreMenu { display: none !important; } }
+
+/* Uniform field */
+.ff{display:flex;flex-direction:column;gap:5px;}
+.ff label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;}
+.ff input,.ff select,.ff textarea{
+  background:var(--bg3);
+  border:1.5px solid var(--border);
+  border-radius:var(--radius);
+  color:var(--text);
+  font-size:13.5px;
+  padding:9px 11px;
+  font-family:var(--font);
+  transition:border-color .15s;
+  width:100%;
+  height:38px;
+}
+.ff textarea{height:auto;min-height:64px;resize:vertical;}
+.ff input:focus,.ff select:focus,.ff textarea:focus{outline:none;border-color:var(--green);background:#fff;}
+.ff input::placeholder{color:var(--text3);}
+.ff input[readonly]{color:var(--text2);background:var(--bg3);cursor:default;}
+.ff select option{background:#fff;color:var(--text);}
+.ff.span2{grid-column:span 2;}
+.ff.span4{grid-column:1/-1;}
+
+/* Checkbox pill */
+.check-row{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);}
+.check-row input[type=checkbox]{width:15px;height:15px;accent-color:var(--green);}
+
+/* Multi-select pill group */
+.pill-group{display:flex;flex-wrap:wrap;gap:7px;padding:8px 0;}
+.pill{padding:5px 13px;border-radius:14px;font-size:12.5px;cursor:pointer;border:1.5px solid var(--border2);background:var(--bg3);color:var(--text2);transition:all .15s;user-select:none;}
+.pill:hover{border-color:var(--blue);}
+.pill.sel{border-color:var(--blue);color:var(--blue);background:var(--blue-lt);}
+
+.pill-add{padding:5px 13px;border-radius:14px;font-size:12.5px;cursor:pointer;border:1.5px dashed var(--border2);background:transparent;color:var(--text3);transition:all .15s;user-select:none;}
+.pill-add:hover{border-color:var(--blue);color:var(--blue);}
+.feel-chip{color:var(--amber)!important;font-weight:500;}
+.body-chip{color:var(--text3)!important;font-style:italic;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.feel-group{display:flex;gap:7px;flex-wrap:wrap;padding:6px 0;}
+.feel-pill{padding:5px 14px;border-radius:14px;font-size:12.5px;cursor:pointer;border:1.5px solid var(--border2);background:var(--bg3);color:var(--text2);transition:all .15s;user-select:none;}
+.feel-pill.sel-0{border-color:#22c55e;color:#16a34a;background:#f0fdf4;}
+.feel-pill.sel-1{border-color:#84cc16;color:#4d7c0f;background:#f7fee7;}
+.feel-pill.sel-2{border-color:#f59e0b;color:#b45309;background:#fffbeb;}
+.feel-pill.sel-3{border-color:#f87171;color:#b91c1c;background:#fef2f2;}
+.feel-pill.sel-4{border-color:#6366f1;color:#3730a3;background:#eef2ff;}
+
+/* Datalist combo */
+.combo-wrap{position:relative;}
+.combo-wrap input{width:100%;}
+
+/* form actions */
+.form-actions{display:flex;gap:10px;margin-top:22px;padding-top:18px;border-top:1px solid var(--border);}
+
+/* Buttons */
+.btn{padding:9px 22px;border-radius:var(--radius);font-size:13.5px;font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:var(--font);}
+.btn-primary{background:var(--green);color:#fff;}
+.btn-primary:hover{background:var(--green-dk);}
+.btn-secondary{background:var(--bg3);color:var(--text2);border:1.5px solid var(--border2);}
+.btn-secondary:hover{color:var(--text);border-color:var(--border2);}
+.btn-danger{background:var(--coral-lt);color:var(--coral);border:1.5px solid #f9b0b0;}
+.btn-danger:hover{background:var(--coral);color:#fff;}
+.btn-sm{padding:5px 12px;font-size:12px;}
+
+/* Records */
+.search-row{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.search-row input,.search-row select{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:13px;padding:8px 12px;font-family:var(--font);}
+.search-row input:focus,.search-row select:focus{outline:none;border-color:var(--green);}
+.records-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.records-title{font-size:14px;font-weight:600;color:var(--text2);}
+.record-list{display:flex;flex-direction:column;gap:0;border:1.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;overflow-x:auto;}
+.record-list-header{display:flex;align-items:center;background:var(--bg3);border-bottom:1.5px solid var(--border);padding:7px 14px;white-space:nowrap;min-width:max-content;}
+.rh{flex-shrink:0;font-size:10.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;padding-right:12px;white-space:nowrap;}
+
+.record-item{background:var(--bg2);border-bottom:1px solid var(--border);padding:9px 14px;display:flex;align-items:center;cursor:pointer;transition:background .1s;min-width:max-content;}
+.record-item:last-child{border-bottom:none;}
+.record-item:hover{background:#f5fbf8;}
+.record-item.selected{background:#eef5ff;}
+
+/* =====================================================
+   📐 全部记录页面 —— 列宽配置区
+   单位：px（像素），数字越大列越宽
+   改完保存刷新页面即生效，列头宽度会自动跟着变
+   ===================================================== */
+.rc{flex-shrink:0;padding-right:12px;font-size:12.5px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text2);}
+.rc-date   { width: 96px;  color:var(--text);font-variant-numeric:tabular-nums;font-weight:500; } /* 日期列 */
+.rc-badge  { width: 140px; padding-right:10px; }  /* 运动类型列（含训练类型/部位） */
+.rc-period { width: 52px;  }  /* 时段列 */
+.rc-dist   { width: 60px;  }  /* 距离列 */
+.rc-pace   { width: 58px;  }  /* 配速列 */
+.rc-hr     { width: 48px;  }  /* 平均心率列 */
+.rc-maxhr  { width: 52px;  }  /* 最大心率列 */
+.rc-cadence{ width: 44px;  }  /* 步频列 */
+.rc-shoe   { width: 116px; }  /* 跑鞋列 */
+.rc-weather{ width: 48px;  }  /* 天气列 */
+.rc-route  { width: 90px;  }  /* 路线列 */
+.rc-devices{ width: 90px;  }  /* 设备列 */
+.rc-feel   { width: 48px;  }  /* 体感列 */
+.rc-body   { width: 160px; }  /* 身体感受列 */
+.rc-note   { width: 200px; color:var(--text3);font-style:italic; }  /* 备注列 */
+.rc-muscles{ width: 110px; }  /* 无氧部位列 */
+.rc-duration{ width: 72px; }  /* 跳绳时长列 */
+.rc-jcount { width: 60px;  }  /* 跳绳个数列 */
+.rc-jfreq  { width: 74px;  }  /* 跳绳频率列 */
+.rc-empty  { color:var(--border2)!important; }  /* 空值「—」的颜色 */
+.rc-actions{flex-shrink:0;display:flex;gap:6px;opacity:0;transition:opacity .15s;margin-left:8px;}
+.record-item:hover .rc-actions{opacity:1;}
+
+/* =====================================================
+   🏷️ 运动类型标签颜色
+   格式：background（背景色）/ color（文字色）/ border（边框色）
+   ===================================================== */
+.record-badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:12px;font-size:11.5px;font-weight:600;white-space:nowrap;max-width:136px;overflow:hidden;text-overflow:ellipsis;}
+.badge-run      { background:var(--green-lt); color:var(--green-dk); border:1px solid #a7f3d0; } /* 跑步标签 */
+.badge-ana      { background:var(--blue-lt);  color:var(--blue-dk);  border:1px solid #bfdbfe; } /* 无氧标签 */
+.badge-jump     { background:var(--amber-lt); color:var(--amber);    border:1px solid #fcd34d; } /* 跳绳标签 */
+.badge-badminton{ background:var(--purple-lt);color:var(--purple);   border:1px solid #c4b5fd; } /* 羽毛球标签 */
+.badge-walk,.badge-hike { background:var(--bg3); color:var(--text2); border:1px solid var(--border2); } /* 徒步/散步标签 */
+.feel-badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:600;background:var(--amber-lt);color:var(--amber);} /* 体感标签 */
+
+/* Batch select */
+.select-bar{display:none;align-items:center;gap:12px;padding:10px 14px;background:var(--blue-lt);border:1.5px solid #bfdbfe;border-radius:var(--radius);margin-bottom:10px;font-size:13px;}
+.select-bar.show{display:flex;}
+.select-bar-count{color:var(--blue-dk);font-weight:600;flex:1;}
+.record-check{width:16px;height:16px;accent-color:var(--blue);cursor:pointer;flex-shrink:0;}
+.record-item-wrap{display:flex;align-items:center;gap:0;min-width:max-content;}
+.check-col{padding:0 10px 0 14px;flex-shrink:0;}
+
+.no-records{text-align:center;color:var(--text3);padding:3rem;font-size:14px;}
+.pagination{display:flex;gap:6px;justify-content:center;margin-top:1rem;flex-wrap:wrap;}
+.page-btn{padding:6px 12px;border-radius:6px;font-size:13px;cursor:pointer;border:1.5px solid var(--border);background:var(--bg2);color:var(--text2);transition:all .15s;}
+.page-btn.active{background:var(--green-lt);color:var(--green);border-color:var(--green);}
+.page-btn:hover:not(.active){color:var(--text);}
+
+/* Heatmap */
+/* Line toggle switches for combined chart */
+.line-toggle{display:flex;align-items:center;gap:5px;cursor:pointer;padding:4px 10px;border-radius:14px;border:1.5px solid var(--border2);background:var(--bg3);font-size:12px;color:var(--text2);transition:all .15s;user-select:none;}
+.line-toggle input{display:none;}
+.line-toggle:has(input:checked){border-color:var(--c);background:color-mix(in srgb,var(--c) 12%,white);color:var(--c);font-weight:600;}
+.line-toggle span::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:4px;opacity:.4;}
+.line-toggle:has(input:checked) span::before{opacity:1;}
+.filter-pill{padding:4px 11px;border-radius:12px;font-size:12px;cursor:pointer;border:1.5px solid var(--border2);background:var(--bg3);color:var(--text2);transition:all .15s;user-select:none;}
+.filter-pill.on{border-color:var(--green);color:var(--green);background:var(--green-lt);font-weight:600;}
+
+.heatmap-wrap{overflow-x:auto;padding-bottom:4px;}
+.heatmap{display:flex;gap:3px;}
+.heatmap-col{display:flex;flex-direction:column;gap:3px;}
+.heatmap-cell{width:13px;height:13px;border-radius:2px;cursor:pointer;}
+
+/* ── Anaerobic: cycle cards ── */
+.cycle-card{background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.cycle-card.active{border-color:var(--green);background:var(--green-lt);}
+.cycle-stat{display:flex;flex-direction:column;gap:2px;min-width:80px;}
+.cycle-stat-val{font-size:22px;font-weight:700;color:var(--text);line-height:1;}
+.cycle-stat-val.green{color:var(--green);}
+.cycle-stat-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;}
+.cycle-divider{width:1px;height:44px;background:var(--border);flex-shrink:0;}
+.cycle-actions{margin-left:auto;display:flex;gap:6px;}
+.cycle-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;}
+
+/* ── Anaerobic: yearly report ── */
+.yearly-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:12px;box-shadow:var(--shadow);}
+.yearly-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.yearly-sub{font-size:12px;color:var(--text3);margin-bottom:16px;}
+.yearly-bars{display:flex;flex-direction:column;gap:10px;}
+.yearly-bar-row{display:flex;align-items:center;gap:12px;}
+.yearly-bar-label{font-size:13px;color:var(--text2);width:40px;text-align:right;flex-shrink:0;}
+.yearly-bar-track{flex:1;height:22px;background:var(--bg3);border-radius:4px;overflow:hidden;position:relative;}
+.yearly-bar-fill{height:100%;border-radius:4px;background:var(--blue);transition:width .4s ease;display:flex;align-items:center;padding-left:8px;min-width:30px;}
+.yearly-bar-num{font-size:12px;font-weight:700;color:#fff;white-space:nowrap;}
+.yearly-bar-pct{font-size:12px;color:var(--text3);flex-shrink:0;width:36px;}
+
+/* Data mgmt */
+.data-section{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:14px;box-shadow:var(--shadow);}
+.data-section h3{font-size:13px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+
+/* Toast */
+.toast{position:fixed;bottom:2rem;right:2rem;background:var(--text);color:#fff;padding:12px 20px;border-radius:var(--radius);font-size:13.5px;z-index:400;opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+
+/* Hidden sport sections */
+.sport-section{display:none;}
+.sport-section.active{display:contents;}
+
+
+/* ── Calendar ── */
+.cal-header{display:flex;align-items:center;gap:16px;margin-bottom:14px;}
+.cal-year-label{font-size:20px;font-weight:700;color:var(--text);min-width:60px;text-align:center;}
+.cal-year-btn{background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--radius);color:var(--text2);font-size:16px;padding:6px 14px;cursor:pointer;transition:all .15s;}
+.cal-year-btn:hover{color:var(--text);border-color:var(--green);}
+.cal-legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+.cal-leg-item{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text2);}
+.cal-leg-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0;}
+
+/* 12-month grid: 4 cols × 3 rows */
+.cal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+@media(max-width:1200px){.cal-grid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:800px){.cal-grid{grid-template-columns:repeat(2,1fr);}}
+
+/* Each month card */
+.cal-month{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;box-shadow:var(--shadow);}
+.cal-month-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px;}
+.cal-wd{font-size:11px;color:var(--text3);text-align:center;padding:3px 0;font-weight:600;}
+.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+
+/* Day cell */
+.cal-day{
+  position:relative;
+  border-radius:6px;
+  overflow:hidden;
+  min-height:52px;
+  display:flex;
+  flex-direction:column;
+  cursor:default;
+}
+.cal-day.empty{background:transparent;}
+.cal-day.today{outline:2px solid var(--coral);outline-offset:-2px;z-index:2;}
+
+/* Single-sport cell */
+.cal-day-single{
+  width:100%;height:100%;min-height:52px;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:2px;padding:3px;
+}
+/* Split cell: two halves stacked */
+.cal-day-top{
+  width:100%;flex:1;min-height:26px;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:2px;padding:3px 2px 2px;
+}
+.cal-day-bottom{
+  width:100%;flex:1;min-height:26px;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:2px;padding:2px 2px 3px;
+}
+/* No-sport cell */
+.cal-day-empty{
+  width:100%;height:100%;min-height:52px;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text3);font-size:12px;
+}
+.cal-day-num{font-size:12px;font-weight:700;color:#fff;line-height:1;}
+.cal-day-icon{font-size:13px;line-height:1;}
+.cal-day-part{font-size:10px;color:rgba(255,255,255,0.92);line-height:1.2;text-align:center;word-break:break-all;max-width:100%;padding:0 2px;}
+
+
+  .chart-card.full{grid-column:1;}
+  .record-item{grid-template-columns:76px auto 1fr;}
+  .record-actions{display:none;}
+  .topbar{padding:0 1rem;}
+  .main{padding:1rem;}
+  .form-card{padding:16px;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-title"><span class="dot"></span>运动记录</div>
+  <div class="topbar-actions">
+    <button class="btn btn-primary btn-sm" onclick="showTab('add')">＋ 记录</button>
+    <button class="btn btn-secondary btn-sm" onclick="showTab('data')">数据</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('dashboard')" id="tab-dashboard">总览</button>
+    <button class="tab" onclick="showTab('run')" id="tab-run">跑步分析</button>
+    <button class="tab" onclick="showTab('anaerobic')" id="tab-anaerobic">无氧分析</button>
+    <button class="tab" onclick="showTab('records')" id="tab-records">全部记录</button>
+    <button class="tab" onclick="showTab('calendar')" id="tab-calendar">训练日历</button>
+    <button class="tab" onclick="showTab('add')" id="tab-add">新增记录</button>
+    <button class="tab" onclick="showTab('data')" id="tab-data">数据管理</button>
+  </div>
+
+  <!-- ══════════ DASHBOARD ══════════ -->
+  <div id="page-dashboard">
+    <!-- 总训练次数 + 训练类型占比 合并区域 -->
+    <div class="chart-card full" style="margin-bottom:14px;display:flex;align-items:center;gap:24px;padding:20px 24px;">
+      <div style="flex-shrink:0;min-width:120px;max-width:140px">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-variant-numeric:tabular-nums" id="dash-date-range">—</div>
+        <div style="display:flex;align-items:flex-end;gap:3px;line-height:1">
+          <div style="font-size:40px;font-weight:800;color:var(--green);font-variant-numeric:tabular-nums;line-height:1" id="dash-total">—</div>
+          <div style="font-size:12px;color:var(--text3);padding-bottom:5px;white-space:nowrap">次训练</div>
+        </div>
+        <div style="font-size:13px;font-weight:600;color:var(--text2);margin-top:8px" id="dash-week-avg">—</div>
+      </div>
+      <div style="width:1px;height:70px;background:var(--border);flex-shrink:0"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+          <label class="line-toggle" style="--c:#16a06a"><input type="checkbox" id="dash-pie-labels" checked onchange="renderDashboard()"><span>显示数字</span></label>
+        </div>
+        <div style="position:relative;height:200px"><canvas id="typeChart"></canvas></div>
+        <div id="typeChart-legend" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px"></div>
+      </div>
+    </div>
+    <!-- 月度训练构成 独占一行 -->
+    <div class="chart-card full" style="margin-bottom:14px">
+      <div class="chart-title">月度训练构成</div>
+      <div class="chart-sub">每月各运动类型次数</div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#3b7ef8"></div>无氧</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#16a06a"></div>跑步</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#d97706"></div>跳绳</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#7c5cf6"></div>羽毛球</div>
+      </div>
+      <div style="position:relative;height:220px"><canvas id="monthlyChart"></canvas></div>
+    </div>
+    <!-- 训练热图 独占一行 -->
+    <div class="chart-card full" style="margin-bottom:1.5rem">
+      <div class="chart-title">训练热图</div>
+      <div class="chart-sub">近12个月每日训练次数</div>
+      <div id="heatmap-container" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ ANAEROBIC ══════════ -->
+  <div id="page-anaerobic" style="display:none">
+
+    <!-- 坚持周期 -->
+    <div class="chart-card full" style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div>
+          <div class="chart-title">训练坚持周期</div>
+          <div class="chart-sub">记录每个阶段的起止日期，统计坚持天数与训练频率</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="addCycle()">＋ 添加周期</button>
+      </div>
+      <!-- 当前进行中 -->
+      <div id="ana-cycle-active"></div>
+      <!-- 历史折叠 -->
+      <div id="ana-cycle-history-wrap" style="margin-top:10px;display:none">
+        <button class="btn btn-secondary btn-sm" id="ana-cycle-toggle" onclick="toggleCycleHistory()" style="margin-bottom:10px">展开历史周期</button>
+        <div id="ana-cycle-history" style="display:none;flex-direction:column;gap:8px"></div>
+      </div>
+    </div>
+
+    <!-- 肌群分布 + 月度趋势 同一行 -->
+    <div class="charts-grid" style="margin-bottom:14px">
+      <div class="chart-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div>
+            <div class="chart-title">肌群训练分布</div>
+            <div class="chart-sub">各部位占比（复合日取第一个部位）</div>
+          </div>
+          <label class="line-toggle" style="--c:#3b7ef8"><input type="checkbox" id="ana-pie-labels" checked onchange="renderAnaerobic()"><span>显示数字</span></label>
+        </div>
+        <div style="position:relative;height:240px"><canvas id="muscleChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">月度无氧训练频次</div>
+        <div class="chart-sub">每月无氧训练次数趋势</div>
+        <div style="position:relative;height:240px"><canvas id="anaMonthlyChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- 年度战报：分组柱状图 -->
+    <div class="chart-card full" style="margin-bottom:14px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">
+        <div>
+          <div class="chart-title">年度战报</div>
+          <div class="chart-sub">各部位各年度训练次数对比</div>
+        </div>
+        <div id="ana-yearly-legend" style="display:flex;gap:12px;flex-wrap:wrap"></div>
+      </div>
+      <div style="position:relative;height:280px"><canvas id="yearlyChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ══════════ RUN ANALYSIS ══════════ -->
+  <div id="page-run" style="display:none">
+
+    <!-- 全部跑步总数据 -->
+    <div class="chart-card full" style="margin-bottom:14px">
+      <div class="chart-title" style="margin-bottom:14px">全部记录</div>
+      <div class="metrics" id="run-metrics-total" style="margin-bottom:0"></div>
+    </div>
+
+    <!-- 跑步周期 -->
+    <div class="chart-card full" style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div>
+          <div class="chart-title">跑步周期</div>
+          <div class="chart-sub">记录每个阶段的起止日期，统计周期内跑步数据</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="addRunCycle()">＋ 添加周期</button>
+      </div>
+      <!-- 当前进行中 -->
+      <div id="run-cycle-active"></div>
+      <!-- 历史折叠 -->
+      <div id="run-cycle-history-wrap" style="margin-top:10px;display:none">
+        <button class="btn btn-secondary btn-sm" id="run-cycle-toggle" onclick="toggleRunCycleHistory()" style="margin-bottom:10px">展开历史周期</button>
+        <div id="run-cycle-history" style="display:none;flex-direction:column;gap:12px"></div>
+      </div>
+    </div>
+
+    <!-- 趋势图表（最下方） -->
+    <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:1.5rem;">
+
+      <!-- 月度跑量 -->
+      <div class="chart-card">
+        <div class="chart-title">月度跑量</div>
+        <div class="chart-sub">月度累计距离 (km)</div>
+        <div style="position:relative;height:200px"><canvas id="monthlyDistChart"></canvas></div>
+      </div>
+
+      <!-- 配速/心率/步频 合并图 -->
+      <div class="chart-card">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+          <div>
+            <div class="chart-title">配速 / 心率 / 步频</div>
+            <div class="chart-sub">多维度趋势，可按训练类型和距离筛选</div>
+          </div>
+          <!-- 线条开关 + 目标线设置 -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <span style="font-size:11px;color:var(--text3)">显示：</span>
+            <label class="line-toggle" style="--c:#3b7ef8"><input type="checkbox" id="lt-pace" checked onchange="renderCombinedChart()"><span>配速</span></label>
+            <label class="line-toggle" style="--c:#e04545"><input type="checkbox" id="lt-hr" checked onchange="renderCombinedChart()"><span>平均心率</span></label>
+            <label class="line-toggle" style="--c:#d97706"><input type="checkbox" id="lt-maxhr" checked onchange="renderCombinedChart()"><span>最大心率</span></label>
+            <label class="line-toggle" style="--c:#7c5cf6"><input type="checkbox" id="lt-cadence" onchange="renderCombinedChart()"><span>步频</span></label>
+            <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
+            <button class="btn btn-secondary btn-sm" onclick="openTargetModal()" style="font-size:11.5px">⚑ 目标线</button>
+          </div>
+        </div>
+        <!-- 筛选条件 -->
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">训练类型</div>
+            <div id="filter-subtype" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">距离</div>
+            <div id="filter-dist" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+          </div>
+        </div>
+        <!-- 目标线提示 -->
+        <div id="target-hint" style="display:none;margin-bottom:8px;font-size:12px;color:var(--text3);display:flex;gap:16px;flex-wrap:wrap"></div>
+        <div style="position:relative;height:380px"><canvas id="combinedChart"></canvas></div>
+      </div>
+
+      <!-- 单次距离 -->
+      <div class="chart-card">
+        <div class="chart-title">单次距离</div>
+        <div class="chart-sub">每次跑步距离 (km)</div>
+        <div style="position:relative;height:200px"><canvas id="distChart"></canvas></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════ RECORDS ══════════ -->
+  <div id="page-records" style="display:none">
+    <div class="search-row">
+      <input type="text" id="searchInput" placeholder="搜索备注、部位、路线…" oninput="renderRecords()" style="flex:1;min-width:160px">
+      <select id="filterSport" onchange="renderRecords()">
+        <option value="">全部类型</option>
+        <option value="跑步">跑步</option>
+        <option value="无氧">无氧</option>
+        <option value="跳绳">跳绳</option>
+        <option value="羽毛球">羽毛球</option>
+        <option value="徒步">徒步</option>
+        <option value="散步">散步</option>
+      </select>
+      <select id="filterYear" onchange="renderRecords()">
+        <option value="">全部年份</option>
+        <option value="2025">2025</option>
+        <option value="2026">2026</option>
+      </select>
+      <select id="sortOrder" onchange="renderRecords()">
+        <option value="desc">最新在前</option>
+        <option value="asc">最早在前</option>
+      </select>
+    </div>
+    <div class="select-bar" id="selectBar">
+      <input type="checkbox" id="selectAll" class="record-check" onchange="toggleSelectAll(this.checked)" title="全选当页">
+      <span class="select-bar-count" id="selectCount">已选 0 条</span>
+      <button class="btn btn-danger btn-sm" onclick="deleteSelected()">删除所选</button>
+      <button class="btn btn-secondary btn-sm" onclick="clearSelection()">取消选择</button>
+    </div>
+    <div class="records-header">
+      <div class="records-title" id="records-count">全部记录</div>
+      <button class="btn btn-secondary btn-sm" id="batchToggleBtn" onclick="toggleBatchMode()">☑ 批量选择</button>
+    </div>
+    <div id="record-col-header" class="record-list-header"></div>
+    <div class="record-list" id="recordList"></div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+  <!-- ══════════ ADD / EDIT ══════════ -->
+  <div id="page-add" style="display:none">
+    <div class="form-card">
+      <div class="form-card-title" id="form-card-title">新增训练记录</div>
+
+      <div class="sport-selector">
+        <button class="sport-btn active" onclick="setSport('跑步')" id="sb-跑步">🏃 跑步</button>
+        <button class="sport-btn" onclick="setSport('无氧')" id="sb-无氧">💪 无氧</button>
+        <button class="sport-btn" onclick="setSport('跳绳')" id="sb-跳绳">🪢 跳绳</button>
+        <button class="sport-btn" onclick="setSport('羽毛球')" id="sb-羽毛球">🏸 羽毛球</button>
+        <button class="sport-btn" onclick="setSport('徒步')" id="sb-徒步">⛰ 徒步</button>
+        <button class="sport-btn" onclick="setSport('散步')" id="sb-散步">🚶 散步</button>
+        <div id="custom-sport-btns"></div>
+        <button class="sport-btn" onclick="addCustomSport()" style="border-style:dashed;color:var(--text3)">＋ 新增运动</button>
+      </div>
+      <input type="hidden" id="form-sport" value="跑步">
+      <input type="hidden" id="form-editId" value="">
+
+      <!-- ── 跑步字段 ── -->
+      <div id="sec-跑步" class="sport-section active">
+        <div class="form-grid">
+          <div class="ff"><label>日期</label><input type="date" id="r-date"></div>
+          <div class="ff"><label>时段</label>
+            <select id="r-period">
+              <option value="">— 选择 —</option>
+              <option>晨跑</option><option>午跑</option><option>傍晚</option>
+            </select>
+          </div>
+          <div class="ff"><label>训练类型</label>
+            <select id="r-sub">
+              <option value="">— 选择 —</option>
+              <option>有氧筑基</option><option>节奏跑</option><option>间歇跑</option><option>LSD</option><option>恢复跑</option>
+            </select>
+          </div>
+          <div class="ff"><label>距离 (km)</label><input type="number" id="r-dist" step="0.1" min="0" placeholder="5.0" oninput="calcPace()"></div>
+          <div class="ff"><label>运动时间 (h:mm:ss)</label><input type="text" id="r-duration" placeholder="0:30:00" oninput="validateDur(this);calcPace()"></div>
+          <div class="ff"><label>配速 (自动计算)</label><input type="text" id="r-pace" readonly placeholder="—"></div>
+          <div class="ff"><label>平均心率 (bpm)</label><input type="number" id="r-hr" min="60" max="220" placeholder="155"></div>
+          <div class="ff"><label>最大心率 (bpm)</label><input type="number" id="r-maxhr" min="60" max="230" placeholder="175"></div>
+          <div class="ff"><label>步频 (spm)</label><input type="number" id="r-cadence" min="100" max="220" placeholder="173"></div>
+          <div class="ff"><label>天气</label>
+            <input list="list-weather" id="r-weather" placeholder="晴/多云/小雨…">
+            <datalist id="list-weather">
+              <option value="晴"><option value="多云"><option value="小雨"><option value="大雨">
+            </datalist>
+          </div>
+          <div class="ff"><label>路线</label>
+            <input list="list-route" id="r-route" placeholder="输入或选择路线">
+            <datalist id="list-route"></datalist>
+          </div>
+          <div class="ff"><label>跑鞋</label>
+            <input list="list-shoe" id="r-shoe" placeholder="输入或选择跑鞋">
+            <datalist id="list-shoe"></datalist>
+          </div>
+          <div class="ff span4"><label>设备（可多选，自定义）</label>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+              <input list="list-device" id="r-device-input" placeholder="输入设备名称…" style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:13.5px;padding:8px 11px;height:38px;width:200px;font-family:var(--font);" onkeydown="if(event.key==='Enter'){event.preventDefault();addDeviceFromInput();}">
+              <datalist id="list-device"></datalist>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="addDeviceFromInput()">添加</button>
+            </div>
+            <div class="pill-group" id="r-device-group"></div>
+            <input type="hidden" id="r-devices">
+          </div>
+          <div class="ff span4"><label>体感</label>
+            <div class="feel-group">
+              <span class="feel-pill" data-val="轻松" onclick="setFeel('r-feel',this,'sel-0')">😊 轻松</span>
+              <span class="feel-pill" data-val="尚可" onclick="setFeel('r-feel',this,'sel-1')">🙂 尚可</span>
+              <span class="feel-pill" data-val="较累" onclick="setFeel('r-feel',this,'sel-2')">😅 较累</span>
+              <span class="feel-pill" data-val="很累" onclick="setFeel('r-feel',this,'sel-3')">😓 很累</span>
+            </div>
+            <input type="hidden" id="r-feel">
+          </div>
+          <div class="ff span4"><label>身体感受</label><textarea id="r-body" placeholder="关节状态、疲劳感等…"></textarea></div>
+          <div class="ff span4"><label>备注</label><textarea id="r-note" placeholder="备注…"></textarea></div>
+        </div>
+        </div>
+
+      <!-- ── 无氧字段 ── -->
+      <div id="sec-无氧" class="sport-section">
+        <div class="form-grid">
+          <div class="ff"><label>日期</label><input type="date" id="a-date"></div>
+          <div class="ff span4"><label>部位（可多选）</label>
+            <div class="pill-group" id="a-muscle-group">
+              <span class="pill" data-val="胸" onclick="togglePill(this,'a-muscles')">胸</span>
+              <span class="pill" data-val="背" onclick="togglePill(this,'a-muscles')">背</span>
+              <span class="pill" data-val="腿" onclick="togglePill(this,'a-muscles')">腿</span>
+              <span class="pill" data-val="肩" onclick="togglePill(this,'a-muscles')">肩</span>
+              <span class="pill" data-val="二头" onclick="togglePill(this,'a-muscles')">二头</span>
+              <span class="pill" data-val="三头" onclick="togglePill(this,'a-muscles')">三头</span>
+              <span class="pill" data-val="核心" onclick="togglePill(this,'a-muscles')">核心</span>
+              <span class="pill" data-val="全身" onclick="togglePill(this,'a-muscles')">全身</span>
+            </div>
+            <input type="hidden" id="a-muscles">
+          </div>
+          <div class="ff span4"><label>体感</label>
+            <div class="feel-group">
+              <span class="feel-pill" data-val="轻松" onclick="setFeel('a-feel',this,'sel-0')">😊 轻松</span>
+              <span class="feel-pill" data-val="尚可" onclick="setFeel('a-feel',this,'sel-1')">🙂 尚可</span>
+              <span class="feel-pill" data-val="较累" onclick="setFeel('a-feel',this,'sel-2')">😅 较累</span>
+              <span class="feel-pill" data-val="很累" onclick="setFeel('a-feel',this,'sel-3')">😓 很累</span>
+            </div>
+            <input type="hidden" id="a-feel">
+          </div>
+          <div class="ff span4"><label>身体感受</label><textarea id="a-body" placeholder="肌肉状态、伤痛等…"></textarea></div>
+          <div class="ff span4"><label>备注</label><textarea id="a-note" placeholder="备注…"></textarea></div>
+        </div>
+      </div>
+
+      <!-- ── 跳绳字段 ── -->
+      <div id="sec-跳绳" class="sport-section">
+        <div class="form-grid">
+          <div class="ff"><label>日期</label><input type="date" id="j-date"></div>
+          <div class="ff"><label>运动时间 (h:mm:ss)</label><input type="text" id="j-duration" placeholder="0:15:00" oninput="validateDur(this);calcJumpFreq()"></div>
+          <div class="ff"><label>个数</label><input type="number" id="j-count" min="0" placeholder="1000" oninput="calcJumpFreq()"></div>
+          <div class="ff"><label>频率 (自动计算)</label><input type="text" id="j-freq" readonly placeholder="—"></div>
+          <div class="ff"><label>平均心率 (bpm)</label><input type="number" id="j-hr" min="60" max="220" placeholder="140"></div>
+          <div class="ff"><label>最大心率 (bpm)</label><input type="number" id="j-maxhr" min="60" max="230" placeholder="165"></div>
+          <div class="ff span4"><label>体感</label>
+            <div class="feel-group">
+              <span class="feel-pill" data-val="轻松" onclick="setFeel('j-feel',this,'sel-0')">😊 轻松</span>
+              <span class="feel-pill" data-val="尚可" onclick="setFeel('j-feel',this,'sel-1')">🙂 尚可</span>
+              <span class="feel-pill" data-val="较累" onclick="setFeel('j-feel',this,'sel-2')">😅 较累</span>
+              <span class="feel-pill" data-val="很累" onclick="setFeel('j-feel',this,'sel-3')">😓 很累</span>
+            </div>
+            <input type="hidden" id="j-feel">
+          </div>
+          <div class="ff span4"><label>身体感受</label><textarea id="j-body" placeholder="身体感受…"></textarea></div>
+          <div class="ff span4"><label>备注</label><textarea id="j-note" placeholder="备注…"></textarea></div>
+        </div>
+      </div>
+
+      <!-- ── 羽毛球 ── -->
+      <div id="sec-羽毛球" class="sport-section">
+        <div class="form-grid">
+          <div class="ff"><label>日期</label><input type="date" id="b-date"></div>
+          <div class="ff span4"><label>体感</label>
+            <div class="feel-group">
+              <span class="feel-pill" data-val="轻松" onclick="setFeel('b-feel',this,'sel-0')">😊 轻松</span>
+              <span class="feel-pill" data-val="尚可" onclick="setFeel('b-feel',this,'sel-1')">🙂 尚可</span>
+              <span class="feel-pill" data-val="较累" onclick="setFeel('b-feel',this,'sel-2')">😅 较累</span>
+              <span class="feel-pill" data-val="很累" onclick="setFeel('b-feel',this,'sel-3')">😓 很累</span>
+            </div>
+            <input type="hidden" id="b-feel">
+          </div>
+          <div class="ff span4"><label>身体感受</label><textarea id="b-body" placeholder="身体感受…"></textarea></div>
+          <div class="ff span4"><label>备注</label><textarea id="b-note" placeholder="备注…"></textarea></div>
+        </div>
+      </div>
+
+      <!-- ── 徒步/散步 ── -->
+      <div id="sec-徒步" class="sport-section">
+        <div class="form-grid">
+          <div class="ff"><label>日期</label><input type="date" id="h-date"></div>
+          <div class="ff span4"><label>体感</label>
+            <div class="feel-group">
+              <span class="feel-pill" data-val="轻松" onclick="setFeel('h-feel',this,'sel-0')">😊 轻松</span>
+              <span class="feel-pill" data-val="尚可" onclick="setFeel('h-feel',this,'sel-1')">🙂 尚可</span>
+              <span class="feel-pill" data-val="较累" onclick="setFeel('h-feel',this,'sel-2')">😅 较累</span>
+              <span class="feel-pill" data-val="很累" onclick="setFeel('h-feel',this,'sel-3')">😓 很累</span>
+            </div>
+            <input type="hidden" id="h-feel">
+          </div>
+          <div class="ff span4"><label>身体感受</label><textarea id="h-body" placeholder="身体感受…"></textarea></div>
+          <div class="ff span4"><label>备注</label><textarea id="h-note" placeholder="备注…"></textarea></div>
+        </div>
+      </div>
+
+      <div id="sec-散步" class="sport-section">
+        <!-- reuse same layout, linked in JS -->
+      </div>
+
+      <!-- 自定义运动（新增运动按钮创建的类型） -->
+      <div id="sec-custom" class="sport-section">
+        <div class="form-grid">
+          <div class="ff"><label>日期</label><input type="date" id="c-date"></div>
+          <div class="ff span4"><label>体感</label>
+            <div class="feel-group">
+              <span class="feel-pill" data-val="轻松" onclick="setFeel('c-feel',this,'sel-0')">😊 轻松</span>
+              <span class="feel-pill" data-val="尚可" onclick="setFeel('c-feel',this,'sel-1')">🙂 尚可</span>
+              <span class="feel-pill" data-val="较累" onclick="setFeel('c-feel',this,'sel-2')">😅 较累</span>
+              <span class="feel-pill" data-val="很累" onclick="setFeel('c-feel',this,'sel-3')">😓 很累</span>
+            </div>
+            <input type="hidden" id="c-feel">
+          </div>
+          <div class="ff span4"><label>身体感受</label><textarea id="c-body" placeholder="身体感受…"></textarea></div>
+          <div class="ff span4"><label>备注</label><textarea id="c-note" placeholder="备注…"></textarea></div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="saveRecord()">保存记录</button>
+        <button class="btn btn-secondary" onclick="clearForm()">清空</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ DATA ══════════ -->
+  <!-- ══════════ CALENDAR ══════════ -->
+  <div id="page-calendar" style="display:none">
+    <div class="cal-header">
+      <button class="cal-year-btn" onclick="calYear--;renderCalendar()">&#8592;</button>
+      <span class="cal-year-label" id="cal-year-label">2026</span>
+      <button class="cal-year-btn" onclick="calYear++;renderCalendar()">&#8594;</button>
+    </div>
+    <div class="cal-legend">
+      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#16a06a"></span>跑步</span>
+      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#3b7ef8"></span>无氧</span>
+      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#d97706"></span>跳绳</span>
+      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#7c5cf6"></span>羽毛球</span>
+      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#059669"></span>徒步/散步</span>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </div>
+
+  <div id="page-data" style="display:none">
+    <!-- Gist 云同步 -->
+    <div class="data-section" style="margin-bottom:14px;border-color:var(--green);background:var(--green-lt)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <h3 style="color:var(--green-dk)">☁ Gist 云同步</h3>
+        <span id="gist-connected-badge" style="display:none;font-size:11px;background:var(--green);color:#fff;padding:2px 8px;border-radius:10px;font-weight:600">已连接</span>
+      </div>
+      <p style="font-size:13px;color:var(--green-dk);margin-bottom:12px;opacity:.8">数据自动同步到 GitHub Gist，手机电脑共用同一份数据</p>
+      <button class="btn btn-primary btn-sm" onclick="openGistPanel()" id="gistSyncBtn">☁ 配置 Gist 同步</button>
+    </div>
+    <div class="data-section" style="margin-bottom:14px">
+      <h3>☁ Gist 云同步</h3>
+      <p style="font-size:13px;color:var(--text3);margin-bottom:10px;line-height:1.7">
+        数据同步到 GitHub Gist，手机和电脑打开同一个文件都能读取最新数据。<br>
+        <a href="https://github.com/settings/tokens/new?scopes=gist&description=Fitness+Sync" target="_blank" style="color:var(--green)">点这里生成 Token</a>（只勾选 gist 权限即可）
+      </p>
+      <div style="display:flex;flex-direction:column;gap:12px;max-width:480px">
+        <div class="ff"><label>GitHub Token</label>
+          <input type="password" id="gistToken" placeholder="ghp_xxxxxxxxxxxx" style="font-family:monospace;font-size:13px">
+        </div>
+        <div class="ff"><label>Gist ID <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">（第一次留空，保存后自动生成）</span></label>
+          <input type="text" id="gistId" placeholder="留空则自动创建新 Gist" style="font-family:monospace;font-size:13px">
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="saveGistConfig()">保存配置</button>
+          <button class="btn btn-secondary" onclick="pushToGist(true)">立即上传</button>
+          <button class="btn btn-secondary" onclick="pullFromGist(true)">从云端拉取</button>
+        </div>
+        <div id="gistStatus" style="font-size:13px;min-height:18px"></div>
+      </div>
+    </div>
+    <div class="data-section">
+      <h3>导出备份</h3>
+      <p style="font-size:13px;color:var(--text3);margin-bottom:4px">将所有记录导出为 JSON 文件，妥善保存即可保证数据安全</p>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:12px">建议每次新增记录后导出一次，存到固定位置</p>
+      <button class="btn btn-secondary" onclick="exportData()">导出 JSON 备份</button>
+    </div>
+
+    <div class="data-section">
+      <h3>从 Excel 导入</h3>
+      <p style="font-size:13px;color:var(--text3);margin-bottom:4px">支持导入原始 Excel 文件（.xlsx），按固定表头自动映射字段</p>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:10px">识别列：日期 / 运动类型 / 训练类型 / 时段 / 备注 / 距离/km / 运动时间 / 平均配速/km / 平均心率 / 最大心率 / 步频 / 个数 / 跳绳频率 / 设备 / 跑鞋（其余列自动忽略）</p>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px">
+        <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text2);cursor:pointer">
+          <input type="radio" name="importMode" value="merge" checked style="accent-color:var(--green)">
+          合并模式（跳过重复 ID，保留已有记录）
+        </label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text2);cursor:pointer">
+          <input type="radio" name="importMode" value="overwrite" style="accent-color:var(--coral)">
+          覆盖模式（清空现有数据，全量重新导入）
+        </label>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+        <input type="file" id="importXlsxFile" accept=".xlsx,.xls" style="display:none" onchange="importFromExcel(event)">
+        <button class="btn btn-secondary" onclick="document.getElementById('importXlsxFile').click()">选择 Excel 文件</button>
+        <span id="import-status" style="font-size:13px;color:var(--text3)"></span>
+      </div>
+      <div id="import-preview" style="display:none;margin-top:12px;">
+        <div id="import-preview-text" style="font-size:13px;color:var(--text2);margin-bottom:10px;line-height:1.8;padding:12px;background:var(--bg3);border-radius:var(--radius);border:1px solid var(--border)"></div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-primary" onclick="confirmImport()">确认导入</button>
+          <button class="btn btn-secondary" onclick="cancelImport()">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="data-section">
+      <h3>数据概况</h3>
+      <div id="data-stats" style="font-size:13px;color:var(--text2);margin-top:8px;line-height:2.2"></div>
+    </div>
+  </div>
+</div><!-- /main -->
+
+<div class="toast" id="toast"></div>
+
+<!-- Gist 云同步面板 -->
+<div id="gistPanel" onclick="if(event.target===this)closeGistPanel()" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.45);align-items:center;justify-content:center;">
+  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:28px;width:400px;max-width:95vw;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <span style="font-weight:700;font-size:15px;color:var(--text)">☁ Gist 云同步配置</span>
+      <button onclick="closeGistPanel()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);line-height:1">×</button>
+    </div>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:16px;line-height:1.7">
+      数据自动同步到 GitHub Gist，任何设备打开都能读取最新数据。<br>
+      <a href="https://github.com/settings/tokens/new?scopes=gist&description=Fitness+Sync" target="_blank" style="color:var(--green)">点这里生成 Token</a>（只勾选 gist 权限即可）
+    </p>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="ff">
+        <label>GitHub Token</label>
+        <input id="gistToken" type="password" placeholder="ghp_xxxxxxxxxxxx" style="font-family:monospace">
+      </div>
+      <div class="ff">
+        <label>Gist ID <span style="color:var(--text3);font-weight:400;text-transform:none">（第一次留空，保存后自动生成）</span></label>
+        <input id="gistId" placeholder="留空则自动创建新 Gist" style="font-family:monospace">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="saveGistConfig()" style="flex:1">保存配置</button>
+        <button class="btn btn-secondary" onclick="pushToGist(true)">立即上传</button>
+        <button class="btn btn-secondary" onclick="pullFromGist(true)">从云端拉取</button>
+      </div>
+      <div id="gistStatus" style="font-size:12px;color:var(--text3);min-height:18px;text-align:center"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 📱 手机底部导航 -->
+<nav class="mobile-nav" id="mobileNav">
+  <button class="mobile-nav-item active" id="mnav-dashboard" onclick="showTab('dashboard')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    总览
+  </button>
+  <button class="mobile-nav-item" id="mnav-records" onclick="showTab('records')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+    记录
+  </button>
+  <button class="mobile-nav-item" id="mnav-calendar" onclick="showTab('calendar')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    日历
+  </button>
+  <button class="mobile-nav-item" id="mnav-run" onclick="showTab('run')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 4a1 1 0 1 0 2 0 1 1 0 0 0-2 0"/><path d="M7.5 17l2-5 3 3 2-4 2 4"/><path d="M5 20l4-8 2 3 3-6 3 3 2-3"/></svg>
+    跑步
+  </button>
+  <button class="mobile-nav-item" id="mnav-anaerobic" onclick="showTab('anaerobic')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4v6a6 6 0 0 0 12 0V4"/><line x1="6" y1="4" x2="4" y2="4"/><line x1="18" y1="4" x2="20" y2="4"/><line x1="12" y1="16" x2="12" y2="20"/><line x1="9" y1="20" x2="15" y2="20"/></svg>
+    无氧
+  </button>
+  <button class="mobile-nav-add" onclick="showTab('add')" id="mnav-add">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9" fill="var(--green)" stroke="none"/><line x1="12" y1="8" x2="12" y2="16" stroke="white"/><line x1="8" y1="12" x2="16" y2="12" stroke="white"/></svg>
+    新增
+  </button>
+  <button class="mobile-nav-item" id="mnav-more" onclick="toggleMobileMore()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/></svg>
+    更多
+  </button>
+</nav>
+
+<!-- 📱 更多菜单（手机端，从顶部导航向下展开） -->
+<div id="mobileMoreMenu" style="display:none;position:fixed;top:56px;left:0;right:0;background:var(--bg2);border-bottom:1px solid var(--border);z-index:199;padding:6px 0;box-shadow:0 4px 20px rgba(0,0,0,0.1)">
+  <button onclick="showTab('data');closeMobileMore()" style="display:flex;align-items:center;gap:12px;width:100%;padding:14px 20px;border:none;background:none;font-family:var(--font);font-size:14px;color:var(--text);cursor:pointer;text-align:left">🗂 数据管理</button>
+</div>
+
+<!-- 目标线设置 Modal -->
+<div id="targetModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:300;display:none;align-items:center;justify-content:center" onclick="if(event.target===this)closeTargetModal()">
+  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:28px;width:360px;box-shadow:var(--shadow)">
+    <div style="font-size:15px;font-weight:700;margin-bottom:20px;color:var(--text)">⚑ 目标线设置</div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="ff">
+        <label>配速目标 (分:秒，如 6:00)</label>
+        <input type="text" id="target-pace-input" placeholder="6:00" pattern="\d+:\d{2}">
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">留空则不显示目标线</div>
+      </div>
+      <div class="ff">
+        <label>平均心率目标 (bpm)</label>
+        <input type="number" id="target-hr-input" placeholder="150" min="60" max="220">
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">留空则不显示目标线</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:22px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="closeTargetModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveTargetLines()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+//  STORAGE
+// ══════════════════════════════════════
+const LS = 'fitness_v5';
+
+function load(){
+  try{
+    const r=localStorage.getItem(LS);
+    if(r){
+      const parsed=JSON.parse(r);
+      if(Array.isArray(parsed)&&parsed.length>0) return parsed;
+    }
+  }catch(e){}
+  return [];
+}
+let records=load();
+
+// ══════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════
+function genId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function showToast(m,d=2400){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),d); }
+
+// Use local date to avoid UTC offset shifting the date in eastern timezones
+function localDateStr(date){
+  const d = date || new Date();
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dy=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dy}`;
+}
+function localYearMonth(date){
+  const d = date || new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+function fmtPace(v){
+  if(!v&&v!==0) return '—';
+  const m=Math.floor(v); const s=Math.round((v-m)*60);
+  return m+"'"+String(s).padStart(2,'0')+'"';
+}
+function parsePaceStr(s){
+  if(!s) return null;
+  const m=s.match(/(\d+)[':'](\d+)/); if(!m) return null;
+  return parseInt(m[1])+parseInt(m[2])/60;
+}
+function durationToSecs(s){
+  if(!s||!s.trim()) return null;
+  const parts=s.split(':').map(Number);
+  if(parts.some(isNaN)) return null;
+  if(parts.length===3) return parts[0]*3600+parts[1]*60+parts[2];
+  if(parts.length===2) return parts[0]*60+parts[1];
+  return null;
+}
+function secsToDuration(s){
+  const h=Math.floor(s/3600); const m=Math.floor((s%3600)/60); const ss=s%60;
+  return h+':'+String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');
+}
+function badgeClass(sport){
+  return {跑步:'badge-run',无氧:'badge-ana',跳绳:'badge-jump',羽毛球:'badge-badminton',徒步:'badge-hike',散步:'badge-walk'}[sport]||'badge-walk';
+}
+function getSportColor(s){
+  return {跑步:'#16a06a',无氧:'#3b7ef8',跳绳:'#d97706',羽毛球:'#7c5cf6',徒步:'#059669',散步:'#9ba3b5'}[s]||'#9ba3b5';
+}
+
+// ══════════════════════════════════════
+//  GIST 云同步
+// ══════════════════════════════════════
+const GIST_FILENAME = 'fitness_records.json';
+const LS_GIST_TOKEN = 'fitness_gist_token';
+const LS_GIST_ID    = 'fitness_gist_id';
+
+function save(d){
+  localStorage.setItem(LS, JSON.stringify(d));
+  // 配置了 Gist 则 500ms 后自动推送
+  if(localStorage.getItem(LS_GIST_TOKEN) && localStorage.getItem(LS_GIST_ID)){
+    clearTimeout(save._timer);
+    save._timer = setTimeout(()=>pushToGist(false), 500);
+  }
+}
+
+function openGistPanel(){
+  document.getElementById('gistToken').value = localStorage.getItem(LS_GIST_TOKEN)||'';
+  document.getElementById('gistId').value    = localStorage.getItem(LS_GIST_ID)||'';
+  document.getElementById('gistStatus').textContent = '';
+  document.getElementById('gistPanel').style.display = 'flex';
+}
+function closeGistPanel(){
+  document.getElementById('gistPanel').style.display = 'none';
+}
+
+function saveGistConfig(){
+  const token  = document.getElementById('gistToken').value.trim();
+  const gistId = document.getElementById('gistId').value.trim();
+  if(!token){ setGistStatus('请填写 Token','error'); return; }
+  localStorage.setItem(LS_GIST_TOKEN, token);
+  if(gistId){ localStorage.setItem(LS_GIST_ID, gistId); setGistStatus('配置已保存 ✓','ok'); updateGistBtn(true); }
+  else createGist(token);
+}
+
+async function createGist(token){
+  setGistStatus('正在创建 Gist…','');
+  try{
+    const res = await fetch('https://api.github.com/gists',{
+      method:'POST',
+      headers:{Authorization:'token '+token,'Content-Type':'application/json'},
+      body: JSON.stringify({description:'运动记录看板数据',public:false,
+        files:{[GIST_FILENAME]:{content:JSON.stringify(records,null,2)}}})
+    });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    localStorage.setItem(LS_GIST_ID, data.id);
+    document.getElementById('gistId').value = data.id;
+    setGistStatus('Gist 创建成功，ID 已自动填入 ✓','ok');
+    updateGistBtn(true);
+  }catch(e){ setGistStatus('创建失败：'+e.message,'error'); }
+}
+
+async function pushToGist(manual){
+  const token  = localStorage.getItem(LS_GIST_TOKEN);
+  const gistId = localStorage.getItem(LS_GIST_ID);
+  if(!token||!gistId){ if(manual) setGistStatus('请先配置 Token 和 Gist ID','error'); return; }
+  if(manual) setGistStatus('上传中…','');
+  try{
+    const res = await fetch('https://api.github.com/gists/'+gistId,{
+      method:'PATCH',
+      headers:{Authorization:'token '+token,'Content-Type':'application/json'},
+      body: JSON.stringify({files:{[GIST_FILENAME]:{content:JSON.stringify(records,null,2)}}})
+    });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    if(manual){ setGistStatus('上传成功 ✓ '+new Date().toLocaleTimeString(),'ok'); updateGistBtn(true); }
+  }catch(e){ if(manual) setGistStatus('上传失败：'+e.message,'error'); }
+}
+
+async function pullFromGist(manual){
+  const token  = localStorage.getItem(LS_GIST_TOKEN);
+  const gistId = localStorage.getItem(LS_GIST_ID);
+  if(!token||!gistId){ if(manual) setGistStatus('请先配置 Token 和 Gist ID','error'); return; }
+  if(manual) setGistStatus('下载中…','');
+  try{
+    const res = await fetch('https://api.github.com/gists/'+gistId,{headers:{Authorization:'token '+token}});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    const file = data.files && data.files[GIST_FILENAME];
+    if(!file) throw new Error('Gist 中没有找到数据文件');
+    const content = JSON.parse(file.content);
+    if(Array.isArray(content)){
+      records = content;
+      localStorage.setItem(LS, JSON.stringify(records));
+      // 刷新当前页面
+      renderDashboard();
+    }
+    if(manual){ setGistStatus('从云端刷新成功 ✓ '+new Date().toLocaleTimeString(),'ok'); updateGistBtn(true); }
+  }catch(e){ if(manual) setGistStatus('失败：'+e.message,'error'); }
+}
+
+function setGistStatus(msg, type){
+  const el = document.getElementById('gistStatus'); if(!el) return;
+  el.textContent = msg;
+  el.style.color = type==='error'?'var(--coral)':type==='ok'?'var(--green)':'var(--text3)';
+}
+function updateGistBtn(connected){
+  const btn = document.getElementById('gistSyncBtn'); if(!btn) return;
+  btn.textContent = connected ? '☁ 已同步' : '☁ Gist 同步';
+  btn.style.borderColor = connected ? 'var(--green)' : '';
+  btn.style.color = connected ? 'var(--green)' : '';
+}
+function initGistBtn(){
+  const connected = !!(localStorage.getItem(LS_GIST_TOKEN) && localStorage.getItem(LS_GIST_ID));
+  if(connected){
+    updateGistBtn(true);
+    const badge = document.getElementById('gist-connected-badge');
+    if(badge) badge.style.display='inline';
+  }
+}
+
+// ══════════════════════════════════════
+//  MOBILE NAV
+// ══════════════════════════════════════
+function syncMobileNav(n){
+  const map = {dashboard:'mnav-dashboard',records:'mnav-records',calendar:'mnav-calendar',run:'mnav-run',anaerobic:'mnav-anaerobic',add:'mnav-add'};
+  document.querySelectorAll('.mobile-nav-item,.mobile-nav-add').forEach(el=>el.classList.remove('active'));
+  const target = map[n];
+  if(target) document.getElementById(target)?.classList.add('active');
+  closeMobileMore();
+}
+function toggleMobileMore(){
+  const m = document.getElementById('mobileMoreMenu');
+  const btn = document.getElementById('mnav-more');
+  const open = m.style.display !== 'none';
+  m.style.display = open ? 'none' : 'block';
+  btn.classList.toggle('active', !open);
+}
+function closeMobileMore(){
+  document.getElementById('mobileMoreMenu').style.display = 'none';
+  document.getElementById('mnav-more')?.classList.remove('active');
+}
+
+// ══════════════════════════════════════
+//  TABS
+// ══════════════════════════════════════
+const PAGES=['dashboard','run','anaerobic','records','calendar','add','data'];
+function showTab(n){
+  PAGES.forEach(p=>{ document.getElementById('page-'+p).style.display=p===n?'':'none'; document.getElementById('tab-'+p)?.classList.toggle('active',p===n); });
+  syncMobileNav(n);
+  if(n==='dashboard') renderDashboard();
+  if(n==='run') renderRunAnalysis();
+  if(n==='anaerobic') renderAnaerobic();
+  if(n==='records') renderRecords();
+  if(n==='calendar') renderCalendar();
+  if(n==='data') renderDataStats();
+  if(n==='add') refreshHistoryLists();
+}
+
+// ══════════════════════════════════════
+//  HISTORY DATALISTS
+// ══════════════════════════════════════
+function refreshHistoryLists(){
+  const shoes=[...new Set(records.filter(r=>r.shoe).map(r=>r.shoe))];
+  const weathers=[...new Set(records.filter(r=>r.weather).map(r=>r.weather))];
+  const routes=[...new Set(records.filter(r=>r.route).map(r=>r.route))];
+  const devices=[...new Set(records.flatMap(r=>r.devices||[]))];
+  fillDatalist('list-shoe',shoes);
+  fillDatalist('list-weather',[...new Set(['晴','多云','小雨','大雨',...weathers])]);
+  fillDatalist('list-route',routes);
+  fillDatalist('list-device',devices);
+  buildDevicePills(devices);
+}
+function fillDatalist(id,vals){
+  const dl=document.getElementById(id); if(!dl) return;
+  dl.innerHTML='';
+  vals.forEach(v=>{ if(v){ const o=document.createElement('option'); o.value=v; dl.appendChild(o); }});
+}
+function buildDevicePills(historical){
+  const g=document.getElementById('r-device-group'); if(!g) return;
+  const cur=(document.getElementById('r-devices').value||'').split(',').filter(Boolean);
+  const all=[...new Set([...historical,...cur])];
+  g.innerHTML=all.map(d=>`<span class="pill${cur.includes(d)?' sel':''}" data-val="${d}" onclick="togglePill(this,'r-devices')">${d}</span>`).join('');
+}
+function addDeviceFromInput(){
+  const inp=document.getElementById('r-device-input');
+  const name=(inp.value||'').trim(); if(!name) return;
+  const g=document.getElementById('r-device-group');
+  // Check if pill already exists
+  let existing=[...g.querySelectorAll('.pill')].find(p=>p.dataset.val===name);
+  if(existing){ existing.classList.add('sel'); }
+  else {
+    const sp=document.createElement('span');
+    sp.className='pill sel'; sp.dataset.val=name; sp.textContent=name;
+    sp.onclick=function(){ togglePill(this,'r-devices'); };
+    g.appendChild(sp);
+  }
+  const vals=[...g.querySelectorAll('.pill.sel')].map(p=>p.dataset.val);
+  document.getElementById('r-devices').value=vals.join(',');
+  inp.value='';
+}
+function removePill(xEl,groupId,hiddenId){
+  const pill=xEl.closest('.pill'); if(!pill) return;
+  pill.remove();
+  const g=document.getElementById(groupId);
+  const vals=[...g.querySelectorAll('.pill.sel')].map(p=>p.dataset.val);
+  document.getElementById(hiddenId).value=vals.join(',');
+}
+
+// ══════════════════════════════════════
+//  CUSTOM SPORTS
+// ══════════════════════════════════════
+const LS_CUSTOM_SPORTS = 'fitness_custom_sports_v1';
+function loadCustomSports(){ try{ const r=localStorage.getItem(LS_CUSTOM_SPORTS); if(r) return JSON.parse(r); }catch(e){} return []; }
+function saveCustomSports(s){ localStorage.setItem(LS_CUSTOM_SPORTS,JSON.stringify(s)); }
+let customSports = loadCustomSports();
+
+function renderCustomSportBtns(){
+  const container = document.getElementById('custom-sport-btns');
+  if(!container) return;
+  container.innerHTML = customSports.map(s=>
+    `<button class="sport-btn" onclick="setSport('${s}')" id="sb-${s}">${s}</button>`
+  ).join('');
+  // also add to PAGES/setSport logic
+  customSports.forEach(s=>{
+    if(!document.getElementById('sec-'+s)){
+      // reuses sec-custom section
+    }
+  });
+}
+
+function addCustomSport(){
+  const name = prompt('输入运动名称（如：游泳、骑行…）：','');
+  if(!name||!name.trim()) return;
+  const n = name.trim();
+  if(customSports.includes(n)){ setSport(n); return; }
+  customSports.push(n);
+  saveCustomSports(customSports);
+  renderCustomSportBtns();
+  setSport(n);
+}
+
+// ══════════════════════════════════════
+//  FORM: Sport switch
+// ══════════════════════════════════════
+function setSport(s){
+  document.getElementById('form-sport').value=s;
+  document.querySelectorAll('.sport-btn').forEach(b=>b.classList.toggle('active',b.id==='sb-'+s));
+  const builtIn=['跑步','无氧','跳绳','羽毛球','徒步','散步'];
+  const allSecs=['跑步','无氧','跳绳','羽毛球','徒步','散步','custom'];
+  allSecs.forEach(id=>{
+    const el=document.getElementById('sec-'+id);
+    if(el){ el.classList.remove('active'); }
+  });
+  if(builtIn.includes(s)){
+    const el=document.getElementById('sec-'+s);
+    if(el) el.classList.add('active');
+    if(s==='散步'){ document.getElementById('sec-徒步').classList.add('active'); document.getElementById('sec-散步')?.classList.remove('active'); }
+  } else {
+    // custom sport — use sec-custom
+    document.getElementById('sec-custom')?.classList.add('active');
+  }
+}
+
+// ══════════════════════════════════════
+//  FORM: Pill selectors
+// ══════════════════════════════════════
+function togglePill(el,hiddenId){
+  el.classList.toggle('sel');
+  const g=el.closest('.pill-group'); if(!g) return;
+  const vals=[...g.querySelectorAll('.pill.sel')].map(p=>p.dataset.val);
+  document.getElementById(hiddenId).value=vals.join(',');
+}
+function setFeel(hiddenId,el,cls){
+  const group=el.closest('.feel-group');
+  group.querySelectorAll('.feel-pill').forEach(p=>p.className='feel-pill');
+  el.classList.add(cls);
+  document.getElementById(hiddenId).value=el.dataset.val;
+}
+function setPillActive(groupEl,vals){
+  groupEl.querySelectorAll('.pill').forEach(p=>{
+    p.classList.toggle('sel', vals.includes(p.dataset.val));
+  });
+}
+function setFeelActive(groupEl,val){
+  const map={'轻松':'sel-0','尚可':'sel-1','较累':'sel-2','很累':'sel-3'};
+  groupEl.querySelectorAll('.feel-pill').forEach(p=>p.className='feel-pill');
+  const target=groupEl.querySelector(`[data-val="${val}"]`);
+  if(target && map[val]) target.classList.add(map[val]);
+}
+
+// ══════════════════════════════════════
+//  AUTO-CALC
+// ══════════════════════════════════════
+function validateDur(el){
+  const parts=el.value.split(':');
+  if(parts.length>=2){
+    let mm=parseInt(parts[parts.length-2]); if(!isNaN(mm)&&mm>59){ parts[parts.length-2]='59'; el.value=parts.join(':'); }
+  }
+  if(parts.length>=3){
+    let ss=parseInt(parts[parts.length-1]); if(!isNaN(ss)&&ss>59){ parts[parts.length-1]='59'; el.value=parts.join(':'); }
+  }
+}
+
+function calcPace(){
+  const dist=parseFloat(document.getElementById('r-dist').value);
+  const secs=durationToSecs(document.getElementById('r-duration').value);
+  const el=document.getElementById('r-pace');
+  if(dist>0 && secs){
+    const paceMin=secs/60/dist;
+    el.value=fmtPace(paceMin);
+    el._val=paceMin;
+  } else { el.value=''; el._val=null; }
+}
+function calcJumpFreq(){
+  const count=parseInt(document.getElementById('j-count').value);
+  const secs=durationToSecs(document.getElementById('j-duration').value);
+  const el=document.getElementById('j-freq');
+  if(count>0 && secs>0){
+    el.value=Math.round(count/(secs/60))+'个/分';
+  } else { el.value=''; }
+}
+
+// ══════════════════════════════════════
+//  SAVE RECORD
+// ══════════════════════════════════════
+function saveRecord(){
+  const sport=document.getElementById('form-sport').value;
+  const editId=document.getElementById('form-editId').value;
+  let rec={id:editId||genId(), sport};
+
+  if(sport==='跑步'){
+    const date=document.getElementById('r-date').value; if(!date){showToast('请选择日期');return;}
+    const paceEl=document.getElementById('r-pace');
+    const paceVal=paceEl._val || parsePaceStr(paceEl.value) || null;
+    rec={...rec, date, period:document.getElementById('r-period').value, sub:document.getElementById('r-sub').value,
+      dist:parseFloat(document.getElementById('r-dist').value)||null,
+      duration:document.getElementById('r-duration').value||null,
+      pace: paceVal,
+      hr:parseInt(document.getElementById('r-hr').value)||null,
+      maxhr:parseInt(document.getElementById('r-maxhr').value)||null,
+      cadence:parseInt(document.getElementById('r-cadence').value)||null,
+      shoe:document.getElementById('r-shoe').value||'',
+      weather:document.getElementById('r-weather').value||'',
+      route:document.getElementById('r-route').value||'',
+      devices:(document.getElementById('r-devices').value||'').split(',').filter(Boolean),
+      feel:document.getElementById('r-feel').value||'',
+      body:document.getElementById('r-body').value||'',
+      note:document.getElementById('r-note').value||'',
+    };
+  } else if(sport==='无氧'){
+    const date=document.getElementById('a-date').value; if(!date){showToast('请选择日期');return;}
+    rec={...rec, date,
+      muscles:document.getElementById('a-muscles').value||'',
+      feel:document.getElementById('a-feel').value||'',
+      body:document.getElementById('a-body').value||'',
+      note:document.getElementById('a-note').value||'',
+    };
+  } else if(sport==='跳绳'){
+    const date=document.getElementById('j-date').value; if(!date){showToast('请选择日期');return;}
+    const cnt=parseInt(document.getElementById('j-count').value)||null;
+    const dur=document.getElementById('j-duration').value||null;
+    const secs=durationToSecs(dur); const freq=(cnt&&secs)?Math.round(cnt/(secs/60)):null;
+    rec={...rec, date,
+      duration:dur,
+      jump_count:cnt,
+      jump_freq:freq,
+      hr:parseInt(document.getElementById('j-hr').value)||null,
+      maxhr:parseInt(document.getElementById('j-maxhr').value)||null,
+      feel:document.getElementById('j-feel').value||'',
+      body:document.getElementById('j-body').value||'',
+      note:document.getElementById('j-note').value||'',
+    };
+  } else if(sport==='羽毛球'){
+    const date=document.getElementById('b-date').value; if(!date){showToast('请选择日期');return;}
+    rec={...rec, date, feel:document.getElementById('b-feel').value||'', body:document.getElementById('b-body').value||'', note:document.getElementById('b-note').value||''};
+  } else if(['徒步','散步'].includes(sport)){
+    const date=document.getElementById('h-date').value; if(!date){showToast('请选择日期');return;}
+    rec={...rec, date, feel:document.getElementById('h-feel').value||'', body:document.getElementById('h-body').value||'', note:document.getElementById('h-note').value||''};
+  } else {
+    // 自定义运动
+    const date=document.getElementById('c-date').value; if(!date){showToast('请选择日期');return;}
+    rec={...rec, date, feel:document.getElementById('c-feel').value||'', body:document.getElementById('c-body').value||'', note:document.getElementById('c-note').value||''};
+  }
+
+  if(editId){ const i=records.findIndex(r=>r.id===editId); if(i>=0) records[i]=rec; else records.push(rec); }
+  else records.push(rec);
+  records.sort((a,b)=>a.date.localeCompare(b.date));
+  save(records);
+  if(editId){
+    // 编辑模式：保存后跳回全部记录，保持原来的页码
+    const savedPage = currentPage;
+    clearForm();
+    showTab('records');
+    currentPage = savedPage;
+    renderRecordPage();
+  } else {
+    clearForm();
+  }
+  showToast(editId?'已更新 ✓':'已保存 ✓');
+}
+
+// ══════════════════════════════════════
+//  CLEAR / EDIT FORM
+// ══════════════════════════════════════
+function clearForm(){
+  document.getElementById('form-editId').value='';
+  document.getElementById('form-card-title').textContent='新增训练记录';
+  const today=localDateStr();
+  ['r-date','a-date','j-date','b-date','h-date'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=today; });
+  ['r-period','r-sub'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  ['r-dist','r-duration','r-hr','r-maxhr','r-cadence','r-shoe','r-weather','r-route',
+   'r-feel','r-devices','r-body','r-note',
+   'a-muscles','a-feel','a-body','a-note',
+   'j-duration','j-count','j-hr','j-maxhr','j-feel','j-body','j-note',
+   'b-feel','b-body','b-note','h-feel','h-body','h-note',
+   'c-feel','c-body','c-note',
+   'r-device-input'
+  ].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  const pEl=document.getElementById('r-pace'); pEl.value=''; pEl._val=null;
+  document.getElementById('j-freq').value='';
+  document.querySelectorAll('.pill.sel').forEach(p=>p.classList.remove('sel'));
+  document.querySelectorAll('.feel-pill').forEach(p=>p.className='feel-pill');
+  const dg=document.getElementById('r-device-group'); if(dg) dg.innerHTML='';
+  setSport('跑步');
+  refreshHistoryLists();
+}
+
+function editRecord(id){
+  const r=records.find(x=>x.id===id); if(!r) return;
+  showTab('add');
+  document.getElementById('form-editId').value=r.id;
+  document.getElementById('form-card-title').textContent='编辑记录 — '+r.date;
+  // Clear then set sport
+  document.querySelectorAll('.pill.sel').forEach(p=>p.classList.remove('sel'));
+  document.querySelectorAll('.feel-pill').forEach(p=>p.className='feel-pill');
+  setSport(r.sport||'跑步');
+  refreshHistoryLists();
+
+  if(r.sport==='跑步'){
+    document.getElementById('r-date').value=r.date||'';
+    document.getElementById('r-period').value=r.period||'';
+    document.getElementById('r-sub').value=r.sub||'';
+    document.getElementById('r-dist').value=r.dist||'';
+    document.getElementById('r-duration').value=r.duration||'';
+    const paceEl=document.getElementById('r-pace');
+    paceEl.value=r.pace?fmtPace(r.pace):''; paceEl._val=r.pace||null;
+    document.getElementById('r-hr').value=r.hr||'';
+    document.getElementById('r-maxhr').value=r.maxhr||'';
+    document.getElementById('r-cadence').value=r.cadence||'';
+    document.getElementById('r-shoe').value=r.shoe||'';
+    document.getElementById('r-weather').value=r.weather||'';
+    document.getElementById('r-route').value=r.route||'';
+    document.getElementById('r-devices').value=(r.devices||[]).join(',');
+    document.getElementById('r-feel').value=r.feel||'';
+    document.getElementById('r-body').value=r.body||'';
+    document.getElementById('r-note').value=r.note||'';
+    if(r.feel){ setFeelActive(document.querySelector('#sec-跑步 .feel-group'),r.feel); }
+    // Restore device pills after buildDevicePills ran in refreshHistoryLists
+    if(r.devices?.length){
+      const g=document.getElementById('r-device-group');
+      // Add any devices not in historical
+      const existing=[...g.querySelectorAll('.pill')].map(p=>p.dataset.val);
+      r.devices.forEach(d=>{
+        if(!existing.includes(d)){
+          const sp=document.createElement('span');
+          sp.className='pill sel'; sp.dataset.val=d; sp.textContent=d;
+          sp.onclick=function(){ togglePill(this,'r-devices'); };
+          g.appendChild(sp);
+        }
+      });
+      // Mark as selected
+      setPillActive(g,r.devices);
+      document.getElementById('r-devices').value=r.devices.join(',');
+    }
+  } else if(r.sport==='无氧'){
+    document.getElementById('a-date').value=r.date||'';
+    document.getElementById('a-muscles').value=r.muscles||'';
+    document.getElementById('a-feel').value=r.feel||'';
+    document.getElementById('a-body').value=r.body||'';
+    document.getElementById('a-note').value=r.note||'';
+    if(r.muscles){ setTimeout(()=>{ setPillActive(document.getElementById('a-muscle-group'),(r.muscles||'').split(',')); },30); }
+    if(r.feel){ setFeelActive(document.querySelector('#sec-无氧 .feel-group'),r.feel); }
+  } else if(r.sport==='跳绳'){
+    document.getElementById('j-date').value=r.date||'';
+    document.getElementById('j-duration').value=r.duration||'';
+    document.getElementById('j-count').value=r.jump_count||'';
+    document.getElementById('j-hr').value=r.hr||'';
+    document.getElementById('j-maxhr').value=r.maxhr||'';
+    document.getElementById('j-feel').value=r.feel||'';
+    document.getElementById('j-body').value=r.body||'';
+    document.getElementById('j-note').value=r.note||'';
+    if(r.feel){ setFeelActive(document.querySelector('#sec-跳绳 .feel-group'),r.feel); }
+    calcJumpFreq();
+  } else if(r.sport==='羽毛球'){
+    document.getElementById('b-date').value=r.date||'';
+    document.getElementById('b-feel').value=r.feel||'';
+    document.getElementById('b-body').value=r.body||'';
+    document.getElementById('b-note').value=r.note||'';
+    if(r.feel){ const fg=document.querySelector('#sec-羽毛球 .feel-group'); if(fg) setFeelActive(fg,r.feel); }
+  } else {
+    document.getElementById('h-date').value=r.date||'';
+    document.getElementById('h-feel').value=r.feel||'';
+    document.getElementById('h-body').value=r.body||'';
+    document.getElementById('h-note').value=r.note||'';
+    if(r.feel){ const fg=document.querySelector('#sec-徒步 .feel-group'); if(fg) setFeelActive(fg,r.feel); }
+  }
+}
+
+// ══════════════════════════════════════
+//  RECORDS LIST
+// ══════════════════════════════════════
+let currentPage=1; const PAGE_SIZE=30;
+function renderRecords(){ currentPage=1; renderRecordPage(); }
+function renderRecordPage(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  const sport=document.getElementById('filterSport').value;
+  const year=document.getElementById('filterYear').value;
+  const order=document.getElementById('sortOrder').value;
+
+  let filtered=records.filter(r=>{
+    if(sport&&r.sport!==sport) return false;
+    if(year&&!r.date?.startsWith(year)) return false;
+    if(q){
+      const txt=[r.note,r.sub,r.sport,r.body,r.route,r.muscles,r.weather].join(' ').toLowerCase();
+      if(!txt.includes(q)) return false;
+    }
+    return true;
+  });
+  if(order==='desc') filtered.sort((a,b)=>b.date.localeCompare(a.date));
+  else filtered.sort((a,b)=>a.date.localeCompare(b.date));
+
+  document.getElementById('records-count').textContent='共 '+filtered.length+' 条记录';
+  const total=Math.ceil(filtered.length/PAGE_SIZE);
+  const page=filtered.slice((currentPage-1)*PAGE_SIZE,currentPage*PAGE_SIZE);
+  const list=document.getElementById('recordList');
+
+  const isMobile = window.innerWidth <= 768;
+
+  if(!page.length){ list.innerHTML='<div class="no-records">暂无记录</div>'; document.getElementById('record-col-header').innerHTML=''; }
+  else if(isMobile){
+    // 📱 手机端：卡片式布局
+    document.getElementById('record-col-header').innerHTML='';
+    list.innerHTML = page.map(r=>{
+      let badgeTxt = r.sport||'—';
+      if(r.sport==='跑步'&&r.sub) badgeTxt+=' · '+r.sub;
+      if(r.sport==='无氧') badgeTxt+=' · '+(r.muscles||r.sub||'');
+      const chips=[];
+      if(r.sport==='跑步'){
+        if(r.period) chips.push(`<span class="mobile-record-chip"><span class="k">时段</span> ${r.period}</span>`);
+        if(r.dist)   chips.push(`<span class="mobile-record-chip"><span class="k">距离</span> ${r.dist}km</span>`);
+        if(r.pace)   chips.push(`<span class="mobile-record-chip"><span class="k">配速</span> ${fmtPace(r.pace)}</span>`);
+        if(r.hr)     chips.push(`<span class="mobile-record-chip"><span class="k">心率</span> ${r.hr}</span>`);
+        if(r.cadence)chips.push(`<span class="mobile-record-chip"><span class="k">步频</span> ${r.cadence}</span>`);
+        if(r.route)  chips.push(`<span class="mobile-record-chip"><span class="k">路线</span> ${r.route}</span>`);
+        if(r.shoe)   chips.push(`<span class="mobile-record-chip"><span class="k">跑鞋</span> ${r.shoe}</span>`);
+        if(r.feel)   chips.push(`<span class="feel-badge">${r.feel}</span>`);
+      } else if(r.sport==='无氧'){
+        if(r.feel)   chips.push(`<span class="feel-badge">${r.feel}</span>`);
+      } else if(r.sport==='跳绳'){
+        if(r.jump_count) chips.push(`<span class="mobile-record-chip"><span class="k">个数</span> ${r.jump_count}</span>`);
+        if(r.hr)     chips.push(`<span class="mobile-record-chip"><span class="k">心率</span> ${r.hr}</span>`);
+        if(r.feel)   chips.push(`<span class="feel-badge">${r.feel}</span>`);
+      } else {
+        if(r.feel)   chips.push(`<span class="feel-badge">${r.feel}</span>`);
+      }
+      const hasNote = r.note||r.body;
+      return `<div class="record-item" onclick="editRecord('${r.id}')">
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+          <span style="font-size:12px;color:var(--text3)">${r.date}</span>
+          <span class="record-badge ${badgeClass(r.sport)}">${badgeTxt}</span>
+        </div>
+        ${chips.length?`<div class="mobile-record-meta">${chips.join('')}</div>`:''}
+        ${hasNote?`<div style="font-size:12px;color:var(--text3);font-style:italic">${[r.note,r.body].filter(Boolean).join(' · ')}</div>`:''}
+      </div>`;
+    }).join('');
+  } else {
+    // Build column header based on sport mix in current page
+    const sports=new Set(page.map(r=>r.sport));
+    const hasRun=sports.has('跑步'), hasAna=sports.has('无氧'), hasJump=sports.has('跳绳');
+    const batchPad = batchMode ? '<span class="rh" style="width:42px"></span>' : '';
+
+    // Header columns
+    let headerHtml = batchPad;
+    headerHtml += `<span class="rh" style="width:96px">日期</span>`;
+    headerHtml += `<span class="rh" style="width:150px">运动类型</span>`;
+    if(hasRun||hasJump) headerHtml += `<span class="rh" style="width:52px">时段</span>`;
+    if(hasRun) headerHtml += `<span class="rh" style="width:60px">距离</span>`;
+    if(hasRun) headerHtml += `<span class="rh" style="width:58px">配速</span>`;
+    if(hasRun||hasJump) headerHtml += `<span class="rh" style="width:48px">平均心率</span>`;
+    if(hasRun||hasJump) headerHtml += `<span class="rh" style="width:52px">最大心率</span>`;
+    if(hasRun) headerHtml += `<span class="rh" style="width:44px">步频</span>`;
+    if(hasRun) headerHtml += `<span class="rh" style="width:48px">天气</span>`;
+    if(hasRun) headerHtml += `<span class="rh" style="width:90px">路线</span>`;
+    if(hasRun) headerHtml += `<span class="rh" style="width:116px">跑鞋</span>`;
+    if(hasRun) headerHtml += `<span class="rh" style="width:90px">设备</span>`;
+    if(hasJump) headerHtml += `<span class="rh" style="width:72px">时长</span>`;
+    if(hasJump) headerHtml += `<span class="rh" style="width:60px">个数</span>`;
+    if(hasJump) headerHtml += `<span class="rh" style="width:74px">频率</span>`;
+    headerHtml += `<span class="rh" style="width:48px">体感</span>`;
+    headerHtml += `<span class="rh" style="width:160px">身体感受</span>`;
+    headerHtml += `<span class="rh" style="width:200px">备注</span>`;
+    document.getElementById('record-col-header').innerHTML = headerHtml;
+
+    const em = v => v ? `<span>${v}</span>` : `<span class="rc-empty">—</span>`;
+
+    list.innerHTML = page.map(r=>{
+      let badgeTxt = r.sport||'—';
+      if(r.sport==='跑步'&&r.sub) badgeTxt+=' · '+r.sub;
+      if(r.sport==='无氧') badgeTxt+=' · '+(r.muscles||r.sub||'');
+      const isSelected = selectedIds.has(r.id);
+      const clickAttr = batchMode ? '' : `onclick="editRecord('${r.id}')"`;
+
+      let cols = '';
+      cols += `<span class="rc rc-date">${r.date}</span>`;
+      cols += `<span class="rc" style="width:150px;padding-right:10px"><span class="record-badge ${badgeClass(r.sport)}" title="${badgeTxt}">${badgeTxt}</span></span>`;
+      if(hasRun||hasJump) cols += `<span class="rc rc-period">${em(r.period||'')}</span>`;
+      if(hasRun)  cols += `<span class="rc rc-dist">${r.dist?r.dist+'km':em('')}</span>`;
+      if(hasRun)  cols += `<span class="rc rc-pace">${r.pace?fmtPace(r.pace):em('')}</span>`;
+      if(hasRun||hasJump) cols += `<span class="rc rc-hr">${em(r.hr)}</span>`;
+      if(hasRun||hasJump) cols += `<span class="rc rc-maxhr">${em(r.maxhr)}</span>`;
+      if(hasRun)  cols += `<span class="rc rc-cadence">${em(r.cadence)}</span>`;
+      if(hasRun)  cols += `<span class="rc rc-weather">${em(r.weather)}</span>`;
+      if(hasRun)  cols += `<span class="rc rc-route">${em(r.route)}</span>`;
+      if(hasRun)  cols += `<span class="rc rc-shoe">${em(r.shoe)}</span>`;
+      if(hasRun)  cols += `<span class="rc rc-devices">${em(r.devices?.length?r.devices.join('/'):null)}</span>`;
+      if(hasJump) cols += `<span class="rc rc-duration">${em(r.duration)}</span>`;
+      if(hasJump) cols += `<span class="rc rc-jcount">${em(r.jump_count)}</span>`;
+      if(hasJump) cols += `<span class="rc rc-jfreq">${r.jump_freq?r.jump_freq+'个/分':em('')}</span>`;
+      cols += `<span class="rc rc-feel">${r.feel?`<span class="feel-badge">${r.feel}</span>`:em('')}</span>`;
+      cols += `<span class="rc rc-body" title="${r.body||''}">${em(r.body)}</span>`;
+      cols += `<span class="rc rc-note" title="${r.note||''}">${em(r.note)}</span>`;
+      cols += `<span class="rc-actions">
+        <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();editRecord('${r.id}')">编辑</button>
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();delRecord('${r.id}')">删除</button>
+      </span>`;
+
+      const itemHtml = `<div class="record-item${isSelected?' selected':''}" ${clickAttr}>${cols}</div>`;
+
+      if(batchMode){
+        return `<div class="record-item-wrap">
+          <div class="check-col"><input type="checkbox" class="record-check" data-id="${r.id}" ${isSelected?'checked':''} onchange="toggleRecordSelect(this,'${r.id}')"></div>
+          ${itemHtml}
+        </div>`;
+      }
+      return itemHtml;
+    }).join('');
+  } // end desktop else block
+
+  // Sync selectAll state
+  if(batchMode){
+    const allCbs=document.querySelectorAll('.record-check[data-id]');
+    document.getElementById('selectAll').checked=allCbs.length>0&&[...allCbs].every(c=>c.checked);
+  }
+
+  const pg=document.getElementById('pagination');
+  if(total<=1){pg.innerHTML='';return;}
+  let ph='';
+  for(let i=1;i<=total;i++) ph+=`<button class="page-btn${i===currentPage?' active':''}" onclick="currentPage=${i};renderRecordPage()">${i}</button>`;
+  pg.innerHTML=ph;
+}
+
+function delRecord(id){
+  if(!confirm('确认删除此记录？')) return;
+  records=records.filter(r=>r.id!==id);
+  save(records); renderRecordPage(); showToast('已删除');
+}
+
+// ══════════════════════════════════════
+//  CHARTS
+// ══════════════════════════════════════
+const CI={};
+function dc(id){ if(CI[id]){CI[id].destroy();delete CI[id];} }
+
+function getMonthRange(){
+  const all=records.filter(r=>r.date).map(r=>r.date.slice(0,7)).sort();
+  if(!all.length) return [];
+  const res=[]; let cur=new Date(all[0]+'-01'); const end=new Date(all[all.length-1]+'-01');
+  while(cur<=end){ res.push(localYearMonth(cur)); cur.setMonth(cur.getMonth()+1); }
+  return res;
+}
+function weeksBetween(d1,d2){ return Math.max(1,(new Date(d2)-new Date(d1))/(7*86400000)); }
+
+const CHART_OPT={
+  responsive:true, maintainAspectRatio:false,
+  plugins:{legend:{display:false}},
+  scales:{
+    x:{grid:{display:false},ticks:{color:'#9ba3b5',font:{size:11}}},
+    y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#9ba3b5',font:{size:11}}}
+  }
+};
+function lineDS(data,color){
+  return {data,borderColor:color,backgroundColor:color+'18',borderWidth:2,pointRadius:3,fill:true,tension:0.3};
+}
+
+function renderDashboard(){
+  const recs=records;
+  const dates=recs.filter(r=>r.date).map(r=>r.date).sort();
+  const total=recs.length;
+  const firstDate=dates.length>0?dates[0]:'—';
+  const weekAvg=dates.length>1?((total/weeksBetween(dates[0],dates[dates.length-1])).toFixed(1)):'—';
+
+  document.getElementById('dash-total').textContent=total;
+  document.getElementById('dash-date-range').textContent= firstDate!=='—' ? `${firstDate} 至今` : '—';
+  document.getElementById('dash-week-avg').textContent= weekAvg!=='—' ? `周均 ${weekAvg} 次` : '—';
+
+  // 月度堆叠柱状图 + 白色数字标签
+  const months=getMonthRange();
+  const types=['无氧','跑步','跳绳','羽毛球','徒步','散步'];
+  const colors={无氧:'#3b7ef8',跑步:'#16a06a',跳绳:'#d97706',羽毛球:'#7c5cf6',徒步:'#059669',散步:'#9ba3b5'};
+  dc('monthlyChart');
+  CI.monthlyChart=new Chart(document.getElementById('monthlyChart'),{type:'bar',
+    data:{labels:months.map(m=>m.slice(2).replace('-','/')),
+      datasets:types.map(t=>({
+        label:t,
+        data:months.map(m=>recs.filter(r=>r.date?.startsWith(m)&&r.sport===t).length),
+        backgroundColor:colors[t],
+        borderRadius:2,
+      }))
+    },
+    options:{
+      ...CHART_OPT,
+      plugins:{
+        legend:{display:false},
+        // 数字标签插件由下方 plugin 提供
+      },
+      scales:{
+        x:{...CHART_OPT.scales.x,stacked:true},
+        y:{...CHART_OPT.scales.y,stacked:true}
+      }
+    },
+    plugins:[{
+      id:'barLabels',
+      afterDatasetsDraw(chart){
+        const {ctx}=chart;
+        chart.data.datasets.forEach((ds,di)=>{
+          const meta=chart.getDatasetMeta(di);
+          if(meta.hidden) return;
+          meta.data.forEach((bar,i)=>{
+            const val=ds.data[i];
+            if(!val||val<1) return;
+            // 用几何中心，确保数字在色块正中
+            const {x,y}=bar.getCenterPoint();
+            // 色块高度不够时跳过（避免文字溢出）
+            const h=bar.height||0;
+            if(h<16) return;
+            ctx.save();
+            ctx.fillStyle='rgba(255,255,255,0.95)';
+            ctx.font='bold 11px system-ui';
+            ctx.textAlign='center';
+            ctx.textBaseline='middle';
+            ctx.fillText(val, x, y);
+            ctx.restore();
+          });
+        });
+      }
+    }]
+  });
+
+  // 训练类型占比甜甜圈 — 数据标签直接显示在图上
+  const tc={};recs.forEach(r=>{const s=r.sport||'其他';tc[s]=(tc[s]||0)+1;});
+  const tcLabels=Object.keys(tc); const tcVals=Object.values(tc);
+  dc('typeChart');
+  CI.typeChart=new Chart(document.getElementById('typeChart'),{type:'doughnut',
+    data:{labels:tcLabels,datasets:[{data:tcVals,backgroundColor:tcLabels.map(getSportColor),borderWidth:2,borderColor:'#fff',hoverOffset:4}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'48%',
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>{
+          const val=ctx.parsed; const sum=ctx.dataset.data.reduce((a,b)=>a+b,0);
+          return ` ${ctx.label}：${val} 次 (${Math.round(val/sum*100)}%)`;
+        }}}
+      }
+    },
+    plugins:[{
+      id:'pieLabels',
+      afterDatasetDraw(chart){
+        const showLabels = document.getElementById('dash-pie-labels')?.checked ?? true;
+        if(!showLabels) return;
+        const {ctx,data}=chart;
+        const ds=chart.getDatasetMeta(0).data;
+        const total=data.datasets[0].data.reduce((a,b)=>a+b,0);
+        ds.forEach((arc,i)=>{
+          const val=data.datasets[0].data[i];
+          const pct=Math.round(val/total*100);
+          if(pct<6) return;
+          const angle=(arc.startAngle+arc.endAngle)/2;
+          const r=(arc.innerRadius+arc.outerRadius)/2;
+          const x=arc.x+Math.cos(angle)*r;
+          const y=arc.y+Math.sin(angle)*r;
+          ctx.save();
+          ctx.fillStyle='rgba(255,255,255,0.95)';
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.font='bold 12px system-ui';
+          ctx.fillText(`${val}次`, x, y-6);
+          ctx.font='10px system-ui';
+          ctx.fillText(`${pct}%`, x, y+7);
+          ctx.restore();
+        });
+      }
+    }]
+  });
+  // 自定义 HTML 图例：色块内显示白色文字
+  const legendWrap = document.getElementById('typeChart-legend');
+  if(legendWrap){
+    legendWrap.innerHTML = tcLabels.map((l,i)=>
+      `<span style="display:inline-flex;align-items:center;justify-content:center;padding:4px 14px;border-radius:20px;background:${getSportColor(l)};color:#fff;font-size:12px;font-weight:600;white-space:nowrap">${l}</span>`
+    ).join('');
+  }
+
+  renderHeatmap();
+}
+
+// ══════════════════════════════════════
+//  ANAEROBIC - CYCLES (localStorage)
+// ══════════════════════════════════════
+const LS_CYCLES = 'fitness_ana_cycles_v1';
+function loadCycles(){ try{ const r=localStorage.getItem(LS_CYCLES); if(r) return JSON.parse(r); }catch(e){} return []; }
+function saveCycles(c){ localStorage.setItem(LS_CYCLES,JSON.stringify(c)); }
+let anaCycles = loadCycles();
+
+function addCycle(){
+  const label = prompt('周期名称（如：第一阶段）：','');
+  if(label===null) return;
+  const start = prompt('开始日期（格式 YYYY-MM-DD）：', localDateStr());
+  if(!start||!/^\d{4}-\d{2}-\d{2}$/.test(start)){ showToast('日期格式不正确'); return; }
+  const endStr = prompt('结束日期（进行中请留空，直接回车）：','');
+  const end = (endStr&&/^\d{4}-\d{2}-\d{2}$/.test(endStr.trim())) ? endStr.trim() : null;
+  anaCycles.push({ id: genId(), label: label||'无名周期', start, end });
+  anaCycles.sort((a,b)=>a.start.localeCompare(b.start));
+  saveCycles(anaCycles);
+  renderAnaerobic();
+}
+function editCycle(id){
+  const c = anaCycles.find(x=>x.id===id); if(!c) return;
+  const label = prompt('周期名称：', c.label); if(label===null) return;
+  const start = prompt('开始日期：', c.start); if(!start) return;
+  const endStr = prompt('结束日期（进行中留空）：', c.end||'');
+  c.label = label||c.label;
+  c.start = start;
+  c.end = (endStr&&/^\d{4}-\d{2}-\d{2}$/.test(endStr.trim())) ? endStr.trim() : null;
+  saveCycles(anaCycles);
+  renderAnaerobic();
+}
+function deleteCycle(id){
+  if(!confirm('确认删除此周期记录？')) return;
+  anaCycles = anaCycles.filter(x=>x.id!==id);
+  saveCycles(anaCycles); renderAnaerobic();
+}
+let cycleHistoryOpen = false;
+function toggleCycleHistory(){
+  cycleHistoryOpen = !cycleHistoryOpen;
+  document.getElementById('ana-cycle-history').style.display = cycleHistoryOpen ? 'flex' : 'none';
+  document.getElementById('ana-cycle-toggle').textContent = cycleHistoryOpen ? '收起历史周期' : '展开历史周期';
+}
+
+function renderCycleCard(c, isActive){
+  const ana = records.filter(r=>r.sport==='无氧');
+  const today = localDateStr();
+  const endDate = c.end || today;
+  const startD = new Date(c.start), endD = new Date(endDate);
+  const totalDays = Math.max(1, Math.round((endD - startD) / 86400000) + 1);
+  // count anaerobic sessions within this cycle
+  const count = ana.filter(r=>r.date>=c.start && r.date<=endDate).length;
+  const avgDays = count > 0 ? (totalDays / count).toFixed(1) : '—';
+  const statusBadge = isActive
+    ? `<span style="font-size:11px;background:var(--green-lt);color:var(--green-dk);border:1px solid #a7f3d0;padding:2px 8px;border-radius:10px;font-weight:600">进行中</span>`
+    : `<span style="font-size:11px;background:var(--bg3);color:var(--text3);border:1px solid var(--border);padding:2px 8px;border-radius:10px">已结束</span>`;
+  return `<div class="cycle-card${isActive?' active':''}">
+    <div style="display:flex;flex-direction:column;gap:4px;min-width:160px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:13px;font-weight:700;color:var(--text)">${c.label}</span>
+        ${statusBadge}
+      </div>
+      <div style="font-size:12px;color:var(--text3)">${c.start} — ${c.end||'至今'}</div>
+    </div>
+    <div class="cycle-divider"></div>
+    <div class="cycle-stat">
+      <span class="cycle-stat-val${isActive?' green':''}">${totalDays}</span>
+      <span class="cycle-stat-label">坚持天数</span>
+    </div>
+    <div class="cycle-divider"></div>
+    <div class="cycle-stat">
+      <span class="cycle-stat-val">${count}</span>
+      <span class="cycle-stat-label">训练次数</span>
+    </div>
+    <div class="cycle-divider"></div>
+    <div class="cycle-stat">
+      <span class="cycle-stat-val">${avgDays}</span>
+      <span class="cycle-stat-label">平均天/次</span>
+    </div>
+    <div class="cycle-actions">
+      <button class="btn btn-secondary btn-sm" onclick="editCycle('${c.id}')">编辑</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteCycle('${c.id}')">删除</button>
+    </div>
+  </div>`;
+}
+
+// ── muscle group parser: take FIRST part only ──
+function primaryMuscle(s){
+  if(!s) return null;
+  const raw = s.split('/')[0].trim().toLowerCase();
+  if(raw.includes('胸')) return '胸';
+  if(raw.includes('背')) return '背';
+  if(raw.includes('leg')||raw.includes('腿')) return '腿';
+  if(raw.includes('肩')) return '肩';
+  if(raw.includes('core')||raw.includes('核心')) return '核心';
+  if(raw.includes('二')) return '二头';
+  if(raw.includes('三')) return '三头';
+  return null;
+}
+
+function renderAnaerobic(){
+  const ana = records.filter(r=>r.sport==='无氧').sort((a,b)=>a.date.localeCompare(b.date));
+
+  // ── 坚持周期 ──
+  const active = anaCycles.filter(c=>!c.end);
+  const history = anaCycles.filter(c=>c.end).sort((a,b)=>b.start.localeCompare(a.start));
+
+  const activeEl = document.getElementById('ana-cycle-active');
+  if(active.length === 0){
+    activeEl.innerHTML = `<div style="color:var(--text3);font-size:13px;padding:12px 0">暂无进行中的周期，点右上角「+ 添加周期」开始记录</div>`;
+  } else {
+    activeEl.innerHTML = active.map(c=>renderCycleCard(c,true)).join('');
+  }
+
+  const histWrap = document.getElementById('ana-cycle-history-wrap');
+  const histEl = document.getElementById('ana-cycle-history');
+  if(history.length > 0){
+    histWrap.style.display = '';
+    histEl.innerHTML = history.map(c=>renderCycleCard(c,false)).join('');
+  } else {
+    histWrap.style.display = 'none';
+  }
+
+  // ── 肌群分布（饼图）──
+  const MUSCLE_COLORS = { 胸:'#3b7ef8', 背:'#16a06a', 腿:'#d97706', 肩:'#7c5cf6', 核心:'#e04545', 二头:'#059669', 三头:'#f0a843' };
+  const mm = {};
+  ana.forEach(r=>{
+    const m = primaryMuscle(r.muscles||r.sub||'');
+    if(m) mm[m] = (mm[m]||0) + 1;
+  });
+  const PARTS_ORDER = ['胸','背','腿','肩','核心','二头','三头'];
+  const mmLabels = PARTS_ORDER.filter(p=>mm[p]);
+  const mmVals = mmLabels.map(p=>mm[p]);
+  dc('muscleChart');
+  if(mmLabels.length){
+    CI.muscleChart = new Chart(document.getElementById('muscleChart'),{
+      type:'doughnut',
+      data:{
+        labels:mmLabels,
+        datasets:[{
+          data:mmVals,
+          backgroundColor:mmLabels.map(k=>MUSCLE_COLORS[k]||'#9ba3b5'),
+          borderWidth:0, hoverOffset:6,
+        }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        cutout:'55%',
+        plugins:{
+          legend:{position:'right', labels:{color:'#5a6278',font:{size:12},padding:12,boxWidth:12}},
+          tooltip:{callbacks:{label:ctx=>` ${ctx.label} ${ctx.parsed} 次 (${Math.round(ctx.parsed/mmVals.reduce((a,b)=>a+b,0)*100)}%)`}}
+        }
+      },
+      plugins:[{
+        id:'anaPieLabels',
+        afterDatasetDraw(chart){
+          const showLabels = document.getElementById('ana-pie-labels')?.checked ?? true;
+          if(!showLabels) return;
+          const {ctx}=chart;
+          const total=mmVals.reduce((a,b)=>a+b,0);
+          chart.getDatasetMeta(0).data.forEach((arc,i)=>{
+            const val=mmVals[i]; const pct=Math.round(val/total*100);
+            if(pct<5) return;
+            const angle=(arc.startAngle+arc.endAngle)/2;
+            const r=(arc.innerRadius+arc.outerRadius)/2;
+            const x=arc.x+Math.cos(angle)*r; const y=arc.y+Math.sin(angle)*r;
+            ctx.save(); ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+            ctx.font='bold 12px system-ui'; ctx.fillText(`${val}次`, x, y-7);
+            ctx.font='11px system-ui'; ctx.fillText(`${pct}%`, x, y+7);
+            ctx.restore();
+          });
+        }
+      }]
+    });
+  }
+
+  // ── 年度战报（分组柱状图）──
+  const YEAR_COLORS = ['#3b7ef8','#16a06a','#d97706','#7c5cf6','#e04545'];
+  const years = [...new Set(ana.map(r=>r.date?.slice(0,4)).filter(Boolean))].sort();
+  const PARTS = ['胸','背','腿','肩','核心','二头','三头'];
+  const PART_COLORS_YEARLY = { 胸:'#3b7ef8', 背:'#16a06a', 腿:'#d97706', 肩:'#7c5cf6', 核心:'#e04545', 二头:'#059669', 三头:'#f0a843' };
+
+  // 每年一个 dataset，每个部位一个 x 标签
+  const yearlyDatasets = years.map((yr,yi)=>{
+    const yrAna = ana.filter(r=>r.date?.startsWith(yr));
+    const partCounts = {};
+    yrAna.forEach(r=>{ const m=primaryMuscle(r.muscles||r.sub||''); if(m) partCounts[m]=(partCounts[m]||0)+1; });
+    return {
+      label: yr+'年',
+      data: PARTS.map(p=>partCounts[p]||0),
+      backgroundColor: YEAR_COLORS[yi]||'#9ba3b5',
+      borderRadius: 4,
+    };
+  });
+
+  // 图例
+  const legendEl = document.getElementById('ana-yearly-legend');
+  if(legendEl) legendEl.innerHTML = years.map((yr,yi)=>
+    `<span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)">
+      <span style="width:12px;height:12px;border-radius:2px;background:${YEAR_COLORS[yi]||'#9ba3b5'};flex-shrink:0"></span>${yr}年
+    </span>`
+  ).join('');
+
+  dc('yearlyChart');
+  if(years.length){
+    CI.yearlyChart = new Chart(document.getElementById('yearlyChart'),{
+      type:'bar',
+      data:{ labels:PARTS, datasets:yearlyDatasets },
+      options:{
+        ...CHART_OPT,
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label} ${ctx.parsed.y} 次`}}
+        },
+        scales:{
+          x:{grid:{display:false}, ticks:{color:'#5a6278',font:{size:13,weight:'600'}}},
+          y:{...CHART_OPT.scales.y, ticks:{...CHART_OPT.scales.y.ticks, callback:v=>v+' 次'}}
+        }
+      },
+      plugins:[{id:'yearlyLabels',afterDatasetsDraw(chart){
+        const {ctx}=chart;
+        chart.data.datasets.forEach((ds,di)=>{
+          const meta=chart.getDatasetMeta(di);
+          if(meta.hidden) return;
+          meta.data.forEach((bar,i)=>{
+            const val=ds.data[i]; if(!val) return;
+            const {x,y}=bar.getCenterPoint(); if((bar.height||0)<16) return;
+            ctx.save(); ctx.fillStyle='rgba(255,255,255,0.95)'; ctx.font='bold 10px system-ui';
+            ctx.textAlign='center'; ctx.textBaseline='middle';
+            ctx.fillText(val,x,y); ctx.restore();
+          });
+        });
+      }}]
+    });
+  }
+
+  // ── 月度频次 ──
+  const months = getMonthRange();
+  dc('anaMonthlyChart');
+  CI.anaMonthlyChart = new Chart(document.getElementById('anaMonthlyChart'),{
+    type:'line',
+    data:{
+      labels:months.map(m=>m.slice(2).replace('-','/')),
+      datasets:[{
+        data:months.map(m=>ana.filter(r=>r.date?.startsWith(m)).length),
+        borderColor:'#3b7ef8', backgroundColor:'rgba(59,126,248,0.08)',
+        borderWidth:2, pointRadius:4, fill:true, tension:0.3
+      }]
+    },
+    options:{...CHART_OPT, plugins:{legend:{display:false}}}
+  });
+}
+
+function renderHeatmap(){
+  const el=document.getElementById('heatmap-container');
+  const today=new Date(); today.setHours(0,0,0,0);
+  const start=new Date(today); start.setFullYear(start.getFullYear()-1); start.setDate(start.getDate()-start.getDay());
+  const cmap={};records.filter(r=>r.date).forEach(r=>cmap[r.date]=(cmap[r.date]||0)+1);
+  const weeks=[]; let d=new Date(start);
+  while(d<=today){ const w=[]; for(let i=0;i<7;i++){w.push(new Date(d));d.setDate(d.getDate()+1);} weeks.push(w); }
+  const colors=['#f0f2f5','#bbf7e0','#6ee7c0','#22d6a0','#16a06a'];
+  let h='<div class="heatmap-wrap"><div class="heatmap">';
+  weeks.forEach(wk=>{
+    h+='<div class="heatmap-col">';
+    wk.forEach(dd=>{
+      const k=localDateStr(dd); const c=cmap[k]||0;
+      const ci=c===0?0:c===1?1:c===2?2:c<=3?3:4;
+      h+=`<div class="heatmap-cell" style="background:${colors[ci]};border:1px solid #e3e6ed" title="${k}${c?' · '+c+'次':''}"></div>`;
+    });
+    h+='</div>';
+  });
+  h+='</div></div>';
+  el.innerHTML=h;
+}
+
+// ══════════════════════════════════════
+//  RUN CYCLES (localStorage)
+// ══════════════════════════════════════
+const LS_RUN_CYCLES = 'fitness_run_cycles_v1';
+function loadRunCycles(){ try{ const r=localStorage.getItem(LS_RUN_CYCLES); if(r) return JSON.parse(r); }catch(e){} return []; }
+function saveRunCycles(c){ localStorage.setItem(LS_RUN_CYCLES,JSON.stringify(c)); }
+let runCycles = loadRunCycles();
+
+function addRunCycle(){
+  const label=prompt('周期名称（如：系统备战期）：',''); if(label===null) return;
+  const start=prompt('开始日期（格式 YYYY-MM-DD）：',localDateStr()); if(!start||!/^\d{4}-\d{2}-\d{2}$/.test(start)){showToast('日期格式不正确');return;}
+  const endStr=prompt('结束日期（进行中请留空，直接回车）：','');
+  const end=(endStr&&/^\d{4}-\d{2}-\d{2}$/.test(endStr.trim()))?endStr.trim():null;
+  runCycles.push({id:genId(),label:label||'无名周期',start,end});
+  runCycles.sort((a,b)=>a.start.localeCompare(b.start));
+  saveRunCycles(runCycles); renderRunAnalysis();
+}
+function editRunCycle(id){
+  const c=runCycles.find(x=>x.id===id); if(!c) return;
+  const label=prompt('周期名称：',c.label); if(label===null) return;
+  const start=prompt('开始日期：',c.start); if(!start) return;
+  const endStr=prompt('结束日期（进行中留空）：',c.end||'');
+  c.label=label||c.label; c.start=start;
+  c.end=(endStr&&/^\d{4}-\d{2}-\d{2}$/.test(endStr.trim()))?endStr.trim():null;
+  saveRunCycles(runCycles); renderRunAnalysis();
+}
+function deleteRunCycle(id){
+  if(!confirm('确认删除此跑步周期？')) return;
+  runCycles=runCycles.filter(x=>x.id!==id);
+  saveRunCycles(runCycles); renderRunAnalysis();
+}
+let runCycleHistoryOpen=false;
+function toggleRunCycleHistory(){
+  runCycleHistoryOpen=!runCycleHistoryOpen;
+  document.getElementById('run-cycle-history').style.display=runCycleHistoryOpen?'flex':'none';
+  document.getElementById('run-cycle-toggle').textContent=runCycleHistoryOpen?'收起历史周期':'展开历史周期';
+}
+
+function runCycleStats(c){
+  const today=localDateStr();
+  const endDate=c.end||today;
+  const runs=records.filter(r=>r.sport==='跑步'&&r.date>=c.start&&r.date<=endDate);
+  const totalDist=runs.reduce((a,r)=>a+(r.dist||0),0);
+  const hrR=runs.filter(r=>r.hr); const avgHr=hrR.length?Math.round(hrR.reduce((a,r)=>a+r.hr,0)/hrR.length):null;
+  const prR=runs.filter(r=>r.pace); const avgP=prR.length?prR.reduce((a,r)=>a+r.pace,0)/prR.length:null;
+  const best=prR.reduce((b,r)=>r.pace<b?r.pace:b,Infinity);
+  const totalDays=Math.max(1,Math.round((new Date(endDate)-new Date(c.start))/86400000)+1);
+  const avgDays=runs.length>0?(totalDays/runs.length).toFixed(1):'—';
+  return {runs,totalDist,avgHr,avgP,best:best===Infinity?null:best,totalDays,avgDays,count:runs.length};
+}
+
+function renderRunCycleCard(c,isActive){
+  const s=runCycleStats(c);
+  const today=localDateStr();
+  const endDate=c.end||today;
+  const statusBadge=isActive
+    ?`<span style="font-size:11px;background:var(--green-lt);color:var(--green-dk);border:1px solid #a7f3d0;padding:2px 8px;border-radius:10px;font-weight:600">进行中</span>`
+    :`<span style="font-size:11px;background:var(--bg3);color:var(--text3);border:1px solid var(--border);padding:2px 8px;border-radius:10px">已结束</span>`;
+
+  const avgDist=s.count>0?(s.totalDist/s.count).toFixed(1):'—';
+  // cycle header card
+  const header=`<div class="cycle-card${isActive?' active':''}">
+    <div style="display:flex;flex-direction:column;gap:4px;min-width:160px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:13px;font-weight:700;color:var(--text)">${c.label}</span>${statusBadge}
+      </div>
+      <div style="font-size:12px;color:var(--text3)">${c.start} — ${c.end||'至今'}</div>
+    </div>
+    <div class="cycle-divider"></div>
+    <div class="cycle-stat"><span class="cycle-stat-val${isActive?' green':''}">${s.totalDays}</span><span class="cycle-stat-label">坚持天数</span></div>
+    <div class="cycle-divider"></div>
+    <div class="cycle-stat"><span class="cycle-stat-val">${s.count}</span><span class="cycle-stat-label">训练次数</span></div>
+    <div class="cycle-divider"></div>
+    <div class="cycle-stat"><span class="cycle-stat-val">${s.avgDays}</span><span class="cycle-stat-label">平均天/次</span></div>
+    <div class="cycle-divider"></div>
+    <div class="cycle-stat"><span class="cycle-stat-val">${avgDist}</span><span class="cycle-stat-label">平均公里/次</span></div>
+    <div class="cycle-actions">
+      <button class="btn btn-secondary btn-sm" onclick="editRunCycle('${c.id}')">编辑</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteRunCycle('${c.id}')">删除</button>
+    </div>
+  </div>`;
+
+  // 4 metrics below the card
+  const metrics=`<div class="metrics" style="margin-top:10px;margin-bottom:0">
+    <div class="metric green"><div class="metric-label">累计跑量</div><div class="metric-value">${s.totalDist.toFixed(1)}<span class="metric-unit"> km</span></div><div class="metric-sub">${s.count} 次</div></div>
+    <div class="metric blue"><div class="metric-label">平均配速</div><div class="metric-value" style="font-size:20px">${fmtPace(s.avgP)}</div></div>
+    <div class="metric amber"><div class="metric-label">平均心率</div><div class="metric-value">${s.avgHr||'—'}<span class="metric-unit">${s.avgHr?' bpm':''}</span></div></div>
+    <div class="metric coral"><div class="metric-label">最快配速</div><div class="metric-value" style="font-size:20px">${s.best?fmtPace(s.best):'—'}</div></div>
+  </div>`;
+
+  return header+metrics;
+}
+
+function renderRunAnalysis(){
+  const runs=records.filter(r=>r.sport==='跑步').sort((a,b)=>a.date.localeCompare(b.date));
+  const totalDist=runs.reduce((a,r)=>a+(r.dist||0),0);
+  const hrR=runs.filter(r=>r.hr); const avgHr=hrR.length?Math.round(hrR.reduce((a,r)=>a+r.hr,0)/hrR.length):null;
+  const prR=runs.filter(r=>r.pace); const avgP=prR.length?prR.reduce((a,r)=>a+r.pace,0)/prR.length:null;
+  const best=prR.reduce((b,r)=>r.pace<b?r.pace:b,Infinity);
+
+  // 距离分布：自动统计所有出现过的距离，按次数降序
+  const distMap={};
+  runs.filter(r=>r.dist).forEach(r=>{
+    const k=r.dist; distMap[k]=(distMap[k]||0)+1;
+  });
+  const distEntries=Object.entries(distMap).sort((a,b)=>b[1]-a[1]);
+  const maxDistCnt=distEntries.length?distEntries[0][1]:1;
+  const distRows=distEntries.map(([km,cnt])=>{
+    const pct=Math.round(cnt/maxDistCnt*100);
+    return `<div style="display:flex;align-items:center;gap:8px;margin-top:5px">
+      <span style="font-size:12px;color:var(--text2);width:36px;text-align:right;flex-shrink:0">${km}km</span>
+      <div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:var(--green);border-radius:3px"></div>
+      </div>
+      <span style="font-size:12px;color:var(--text3);width:28px;flex-shrink:0">×${cnt}</span>
+    </div>`;
+  }).join('');
+
+  // 全部记录指标
+  document.getElementById('run-metrics-total').innerHTML=`
+    <div class="metric green"><div class="metric-label">累计跑量</div><div class="metric-value">${totalDist.toFixed(0)}<span class="metric-unit"> km</span></div><div class="metric-sub">${runs.length} 次</div></div>
+    <div class="metric blue"><div class="metric-label">平均配速</div><div class="metric-value" style="font-size:20px">${fmtPace(avgP)}</div></div>
+    <div class="metric amber"><div class="metric-label">平均心率</div><div class="metric-value">${avgHr||'—'}<span class="metric-unit">${avgHr?' bpm':''}</span></div></div>
+    <div class="metric coral"><div class="metric-label">最快配速</div><div class="metric-value" style="font-size:20px">${best===Infinity?'—':fmtPace(best)}</div></div>
+    <div class="metric" style="min-width:180px">
+      <div class="metric-label">总次数</div>
+      <div class="metric-value">${runs.length}</div>
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+        <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.dist-arrow').style.transform=this.nextElementSibling.style.display==='none'?'rotate(0deg)':'rotate(180deg)'"
+          style="display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none">
+          <span style="font-size:11px;color:var(--text3)">距离分布</span>
+          <span class="dist-arrow" style="font-size:10px;color:var(--text3);transition:transform .2s;display:inline-block">▼</span>
+        </div>
+        <div style="display:none;margin-top:6px">${distRows||'<span style="font-size:12px;color:var(--text3)">暂无数据</span>'}</div>
+      </div>
+    </div>
+  `;
+
+  // 跑步周期
+  const active=runCycles.filter(c=>!c.end);
+  const history=runCycles.filter(c=>c.end).sort((a,b)=>b.start.localeCompare(a.start));
+  const activeEl=document.getElementById('run-cycle-active');
+  activeEl.innerHTML=active.length===0
+    ?`<div style="color:var(--text3);font-size:13px;padding:12px 0">暂无进行中的周期，点右上角「+ 添加周期」开始记录</div>`
+    :active.map(c=>renderRunCycleCard(c,true)).join('');
+
+  const histWrap=document.getElementById('run-cycle-history-wrap');
+  const histEl=document.getElementById('run-cycle-history');
+  if(history.length>0){
+    histWrap.style.display='';
+    histEl.innerHTML=history.map(c=>renderRunCycleCard(c,false)).join('');
+  } else { histWrap.style.display='none'; }
+
+  // 趋势图表
+  const months=getMonthRange();
+  const mDist=months.map(m=>runs.filter(r=>r.date.startsWith(m)).reduce((a,r)=>a+(r.dist||0),0));
+  dc('monthlyDistChart');
+  const mCount=months.map(m=>runs.filter(r=>r.date.startsWith(m)).length);
+  CI.monthlyDistChart=new Chart(document.getElementById('monthlyDistChart'),{
+    type:'bar',
+    data:{labels:months.map(m=>m.slice(2).replace('-','/')),datasets:[{data:mDist,backgroundColor:'#16a06a',borderRadius:4,hoverBackgroundColor:'#22d6a0'}]},
+    options:CHART_OPT,
+    plugins:[{id:'distBarLabels',afterDatasetsDraw(chart){
+      const {ctx}=chart;
+      chart.getDatasetMeta(0).data.forEach((bar,i)=>{
+        const val=chart.data.datasets[0].data[i]; if(!val||val<1) return;
+        const {x,y}=bar.getCenterPoint(); if((bar.height||0)<28) return;
+        ctx.save();
+        ctx.fillStyle='rgba(255,255,255,0.95)';
+        ctx.textAlign='center';
+        // 上行：距离 + km
+        ctx.font='bold 11px system-ui'; ctx.textBaseline='middle';
+        ctx.fillText(val+'km', x, y-7);
+        // 下行：次数
+        ctx.font='10px system-ui';
+        ctx.fillText(mCount[i]+'次', x, y+7);
+        ctx.restore();
+      });
+    }}]
+  });
+
+  // 单次距离图
+  const lbs=runs.map(r=>r.date.slice(5));
+  dc('distChart');
+  CI.distChart=new Chart(document.getElementById('distChart'),{type:'line',data:{labels:lbs,datasets:[lineDS(runs.map(r=>r.dist),'#16a06a')]},options:{...CHART_OPT,scales:{x:{...CHART_OPT.scales.x,ticks:{...CHART_OPT.scales.x.ticks,maxTicksLimit:9}},y:{...CHART_OPT.scales.y,min:0}}}});
+
+  // 筛选条件：训练类型 + 距离，自动从数据提取
+  const subtypes=[...new Set(runs.map(r=>r.sub||'').filter(Boolean))];
+  const dists=[...new Set(runs.map(r=>r.dist).filter(Boolean))].sort((a,b)=>a-b);
+
+  const stEl=document.getElementById('filter-subtype');
+  const distEl=document.getElementById('filter-dist');
+  // Only rebuild if pills don't exist yet (avoid resetting on re-render)
+  if(!stEl.children.length){
+    stEl.innerHTML=['全部',...subtypes].map((s,i)=>`<span class="filter-pill${i===0?' on':''}" data-val="${s}" onclick="toggleFilterPill(this,'filter-subtype');renderCombinedChart()">${s||'无类型'}</span>`).join('');
+  }
+  if(!distEl.children.length){
+    distEl.innerHTML=['全部',...dists.map(d=>d+'km')].map((s,i)=>`<span class="filter-pill${i===0?' on':''}" data-val="${s}" onclick="toggleFilterPill(this,'filter-dist');renderCombinedChart()">${s}</span>`).join('');
+  }
+
+  renderCombinedChart();
+}
+
+// ══════════════════════════════════════
+//  DATA MANAGEMENT
+// ══════════════════════════════════════
+function exportData(){
+  const b=new Blob([JSON.stringify(records,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(b);
+  a.download='fitness_'+localDateStr()+'.json'; a.click();
+  showToast('已导出 JSON');
+}
+
+// ── Excel Import ──────────────────────────
+let _pendingImport = null; // holds parsed records before confirmation
+
+function importFromExcel(e){
+  const file = e.target.files[0]; if(!file) return;
+  const status = document.getElementById('import-status');
+  status.textContent = '解析中…';
+
+  // Load SheetJS from CDN dynamically if not already loaded
+  function doRead(){
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array', cellDates:true});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, {defval:null, raw:false});
+        if(!rows.length){ status.textContent='文件为空'; return; }
+        const parsed = parseExcelRows(rows);
+        _pendingImport = parsed;
+        const existing = new Set(records.map(r=>r.id));
+        const newCount = parsed.filter(r=>!existing.has(r.id)).length;
+        const dupCount = parsed.length - newCount;
+        const mode = document.querySelector('input[name="importMode"]:checked')?.value || 'merge';
+        const prev = document.getElementById('import-preview');
+        document.getElementById('import-preview-text').innerHTML =
+          `解析完成：共 <strong>${parsed.length}</strong> 条记录<br>` +
+          (mode==='overwrite'
+            ? `覆盖模式：将替换现有全部 <strong>${records.length}</strong> 条记录`
+            : `合并模式：<strong>${newCount}</strong> 条新记录将导入，<strong>${dupCount}</strong> 条重复 ID 将跳过`);
+        prev.style.display = 'block';
+        status.textContent = '';
+      } catch(err){
+        status.textContent = '解析失败：' + err.message;
+        console.error(err);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  if(typeof XLSX !== 'undefined'){ doRead(); }
+  else {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+    s.onload = doRead;
+    s.onerror = ()=>{ status.textContent = '加载解析库失败，请检查网络'; };
+    document.head.appendChild(s);
+  }
+  e.target.value = '';
+}
+
+function parseExcelRows(rows){
+  const VALID_PERIODS = new Set(['晨跑','午跑','傍晚','上午']);
+  const seen = {};
+  const result = [];
+
+  rows.forEach(row => {
+    // ── Date ──
+    let dateStr = '';
+    const rawDate = row['日期'];
+    if(!rawDate) return;
+    try {
+      // SheetJS with cellDates:true may return Date objects or formatted strings
+      if(rawDate instanceof Date){
+        // Use local time to avoid UTC offset shifting the date
+        const y=rawDate.getFullYear(), m=String(rawDate.getMonth()+1).padStart(2,'0'), d=String(rawDate.getDate()).padStart(2,'0');
+        dateStr = `${y}-${m}-${d}`;
+      } else {
+        const d = new Date(String(rawDate).replace(/\//g,'-'));
+        if(isNaN(d)) return;
+        const y=d.getFullYear(), mo=String(d.getMonth()+1).padStart(2,'0'), dy=String(d.getDate()).padStart(2,'0');
+        dateStr = `${y}-${mo}-${dy}`;
+      }
+    } catch(e){ return; }
+
+    const sport = (row['运动类型']||'').trim();
+    if(!sport) return;
+
+    // ── Period ──
+    const rawPeriod = (row['时段']||'').trim();
+    const period = VALID_PERIODS.has(rawPeriod) ? rawPeriod : '';
+
+    // ── Note ──
+    const note = (row['备注']||'').trim();
+
+    // ── Helper: parse h:mm:ss or mm:ss from cell ──
+    function parseDuration(v){
+      if(!v) return null;
+      const s = String(v).trim();
+      // SheetJS with cellDates may turn time into a Date object with 1899-12-30
+      if(v instanceof Date){
+        const h = v.getUTCHours(), m = v.getUTCMinutes(), sec = v.getUTCSeconds();
+        return h+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+      }
+      // Already h:mm:ss string
+      if(/^\d+:\d{2}(:\d{2})?$/.test(s)){
+        const parts = s.split(':');
+        if(parts.length===2) return '0:'+s;
+        return s;
+      }
+      return null;
+    }
+
+    // ── Helper: parse pace datetime.time or "mm:ss" string -> float min/km ──
+    function parsePace(v){
+      if(!v) return null;
+      if(v instanceof Date){
+        // datetime.time stored as Date with base 1899-12-30
+        return round4(v.getUTCHours()*60 + v.getUTCMinutes() + v.getUTCSeconds()/60);
+      }
+      const s = String(v).trim();
+      const m = s.match(/^(\d+):(\d{2})(?::(\d{2}))?$/);
+      if(m) return round4(parseInt(m[1])*60 + parseInt(m[2]) + (parseInt(m[3]||'0'))/60);
+      return null;
+    }
+
+    function round4(n){ return Math.round(n*10000)/10000; }
+    function toInt(v){ const n=parseInt(v); return isNaN(n)?null:n; }
+    function toFloat(v){ const n=parseFloat(v); return isNaN(n)?null:Math.round(n*10000)/10000; }
+
+    // ── Build record ──
+    let rec = { date:dateStr, sport, period, note, feel:'', body:'' };
+
+    if(sport==='跑步'){
+      const trainType = (row['训练类型']||'').trim();
+      // Filter out trainType values that are sport names (data quality issue)
+      const validSubs = ['有氧筑基','节奏跑','间歇跑','LSD','恢复跑'];
+      const sub = validSubs.includes(trainType) ? trainType : '';
+      rec = {...rec,
+        sub,
+        dist: toFloat(row['距离/km']),
+        duration: parseDuration(row['运动时间']),
+        pace: parsePace(row['平均配速/km']),
+        hr: toInt(row['平均心率']),
+        maxhr: toInt(row['最大心率']),
+        cadence: toInt(row['步频']),
+        shoe: (row['跑鞋']||'').trim(),
+        devices: (row['设备']||'').trim() ? [(row['设备']||'').trim()] : [],
+        weather: '', route: '',
+      };
+    } else if(sport==='无氧'){
+      const trainType = (row['训练类型']||'').trim();
+      // Map Leg -> 腿, keep everything else as-is, strip ◆ ！ etc
+      const muscles = trainType
+        .replace(/Leg/g,'腿').replace(/◆|！！/g,'').trim();
+      rec = {...rec, muscles: muscles==='无氧'?'':muscles};
+    } else if(sport==='跳绳'){
+      const dur = parseDuration(row['运动时间']);
+      const cnt = toInt(row['个数']);
+      const freq = toInt(row['跳绳频率']);
+      rec = {...rec,
+        duration: dur,
+        jump_count: cnt,
+        jump_freq: freq,
+        hr: toInt(row['平均心率']),
+        maxhr: toInt(row['最大心率']),
+      };
+    } else {
+      // 羽毛球/徒步/散步
+      rec = {...rec};
+    }
+
+    // ── Unique ID ──
+    const baseId = dateStr.replace(/-/g,'') + sport;
+    seen[baseId] = (seen[baseId]||0) + 1;
+    rec.id = seen[baseId]===1 ? baseId : baseId+'x'+seen[baseId];
+
+    result.push(rec);
+  });
+
+  return result.sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+function confirmImport(){
+  if(!_pendingImport) return;
+  const mode = document.querySelector('input[name="importMode"]:checked')?.value || 'merge';
+
+  if(mode === 'overwrite'){
+    if(!confirm(`覆盖模式：将清空现有 ${records.length} 条记录，替换为导入的 ${_pendingImport.length} 条记录。确认？`)) return;
+    records = _pendingImport;
+    save(records);
+    showToast(`已覆盖导入 ${records.length} 条记录 ✓`, 3000);
+  } else {
+    const existing = new Set(records.map(r=>r.id));
+    let added = 0;
+    _pendingImport.forEach(r=>{ if(!existing.has(r.id)){ records.push(r); added++; }});
+    records.sort((a,b)=>a.date.localeCompare(b.date));
+    save(records);
+    showToast(`已合并导入 ${added} 条新记录 ✓`, 3000);
+  }
+
+  _pendingImport = null;
+  document.getElementById('import-preview').style.display = 'none';
+  document.getElementById('import-status').textContent = '';
+  renderDataStats();
+}
+
+function cancelImport(){
+  _pendingImport = null;
+  document.getElementById('import-preview').style.display = 'none';
+  document.getElementById('import-status').textContent = '';
+}
+
+function renderDataStats(){
+  const sp={};records.forEach(r=>{const s=r.sport||'其他';sp[s]=(sp[s]||0)+1;});
+  const kb=Math.round(JSON.stringify(records).length/1024);
+  document.getElementById('data-stats').innerHTML=
+    `总记录：<strong>${records.length}</strong><br>`+
+    Object.entries(sp).map(([k,v])=>`${k}：<strong>${v}</strong> 次`).join('<br>')+
+    `<br>存储占用：<strong>${kb} KB</strong>`;
+}
+
+// ══════════════════════════════════════
+//  BATCH SELECT
+// ══════════════════════════════════════
+let batchMode = false;
+let selectedIds = new Set();
+
+function toggleBatchMode(){
+  batchMode = !batchMode;
+  selectedIds.clear();
+  const btn = document.getElementById('batchToggleBtn');
+  const bar = document.getElementById('selectBar');
+  btn.textContent = batchMode ? '✕ 退出选择' : '☑ 批量选择';
+  btn.className = batchMode ? 'btn btn-secondary btn-sm' : 'btn btn-secondary btn-sm';
+  bar.classList.toggle('show', batchMode);
+  renderRecordPage();
+}
+
+function clearSelection(){
+  selectedIds.clear();
+  batchMode = false;
+  document.getElementById('selectBar').classList.remove('show');
+  document.getElementById('batchToggleBtn').textContent = '☑ 批量选择';
+  renderRecordPage();
+}
+
+function toggleSelectAll(checked){
+  // Select/deselect all visible checkboxes on current page
+  document.querySelectorAll('.record-check[data-id]').forEach(cb=>{
+    cb.checked = checked;
+    if(checked) selectedIds.add(cb.dataset.id);
+    else selectedIds.delete(cb.dataset.id);
+    cb.closest('.record-item-wrap')?.querySelector('.record-item')?.classList.toggle('selected', checked);
+  });
+  updateSelectBar();
+}
+
+function toggleRecordSelect(cb, id){
+  if(cb.checked) selectedIds.add(id);
+  else selectedIds.delete(id);
+  cb.closest('.record-item-wrap')?.querySelector('.record-item')?.classList.toggle('selected', cb.checked);
+  // Sync selectAll checkbox
+  const all = document.querySelectorAll('.record-check[data-id]');
+  const allChecked = [...all].every(c=>c.checked);
+  document.getElementById('selectAll').checked = allChecked && all.length > 0;
+  updateSelectBar();
+}
+
+function updateSelectBar(){
+  document.getElementById('selectCount').textContent = `已选 ${selectedIds.size} 条`;
+}
+
+function deleteSelected(){
+  if(selectedIds.size === 0){ showToast('未选择任何记录'); return; }
+  const cnt = selectedIds.size;
+  if(!confirm(`确认删除选中的 ${cnt} 条记录？`)) return;
+  records = records.filter(r => !selectedIds.has(r.id));
+  save(records);
+  selectedIds.clear();
+  updateSelectBar();
+  batchMode = false;
+  document.getElementById('selectBar').classList.remove('show');
+  document.getElementById('batchToggleBtn').textContent = '☑ 批量选择';
+  renderRecordPage();
+  showToast(`已删除 ${cnt} 条记录 ✓`);
+}
+
+// ══════════════════════════════════════
+//  TARGET LINES
+// ══════════════════════════════════════
+const LS_TARGETS = 'fitness_run_targets_v1';
+function loadTargets(){ try{ const r=localStorage.getItem(LS_TARGETS); if(r) return JSON.parse(r); }catch(e){} return {pace:null,hr:null}; }
+function saveTargetStorage(t){ localStorage.setItem(LS_TARGETS,JSON.stringify(t)); }
+let runTargets = loadTargets();
+
+function openTargetModal(){
+  document.getElementById('target-pace-input').value = runTargets.pace ? fmtPace(runTargets.pace) : '';
+  document.getElementById('target-hr-input').value = runTargets.hr || '';
+  document.getElementById('targetModal').style.display='flex';
+}
+function closeTargetModal(){ document.getElementById('targetModal').style.display='none'; }
+function saveTargetLines(){
+  const paceStr = document.getElementById('target-pace-input').value.trim();
+  const hrStr = document.getElementById('target-hr-input').value.trim();
+  runTargets.pace = paceStr ? parsePaceStr(paceStr) : null;
+  runTargets.hr = hrStr ? parseInt(hrStr) : null;
+  saveTargetStorage(runTargets);
+  closeTargetModal();
+  renderCombinedChart();
+  showToast('目标线已保存 ✓');
+}
+
+// ══════════════════════════════════════
+//  COMBINED CHART (配速/心率/步频)
+// ══════════════════════════════════════
+function toggleFilterPill(el, groupId){
+  const group = document.getElementById(groupId);
+  const allPill = group.querySelector('[data-val="全部"]');
+  if(el.dataset.val === '全部'){
+    group.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('on'));
+    el.classList.add('on');
+  } else {
+    if(allPill) allPill.classList.remove('on');
+    el.classList.toggle('on');
+    const anyOn = [...group.querySelectorAll('.filter-pill')].some(p=>p.classList.contains('on'));
+    if(!anyOn && allPill) allPill.classList.add('on');
+  }
+}
+
+function getFilteredRuns(){
+  const runs = records.filter(r=>r.sport==='跑步').sort((a,b)=>a.date.localeCompare(b.date));
+  const stEl = document.getElementById('filter-subtype');
+  const distEl = document.getElementById('filter-dist');
+  if(!stEl||!distEl) return runs;
+  const selSub = [...stEl.querySelectorAll('.filter-pill.on')].map(p=>p.dataset.val);
+  const selDist = [...distEl.querySelectorAll('.filter-pill.on')].map(p=>p.dataset.val);
+  const allSub = selSub.includes('全部');
+  const allDist = selDist.includes('全部');
+  return runs.filter(r=>{
+    const subOk = allSub || selSub.includes(r.sub||'');
+    const distOk = allDist || selDist.includes((r.dist||'')+'km');
+    return subOk && distOk;
+  });
+}
+
+function renderCombinedChart(){
+  const runs = getFilteredRuns();
+  const showPace    = document.getElementById('lt-pace')?.checked;
+  const showHr      = document.getElementById('lt-hr')?.checked;
+  const showMaxHr   = document.getElementById('lt-maxhr')?.checked;
+  const showCadence = document.getElementById('lt-cadence')?.checked;
+
+  const labels = runs.map(r=>r.date.slice(5));
+  const datasets = [];
+
+  if(showPace) datasets.push({
+    label:'配速', data: runs.map(r=>r.pace||null),
+    borderColor:'#3b7ef8', backgroundColor:'rgba(59,126,248,0.06)',
+    borderWidth:2, pointRadius:3, fill:false, tension:0.3, yAxisID:'yPace', spanGaps:true,
+  });
+  if(showHr) datasets.push({
+    label:'平均心率', data: runs.map(r=>r.hr||null),
+    borderColor:'#e04545', backgroundColor:'rgba(224,69,69,0.06)',
+    borderWidth:2, pointRadius:3, fill:false, tension:0.3, yAxisID:'yHr', spanGaps:true,
+  });
+  if(showMaxHr) datasets.push({
+    label:'最大心率', data: runs.map(r=>r.maxhr||null),
+    borderColor:'#d97706', borderWidth:1.5, borderDash:[4,3],
+    pointRadius:2, fill:false, tension:0.3, yAxisID:'yHr', spanGaps:true,
+  });
+  if(showCadence) datasets.push({
+    label:'步频', data: runs.map(r=>r.cadence||null),
+    borderColor:'#7c5cf6', backgroundColor:'rgba(124,92,246,0.06)',
+    borderWidth:2, pointRadius:3, fill:false, tension:0.3, yAxisID:'yHr', spanGaps:true,
+  });
+
+  // 目标线 plugin —— 在 afterDraw 里手动画水平线
+  const targetPlugin = {
+    id:'targetLines',
+    afterDraw(chart){
+      const {ctx, chartArea:{left,right,top,bottom}, scales} = chart;
+      // 配速目标线
+      if(runTargets.pace && scales.yPace){
+        const y = scales.yPace.getPixelForValue(runTargets.pace);
+        if(y && !isNaN(y) && y>=top && y<=bottom){
+          ctx.save();
+          ctx.strokeStyle='rgba(59,126,248,0.8)';
+          ctx.lineWidth=1.5;
+          ctx.setLineDash([6,4]);
+          ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(right,y); ctx.stroke();
+          ctx.fillStyle='#3b7ef8'; ctx.font='bold 11px system-ui'; ctx.textAlign='right'; ctx.textBaseline='bottom';
+          ctx.fillText('目标 '+fmtPace(runTargets.pace), right-4, y-3);
+          ctx.restore();
+        }
+      }
+      if(runTargets.hr && scales.yHr){
+        const y = scales.yHr.getPixelForValue(runTargets.hr);
+        if(y && !isNaN(y) && y>=top && y<=bottom){
+          ctx.save();
+          ctx.strokeStyle='rgba(224,69,69,0.8)';
+          ctx.lineWidth=1.5;
+          ctx.setLineDash([6,4]);
+          ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(right,y); ctx.stroke();
+          ctx.fillStyle='#e04545'; ctx.font='bold 11px system-ui'; ctx.textAlign='left'; ctx.textBaseline='bottom';
+          ctx.fillText('目标 '+runTargets.hr+' bpm', left+4, y-3);
+          ctx.restore();
+        }
+      }
+    }
+  };
+
+  // 目标线提示 hint
+  const hint = document.getElementById('target-hint');
+  if(hint){
+    const parts=[];
+    if(runTargets.pace) parts.push(`<span style="color:#3b7ef8">⚑ 配速目标 ${fmtPace(runTargets.pace)}/km</span>`);
+    if(runTargets.hr) parts.push(`<span style="color:#e04545">⚑ 心率目标 ${runTargets.hr} bpm</span>`);
+    hint.innerHTML=parts.join('<span style="color:var(--border2)"> · </span>');
+    hint.style.display=parts.length?'flex':'none';
+  }
+
+  dc('combinedChart');
+  CI.combinedChart = new Chart(document.getElementById('combinedChart'),{
+    type:'line', data:{labels, datasets},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index', intersect:false},
+      plugins:{
+        legend:{display:true, position:'top', labels:{color:'#9ba3b5',font:{size:11},padding:16,boxWidth:12}},
+        tooltip:{callbacks:{label(ctx){
+          const v=ctx.parsed.y; if(v===null||v===undefined) return null;
+          if(ctx.dataset.label==='配速') return ' 配速 '+fmtPace(v)+'/km';
+          if(ctx.dataset.label==='平均心率') return ' 平均心率 '+Math.round(v)+' bpm';
+          if(ctx.dataset.label==='最大心率') return ' 最大心率 '+Math.round(v)+' bpm';
+          if(ctx.dataset.label==='步频') return ' 步频 '+Math.round(v)+' spm';
+          return v;
+        }}}
+      },
+      scales:{
+        x:{grid:{display:false}, ticks:{color:'#9ba3b5',font:{size:11},maxTicksLimit:12}},
+        yPace:{
+          type:'linear', position:'left', reverse:true,
+          min: 5.0,
+          max: runTargets.pace ? Math.max(9.5, runTargets.pace + 0.5) : 9.5,
+          display: !!(showPace || runTargets.pace),
+          grid:{color:'rgba(0,0,0,0.05)'},
+          ticks:{
+            color:'#3b7ef8', font:{size:11},
+            callback: v => (showPace || runTargets.pace) ? fmtPace(v) : '',
+          }
+        },
+        yHr:{
+          type:'linear', position:'right',
+          min: 60,
+          max: runTargets.hr ? Math.max(200, runTargets.hr + 10) : 200,
+          display: !!(showHr||showMaxHr||showCadence||runTargets.hr),
+          grid:{drawOnChartArea:false},
+          ticks:{color:'#9ba3b5',font:{size:11}}
+        }
+      }
+    },
+    plugins:[targetPlugin]
+  });
+}
+
+// ══════════════════════════════════════
+//  CALENDAR
+// ══════════════════════════════════════
+let calYear = new Date().getFullYear();
+
+// =====================================================
+// 🗓️ 训练日历 —— 各运动类型格子背景色
+// 直接改引号里的颜色值即可，格式 #RRGGBB
+// =====================================================
+const SPORT_COLOR = {
+  跑步:  '#16a06a',   // 绿色
+  无氧:  '#3b7ef8',   // 蓝色
+  跳绳:  '#d97706',   // 橙色
+  羽毛球:'#7c5cf6',   // 紫色
+  徒步:  '#059669',   // 深绿
+  散步:  '#6b9e8a',   // 灰绿
+};
+const SPORT_PRIORITY = ['跑步','无氧','跳绳','羽毛球','徒步','散步'];
+
+function sportPriority(s){ const i=SPORT_PRIORITY.indexOf(s); return i===-1?99:i; }
+
+function dayLabel(rec){
+  // Returns {icon, sub} for a record
+  if(rec.sport==='跑步') return {icon:'🏃', sub:null};
+  if(rec.sport==='无氧') return {icon:null, sub:rec.muscles||rec.sub||''};
+  if(rec.sport==='跳绳') return {icon:'🪢', sub:null};
+  if(rec.sport==='羽毛球') return {icon:'🏸', sub:null};
+  if(rec.sport==='徒步') return {icon:'⛰', sub:null};
+  if(rec.sport==='散步') return {icon:'🚶', sub:null};
+  return {icon:null, sub:null};
+}
+
+function renderDayCell(recs, dateNum, isToday){
+  // Sort by priority: main sport first
+  const sorted=[...recs].sort((a,b)=>sportPriority(a.sport)-sportPriority(b.sport));
+  const todayClass=isToday?' today':'';
+
+  if(recs.length===0){
+    return `<div class="cal-day${todayClass}">
+      <div class="cal-day-empty">${dateNum}</div>
+    </div>`;
+  }
+
+  if(recs.length===1 || sorted[0].sport===sorted[1]?.sport){
+    // Single sport (or duplicates same sport)
+    const rec=sorted[0];
+    const color=SPORT_COLOR[rec.sport]||'#9ba3b5';
+    const {icon,sub}=dayLabel(rec);
+    return `<div class="cal-day${todayClass}">
+      <div class="cal-day-single" style="background:${color}">
+        <div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap;justify-content:center">
+          <span class="cal-day-num">${dateNum}</span>
+          ${icon?`<span class="cal-day-icon">${icon}</span>`:''}
+        </div>
+        ${sub?`<span class="cal-day-part">${sub}</span>`:''}
+      </div>
+    </div>`;
+  }
+
+  // Two different sports: split top/bottom
+  const top=sorted[0], bot=sorted[1];
+  const topColor=SPORT_COLOR[top.sport]||'#9ba3b5';
+  const botColor=SPORT_COLOR[bot.sport]||'#9ba3b5';
+  const topLbl=dayLabel(top), botLbl=dayLabel(bot);
+  return `<div class="cal-day${todayClass}">
+    <div class="cal-day-top" style="background:${topColor}">
+      <div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap;justify-content:center">
+        <span class="cal-day-num">${dateNum}</span>
+        ${topLbl.icon?`<span class="cal-day-icon">${topLbl.icon}</span>`:''}
+      </div>
+      ${topLbl.sub?`<span class="cal-day-part">${topLbl.sub}</span>`:''}
+    </div>
+    <div class="cal-day-bottom" style="background:${botColor}">
+      <div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap;justify-content:center">
+        ${botLbl.icon?`<span class="cal-day-icon">${botLbl.icon}</span>`:''}
+        ${!botLbl.icon&&!botLbl.sub?`<span style="font-size:9px;color:rgba(255,255,255,0.8)">${bot.sport}</span>`:''}
+      </div>
+      ${botLbl.sub?`<span class="cal-day-part">${botLbl.sub}</span>`:''}
+    </div>
+  </div>`;
+}
+
+function renderCalendar(){
+  document.getElementById('cal-year-label').textContent=calYear;
+  const today=new Date(); today.setHours(0,0,0,0);
+  const todayStr=localDateStr(today);
+
+  // Build date→records map
+  const dateMap={};
+  records.forEach(r=>{
+    if(!r.date) return;
+    if(!dateMap[r.date]) dateMap[r.date]=[];
+    dateMap[r.date].push(r);
+  });
+
+  const MONTHS=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const WDS=['一','二','三','四','五','六','日'];
+
+  let html='';
+  for(let m=0;m<12;m++){
+    const firstDay=new Date(calYear,m,1);
+    // getDay(): 0=Sun,1=Mon...6=Sat → convert to Mon-first: Mon=0..Sun=6
+    const startWd=(firstDay.getDay()+6)%7; // offset Mon=0
+    const daysInMonth=new Date(calYear,m+1,0).getDate();
+
+    html+=`<div class="cal-month">
+      <div class="cal-month-title">${MONTHS[m]}</div>
+      <div class="cal-weekdays">${WDS.map(d=>`<div class="cal-wd">${d}</div>`).join('')}</div>
+      <div class="cal-days">`;
+
+    // Empty cells before 1st
+    for(let i=0;i<startWd;i++) html+=`<div class="cal-day empty"></div>`;
+
+    // Day cells
+    for(let d=1;d<=daysInMonth;d++){
+      const mm=String(m+1).padStart(2,'0');
+      const dd=String(d).padStart(2,'0');
+      const dateStr=`${calYear}-${mm}-${dd}`;
+      const dayRecs=dateMap[dateStr]||[];
+      const isToday=dateStr===todayStr;
+      html+=renderDayCell(dayRecs,d,isToday);
+    }
+
+    html+=`</div></div>`;
+  }
+
+  document.getElementById('cal-grid').innerHTML=html;
+}
+
+// ══════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════
+document.querySelectorAll('[id$="-date"]').forEach(el=>{ el.value=localDateStr(); });
+renderCustomSportBtns();
+setSport('跑步');
+refreshHistoryLists();
+initGistBtn();
+renderDashboard();
+</script>
+</body>
+</html>
