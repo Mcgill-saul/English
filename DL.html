@@ -514,10 +514,10 @@ body{min-height:100vh;padding-bottom:4rem;}
     <!-- 第一行：左边（数字+饼图）+ 右边（热图）并排 -->
     <div class="charts-grid" style="margin-bottom:14px">
 
-      <!-- 左：总训练次数 + 饼图 同一卡片 -->
-      <div class="chart-card">
+      <!-- 左：总训练次数 + 饼图 同一卡片，横向三区域 -->
+      <div class="chart-card" style="display:flex;align-items:center;gap:20px">
         <!-- 数字区 -->
-        <div style="margin-bottom:14px">
+        <div style="flex-shrink:0;min-width:130px">
           <div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-variant-numeric:tabular-nums" id="dash-date-range">—</div>
           <div style="display:flex;align-items:flex-end;gap:3px;line-height:1">
             <div style="font-size:40px;font-weight:800;color:var(--green);font-variant-numeric:tabular-nums;line-height:1" id="dash-total">—</div>
@@ -525,20 +525,21 @@ body{min-height:100vh;padding-bottom:4rem;}
           </div>
           <div style="font-size:13px;font-weight:600;color:var(--text2);margin-top:6px" id="dash-week-avg">—</div>
         </div>
-        <!-- 分割线 -->
-        <div style="height:1px;background:var(--border);margin-bottom:14px"></div>
-        <!-- 饼图标题 + 开关 -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div>
-            <div class="chart-title">训练类型占比</div>
-            <div class="chart-sub">所有记录分布</div>
+        <!-- 竖向分割线 -->
+        <div style="width:1px;height:80px;background:var(--border);flex-shrink:0"></div>
+        <!-- 饼图区域 -->
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div>
+              <div class="chart-title">训练类型占比</div>
+              <div class="chart-sub">所有记录分布</div>
+            </div>
+            <label class="line-toggle" style="--c:#16a06a"><input type="checkbox" id="dash-pie-labels" checked onchange="renderDashboard()"><span>显示数字</span></label>
           </div>
-          <label class="line-toggle" style="--c:#16a06a"><input type="checkbox" id="dash-pie-labels" checked onchange="renderDashboard()"><span>显示数字</span></label>
-        </div>
-        <!-- 饼图 + 右侧图例 -->
-        <div style="display:flex;align-items:center;gap:16px">
-          <div style="position:relative;flex:1;min-width:0;height:200px"><canvas id="typeChart"></canvas></div>
-          <div id="typeChart-legend" style="display:flex;flex-direction:column;gap:6px;flex-shrink:0"></div>
+          <div style="display:flex;align-items:center;gap:16px">
+            <div style="position:relative;flex:1;min-width:0;height:200px"><canvas id="typeChart"></canvas></div>
+            <div id="typeChart-legend" style="display:flex;flex-direction:column;gap:6px;flex-shrink:0"></div>
+          </div>
         </div>
       </div>
 
