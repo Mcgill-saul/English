@@ -322,21 +322,21 @@ body{min-height:100vh;padding-bottom:4rem;}
    改完保存刷新页面即生效，列头宽度会自动跟着变
    ===================================================== */
 .rc{flex-shrink:0;padding-right:12px;font-size:12.5px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text2);}
-.rc-date   { width: 96px;  color:var(--text);font-variant-numeric:tabular-nums;font-weight:500; } /* 日期列 */
-.rc-badge  { width: 140px; padding-right:10px; }  /* 运动类型列（含训练类型/部位） */
-.rc-period { width: 52px;  }  /* 时段列 */
-.rc-dist   { width: 60px;  }  /* 距离列 */
-.rc-pace   { width: 58px;  }  /* 配速列 */
-.rc-hr     { width: 48px;  }  /* 平均心率列 */
-.rc-maxhr  { width: 52px;  }  /* 最大心率列 */
-.rc-cadence{ width: 44px;  }  /* 步频列 */
-.rc-shoe   { width: 116px; }  /* 跑鞋列 */
-.rc-weather{ width: 48px;  }  /* 天气列 */
-.rc-route  { width: 90px;  }  /* 路线列 */
-.rc-devices{ width: 90px;  }  /* 设备列 */
-.rc-feel   { width: 48px;  }  /* 体感列 */
-.rc-body   { width: 160px; }  /* 身体感受列 */
-.rc-note   { width: 200px; color:var(--text3);font-style:italic; }  /* 备注列 */
+.rc-date   { width: 104px; color:var(--text);font-variant-numeric:tabular-nums;font-weight:500; } /* 日期列 */
+.rc-badge  { width: 160px; padding-right:10px; }  /* 运动类型列（含训练类型/部位） */
+.rc-period { width: 58px;  }  /* 时段列 */
+.rc-dist   { width: 66px;  }  /* 距离列 */
+.rc-pace   { width: 64px;  }  /* 配速列 */
+.rc-hr     { width: 54px;  }  /* 平均心率列 */
+.rc-maxhr  { width: 58px;  }  /* 最大心率列 */
+.rc-cadence{ width: 50px;  }  /* 步频列 */
+.rc-shoe   { width: 126px; }  /* 跑鞋列 */
+.rc-weather{ width: 54px;  }  /* 天气列 */
+.rc-route  { width: 100px; }  /* 路线列 */
+.rc-devices{ width: 100px; }  /* 设备列 */
+.rc-feel   { width: 54px;  }  /* 体感列 */
+.rc-body   { width: 300px; }  /* 身体感受列 */
+.rc-note   { width: 300px; color:var(--text3);font-style:italic; }  /* 备注列 */
 .rc-muscles{ width: 110px; }  /* 无氧部位列 */
 .rc-duration{ width: 72px; }  /* 跳绳时长列 */
 .rc-jcount { width: 60px;  }  /* 跳绳个数列 */
@@ -349,7 +349,7 @@ body{min-height:100vh;padding-bottom:4rem;}
    🏷️ 运动类型标签颜色
    格式：background（背景色）/ color（文字色）/ border（边框色）
    ===================================================== */
-.record-badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:12px;font-size:11.5px;font-weight:600;white-space:nowrap;max-width:136px;overflow:hidden;text-overflow:ellipsis;}
+.record-badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:12px;font-size:11.5px;font-weight:600;white-space:normal;}
 .badge-run      { background:var(--green-lt); color:var(--green-dk); border:1px solid #a7f3d0; } /* 跑步标签 */
 .badge-ana      { background:var(--blue-lt);  color:var(--blue-dk);  border:1px solid #bfdbfe; } /* 无氧标签 */
 .badge-jump     { background:var(--amber-lt); color:var(--amber);    border:1px solid #fcd34d; } /* 跳绳标签 */
@@ -499,22 +499,22 @@ body{min-height:100vh;padding-bottom:4rem;}
 <body>
 
 <div class="topbar">
-  <div class="topbar-title"><span class="dot"></span>运动记录</div>
+  <div class="topbar-title"><span class="dot"></span>Fitness Log</div>
   <div class="topbar-actions">
-    <button class="btn btn-primary btn-sm" onclick="showTab('add')">＋ 记录</button>
-    <button class="btn btn-secondary btn-sm" onclick="showTab('data')">数据</button>
+    <button class="btn btn-primary btn-sm" onclick="showTab('add')">＋ Add</button>
+    <button class="btn btn-secondary btn-sm" onclick="showTab('data')">Data</button>
   </div>
 </div>
 
 <div class="main">
   <div class="tabs">
-    <button class="tab active" onclick="showTab('dashboard')" id="tab-dashboard">总览</button>
-    <button class="tab" onclick="showTab('run')" id="tab-run">跑步分析</button>
-    <button class="tab" onclick="showTab('anaerobic')" id="tab-anaerobic">无氧分析</button>
-    <button class="tab" onclick="showTab('records')" id="tab-records">全部记录</button>
-    <button class="tab" onclick="showTab('calendar')" id="tab-calendar">训练日历</button>
-    <button class="tab" onclick="showTab('add')" id="tab-add">新增记录</button>
-    <button class="tab" onclick="showTab('data')" id="tab-data">数据管理</button>
+    <button class="tab active" onclick="showTab('dashboard')" id="tab-dashboard">Dashboard</button>
+    <button class="tab" onclick="showTab('run')" id="tab-run">Run</button>
+    <button class="tab" onclick="showTab('anaerobic')" id="tab-anaerobic">Strength</button>
+    <button class="tab" onclick="showTab('records')" id="tab-records">Records</button>
+    <button class="tab" onclick="showTab('calendar')" id="tab-calendar">Calendar</button>
+    <button class="tab" onclick="showTab('add')" id="tab-add">Add</button>
+    <button class="tab" onclick="showTab('data')" id="tab-data">Data</button>
   </div>
 
   <!-- ══════════ DASHBOARD ══════════ -->
@@ -715,12 +715,12 @@ body{min-height:100vh;padding-bottom:4rem;}
       <input type="text" id="searchInput" placeholder="搜索备注、部位、路线…" oninput="renderRecords()" style="flex:1;min-width:160px">
       <select id="filterSport" onchange="renderRecords()">
         <option value="">全部类型</option>
-        <option value="跑步">跑步</option>
-        <option value="无氧">无氧</option>
-        <option value="跳绳">跳绳</option>
-        <option value="羽毛球">羽毛球</option>
-        <option value="徒步">徒步</option>
-        <option value="散步">散步</option>
+        <option value="Run">Run</option>
+        <option value="Strength">Strength</option>
+        <option value="Jump Rope">Jump Rope</option>
+        <option value="Badminton">Badminton</option>
+        <option value="Hike">Hike</option>
+        <option value="Walk">Walk</option>
       </select>
       <select id="filterYear" onchange="renderRecords()">
         <option value="">全部年份</option>
@@ -753,20 +753,20 @@ body{min-height:100vh;padding-bottom:4rem;}
       <div class="form-card-title" id="form-card-title">新增训练记录</div>
 
       <div class="sport-selector">
-        <button class="sport-btn active" onclick="setSport('跑步')" id="sb-跑步">🏃 跑步</button>
-        <button class="sport-btn" onclick="setSport('无氧')" id="sb-无氧">💪 无氧</button>
-        <button class="sport-btn" onclick="setSport('跳绳')" id="sb-跳绳">🪢 跳绳</button>
-        <button class="sport-btn" onclick="setSport('羽毛球')" id="sb-羽毛球">🏸 羽毛球</button>
-        <button class="sport-btn" onclick="setSport('徒步')" id="sb-徒步">⛰ 徒步</button>
-        <button class="sport-btn" onclick="setSport('散步')" id="sb-散步">🚶 散步</button>
+        <button class="sport-btn active" onclick="setSport('Run')" id="sb-Run">🏃 Run</button>
+        <button class="sport-btn" onclick="setSport('Strength')" id="sb-Strength">💪 Strength</button>
+        <button class="sport-btn" onclick="setSport('Jump Rope')" id="sb-Jump Rope">🪢 Jump Rope</button>
+        <button class="sport-btn" onclick="setSport('Badminton')" id="sb-Badminton">🏸 Badminton</button>
+        <button class="sport-btn" onclick="setSport('Hike')" id="sb-Hike">⛰ Hike</button>
+        <button class="sport-btn" onclick="setSport('Walk')" id="sb-Walk">🚶 Walk</button>
         <div id="custom-sport-btns"></div>
         <button class="sport-btn" onclick="addCustomSport()" style="border-style:dashed;color:var(--text3)">＋ 新增运动</button>
       </div>
-      <input type="hidden" id="form-sport" value="跑步">
+      <input type="hidden" id="form-sport" value="Run">
       <input type="hidden" id="form-editId" value="">
 
       <!-- ── 跑步字段 ── -->
-      <div id="sec-跑步" class="sport-section active">
+      <div id="sec-Run" class="sport-section active">
         <div class="form-grid">
           <div class="ff"><label>日期</label><input type="date" id="r-date"></div>
           <div class="ff"><label>时段</label>
@@ -825,19 +825,19 @@ body{min-height:100vh;padding-bottom:4rem;}
         </div>
 
       <!-- ── 无氧字段 ── -->
-      <div id="sec-无氧" class="sport-section">
+      <div id="sec-Strength" class="sport-section">
         <div class="form-grid">
           <div class="ff"><label>日期</label><input type="date" id="a-date"></div>
           <div class="ff span4"><label>部位（可多选）</label>
             <div class="pill-group" id="a-muscle-group">
-              <span class="pill" data-val="胸" onclick="togglePill(this,'a-muscles')">胸</span>
-              <span class="pill" data-val="背" onclick="togglePill(this,'a-muscles')">背</span>
-              <span class="pill" data-val="腿" onclick="togglePill(this,'a-muscles')">腿</span>
-              <span class="pill" data-val="肩" onclick="togglePill(this,'a-muscles')">肩</span>
-              <span class="pill" data-val="二头" onclick="togglePill(this,'a-muscles')">二头</span>
-              <span class="pill" data-val="三头" onclick="togglePill(this,'a-muscles')">三头</span>
-              <span class="pill" data-val="核心" onclick="togglePill(this,'a-muscles')">核心</span>
-              <span class="pill" data-val="全身" onclick="togglePill(this,'a-muscles')">全身</span>
+              <span class="pill" data-val="Chest" onclick="togglePill(this,'a-muscles')">Chest</span>
+              <span class="pill" data-val="Back" onclick="togglePill(this,'a-muscles')">Back</span>
+              <span class="pill" data-val="Legs" onclick="togglePill(this,'a-muscles')">Legs</span>
+              <span class="pill" data-val="Delts" onclick="togglePill(this,'a-muscles')">Delts</span>
+              <span class="pill" data-val="Bis" onclick="togglePill(this,'a-muscles')">Bis</span>
+              <span class="pill" data-val="Tris" onclick="togglePill(this,'a-muscles')">Tris</span>
+              <span class="pill" data-val="Core" onclick="togglePill(this,'a-muscles')">Core</span>
+              <span class="pill" data-val="Full" onclick="togglePill(this,'a-muscles')">Full</span>
             </div>
             <input type="hidden" id="a-muscles">
           </div>
@@ -856,7 +856,7 @@ body{min-height:100vh;padding-bottom:4rem;}
       </div>
 
       <!-- ── 跳绳字段 ── -->
-      <div id="sec-跳绳" class="sport-section">
+      <div id="sec-Jump Rope" class="sport-section">
         <div class="form-grid">
           <div class="ff"><label>日期</label><input type="date" id="j-date"></div>
           <div class="ff"><label>运动时间 (h:mm:ss)</label><input type="text" id="j-duration" placeholder="0:15:00" oninput="validateDur(this);calcJumpFreq()"></div>
@@ -879,7 +879,7 @@ body{min-height:100vh;padding-bottom:4rem;}
       </div>
 
       <!-- ── 羽毛球 ── -->
-      <div id="sec-羽毛球" class="sport-section">
+      <div id="sec-Badminton" class="sport-section">
         <div class="form-grid">
           <div class="ff"><label>日期</label><input type="date" id="b-date"></div>
           <div class="ff span4"><label>体感</label>
@@ -897,7 +897,7 @@ body{min-height:100vh;padding-bottom:4rem;}
       </div>
 
       <!-- ── 徒步/散步 ── -->
-      <div id="sec-徒步" class="sport-section">
+      <div id="sec-Hike" class="sport-section">
         <div class="form-grid">
           <div class="ff"><label>日期</label><input type="date" id="h-date"></div>
           <div class="ff span4"><label>体感</label>
@@ -914,7 +914,7 @@ body{min-height:100vh;padding-bottom:4rem;}
         </div>
       </div>
 
-      <div id="sec-散步" class="sport-section">
+      <div id="sec-Walk" class="sport-section">
         <!-- reuse same layout, linked in JS -->
       </div>
 
@@ -952,11 +952,11 @@ body{min-height:100vh;padding-bottom:4rem;}
       <button class="cal-year-btn" onclick="calYear++;renderCalendar()">&#8594;</button>
     </div>
     <div class="cal-legend">
-      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#16a06a"></span>跑步</span>
-      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#3b7ef8"></span>无氧</span>
-      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#d97706"></span>跳绳</span>
-      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#7c5cf6"></span>羽毛球</span>
-      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#059669"></span>徒步/散步</span>
+      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#16a06a"></span>Run</span>
+      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#3b7ef8"></span>Strength</span>
+      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#d97706"></span>Jump Rope</span>
+      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#7c5cf6"></span>Badminton</span>
+      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#059669"></span>Hike / Walk</span>
     </div>
     <div class="cal-grid" id="cal-grid"></div>
   </div>
@@ -1070,37 +1070,37 @@ body{min-height:100vh;padding-bottom:4rem;}
 <nav class="mobile-nav" id="mobileNav">
   <button class="mobile-nav-item active" id="mnav-dashboard" onclick="showTab('dashboard')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-    总览
+    Dashboard
   </button>
   <button class="mobile-nav-item" id="mnav-records" onclick="showTab('records')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
-    记录
+    Records
   </button>
   <button class="mobile-nav-item" id="mnav-calendar" onclick="showTab('calendar')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-    日历
+    Calendar
   </button>
   <button class="mobile-nav-item" id="mnav-run" onclick="showTab('run')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 4a1 1 0 1 0 2 0 1 1 0 0 0-2 0"/><path d="M7.5 17l2-5 3 3 2-4 2 4"/><path d="M5 20l4-8 2 3 3-6 3 3 2-3"/></svg>
-    跑步
+    Run
   </button>
   <button class="mobile-nav-item" id="mnav-anaerobic" onclick="showTab('anaerobic')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4v6a6 6 0 0 0 12 0V4"/><line x1="6" y1="4" x2="4" y2="4"/><line x1="18" y1="4" x2="20" y2="4"/><line x1="12" y1="16" x2="12" y2="20"/><line x1="9" y1="20" x2="15" y2="20"/></svg>
-    无氧
+    Strength
   </button>
   <button class="mobile-nav-add" onclick="showTab('add')" id="mnav-add">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9" fill="var(--green)" stroke="none"/><line x1="12" y1="8" x2="12" y2="16" stroke="white"/><line x1="8" y1="12" x2="16" y2="12" stroke="white"/></svg>
-    新增
+    Add
   </button>
   <button class="mobile-nav-item" id="mnav-more" onclick="toggleMobileMore()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/></svg>
-    更多
+    More
   </button>
 </nav>
 
 <!-- 📱 更多菜单（手机端，从顶部导航向下展开） -->
 <div id="mobileMoreMenu" style="display:none;position:fixed;top:56px;left:0;right:0;background:var(--bg2);border-bottom:1px solid var(--border);z-index:199;padding:6px 0;box-shadow:0 4px 20px rgba(0,0,0,0.1)">
-  <button onclick="showTab('data');closeMobileMore()" style="display:flex;align-items:center;gap:12px;width:100%;padding:14px 20px;border:none;background:none;font-family:var(--font);font-size:14px;color:var(--text);cursor:pointer;text-align:left">🗂 数据管理</button>
+  <button onclick="showTab('data');closeMobileMore()" style="display:flex;align-items:center;gap:12px;width:100%;padding:14px 20px;border:none;background:none;font-family:var(--font);font-size:14px;color:var(--text);cursor:pointer;text-align:left">🗂 Data</button>
 </div>
 
 <!-- 目标线设置 Modal -->
@@ -1151,6 +1151,24 @@ function load(){
 let records=load();
 
 // ══════════════════════════════════════
+//  一次性数据迁移：中文运动名 → English
+// ══════════════════════════════════════
+function migrateToEnglish(){
+  if(localStorage.getItem('fitness_migrated_en_v1')) return;
+  const SM={跑步:'Run',无氧:'Strength',跳绳:'Jump Rope',羽毛球:'Badminton',徒步:'Hike',散步:'Walk'};
+  const MM={胸:'Chest',背:'Back',腿:'Legs',肩:'Delts',核心:'Core',二头:'Bis',三头:'Tris',全身:'Full'};
+  records.forEach(r=>{
+    if(SM[r.sport]) r.sport=SM[r.sport];
+    if(r.muscles){
+      r.muscles=r.muscles.split(',').map(p=>MM[p.trim()]||p.trim()).join(',');
+    }
+  });
+  localStorage.setItem(LS, JSON.stringify(records));
+  localStorage.setItem('fitness_migrated_en_v1','1');
+}
+migrateToEnglish();
+
+// ══════════════════════════════════════
 //  工具函数（格式化、辅助计算）
 // ══════════════════════════════════════
 function genId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
@@ -1190,10 +1208,10 @@ function secsToDuration(s){
   return h+':'+String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');
 }
 function badgeClass(sport){
-  return {跑步:'badge-run',无氧:'badge-ana',跳绳:'badge-jump',羽毛球:'badge-badminton',徒步:'badge-hike',散步:'badge-walk'}[sport]||'badge-walk';
+  return {'Run':'badge-run','Strength':'badge-ana','Jump Rope':'badge-jump','Badminton':'badge-badminton','Hike':'badge-hike','Walk':'badge-walk'}[sport]||'badge-walk';
 }
 function getSportColor(s){
-  return {跑步:'#16a06a',无氧:'#3b7ef8',跳绳:'#d97706',羽毛球:'#7c5cf6',徒步:'#059669',散步:'#9ba3b5'}[s]||'#9ba3b5';
+  return {'Run':'#16a06a','Strength':'#3b7ef8','Jump Rope':'#d97706','Badminton':'#7c5cf6','Hike':'#059669','Walk':'#9ba3b5'}[s]||'#9ba3b5';
 }
 
 // ══════════════════════════════════════
@@ -1434,8 +1452,8 @@ function addCustomSport(){
 function setSport(s){
   document.getElementById('form-sport').value=s;
   document.querySelectorAll('.sport-btn').forEach(b=>b.classList.toggle('active',b.id==='sb-'+s));
-  const builtIn=['跑步','无氧','跳绳','羽毛球','徒步','散步'];
-  const allSecs=['跑步','无氧','跳绳','羽毛球','徒步','散步','custom'];
+  const builtIn=['Run','Strength','Jump Rope','Badminton','Hike','Walk'];
+  const allSecs=['Run','Strength','Jump Rope','Badminton','Hike','Walk','custom'];
   allSecs.forEach(id=>{
     const el=document.getElementById('sec-'+id);
     if(el){ el.classList.remove('active'); }
@@ -1443,7 +1461,7 @@ function setSport(s){
   if(builtIn.includes(s)){
     const el=document.getElementById('sec-'+s);
     if(el) el.classList.add('active');
-    if(s==='散步'){ document.getElementById('sec-徒步').classList.add('active'); document.getElementById('sec-散步')?.classList.remove('active'); }
+    if(s==='Walk'){ document.getElementById('sec-Hike').classList.add('active'); document.getElementById('sec-Walk')?.classList.remove('active'); }
   } else {
     // custom sport — use sec-custom
     document.getElementById('sec-custom')?.classList.add('active');
@@ -1517,9 +1535,7 @@ function saveRecord(){
   const editId=document.getElementById('form-editId').value;
   let rec={id:editId||genId(), sport};
 
-  if(sport==='跑步'){
-    const date=document.getElementById('r-date').value; if(!date){showToast('请选择日期');return;}
-    const paceEl=document.getElementById('r-pace');
+  if(sport==='Run'){
     const paceVal=paceEl._val || parsePaceStr(paceEl.value) || null;
     rec={...rec, date, period:document.getElementById('r-period').value, sub:document.getElementById('r-sub').value,
       dist:parseFloat(document.getElementById('r-dist').value)||null,
@@ -1536,7 +1552,7 @@ function saveRecord(){
       body:document.getElementById('r-body').value||'',
       note:document.getElementById('r-note').value||'',
     };
-  } else if(sport==='无氧'){
+  } else if(sport==='Strength'){
     const date=document.getElementById('a-date').value; if(!date){showToast('请选择日期');return;}
     rec={...rec, date,
       muscles:document.getElementById('a-muscles').value||'',
@@ -1544,7 +1560,7 @@ function saveRecord(){
       body:document.getElementById('a-body').value||'',
       note:document.getElementById('a-note').value||'',
     };
-  } else if(sport==='跳绳'){
+  } else if(sport==='Jump Rope'){
     const date=document.getElementById('j-date').value; if(!date){showToast('请选择日期');return;}
     const cnt=parseInt(document.getElementById('j-count').value)||null;
     const dur=document.getElementById('j-duration').value||null;
@@ -1559,10 +1575,10 @@ function saveRecord(){
       body:document.getElementById('j-body').value||'',
       note:document.getElementById('j-note').value||'',
     };
-  } else if(sport==='羽毛球'){
+  } else if(sport==='Badminton'){
     const date=document.getElementById('b-date').value; if(!date){showToast('请选择日期');return;}
     rec={...rec, date, feel:document.getElementById('b-feel').value||'', body:document.getElementById('b-body').value||'', note:document.getElementById('b-note').value||''};
-  } else if(['徒步','散步'].includes(sport)){
+  } else if(['Hike','Walk'].includes(sport)){
     const date=document.getElementById('h-date').value; if(!date){showToast('请选择日期');return;}
     rec={...rec, date, feel:document.getElementById('h-feel').value||'', body:document.getElementById('h-body').value||'', note:document.getElementById('h-note').value||''};
   } else {
@@ -1610,7 +1626,7 @@ function clearForm(){
   document.querySelectorAll('.pill.sel').forEach(p=>p.classList.remove('sel'));
   document.querySelectorAll('.feel-pill').forEach(p=>p.className='feel-pill');
   const dg=document.getElementById('r-device-group'); if(dg) dg.innerHTML='';
-  setSport('跑步');
+  setSport('Run');
   refreshHistoryLists();
 }
 
@@ -1622,10 +1638,10 @@ function editRecord(id){
   // Clear then set sport
   document.querySelectorAll('.pill.sel').forEach(p=>p.classList.remove('sel'));
   document.querySelectorAll('.feel-pill').forEach(p=>p.className='feel-pill');
-  setSport(r.sport||'跑步');
+  setSport(r.sport||'Run');
   refreshHistoryLists();
 
-  if(r.sport==='跑步'){
+  if(r.sport==='Run'){
     document.getElementById('r-date').value=r.date||'';
     document.getElementById('r-period').value=r.period||'';
     document.getElementById('r-sub').value=r.sub||'';
@@ -1643,7 +1659,7 @@ function editRecord(id){
     document.getElementById('r-feel').value=r.feel||'';
     document.getElementById('r-body').value=r.body||'';
     document.getElementById('r-note').value=r.note||'';
-    if(r.feel){ setFeelActive(document.querySelector('#sec-跑步 .feel-group'),r.feel); }
+    if(r.feel){ setFeelActive(document.querySelector('#sec-Run .feel-group'),r.feel); }
     // Restore device pills after buildDevicePills ran in refreshHistoryLists
     if(r.devices?.length){
       const g=document.getElementById('r-device-group');
@@ -1661,15 +1677,15 @@ function editRecord(id){
       setPillActive(g,r.devices);
       document.getElementById('r-devices').value=r.devices.join(',');
     }
-  } else if(r.sport==='无氧'){
+  } else if(r.sport==='Strength'){
     document.getElementById('a-date').value=r.date||'';
     document.getElementById('a-muscles').value=r.muscles||'';
     document.getElementById('a-feel').value=r.feel||'';
     document.getElementById('a-body').value=r.body||'';
     document.getElementById('a-note').value=r.note||'';
     if(r.muscles){ setTimeout(()=>{ setPillActive(document.getElementById('a-muscle-group'),(r.muscles||'').split(',')); },30); }
-    if(r.feel){ setFeelActive(document.querySelector('#sec-无氧 .feel-group'),r.feel); }
-  } else if(r.sport==='跳绳'){
+    if(r.feel){ setFeelActive(document.querySelector('#sec-Strength .feel-group'),r.feel); }
+  } else if(r.sport==='Jump Rope'){
     document.getElementById('j-date').value=r.date||'';
     document.getElementById('j-duration').value=r.duration||'';
     document.getElementById('j-count').value=r.jump_count||'';
@@ -1678,20 +1694,20 @@ function editRecord(id){
     document.getElementById('j-feel').value=r.feel||'';
     document.getElementById('j-body').value=r.body||'';
     document.getElementById('j-note').value=r.note||'';
-    if(r.feel){ setFeelActive(document.querySelector('#sec-跳绳 .feel-group'),r.feel); }
+    if(r.feel){ setFeelActive(document.querySelector('#sec-Jump Rope .feel-group'),r.feel); }
     calcJumpFreq();
-  } else if(r.sport==='羽毛球'){
+  } else if(r.sport==='Badminton'){
     document.getElementById('b-date').value=r.date||'';
     document.getElementById('b-feel').value=r.feel||'';
     document.getElementById('b-body').value=r.body||'';
     document.getElementById('b-note').value=r.note||'';
-    if(r.feel){ const fg=document.querySelector('#sec-羽毛球 .feel-group'); if(fg) setFeelActive(fg,r.feel); }
+    if(r.feel){ const fg=document.querySelector('#sec-Badminton .feel-group'); if(fg) setFeelActive(fg,r.feel); }
   } else {
     document.getElementById('h-date').value=r.date||'';
     document.getElementById('h-feel').value=r.feel||'';
     document.getElementById('h-body').value=r.body||'';
     document.getElementById('h-note').value=r.note||'';
-    if(r.feel){ const fg=document.querySelector('#sec-徒步 .feel-group'); if(fg) setFeelActive(fg,r.feel); }
+    if(r.feel){ const fg=document.querySelector('#sec-Hike .feel-group'); if(fg) setFeelActive(fg,r.feel); }
   }
 }
 
@@ -1740,11 +1756,10 @@ function renderRecordPage(){
     document.getElementById('record-col-header').innerHTML='';
     list.innerHTML = page.map(r=>{
       let badgeTxt = r.sport||'—';
-      if(r.sport==='跑步'&&r.sub) badgeTxt+=' · '+r.sub;
-      if(r.sport==='无氧') badgeTxt+=' · '+(r.muscles||r.sub||'');
+      if(r.sport==='Run'&&r.sub) badgeTxt+=' · '+r.sub;
+      if(r.sport==='Strength') badgeTxt+=' · '+(r.muscles||r.sub||'').split(',').join(' · ');
       const chips=[];
-      if(r.sport==='跑步'){
-        if(r.period) chips.push(`<span class="mobile-record-chip"><span class="k">时段</span> ${r.period}</span>`);
+      if(r.sport==='Run'){
         if(r.dist)   chips.push(`<span class="mobile-record-chip"><span class="k">距离</span> ${r.dist}km</span>`);
         if(r.pace)   chips.push(`<span class="mobile-record-chip"><span class="k">配速</span> ${fmtPace(r.pace)}</span>`);
         if(r.hr)     chips.push(`<span class="mobile-record-chip"><span class="k">心率</span> ${r.hr}</span>`);
@@ -1752,9 +1767,9 @@ function renderRecordPage(){
         if(r.route)  chips.push(`<span class="mobile-record-chip"><span class="k">路线</span> ${r.route}</span>`);
         if(r.shoe)   chips.push(`<span class="mobile-record-chip"><span class="k">跑鞋</span> ${r.shoe}</span>`);
         if(r.feel)   chips.push(`<span class="feel-badge">${r.feel}</span>`);
-      } else if(r.sport==='无氧'){
+      } else if(r.sport==='Strength'){
         if(r.feel)   chips.push(`<span class="feel-badge">${r.feel}</span>`);
-      } else if(r.sport==='跳绳'){
+      } else if(r.sport==='Jump Rope'){
         if(r.jump_count) chips.push(`<span class="mobile-record-chip"><span class="k">个数</span> ${r.jump_count}</span>`);
         if(r.hr)     chips.push(`<span class="mobile-record-chip"><span class="k">心率</span> ${r.hr}</span>`);
         if(r.feel)   chips.push(`<span class="feel-badge">${r.feel}</span>`);
@@ -1774,43 +1789,43 @@ function renderRecordPage(){
   } else {
     // Build column header based on sport mix in current page
     const sports=new Set(page.map(r=>r.sport));
-    const hasRun=sports.has('跑步'), hasAna=sports.has('无氧'), hasJump=sports.has('跳绳');
+    const hasRun=sports.has('Run'), hasAna=sports.has('Strength'), hasJump=sports.has('Jump Rope');
     const batchPad = batchMode ? '<span class="rh" style="width:42px"></span>' : '';
 
     // Header columns
     let headerHtml = batchPad;
-    headerHtml += `<span class="rh" style="width:96px">日期</span>`;
-    headerHtml += `<span class="rh" style="width:150px">运动类型</span>`;
-    if(hasRun||hasJump) headerHtml += `<span class="rh" style="width:52px">时段</span>`;
-    if(hasRun) headerHtml += `<span class="rh" style="width:60px">距离</span>`;
-    if(hasRun) headerHtml += `<span class="rh" style="width:58px">配速</span>`;
-    if(hasRun||hasJump) headerHtml += `<span class="rh" style="width:48px">平均心率</span>`;
-    if(hasRun||hasJump) headerHtml += `<span class="rh" style="width:52px">最大心率</span>`;
-    if(hasRun) headerHtml += `<span class="rh" style="width:44px">步频</span>`;
-    if(hasRun) headerHtml += `<span class="rh" style="width:48px">天气</span>`;
-    if(hasRun) headerHtml += `<span class="rh" style="width:90px">路线</span>`;
-    if(hasRun) headerHtml += `<span class="rh" style="width:116px">跑鞋</span>`;
-    if(hasRun) headerHtml += `<span class="rh" style="width:90px">设备</span>`;
+    headerHtml += `<span class="rh" style="width:104px">日期</span>`;
+    headerHtml += `<span class="rh" style="width:300px">运动类型</span>`;
+    if(hasRun||hasJump) headerHtml += `<span class="rh" style="width:58px">时段</span>`;
+    if(hasRun) headerHtml += `<span class="rh" style="width:66px">距离</span>`;
+    if(hasRun) headerHtml += `<span class="rh" style="width:64px">配速</span>`;
+    if(hasRun||hasJump) headerHtml += `<span class="rh" style="width:54px">平均心率</span>`;
+    if(hasRun||hasJump) headerHtml += `<span class="rh" style="width:58px">最大心率</span>`;
+    if(hasRun) headerHtml += `<span class="rh" style="width:50px">步频</span>`;
+    if(hasRun) headerHtml += `<span class="rh" style="width:54px">天气</span>`;
+    if(hasRun) headerHtml += `<span class="rh" style="width:100px">路线</span>`;
+    if(hasRun) headerHtml += `<span class="rh" style="width:126px">跑鞋</span>`;
+    if(hasRun) headerHtml += `<span class="rh" style="width:100px">设备</span>`;
     if(hasJump) headerHtml += `<span class="rh" style="width:72px">时长</span>`;
-    if(hasJump) headerHtml += `<span class="rh" style="width:60px">个数</span>`;
+    if(hasJump) headerHtml += `<span class="rh" style="width:66px">个数</span>`;
     if(hasJump) headerHtml += `<span class="rh" style="width:74px">频率</span>`;
-    headerHtml += `<span class="rh" style="width:48px">体感</span>`;
-    headerHtml += `<span class="rh" style="width:160px">身体感受</span>`;
-    headerHtml += `<span class="rh" style="width:200px">备注</span>`;
+    headerHtml += `<span class="rh" style="width:54px">体感</span>`;
+    headerHtml += `<span class="rh" style="width:300px">身体感受</span>`;
+    headerHtml += `<span class="rh" style="width:300px">备注</span>`;
     document.getElementById('record-col-header').innerHTML = headerHtml;
 
     const em = v => v ? `<span>${v}</span>` : `<span class="rc-empty">—</span>`;
 
     list.innerHTML = page.map(r=>{
       let badgeTxt = r.sport||'—';
-      if(r.sport==='跑步'&&r.sub) badgeTxt+=' · '+r.sub;
-      if(r.sport==='无氧') badgeTxt+=' · '+(r.muscles||r.sub||'');
+      if(r.sport==='Run'&&r.sub) badgeTxt+=' · '+r.sub;
+      if(r.sport==='Strength') badgeTxt+=' · '+(r.muscles||r.sub||'').split(',').join(' · ');
       const isSelected = selectedIds.has(r.id);
       const clickAttr = batchMode ? '' : `onclick="editRecord('${r.id}')"`;
 
       let cols = '';
       cols += `<span class="rc rc-date">${r.date}</span>`;
-      cols += `<span class="rc" style="width:150px;padding-right:10px"><span class="record-badge ${badgeClass(r.sport)}" title="${badgeTxt}">${badgeTxt}</span></span>`;
+      cols += `<span class="rc" style="width:300px;padding-right:10px;overflow:visible;white-space:normal"><span class="record-badge ${badgeClass(r.sport)}" title="${badgeTxt}">${badgeTxt}</span></span>`;
       if(hasRun||hasJump) cols += `<span class="rc rc-period">${em(r.period||'')}</span>`;
       if(hasRun)  cols += `<span class="rc rc-dist">${r.dist?r.dist+'km':em('')}</span>`;
       if(hasRun)  cols += `<span class="rc rc-pace">${r.pace?fmtPace(r.pace):em('')}</span>`;
@@ -1903,8 +1918,8 @@ function renderDashboard(){
 
   // 月度堆叠柱状图 + 白色数字标签
   const months=getMonthRange();
-  const types=['无氧','跑步','跳绳','羽毛球','徒步','散步'];
-  const colors={无氧:'#3b7ef8',跑步:'#16a06a',跳绳:'#d97706',羽毛球:'#7c5cf6',徒步:'#059669',散步:'#9ba3b5'};
+  const types=['Strength','Run','Jump Rope','Badminton','Hike','Walk'];
+  const colors={'Strength':'#3b7ef8','Run':'#16a06a','Jump Rope':'#d97706','Badminton':'#7c5cf6','Hike':'#059669','Walk':'#9ba3b5'};
   dc('monthlyChart');
   CI.monthlyChart=new Chart(document.getElementById('monthlyChart'),{type:'bar',
     data:{labels:months.map(m=>m.slice(2).replace('-','/')),
@@ -2053,7 +2068,7 @@ function toggleCycleHistory(){
 }
 
 function renderCycleCard(c, isActive){
-  const ana = records.filter(r=>r.sport==='无氧');
+  const ana = records.filter(r=>r.sport==='Strength');
   const today = localDateStr();
   const endDate = c.end || today;
   const startD = new Date(c.start), endD = new Date(endDate);
@@ -2097,19 +2112,20 @@ function renderCycleCard(c, isActive){
 // ── muscle group parser: take FIRST part only ──
 function primaryMuscle(s){
   if(!s) return null;
-  const raw = s.split('/')[0].trim().toLowerCase();
-  if(raw.includes('胸')) return '胸';
-  if(raw.includes('背')) return '背';
-  if(raw.includes('leg')||raw.includes('腿')) return '腿';
-  if(raw.includes('肩')) return '肩';
-  if(raw.includes('core')||raw.includes('核心')) return '核心';
-  if(raw.includes('二')) return '二头';
-  if(raw.includes('三')) return '三头';
+  const raw = s.split(',')[0].trim().toLowerCase();
+  if(raw.includes('chest')) return 'Chest';
+  if(raw.includes('back')) return 'Back';
+  if(raw.includes('legs')||raw.includes('leg')) return 'Legs';
+  if(raw.includes('delts')||raw.includes('shoulder')) return 'Delts';
+  if(raw.includes('core')) return 'Core';
+  if(raw.includes('bis')||raw.includes('bicep')) return 'Bis';
+  if(raw.includes('tris')||raw.includes('tricep')) return 'Tris';
+  if(raw.includes('full')) return 'Full';
   return null;
 }
 
 function renderAnaerobic(){
-  const ana = records.filter(r=>r.sport==='无氧').sort((a,b)=>a.date.localeCompare(b.date));
+  const ana = records.filter(r=>r.sport==='Strength').sort((a,b)=>a.date.localeCompare(b.date));
 
   // ── 坚持周期 ──
   const active = anaCycles.filter(c=>!c.end);
@@ -2132,13 +2148,13 @@ function renderAnaerobic(){
   }
 
   // ── 肌群分布（饼图）──
-  const MUSCLE_COLORS = { 胸:'#3b7ef8', 背:'#16a06a', 腿:'#d97706', 肩:'#7c5cf6', 核心:'#e04545', 二头:'#059669', 三头:'#f0a843' };
+  const MUSCLE_COLORS = { Chest:'#3b7ef8', Back:'#16a06a', Legs:'#d97706', Delts:'#7c5cf6', Core:'#e04545', Bis:'#059669', Tris:'#f0a843' };
   const mm = {};
   ana.forEach(r=>{
     const m = primaryMuscle(r.muscles||r.sub||'');
     if(m) mm[m] = (mm[m]||0) + 1;
   });
-  const PARTS_ORDER = ['胸','背','腿','肩','核心','二头','三头'];
+  const PARTS_ORDER = ['Chest','Back','Legs','Delts','Core','Bis','Tris'];
   const mmLabels = PARTS_ORDER.filter(p=>mm[p]);
   const mmVals = mmLabels.map(p=>mm[p]);
   dc('muscleChart');
@@ -2187,8 +2203,8 @@ function renderAnaerobic(){
   // ── 年度战报（分组柱状图）──
   const YEAR_COLORS = ['#3b7ef8','#16a06a','#d97706','#7c5cf6','#e04545'];
   const years = [...new Set(ana.map(r=>r.date?.slice(0,4)).filter(Boolean))].sort();
-  const PARTS = ['胸','背','腿','肩','核心','二头','三头'];
-  const PART_COLORS_YEARLY = { 胸:'#3b7ef8', 背:'#16a06a', 腿:'#d97706', 肩:'#7c5cf6', 核心:'#e04545', 二头:'#059669', 三头:'#f0a843' };
+  const PARTS = ['Chest','Back','Legs','Delts','Core','Bis','Tris'];
+  const PART_COLORS_YEARLY = { Chest:'#3b7ef8', Back:'#16a06a', Legs:'#d97706', Delts:'#7c5cf6', Core:'#e04545', Bis:'#059669', Tris:'#f0a843' };
 
   // 每年一个 dataset，每个部位一个 x 标签
   const yearlyDatasets = years.map((yr,yi)=>{
@@ -2350,7 +2366,7 @@ function toggleRunCycleHistory(){
 function runCycleStats(c){
   const today=localDateStr();
   const endDate=c.end||today;
-  const runs=records.filter(r=>r.sport==='跑步'&&r.date>=c.start&&r.date<=endDate);
+  const runs=records.filter(r=>r.sport==='Run'&&r.date>=c.start&&r.date<=endDate);
   const totalDist=runs.reduce((a,r)=>a+(r.dist||0),0);
   const hrR=runs.filter(r=>r.hr); const avgHr=hrR.length?Math.round(hrR.reduce((a,r)=>a+r.hr,0)/hrR.length):null;
   const prR=runs.filter(r=>r.pace); const avgP=prR.length?prR.reduce((a,r)=>a+r.pace,0)/prR.length:null;
@@ -2403,7 +2419,7 @@ function renderRunCycleCard(c,isActive){
 }
 
 function renderRunAnalysis(){
-  const runs=records.filter(r=>r.sport==='跑步').sort((a,b)=>a.date.localeCompare(b.date));
+  const runs=records.filter(r=>r.sport==='Run').sort((a,b)=>a.date.localeCompare(b.date));
   const totalDist=runs.reduce((a,r)=>a+(r.dist||0),0);
   const hrR=runs.filter(r=>r.hr); const avgHr=hrR.length?Math.round(hrR.reduce((a,r)=>a+r.hr,0)/hrR.length):null;
   const prR=runs.filter(r=>r.pace); const avgP=prR.length?prR.reduce((a,r)=>a+r.pace,0)/prR.length:null;
@@ -2643,7 +2659,9 @@ function parseExcelRows(rows){
       }
     } catch(e){ return; }
 
-    const sport = (row['运动类型']||'').trim();
+    const SPORT_IMPORT_MAP={跑步:'Run',无氧:'Strength',跳绳:'Jump Rope',羽毛球:'Badminton',徒步:'Hike',散步:'Walk'};
+    const MUSCLE_IMPORT_MAP={胸:'Chest',背:'Back',腿:'Legs',肩:'Delts',核心:'Core',二头:'Bis',三头:'Tris',全身:'Full',Leg:'Legs'};
+    const sport = SPORT_IMPORT_MAP[(row['运动类型']||'').trim()] || (row['运动类型']||'').trim();
     if(!sport) return;
 
     // ── Period ──
@@ -2691,7 +2709,7 @@ function parseExcelRows(rows){
     // ── Build record ──
     let rec = { date:dateStr, sport, period, note, feel:'', body:'' };
 
-    if(sport==='跑步'){
+    if(sport==='Run'){
       const trainType = (row['训练类型']||'').trim();
       // Filter out trainType values that are sport names (data quality issue)
       const validSubs = ['有氧筑基','节奏跑','间歇跑','LSD','恢复跑'];
@@ -2708,13 +2726,14 @@ function parseExcelRows(rows){
         devices: (row['设备']||'').trim() ? [(row['设备']||'').trim()] : [],
         weather: '', route: '',
       };
-    } else if(sport==='无氧'){
+    } else if(sport==='Strength'){
       const trainType = (row['训练类型']||'').trim();
-      // Map Leg -> 腿, keep everything else as-is, strip ◆ ！ etc
-      const muscles = trainType
-        .replace(/Leg/g,'腿').replace(/◆|！！/g,'').trim();
-      rec = {...rec, muscles: muscles==='无氧'?'':muscles};
-    } else if(sport==='跳绳'){
+      const muscles = trainType.split(/[,，]/).map(p=>{
+        const t=p.replace(/◆|！！/g,'').trim();
+        return MUSCLE_IMPORT_MAP[t]||t;
+      }).filter(Boolean).join(',');
+      rec = {...rec, muscles: muscles==='Strength'?'':muscles};
+    } else if(sport==='Jump Rope'){
       const dur = parseDuration(row['运动时间']);
       const cnt = toInt(row['个数']);
       const freq = toInt(row['跳绳频率']);
@@ -2889,7 +2908,7 @@ function toggleFilterPill(el, groupId){
 }
 
 function getFilteredRuns(){
-  const runs = records.filter(r=>r.sport==='跑步').sort((a,b)=>a.date.localeCompare(b.date));
+  const runs = records.filter(r=>r.sport==='Run').sort((a,b)=>a.date.localeCompare(b.date));
   const stEl = document.getElementById('filter-subtype');
   const distEl = document.getElementById('filter-dist');
   if(!stEl||!distEl) return runs;
@@ -3042,12 +3061,12 @@ let calYear = new Date().getFullYear();
 // 直接改引号里的颜色值即可，格式 #RRGGBB
 // =====================================================
 const SPORT_COLOR = {
-  跑步:  '#16a06a',   // 绿色
-  无氧:  '#3b7ef8',   // 蓝色
-  跳绳:  '#d97706',   // 橙色
-  羽毛球:'#7c5cf6',   // 紫色
-  徒步:  '#059669',   // 深绿
-  散步:  '#6b9e8a',   // 灰绿
+  Run:         '#16a06a',
+  Strength:    '#3b7ef8',
+  'Jump Rope': '#d97706',
+  Badminton:   '#7c5cf6',
+  Hike:        '#059669',
+  Walk:        '#6b9e8a',
 };
 // =====================================================
 // 🗓️ 训练日历 —— 同一天有两种运动时的显示优先级
@@ -3057,21 +3076,23 @@ const SPORT_COLOR = {
 // =====================================================
 // 🗓️ 训练日历 —— 同一天有两种运动时的显示优先级
 // 排在前面的运动类型优先显示在格子上半部分
-// 例如：跑步和无氧同一天，跑步显示在上，无氧在下
+// 例如：Run 和 Strength 同一天，Run 显示在上，Strength 在下
 // 如需调整顺序，直接改下面数组里运动名称的排列位置
 // =====================================================
-const SPORT_PRIORITY = ['跑步','无氧','跳绳','羽毛球','徒步','散步'];
+const SPORT_PRIORITY = ['Run','Strength','Jump Rope','Badminton','Hike','Walk'];
 
 function sportPriority(s){ const i=SPORT_PRIORITY.indexOf(s); return i===-1?99:i; }
 
 function dayLabel(rec){
-  // Returns {icon, sub} for a record
-  if(rec.sport==='跑步') return {icon:'🏃', sub:null};
-  if(rec.sport==='无氧') return {icon:null, sub:rec.muscles||rec.sub||''};
-  if(rec.sport==='跳绳') return {icon:'🪢', sub:null};
-  if(rec.sport==='羽毛球') return {icon:'🏸', sub:null};
-  if(rec.sport==='徒步') return {icon:'⛰', sub:null};
-  if(rec.sport==='散步') return {icon:'🚶', sub:null};
+  if(rec.sport==='Run') return {icon:'🏃', sub:null};
+  if(rec.sport==='Strength'){
+    const sub=(rec.muscles||rec.sub||'').split(',').filter(Boolean).join('·');
+    return {icon:null, sub};
+  }
+  if(rec.sport==='Jump Rope') return {icon:'🪢', sub:null};
+  if(rec.sport==='Badminton') return {icon:'🏸', sub:null};
+  if(rec.sport==='Hike') return {icon:'⛰', sub:null};
+  if(rec.sport==='Walk') return {icon:'🚶', sub:null};
   return {icon:null, sub:null};
 }
 
@@ -3138,15 +3159,18 @@ function renderCalendar(){
     dateMap[r.date].push(r);
   });
 
-  const MONTHS=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-  const WDS=['一','二','三','四','五','六','日'];
-  const SPORT_ORDER=['跑步','无氧','跳绳','羽毛球','徒步','散步'];
+  const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const WDS=['Mo','Tu','We','Th','Fr','Sa','Su'];
+  const SPORT_ORDER=['Run','Strength','Jump Rope','Badminton','Hike','Walk'];
+
+  // Summary label map
+  const SUMMARY_LABEL={'Run':'Runs','Strength':'Lifts','Jump Rope':'Jumps','Badminton':'Badm.','Hike':'Hikes','Walk':'Walks'};
 
   // Build month→records map for summaries
   const monthMap={};
   records.forEach(r=>{
     if(!r.date) return;
-    const mk=r.date.slice(0,7); // "YYYY-MM"
+    const mk=r.date.slice(0,7);
     if(!monthMap[mk]) monthMap[mk]=[];
     monthMap[mk].push(r);
   });
@@ -3155,27 +3179,22 @@ function renderCalendar(){
     const mk=`${yr}-${String(mo+1).padStart(2,'0')}`;
     const recs=monthMap[mk]||[];
     if(!recs.length) return '';
-
-    // Collect all sport types, known first then custom
     const customInMonth=[...new Set(recs.map(r=>r.sport).filter(s=>!SPORT_ORDER.includes(s)))];
     const orderedSports=[...SPORT_ORDER,...customInMonth];
-
     const parts=[];
     orderedSports.forEach(sport=>{
       const sr=recs.filter(r=>r.sport===sport);
       if(!sr.length) return;
-      if(sport==='跑步'){
+      const label=SUMMARY_LABEL[sport]||sport;
+      if(sport==='Run'){
         const km=sr.reduce((a,r)=>a+(r.dist||0),0);
-        parts.push(`<span style="color:var(--green);font-weight:600">${km%1===0?km:km.toFixed(1)}km</span><span>/${sr.length}次</span>`);
-        parts[parts.length-1]='跑步 '+parts[parts.length-1];
+        const kmStr=km%1===0?km:km.toFixed(1);
+        parts.push(`${label}: <span style="color:var(--green);font-weight:600">${kmStr}km</span> (${sr.length}x)`);
       } else {
-        parts.push(`${sport} ${sr.length}次`);
+        parts.push(`${label}: ${sr.length}x`);
       }
     });
-
-    return parts.map((p,i)=>
-      `<span style="white-space:nowrap">${p}</span>`
-    ).join('<span style="color:var(--border2);margin:0 4px">·</span>');
+    return parts.map(p=>`<span style="white-space:nowrap">${p}</span>`).join('<span style="color:var(--border2);margin:0 4px">·</span>');
   }
 
   let html='';
@@ -3218,7 +3237,7 @@ function renderCalendar(){
 // ══════════════════════════════════════
 document.querySelectorAll('[id$="-date"]').forEach(el=>{ el.value=localDateStr(); });
 renderCustomSportBtns();
-setSport('跑步');
+setSport('Run');
 refreshHistoryLists();
 initGistBtn();
 renderDashboard();
