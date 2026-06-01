@@ -184,6 +184,13 @@ body{min-height:100vh;padding-bottom:4rem;}
   .cycle-card{ flex-wrap: wrap; gap: 10px; }
   .cycle-divider{ display: none; }
 
+  /* ── 总览左卡片（次数+饼图）手机端纵向堆叠 ── */
+  .dash-stat-card { flex-direction: column !important; align-items: stretch !important; }
+  .dash-stat-divider { width: 100% !important; height: 1px !important; }
+
+  /* ── 跑鞋里程卡占满整行，消除横向溢出 ── */
+  .metric-shoe { grid-column: 1 / -1 !important; min-width: 0 !important; }
+
   /* ── 数据管理 ── */
   .data-section{ padding: 14px; }
   .mobile-record-meta{ display:flex; flex-wrap:wrap; gap:8px; font-size:12.5px; color:var(--text2); }
@@ -515,7 +522,7 @@ body{min-height:100vh;padding-bottom:4rem;}
     <div class="charts-grid" style="margin-bottom:14px">
 
       <!-- 左：总运动次数 + 饼图 同一卡片，横向三区域 -->
-      <div class="chart-card" style="display:flex;align-items:center;gap:20px">
+      <div class="chart-card dash-stat-card" style="display:flex;align-items:center;gap:20px">
         <!-- 数字区 -->
         <div style="flex-shrink:0;min-width:130px">
           <div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-variant-numeric:tabular-nums" id="dash-date-range">—</div>
@@ -526,7 +533,7 @@ body{min-height:100vh;padding-bottom:4rem;}
           <div style="font-size:13px;font-weight:600;color:var(--text2);margin-top:6px" id="dash-week-avg">—</div>
         </div>
         <!-- 竖向分割线 -->
-        <div style="width:1px;height:80px;background:var(--border);flex-shrink:0"></div>
+        <div class="dash-stat-divider" style="width:1px;height:80px;background:var(--border);flex-shrink:0"></div>
         <!-- 饼图区域 -->
         <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -2255,7 +2262,14 @@ function renderAnaerobic(){
 function renderHeatmap(){
   const el=document.getElementById('heatmap-container');
   const today=new Date(); today.setHours(0,0,0,0);
-  const start=new Date(today); start.setFullYear(start.getFullYear()-1); start.setDate(start.getDate()-start.getDay());
+  const isMobile = window.innerWidth <= 768;
+  const start=new Date(today);
+  if(isMobile){
+    start.setMonth(start.getMonth()-3);
+  } else {
+    start.setFullYear(start.getFullYear()-1);
+  }
+  start.setDate(start.getDate()-start.getDay());
   const cmap={};records.filter(r=>r.date).forEach(r=>cmap[r.date]=(cmap[r.date]||0)+1);
   const weeks=[]; let d=new Date(start);
   while(d<=today){ const w=[]; for(let i=0;i<7;i++){w.push(new Date(d));d.setDate(d.getDate()+1);} weeks.push(w); }
@@ -2469,7 +2483,7 @@ function renderRunAnalysis(){
       </div>
     </div>
     ${Object.keys(shoeMap).length?`
-    <div class="metric" style="min-width:320px;flex:2">
+    <div class="metric metric-shoe" style="flex:2">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div class="metric-label">跑鞋里程</div>
         <span style="font-size:11px;color:var(--text3)">默认退役里程 500km，点「设置」可修改</span>
