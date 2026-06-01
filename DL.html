@@ -1314,7 +1314,8 @@ function updateGistBtn(connected){
   const btn = document.getElementById('gistSyncBtn'); if(!btn) return;
   btn.textContent = connected ? '☁ 已同步' : '☁ Gist 同步';
   btn.style.borderColor = connected ? 'var(--green)' : '';
-  btn.style.color = connected ? 'var(--green)' : '';
+  btn.style.color = connected ? '#fff' : '';
+  btn.style.background = connected ? 'var(--green)' : '';
 }
 function initGistBtn(){
   const connected = !!(localStorage.getItem(LS_GIST_TOKEN) && localStorage.getItem(LS_GIST_ID));
@@ -3028,8 +3029,8 @@ function renderCombinedChart(){
         // yHr（心率轴）：min=底部值，max=顶部值
         //   → min 越小，心率线越靠上（远离配速线）
         // =====================================================
-          min: 5.0,  // 配速轴顶部（最快配速，如 5.0 = 5'00"/km）
-          max: runTargets.pace ? Math.max(9.5, runTargets.pace + 0.5) : 9.5,  // 配速轴底部（最慢配速，越大线越靠下）
+          min: 4.5,  // 配速轴顶部（最快配速，如 4.5 = 4'30"/km）
+          max: runTargets.pace ? Math.max(7.5, runTargets.pace + 0.5) : 7.5,  // 配速轴底部（最慢配速，越大线越靠下）
           display: !!(showPace || runTargets.pace),
           grid:{color:'rgba(0,0,0,0.05)'},
           ticks:{
@@ -3039,8 +3040,8 @@ function renderCombinedChart(){
         },
         yHr:{
           type:'linear', position:'right',
-          min: 60,   // 心率轴底部（越小则心率线越靠上）
-          max: runTargets.hr ? Math.max(200, runTargets.hr + 10) : 200,  // 心率轴顶部（越大则心率线越靠下）
+          min: 100,   // 心率轴底部（越小则心率线越靠上）
+          max: runTargets.hr ? Math.max(195, runTargets.hr + 10) : 195,  // 心率轴顶部（越大则心率线越靠下）
           display: !!(showHr||showMaxHr||showCadence||runTargets.hr),
           grid:{drawOnChartArea:false},
           ticks:{color:'#9ba3b5',font:{size:11}}
