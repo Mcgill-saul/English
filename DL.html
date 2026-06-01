@@ -173,8 +173,6 @@ body{min-height:100vh;padding-bottom:4rem;}
   /* ── 总览数字卡片手机紧凑 ── */
   #dash-total{ font-size: 32px !important; }
   #dash-date-range{ font-size: 11px !important; }
-  /* 饼图+热图在手机上竖排 */
-  #typeChart-legend{ flex-direction: row !important; flex-wrap: wrap !important; margin-top: 8px !important; }
   .cal-grid{ grid-template-columns: 1fr !important; }
   .cal-day{ min-height: 42px; }
   .cal-day-num{ font-size: 11px; }
@@ -187,6 +185,10 @@ body{min-height:100vh;padding-bottom:4rem;}
   /* ── 总览左卡片（次数+饼图）手机端纵向堆叠 ── */
   .dash-stat-card { flex-direction: column !important; align-items: stretch !important; }
   .dash-stat-divider { width: 100% !important; height: 1px !important; }
+
+  /* ── 饼图+图例手机端改为上下排列，防止图例挤压画布 ── */
+  .dash-pie-row { flex-direction: column !important; gap: 10px !important; }
+  .dash-pie-row #typeChart-legend { flex-shrink: 1 !important; flex-direction: row !important; flex-wrap: wrap !important; gap: 6px !important; justify-content: flex-start; margin-top: 0 !important; }
 
   /* ── 跑鞋里程卡占满整行，消除横向溢出 ── */
   .metric-shoe { grid-column: 1 / -1 !important; min-width: 0 !important; }
@@ -436,7 +438,7 @@ body{min-height:100vh;padding-bottom:4rem;}
 
 /* Each month card */
 .cal-month{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;box-shadow:var(--shadow);}
-.cal-month-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.cal-month-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;}
 .cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px;}
 .cal-wd{font-size:11px;color:var(--text3);text-align:center;padding:3px 0;font-weight:600;}
 .cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
@@ -543,7 +545,7 @@ body{min-height:100vh;padding-bottom:4rem;}
             </div>
             <label class="line-toggle" style="--c:#16a06a"><input type="checkbox" id="dash-pie-labels" checked onchange="renderDashboard()"><span>显示数字</span></label>
           </div>
-          <div style="display:flex;align-items:center;gap:16px">
+          <div class="dash-pie-row" style="display:flex;align-items:center;gap:16px">
             <div style="position:relative;flex:1;min-width:0;height:200px"><canvas id="typeChart"></canvas></div>
             <div id="typeChart-legend" style="display:flex;flex-direction:column;gap:6px;flex-shrink:0"></div>
           </div>
@@ -3138,6 +3140,43 @@ function renderCalendar(){
 
   const MONTHS=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
   const WDS=['一','二','三','四','五','六','日'];
+  const SPORT_ORDER=['跑步','无氧','跳绳','羽毛球','徒步','散步'];
+
+  // Build month→records map for summaries
+  const monthMap={};
+  records.forEach(r=>{
+    if(!r.date) return;
+    const mk=r.date.slice(0,7); // "YYYY-MM"
+    if(!monthMap[mk]) monthMap[mk]=[];
+    monthMap[mk].push(r);
+  });
+
+  function buildMonthlySummary(yr, mo){
+    const mk=`${yr}-${String(mo+1).padStart(2,'0')}`;
+    const recs=monthMap[mk]||[];
+    if(!recs.length) return '';
+
+    // Collect all sport types, known first then custom
+    const customInMonth=[...new Set(recs.map(r=>r.sport).filter(s=>!SPORT_ORDER.includes(s)))];
+    const orderedSports=[...SPORT_ORDER,...customInMonth];
+
+    const parts=[];
+    orderedSports.forEach(sport=>{
+      const sr=recs.filter(r=>r.sport===sport);
+      if(!sr.length) return;
+      if(sport==='跑步'){
+        const km=sr.reduce((a,r)=>a+(r.dist||0),0);
+        parts.push(`<span style="color:var(--green);font-weight:600">${km%1===0?km:km.toFixed(1)}km</span><span>/${sr.length}次</span>`);
+        parts[parts.length-1]='跑步 '+parts[parts.length-1];
+      } else {
+        parts.push(`${sport} ${sr.length}次`);
+      }
+    });
+
+    return parts.map((p,i)=>
+      `<span style="white-space:nowrap">${p}</span>`
+    ).join('<span style="color:var(--border2);margin:0 4px">·</span>');
+  }
 
   let html='';
   for(let m=0;m<12;m++){
@@ -3145,9 +3184,13 @@ function renderCalendar(){
     // getDay(): 0=Sun,1=Mon...6=Sat → convert to Mon-first: Mon=0..Sun=6
     const startWd=(firstDay.getDay()+6)%7; // offset Mon=0
     const daysInMonth=new Date(calYear,m+1,0).getDate();
+    const summary=buildMonthlySummary(calYear,m);
 
     html+=`<div class="cal-month">
-      <div class="cal-month-title">${MONTHS[m]}</div>
+      <div class="cal-month-title">
+        <span>${MONTHS[m]}</span>
+        ${summary?`<span style="font-size:11px;color:var(--text3);font-weight:400;display:flex;align-items:center;gap:0;flex-wrap:wrap;justify-content:flex-end;min-width:0">${summary}</span>`:''}
+      </div>
       <div class="cal-weekdays">${WDS.map(d=>`<div class="cal-wd">${d}</div>`).join('')}</div>
       <div class="cal-days">`;
 
