@@ -69,10 +69,17 @@ body{min-height:100vh;padding-bottom:4rem;}
 .main{max-width:none;margin:0;padding:1.5rem 2.5rem 0;}
 
 /* tabs */
-.tabs{display:flex;gap:0;margin-bottom:1.5rem;border-bottom:2px solid var(--border);}
+.tabs{display:flex;gap:0;margin-bottom:1.5rem;border-bottom:2px solid var(--border);align-items:center;}
 .tab{padding:10px 18px;font-size:13.5px;cursor:pointer;color:var(--text2);border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;font-family:var(--font);}
 .tab:hover{color:var(--text);}
 .tab.active{color:var(--green);border-bottom-color:var(--green);font-weight:600;}
+.tab-spacer{flex:1;}
+#tab-add{margin-bottom:0;border-bottom:none;border-radius:20px;padding:7px 16px;background:var(--green);color:#fff;font-weight:600;margin-right:6px;font-size:13px;}
+#tab-add:hover{background:var(--green-dk);}
+#tab-add.active{background:var(--green-dk);color:#fff;border-bottom:none;}
+#tab-data{margin-bottom:0;border-bottom:none;border-radius:20px;padding:7px 16px;background:var(--bg3);color:var(--text2);border:1.5px solid var(--border2);font-size:13px;}
+#tab-data:hover{color:var(--text);}
+#tab-data.active{background:var(--bg3);color:var(--text);border-color:var(--border2);border-bottom:1.5px solid var(--border2);}
 
 /* metrics */
 .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:1.5rem;}
@@ -500,10 +507,7 @@ body{min-height:100vh;padding-bottom:4rem;}
 
 <div class="topbar">
   <div class="topbar-title"><span class="dot"></span>Fitness Log</div>
-  <div class="topbar-actions">
-    <button class="btn btn-primary btn-sm" onclick="showTab('add')">＋ Add</button>
-    <button class="btn btn-secondary btn-sm" onclick="showTab('data')">Data</button>
-  </div>
+  
 </div>
 
 <div class="main">
@@ -513,7 +517,8 @@ body{min-height:100vh;padding-bottom:4rem;}
     <button class="tab" onclick="showTab('anaerobic')" id="tab-anaerobic">Strength</button>
     <button class="tab" onclick="showTab('records')" id="tab-records">Records</button>
     <button class="tab" onclick="showTab('calendar')" id="tab-calendar">Calendar</button>
-    <button class="tab" onclick="showTab('add')" id="tab-add">Add</button>
+    <div class="tab-spacer"></div>
+    <button class="tab" onclick="showTab('add')" id="tab-add">＋ Add</button>
     <button class="tab" onclick="showTab('data')" id="tab-data">Data</button>
   </div>
 
