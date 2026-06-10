@@ -1537,6 +1537,8 @@ function saveRecord(){
   let rec={id:editId||genId(), sport};
 
   if(sport==='Run'){
+    const date=document.getElementById('r-date').value; if(!date){showToast('请选择日期');return;}
+    const paceEl=document.getElementById('r-pace');
     const paceVal=paceEl._val || parsePaceStr(paceEl.value) || null;
     rec={...rec, date, period:document.getElementById('r-period').value, sub:document.getElementById('r-sub').value,
       dist:parseFloat(document.getElementById('r-dist').value)||null,
