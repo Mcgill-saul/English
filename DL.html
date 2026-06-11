@@ -515,6 +515,7 @@ body{min-height:100vh;padding-bottom:4rem;}
     <button class="tab active" onclick="showTab('dashboard')" id="tab-dashboard">Dashboard</button>
     <button class="tab" onclick="showTab('run')" id="tab-run">Run</button>
     <button class="tab" onclick="showTab('anaerobic')" id="tab-anaerobic">Strength</button>
+    <button class="tab" onclick="showTab('hike')" id="tab-hike">Hike</button>
     <button class="tab" onclick="showTab('records')" id="tab-records">Records</button>
     <button class="tab" onclick="showTab('calendar')" id="tab-calendar">Calendar</button>
     <div class="tab-spacer"></div>
@@ -633,6 +634,25 @@ body{min-height:100vh;padding-bottom:4rem;}
     </div>
   </div>
 
+  <!-- ══════════ HIKE ANALYSIS ══════════ -->
+  <div id="page-hike" style="display:none">
+    <div class="chart-card full" style="margin-bottom:1.5rem">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+        <div>
+          <div class="chart-title">步数趋势</div>
+          <div class="chart-sub">每次步数记录</div>
+        </div>
+        <!-- 颜色图例开关 -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <span style="font-size:11px;color:var(--text3)">显示：</span>
+          <label class="line-toggle" style="--c:#059669"><input type="checkbox" id="hlt-hike" checked onchange="renderHikeAnalysis()"><span>⛰ Hike</span></label>
+          <label class="line-toggle" style="--c:#6b9e8a"><input type="checkbox" id="hlt-walk" checked onchange="renderHikeAnalysis()"><span>🚶 Walk</span></label>
+        </div>
+      </div>
+      <div style="position:relative;height:320px"><canvas id="hikeDistChart"></canvas></div>
+    </div>
+  </div>
+
   <!-- ══════════ RUN ANALYSIS ══════════ -->
   <div id="page-run" style="display:none">
 
@@ -725,7 +745,6 @@ body{min-height:100vh;padding-bottom:4rem;}
         <option value="Jump Rope">Jump Rope</option>
         <option value="Badminton">Badminton</option>
         <option value="Hike">Hike</option>
-        <option value="Walk">Walk</option>
       </select>
       <select id="filterYear" onchange="renderRecords()">
         <option value="">全部年份</option>
@@ -763,7 +782,6 @@ body{min-height:100vh;padding-bottom:4rem;}
         <button class="sport-btn" onclick="setSport('Jump Rope')" id="sb-Jump Rope">🪢 Jump Rope</button>
         <button class="sport-btn" onclick="setSport('Badminton')" id="sb-Badminton">🏸 Badminton</button>
         <button class="sport-btn" onclick="setSport('Hike')" id="sb-Hike">⛰ Hike</button>
-        <button class="sport-btn" onclick="setSport('Walk')" id="sb-Walk">🚶 Walk</button>
         <div id="custom-sport-btns"></div>
         <button class="sport-btn" onclick="addCustomSport()" style="border-style:dashed;color:var(--text3)">＋ 新增运动</button>
       </div>
@@ -905,6 +923,18 @@ body{min-height:100vh;padding-bottom:4rem;}
       <div id="sec-Hike" class="sport-section">
         <div class="form-grid">
           <div class="ff"><label>日期</label><input type="date" id="h-date"></div>
+          <div class="ff"><label>训练类型</label>
+            <select id="h-sub">
+              <option value="">— 选择 —</option>
+              <option value="Hike">Hike</option>
+              <option value="Walk">Walk</option>
+            </select>
+          </div>
+          <div class="ff"><label>步数 (步)</label><input type="number" id="h-steps" min="0" placeholder="8000"></div>
+          <div class="ff"><label>地点</label>
+            <input list="list-hike-location" id="h-location" placeholder="输入或选择地点">
+            <datalist id="list-hike-location"></datalist>
+          </div>
           <div class="ff span4"><label>体感</label>
             <div class="feel-group">
               <span class="feel-pill" data-val="轻松" onclick="setFeel('h-feel',this,'sel-0')">😊 轻松</span>
@@ -919,11 +949,7 @@ body{min-height:100vh;padding-bottom:4rem;}
         </div>
       </div>
 
-      <div id="sec-Walk" class="sport-section">
-        <!-- reuse same layout, linked in JS -->
-      </div>
-
-      <!-- 自定义运动（新增运动按钮创建的类型） -->
+      <!-- 自定义运动 -->
       <div id="sec-custom" class="sport-section">
         <div class="form-grid">
           <div class="ff"><label>日期</label><input type="date" id="c-date"></div>
@@ -1356,13 +1382,14 @@ function closeMobileMore(){
 // ══════════════════════════════════════
 //  页面切换
 // ══════════════════════════════════════
-const PAGES=['dashboard','run','anaerobic','records','calendar','add','data'];
+const PAGES=['dashboard','run','anaerobic','hike','records','calendar','add','data'];
 function showTab(n){
   PAGES.forEach(p=>{ document.getElementById('page-'+p).style.display=p===n?'':'none'; document.getElementById('tab-'+p)?.classList.toggle('active',p===n); });
   syncMobileNav(n);
   if(n==='dashboard') renderDashboard();
   if(n==='run') renderRunAnalysis();
   if(n==='anaerobic') renderAnaerobic();
+  if(n==='hike') renderHikeAnalysis();
   if(n==='records') renderRecords();
   if(n==='calendar') renderCalendar();
   if(n==='data') renderDataStats();
@@ -1377,10 +1404,12 @@ function refreshHistoryLists(){
   const weathers=[...new Set(records.filter(r=>r.weather).map(r=>r.weather))];
   const routes=[...new Set(records.filter(r=>r.route).map(r=>r.route))];
   const devices=[...new Set(records.flatMap(r=>r.devices||[]))];
+  const hikeLocations=[...new Set(records.filter(r=>r.sport==='Hike'&&r.location).map(r=>r.location))];
   fillDatalist('list-shoe',shoes);
   fillDatalist('list-weather',[...new Set(['晴','多云','小雨','大雨',...weathers])]);
   fillDatalist('list-route',routes);
   fillDatalist('list-device',devices);
+  fillDatalist('list-hike-location',hikeLocations);
   buildDevicePills(devices);
 }
 function fillDatalist(id,vals){
@@ -1458,8 +1487,8 @@ function addCustomSport(){
 function setSport(s){
   document.getElementById('form-sport').value=s;
   document.querySelectorAll('.sport-btn').forEach(b=>b.classList.toggle('active',b.id==='sb-'+s));
-  const builtIn=['Run','Strength','Jump Rope','Badminton','Hike','Walk'];
-  const allSecs=['Run','Strength','Jump Rope','Badminton','Hike','Walk','custom'];
+  const builtIn=['Run','Strength','Jump Rope','Badminton','Hike'];
+  const allSecs=['Run','Strength','Jump Rope','Badminton','Hike','custom'];
   allSecs.forEach(id=>{
     const el=document.getElementById('sec-'+id);
     if(el){ el.classList.remove('active'); }
@@ -1467,7 +1496,6 @@ function setSport(s){
   if(builtIn.includes(s)){
     const el=document.getElementById('sec-'+s);
     if(el) el.classList.add('active');
-    if(s==='Walk'){ document.getElementById('sec-Hike').classList.add('active'); document.getElementById('sec-Walk')?.classList.remove('active'); }
   } else {
     // custom sport — use sec-custom
     document.getElementById('sec-custom')?.classList.add('active');
@@ -1586,9 +1614,16 @@ function saveRecord(){
   } else if(sport==='Badminton'){
     const date=document.getElementById('b-date').value; if(!date){showToast('请选择日期');return;}
     rec={...rec, date, feel:document.getElementById('b-feel').value||'', body:document.getElementById('b-body').value||'', note:document.getElementById('b-note').value||''};
-  } else if(['Hike','Walk'].includes(sport)){
+  } else if(sport==='Hike'){
     const date=document.getElementById('h-date').value; if(!date){showToast('请选择日期');return;}
-    rec={...rec, date, feel:document.getElementById('h-feel').value||'', body:document.getElementById('h-body').value||'', note:document.getElementById('h-note').value||''};
+    rec={...rec, date,
+      sub: document.getElementById('h-sub').value||'',
+      steps: parseInt(document.getElementById('h-steps').value)||null,
+      location: document.getElementById('h-location').value||'',
+      feel: document.getElementById('h-feel').value||'',
+      body: document.getElementById('h-body').value||'',
+      note: document.getElementById('h-note').value||'',
+    };
   } else {
     // 自定义运动
     const date=document.getElementById('c-date').value; if(!date){showToast('请选择日期');return;}
@@ -1625,7 +1660,7 @@ function clearForm(){
    'r-feel','r-devices','r-body','r-note',
    'a-muscles','a-feel','a-body','a-note',
    'j-duration','j-count','j-hr','j-maxhr','j-feel','j-body','j-note',
-   'b-feel','b-body','b-note','h-feel','h-body','h-note',
+   'b-feel','b-body','b-note','h-sub','h-steps','h-location','h-feel','h-body','h-note',
    'c-feel','c-body','c-note',
    'r-device-input'
   ].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
@@ -1712,6 +1747,9 @@ function editRecord(id){
     if(r.feel){ const fg=document.querySelector('#sec-Badminton .feel-group'); if(fg) setFeelActive(fg,r.feel); }
   } else {
     document.getElementById('h-date').value=r.date||'';
+    document.getElementById('h-sub').value=r.sub||'';
+    document.getElementById('h-steps').value=r.steps||'';
+    document.getElementById('h-location').value=r.location||'';
     document.getElementById('h-feel').value=r.feel||'';
     document.getElementById('h-body').value=r.body||'';
     document.getElementById('h-note').value=r.note||'';
@@ -1743,7 +1781,7 @@ function renderRecordPage(){
     if(sport&&r.sport!==sport) return false;
     if(year&&!r.date?.startsWith(year)) return false;
     if(q){
-      const txt=[r.note,r.sub,r.sport,r.body,r.route,r.muscles,r.weather].join(' ').toLowerCase();
+      const txt=[r.note,r.sub,r.sport,r.body,r.route,r.muscles,r.weather,r.location].join(' ').toLowerCase();
       if(!txt.includes(q)) return false;
     }
     return true;
@@ -1766,6 +1804,7 @@ function renderRecordPage(){
       let badgeTxt = r.sport||'—';
       if(r.sport==='Run'&&r.sub) badgeTxt+=' · '+r.sub;
       if(r.sport==='Strength') badgeTxt+=' · '+(r.muscles||r.sub||'').split(',').join(' · ');
+      if(r.sport==='Hike'&&r.sub) badgeTxt+=' · '+r.sub;
       const chips=[];
       if(r.sport==='Run'){
         if(r.dist)   chips.push(`<span class="mobile-record-chip"><span class="k">距离</span> ${r.dist}km</span>`);
@@ -1781,6 +1820,10 @@ function renderRecordPage(){
         if(r.jump_count) chips.push(`<span class="mobile-record-chip"><span class="k">个数</span> ${r.jump_count}</span>`);
         if(r.hr)     chips.push(`<span class="mobile-record-chip"><span class="k">心率</span> ${r.hr}</span>`);
         if(r.feel)   chips.push(`<span class="feel-badge">${r.feel}</span>`);
+      } else if(r.sport==='Hike'){
+        if(r.steps)    chips.push(`<span class="mobile-record-chip"><span class="k">步数</span> ${r.steps.toLocaleString()}</span>`);
+        if(r.location) chips.push(`<span class="mobile-record-chip"><span class="k">地点</span> ${r.location}</span>`);
+        if(r.feel)     chips.push(`<span class="feel-badge">${r.feel}</span>`);
       } else {
         if(r.feel)   chips.push(`<span class="feel-badge">${r.feel}</span>`);
       }
@@ -1797,7 +1840,7 @@ function renderRecordPage(){
   } else {
     // Build column header based on sport mix in current page
     const sports=new Set(page.map(r=>r.sport));
-    const hasRun=sports.has('Run'), hasAna=sports.has('Strength'), hasJump=sports.has('Jump Rope');
+    const hasRun=sports.has('Run'), hasAna=sports.has('Strength'), hasJump=sports.has('Jump Rope'), hasHike=sports.has('Hike');
     const batchPad = batchMode ? '<span class="rh" style="width:42px"></span>' : '';
 
     // Header columns
@@ -1819,6 +1862,8 @@ function renderRecordPage(){
     if(hasJump) headerHtml += `<span class="rh" style="width:74px">频率</span>`;
     headerHtml += `<span class="rh" style="width:54px">体感</span>`;
     headerHtml += `<span class="rh" style="width:300px">身体感受</span>`;
+    if(hasHike) headerHtml += `<span class="rh" style="width:80px">步数</span>`;
+    if(hasHike) headerHtml += `<span class="rh" style="width:120px">地点</span>`;
     headerHtml += `<span class="rh" style="width:300px">备注</span>`;
     document.getElementById('record-col-header').innerHTML = headerHtml;
 
@@ -1828,6 +1873,7 @@ function renderRecordPage(){
       let badgeTxt = r.sport||'—';
       if(r.sport==='Run'&&r.sub) badgeTxt+=' · '+r.sub;
       if(r.sport==='Strength') badgeTxt+=' · '+(r.muscles||r.sub||'').split(',').join(' · ');
+      if(r.sport==='Hike'&&r.sub) badgeTxt+=' · '+r.sub;
       const isSelected = selectedIds.has(r.id);
       const clickAttr = batchMode ? '' : `onclick="editRecord('${r.id}')"`;
 
@@ -1849,6 +1895,8 @@ function renderRecordPage(){
       if(hasJump) cols += `<span class="rc rc-jfreq">${r.jump_freq?r.jump_freq+'个/分':em('')}</span>`;
       cols += `<span class="rc rc-feel">${r.feel?`<span class="feel-badge">${r.feel}</span>`:em('')}</span>`;
       cols += `<span class="rc rc-body" title="${r.body||''}">${em(r.body)}</span>`;
+      if(hasHike) cols += `<span class="rc" style="width:80px">${r.steps?r.steps.toLocaleString()+'步':em('')}</span>`;
+      if(hasHike) cols += `<span class="rc" style="width:120px">${em(r.location)}</span>`;
       cols += `<span class="rc rc-note" title="${r.note||''}">${em(r.note)}</span>`;
       cols += `<span class="rc-actions">
         <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();editRecord('${r.id}')">编辑</button>
@@ -2424,6 +2472,71 @@ function renderRunCycleCard(c,isActive){
   </div>`;
 
   return header+metrics;
+}
+
+
+// ══════════════════════════════════════
+//  Hike 分析
+// ══════════════════════════════════════
+let _hikeDistChart = null;
+
+function renderHikeAnalysis(){
+  const hikes = records.filter(r=>r.sport==='Hike').sort((a,b)=>a.date.localeCompare(b.date));
+  const showHike = document.getElementById('hlt-hike')?.checked ?? true;
+  const showWalk = document.getElementById('hlt-walk')?.checked ?? true;
+
+  const hikeRecs = hikes.filter(r=>r.sub!=='Walk');
+  const walkRecs = hikes.filter(r=>r.sub==='Walk');
+
+  const allDates = [...new Set(hikes.map(r=>r.date))].sort();
+  const labels = allDates.map(d=>d.slice(5));
+
+  const hikeMap = Object.fromEntries(hikeRecs.map(r=>[r.date, r.steps||0]));
+  const walkMap = Object.fromEntries(walkRecs.map(r=>[r.date, r.steps||0]));
+  const hikeData = allDates.map(d=>hikeMap[d]??null);
+  const walkData = allDates.map(d=>walkMap[d]??null);
+
+  if(_hikeDistChart){ _hikeDistChart.destroy(); _hikeDistChart=null; }
+  const ctx = document.getElementById('hikeDistChart');
+  if(!ctx) return;
+
+  const datasets = [];
+  if(showHike) datasets.push({
+    label:'⛰ Hike',
+    data: hikeData,
+    borderColor:'#059669',
+    backgroundColor:'rgba(5,150,105,0.10)',
+    borderWidth:2,
+    pointBackgroundColor:'#059669',
+    pointRadius:5, pointHoverRadius:7,
+    fill:false, tension:0.3, spanGaps:false,
+  });
+  if(showWalk) datasets.push({
+    label:'🚶 Walk',
+    data: walkData,
+    borderColor:'#6b9e8a',
+    backgroundColor:'rgba(107,158,138,0.10)',
+    borderWidth:2,
+    pointBackgroundColor:'#6b9e8a',
+    pointRadius:5, pointHoverRadius:7,
+    fill:false, tension:0.3, spanGaps:false,
+  });
+
+  _hikeDistChart = new Chart(ctx, {
+    type:'line',
+    data:{ labels, datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ display:false },
+        tooltip:{callbacks:{label:c=>`${c.dataset.label}：${c.parsed.y?.toLocaleString()} 步`}}
+      },
+      scales:{
+        x:{ticks:{color:'#9ba3b5',font:{size:11},maxRotation:45},grid:{color:'rgba(0,0,0,0.04)'}},
+        y:{beginAtZero:true,ticks:{color:'#9ba3b5',font:{size:11},callback:v=>v.toLocaleString()+' 步'},grid:{color:'rgba(0,0,0,0.06)'}}
+      }
+    }
+  });
 }
 
 function renderRunAnalysis(){
