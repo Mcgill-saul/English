@@ -3213,7 +3213,8 @@ function sportPriority(s){ const i=SPORT_PRIORITY.indexOf(s); return i===-1?99:i
 function dayLabel(rec){
   if(rec.sport==='Run') return {icon:'🏃', sub:null};
   if(rec.sport==='Strength'){
-    const sub=(rec.muscles||rec.sub||'').split(',').filter(Boolean).join('·');
+    const parts=(rec.muscles||rec.sub||'').split(',').filter(Boolean);
+    const sub = parts.length<=1 ? (parts[0]||'') : `${parts[0]}<br>·${parts[1]}`;
     return {icon:null, sub};
   }
   if(rec.sport==='Jump Rope') return {icon:'🪢', sub:null};
