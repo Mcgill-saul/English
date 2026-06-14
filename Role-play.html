@@ -272,7 +272,7 @@ body {
 }
 .p-desc { font-size: 13px; color: var(--text2); line-height: 1.6; }
 
-.round { margin-bottom: 1.2rem; }
+.round { margin-bottom: 1.8rem; }
 /* ROUND 标题：左侧金色短横线 */
 .round-label {
   font-family: 'DM Mono', monospace;
@@ -298,10 +298,15 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin-bottom: 6px;
 }
 .dialogue-row.has-third {
   grid-template-columns: 1fr 1fr 1fr;
+}
+/* 每个 Q/A/A2 卡片与其专属 Alternatives 面板打包成一列 */
+.qa-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 /* 卡片：左侧色条区分问答，Q/A字母隐藏 */
 .card {
@@ -317,8 +322,6 @@ body {
 .card-lbl { display: none; } /* Q/A字母隐藏 */
 .card-en { font-size: 15px; line-height: 1.55; color: var(--text); }
 
-.alt-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.6rem; }
-.alt-row.has-third { grid-template-columns: 1fr 1fr 1fr; }
 .alt-toggle {
   width: 100%; text-align: left; background: none; border: none;
   cursor: pointer; padding: 5px 8px; border-radius: 6px;
@@ -340,8 +343,10 @@ body {
   border-bottom: 1px solid var(--border); line-height: 1.5;
   display: flex; gap: 8px;
 }
-.alt-item-zh { color: var(--text2); font-style: italic; border-bottom: 1px solid var(--border) !important; margin-bottom: 2px; padding-bottom: 6px !important; }
+.alt-item-zh { color: var(--text2); font-style: italic; border-bottom: 1px solid var(--border) !important; margin-bottom: 2px; padding-bottom: 6px !important; cursor: pointer; transition: color 0.15s; }
 .alt-item-zh::before { content: '中' !important; color: var(--gold) !important; font-style: normal; font-size: 10px; }
+.alt-item-zh.hidden { color: transparent; letter-spacing: -0.05em; }
+.alt-item-zh.hidden::after { content: '• • •'; color: var(--text3); letter-spacing: 0.1em; font-style: normal; font-size: 11px; }
 .alt-item:last-child { border-bottom: none; }
 .alt-item::before { content: '—'; color: var(--text3); flex-shrink: 0; font-size: 11px; margin-top: 2px; }
 
@@ -911,7 +916,6 @@ body {
   .dialogue-row {
     grid-template-columns: 1fr !important; /* 强制单列 */
     gap: 8px;
-    margin-bottom: 8px;
   }
   
   .card {
@@ -921,11 +925,6 @@ body {
   
   .card-en {
     font-size: 16px;
-  }
-  
-  .alt-row {
-    grid-template-columns: 1fr !important; /* 强制单列 */
-    gap: 8px;
   }
   
   .alt-toggle {
@@ -3171,63 +3170,52 @@ function renderMain() {
 }
 
 // ── PRACTICE VIEW ──
-// 渲染练习模式：展示对话卡片、Alternatives 折叠、关键词、笔记
+// 渲染练习模式：展示对话卡片、Alternatives 折叠（与对应卡片一一绑定）、关键词、笔记
 function renderPractice(s) {
   const rounds = s.rounds.map((r, i) => {
     const qHasContent = r.q.zh || (r.q.alts && r.q.alts.filter(x=>x).length);
     const aHasContent = r.a.zh || (r.a.alts && r.a.alts.filter(x=>x).length);
     const hasA2 = r.a2 && r.a2.en;
     const a2HasContent = r.a2 && (r.a2.zh || (r.a2.alts && r.a2.alts.filter(x=>x).length));
-    const qAltItems = [
-      r.q.zh ? `<div class="alt-item alt-item-zh">${esc(r.q.zh)}</div>` : '',
-      ...(r.q.alts||[]).filter(x=>x).map(a=>`<div class="alt-item">${esc(a)}</div>`)
-    ].join('');
-    const aAltItems = [
-      r.a.zh ? `<div class="alt-item alt-item-zh">${esc(r.a.zh)}</div>` : '',
-      ...(r.a.alts||[]).filter(x=>x).map(a=>`<div class="alt-item">${esc(a)}</div>`)
-    ].join('');
-    const a2AltItems = r.a2 ? [
-      r.a2.zh ? `<div class="alt-item alt-item-zh">${esc(r.a2.zh)}</div>` : '',
-      ...(r.a2.alts||[]).filter(x=>x).map(a=>`<div class="alt-item">${esc(a)}</div>`)
-    ].join('') : '';
+
+    // 渲染单个 Alternatives 面板：中文翻译默认遮罩，可点击单独显示/隐藏
+    const renderAltItems = (field, fieldName, zhHidden) => {
+      const zhItem = field.zh
+        ? `<div class="alt-item alt-item-zh${zhHidden ? ' hidden' : ''}" data-round-idx="${i}" data-field="${fieldName}">${esc(field.zh)}</div>`
+        : '';
+      const altItems = (field.alts||[]).filter(x=>x).map(a=>`<div class="alt-item">${esc(a)}</div>`).join('');
+      return zhItem + altItems;
+    };
+    const renderAltPanel = (hasContent, field, fieldName, zhHidden) => hasContent ? `
+          <button class="alt-toggle" onclick="toggleAlt(this)">
+            <span class="alt-arrow">▶</span> Alternatives
+          </button>
+          <div class="alt-body">${renderAltItems(field, fieldName, zhHidden)}</div>` : '';
+
     return `
     <div class="round">
       <div class="round-label">ROUND ${String(i+1).padStart(2,'0')}${r.title ? `<span style="font-family:'Noto Sans SC',sans-serif;font-weight:400;font-size:12px;color:var(--text2);letter-spacing:0.02em;">${esc(r.title)}</span>` : ''}</div>
       <div class="dialogue-row${hasA2 ? ' has-third' : ''}">
-        <div class="card card-q">
-          <div class="card-lbl">Q</div>
-          <p class="card-en">${esc(r.q.en)}</p>
+        <div class="qa-block">
+          <div class="card card-q">
+            <div class="card-lbl">Q</div>
+            <p class="card-en">${esc(r.q.en)}</p>
+          </div>
+          ${renderAltPanel(qHasContent, r.q, 'q', r.q.zhHidden !== false)}
         </div>
-        <div class="card card-a">
-          <div class="card-lbl">A</div>
-          <p class="card-en">${esc(r.a.en)}</p>
+        <div class="qa-block">
+          <div class="card card-a">
+            <div class="card-lbl">A</div>
+            <p class="card-en">${esc(r.a.en)}</p>
+          </div>
+          ${renderAltPanel(aHasContent, r.a, 'a', r.a.zhHidden !== false)}
         </div>
-        ${hasA2 ? `<div class="card card-a2">
-          <div class="card-lbl">A2</div>
-          <p class="card-en">${esc(r.a2.en)}</p>
-        </div>` : ''}
-      </div>
-      <div class="alt-row${hasA2 ? ' has-third' : ''}">
-        <div>
-          ${qHasContent ? `
-          <button class="alt-toggle" onclick="toggleAlt(this)">
-            <span class="alt-arrow">▶</span> Alternatives
-          </button>
-          <div class="alt-body">${qAltItems}</div>` : ''}
-        </div>
-        <div>
-          ${aHasContent ? `
-          <button class="alt-toggle" onclick="toggleAlt(this)">
-            <span class="alt-arrow">▶</span> Alternatives
-          </button>
-          <div class="alt-body">${aAltItems}</div>` : ''}
-        </div>
-        ${hasA2 ? `<div>
-          ${a2HasContent ? `
-          <button class="alt-toggle" onclick="toggleAlt(this)">
-            <span class="alt-arrow">▶</span> Alternatives
-          </button>
-          <div class="alt-body">${a2AltItems}</div>` : ''}
+        ${hasA2 ? `<div class="qa-block">
+          <div class="card card-a2">
+            <div class="card-lbl">A2</div>
+            <p class="card-en">${esc(r.a2.en)}</p>
+          </div>
+          ${renderAltPanel(a2HasContent, r.a2, 'a2', r.a2.zhHidden !== false)}
         </div>` : ''}
       </div>
     </div>`;
@@ -3563,6 +3551,18 @@ document.body.addEventListener('click', (e) => {
   if (e.target.classList.contains('alt-toggle')) {
     e.target.classList.toggle('open');
     e.target.nextElementSibling.classList.toggle('open');
+    return;
+  }
+  // Alternatives 中文翻译隐藏/点亮
+  if (e.target.classList.contains('alt-item-zh')) {
+    e.target.classList.toggle('hidden');
+    const s = currentScene();
+    const idx = parseInt(e.target.dataset.roundIdx);
+    const field = e.target.dataset.field;
+    if (s && s.rounds[idx] && s.rounds[idx][field]) {
+      s.rounds[idx][field].zhHidden = e.target.classList.contains('hidden');
+      saveData(scenes);
+    }
     return;
   }
   // 卡片词汇隐藏/点亮
