@@ -2683,7 +2683,7 @@ function renderRunAnalysis(){
     const pct=Math.min(100,Math.round(stat.km/limit*100));
     const bar=pct>=90?'var(--coral)':pct>=70?'var(--amber)':'var(--green)';
     const warn=pct>=90?'⚠️ 接近退役':'';
-    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">
+    return `<div style="display:flex;align-items:flex-end;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
           <span style="font-size:13px;font-weight:600;color:var(--text)">${name}</span>
