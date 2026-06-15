@@ -2726,7 +2726,6 @@ function renderRunAnalysis(){
     <div class="metric metric-shoe" style="flex:2">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div class="metric-label">跑鞋里程</div>
-        <span style="font-size:11px;color:var(--text3)">默认退役里程 500km，点「设置」可修改</span>
       </div>
       ${shoeRows}
     </div>`:''}
@@ -3246,7 +3245,7 @@ function renderCombinedChart(){
         responsive:true, maintainAspectRatio:false,
         interaction:{mode:'index', intersect:false},
         plugins:{
-          legend:{display:true, position:'top', labels:{color:'#9ba3b5',font:{size:11},padding:16,boxWidth:12}},
+          legend:{display:false},
           tooltip:{callbacks:{label(ctx){
             const v=ctx.parsed.y; if(v===null||v===undefined) return null;
             if(ctx.dataset.label==='配速') return ' 配速 '+fmtPace(v)+'/km';
