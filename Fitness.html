@@ -128,6 +128,10 @@ body{min-height:100vh;padding-bottom:4rem;}
 /* =====================================================
    📱 移动端适配区 —— 768px 以下手机布局，不影响桌面
    ===================================================== */
+/* ── 月度跑量列表 / 横屏按钮：桌面默认隐藏（手机端在下方媒体查询中显示） ── */
+.mdist-list{ display:none; }
+.landscape-btn{ display:none; }
+
 @media(max-width:768px){
 
   /* ── 整体布局 ── */
@@ -433,9 +437,6 @@ body{min-height:100vh;padding-bottom:4rem;}
 .cycle-actions{margin-left:auto;display:flex;gap:6px;}
 .cycle-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;}
 
-/* ── 横屏查看：默认隐藏（仅手机端展示）── */
-.landscape-btn{ display:none; }
-
 /* ── 横屏查看：全屏弹层，靠真实旋转手机变宽 ── */
 .landscape-overlay{
   position:fixed; inset:0; z-index:500;
@@ -457,7 +458,7 @@ body{min-height:100vh;padding-bottom:4rem;}
 
 
 /* ── 月度跑量：手机端横向条形列表 ── */
-.mdist-list{display:none;flex-direction:column;gap:8px;}
+.mdist-list{flex-direction:column;gap:8px;}
 .mdist-row{display:flex;align-items:center;gap:8px;}
 .mdist-month{width:40px;font-size:11px;color:var(--text3);flex-shrink:0;}
 .mdist-bar-wrap{flex:1;height:16px;background:var(--bg3);border-radius:4px;overflow:hidden;min-width:0;}
@@ -3302,6 +3303,21 @@ function closeLandscapeChart(){
   document.getElementById('landscapeOverlay').style.display='none';
   dc('combinedChartLandscape');
 }
+
+// 屏幕宽度跨越 768px 断点（例如手机旋转横竖屏）时，
+// 重新渲染配速/心率/步频图，让 maxTicksLimit 等随宽度更新
+let _combinedChartIsMobile = window.innerWidth<=768;
+let _resizeTimer=null;
+window.addEventListener('resize', ()=>{
+  clearTimeout(_resizeTimer);
+  _resizeTimer=setTimeout(()=>{
+    const nowMobile = window.innerWidth<=768;
+    if(nowMobile===_combinedChartIsMobile) return;
+    _combinedChartIsMobile = nowMobile;
+    const runPage = document.getElementById('page-run');
+    if(runPage && runPage.style.display!=='none' && CI.combinedChart) renderCombinedChart();
+  }, 200);
+});
 
 // ══════════════════════════════════════
 //  训练日历
