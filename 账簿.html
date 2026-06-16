@@ -1,0 +1,3005 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>账簿</title>
+<style>
+:root {
+  --primary:#4A90D9; --danger:#E74C3C; --success:#27AE60; --bg:#F5F6FA;
+  --card:#FFFFFF; --text:#2C3E50; --text2:#7F8C8D; --border:#E8ECF1;
+  --shadow:0 2px 12px rgba(0,0,0,0.06);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:#e8ecf1; display:flex; justify-content:center; min-height:100vh;
+  color:var(--text); -webkit-tap-highlight-color:transparent;
+  user-select:none;
+}
+.app { width:100%; max-width:480px; background:var(--bg); min-height:100vh; position:relative; overflow-x:hidden; }
+.page { padding:16px 16px 80px; display:none; }
+.page.active { display:block; }
+
+/* Tab Bar */
+.tab-bar {
+  position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px;
+  height:60px; background:var(--card); display:flex; border-top:1px solid var(--border);
+  z-index:200; box-shadow:0 -2px 8px rgba(0,0,0,0.04);
+}
+.tab-item {
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  font-size:11px; color:var(--text2); cursor:pointer; transition:all 0.2s;
+}
+.tab-item.active { color:var(--primary); font-weight:600; }
+.tab-item .tab-icon { font-size:20px; margin-bottom:2px; }
+
+/* Card */
+.card { background:var(--card); border-radius:14px; padding:16px; margin-bottom:14px; box-shadow:var(--shadow); }
+.section-title { font-size:14px; font-weight:600; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; }
+.btn-link { font-size:12px; color:var(--primary); cursor:pointer; background:none; border:none; font-weight:500; padding:0; }
+
+/* Buttons */
+.btn { padding:10px 20px; border-radius:10px; border:none; font-size:14px; font-weight:500; cursor:pointer; transition:all 0.15s; }
+.btn:active { transform:scale(0.97); opacity:0.85; }
+.btn-primary { background:var(--primary); color:#fff; }
+.btn-danger { background:var(--danger); color:#fff; }
+.btn-outline { background:#fff; color:var(--primary); border:1.5px solid var(--primary); }
+.btn-sm { padding:5px 12px; font-size:12px; border-radius:8px; }
+
+/* Modal Overlay */
+.modal-overlay {
+  position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.45);
+  z-index:300; display:flex; align-items:flex-end; justify-content:center;
+  animation:fadeIn 0.2s;
+}
+.modal-sheet {
+  width:100%; max-width:480px; background:#fff; border-radius:18px 18px 0 0;
+  padding:20px 18px 30px; max-height:85vh; overflow-y:auto; animation:slideUp 0.25s;
+}
+.modal-sheet h3 { font-size:16px; margin-bottom:16px; text-align:center; }
+.modal-sheet .form-row { margin-bottom:12px; }
+.modal-sheet label { display:block; font-size:12px; color:var(--text2); margin-bottom:4px; font-weight:500; }
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type="number"] { -moz-appearance: textfield; }
+input::placeholder, textarea::placeholder { color: #C5CCD3; font-weight: 400; }
+input[list] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237A8794' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  padding-right: 32px;
+  transition: background-image 0.15s;
+}
+input[list]:not(:hover):not(:focus) { background-image: none; }
+input[list]::-webkit-calendar-picker-indicator { display: none !important; }
+input[list]::-ms-expand { display: none; }
+select {
+  -webkit-appearance: none; -moz-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237A8794' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  padding-right: 32px !important;
+}
+.modal-sheet input, .modal-sheet select, .modal-sheet textarea, .input-box {
+  width:100%; padding:10px 12px; border:1.5px solid var(--border); border-radius:10px;
+  font-size:14px; outline:none; transition:border 0.2s; font-family:inherit;
+}
+.modal-sheet input:focus, .modal-sheet select:focus, .modal-sheet textarea:focus, .input-box:focus { border-color:var(--primary); }
+.form-row-inline { display:flex; gap:10px; margin-bottom:12px; }
+.form-row-inline .form-row { flex:1; margin-bottom:0; }
+.form-row-inline label { display:block; font-size:12px; color:var(--text2); margin-bottom:4px; font-weight:500; }
+.modal-sheet textarea { resize:vertical; min-height:60px; }
+.modal-sheet .btn-row { display:flex; gap:10px; margin-top:18px; }
+.modal-sheet .btn-row .btn { flex:1; }
+
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+@keyframes slideUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+
+/* FAB */
+.fab {
+  position:fixed; bottom:80px; right:calc(50% - 210px); width:52px; height:52px;
+  border-radius:50%; background:var(--primary); color:#fff; border:none;
+  font-size:28px; cursor:pointer; z-index:100; box-shadow:0 4px 16px rgba(74,144,217,0.4);
+  display:flex; align-items:center; justify-content:center; transition:all 0.2s;
+}
+.fab:active { transform:scale(0.92); }
+.fab-template {
+  position:fixed; bottom:140px; right:calc(50% - 214px); width:44px; height:44px;
+  border-radius:50%; background:#fff; color:var(--primary); border:2px solid var(--primary);
+  font-size:22px; cursor:pointer; z-index:100; box-shadow:0 2px 10px rgba(74,144,217,0.25);
+  display:none; align-items:center; justify-content:center; transition:all 0.2s;
+}
+.fab-template:active { transform:scale(0.92); }
+@media(min-width:480px) { .fab { right:calc(50% - 210px); } .fab-template { right:calc(50% - 214px); } }
+
+/* Record Item */
+.record-item { padding:12px 14px; border-radius:10px; background:var(--bg); margin-bottom:6px; cursor:pointer; transition:background 0.15s; }
+.record-item:active { background:#e0e4ed; }
+.record-item .rec-top { display:flex; justify-content:space-between; align-items:center; }
+.record-item .rec-cat { font-size:12px; color:var(--text2); }
+.record-item .rec-amount { font-weight:600; font-size:15px; }
+.record-item .rec-amount.income { color:var(--success); }
+.record-item .rec-amount.expense { color:var(--text); }
+.record-item .rec-note { font-size:12px; color:var(--text2); margin-top:2px; }
+.record-item .badge-travel { font-size:10px; background:#FFF3CD; color:#856404; padding:2px 6px; border-radius:4px; margin-left:6px; }
+
+/* Date Group */
+.date-group { margin-bottom:12px; }
+.date-group-header { font-size:13px; font-weight:600; padding:6px 0; color:var(--text); border-bottom:1px solid var(--border); margin-bottom:6px; display:flex; justify-content:space-between; cursor:pointer; user-select:none; }
+.date-group-header .day-sum { font-size:12px; color:var(--danger); font-weight:500; }
+.date-group-header .arrow { font-size:10px; margin-left:4px; transition:transform 0.2s; }
+.date-group-header.collapsed .arrow { transform:rotate(-90deg); }
+.date-group-body { overflow:hidden; transition:max-height 0.25s ease; }
+.date-group-body.collapsed { max-height:0; }
+#records-month-bar { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+#records-month-bar select { font-size:14px; font-weight:600; padding:4px 8px; border:1px solid var(--border); border-radius:6px; background:var(--card); color:var(--text); }
+#records-month-bar .month-total { font-size:12px; color:var(--text2); }
+#records-month-bar .month-expense { color:var(--danger); font-weight:500; }
+#records-month-bar .month-income { color:var(--success); font-weight:500; }
+
+/* Todo */
+.todo-item { display:flex; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); }
+.todo-item:last-child { border-bottom:none; }
+.todo-check { width:20px; height:20px; border:2px solid #ccc; border-radius:50%; margin-right:10px; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all 0.2s; }
+.todo-check.done { background:var(--success); border-color:var(--success); }
+.todo-check.done::after { content:'\2713'; color:#fff; font-size:12px; }
+.todo-info { flex:1; min-width:0; }
+.todo-title { font-size:14px; }
+.todo-meta { font-size:11px; color:var(--text2); }
+.todo-item.done .todo-title { text-decoration:line-through; color:#bbb; }
+
+/* Category filter pills */
+.cat-pills { display:flex; gap:8px; overflow-x:auto; padding:4px 0 10px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+.cat-pills::-webkit-scrollbar { display:none; }
+.cat-pill { flex-shrink:0; padding:7px 14px; border-radius:20px; font-size:12px; background:#fff; border:1.5px solid var(--border); cursor:pointer; white-space:nowrap; transition:all 0.15s; }
+.cat-pill.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+
+/* Rate card */
+.rate-card { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border); }
+.rate-card:last-child { border-bottom:none; }
+.rate-info h4 { font-size:15px; }
+.rate-info span { font-size:12px; color:var(--text2); }
+.rate-value { text-align:right; }
+.rate-value .rate-amount { font-size:14px; font-weight:600; }
+.rate-value .rate-converted { font-size:12px; color:var(--text2); }
+
+/* Calendar */
+.cal-header { display:flex; align-items:center; justify-content:space-between; padding:8px 0; }
+.cal-header .cal-title { font-weight:600; font-size:14px; }
+.cal-header button { background:none; border:none; font-size:18px; cursor:pointer; padding:4px 8px; color:var(--primary); }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); text-align:center; gap:2px; }
+.cal-day-header { font-size:11px; color:var(--text2); padding:4px 0; }
+.cal-day { padding:8px 0; border-radius:8px; cursor:pointer; font-size:13px; transition:all 0.15s; position:relative; }
+.cal-day:hover { background:#eaf2fb; }
+.cal-day.other-month { color:#ccc; }
+.cal-day.today { font-weight:700; color:var(--primary); }
+.cal-day.has-nodes::after { content:''; position:absolute; bottom:3px; left:50%; transform:translateX(-50%); width:5px; height:5px; border-radius:50%; background:var(--primary); }
+.cal-day.selected { background:var(--primary); color:#fff; }
+
+/* Trip selector */
+.trip-selector { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+.trip-selector select { flex:1; padding:8px 10px; border-radius:10px; border:1.5px solid var(--border); font-size:13px; background:#fff; }
+.trip-selector .btn { flex-shrink:0; font-size:12px; padding:8px 14px; }
+
+/* Budget ring */
+.ring-container { display:flex; align-items:center; gap:16px; }
+.ring-info { flex:1; }
+.ring-info .ring-label { font-size:12px; color:var(--text2); }
+.ring-info .ring-amount { font-size:22px; font-weight:700; }
+.ring-info .ring-pct { font-size:13px; margin-top:2px; }
+
+/* Three-col stats */
+.stats-row { display:flex; gap:10px; }
+.stat-col { flex:1; text-align:center; padding:12px 6px; background:var(--bg); border-radius:10px; }
+.stat-col .stat-val { font-size:18px; font-weight:700; }
+.stat-col .stat-label { font-size:11px; color:var(--text2); margin-top:2px; }
+.stat-col.green .stat-val { color:var(--success); }
+.stat-col.red .stat-val { color:var(--danger); }
+
+/* Day nodes */
+.day-node-card { background:var(--bg); border-radius:10px; padding:10px 12px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; }
+.day-node-card .node-info { flex:1; }
+.day-node-card .node-time { font-size:12px; color:var(--primary); font-weight:500; }
+.day-node-card .node-loc { font-size:14px; margin:2px 0; }
+.day-node-card .node-note { font-size:11px; color:var(--text2); }
+.expense-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); cursor:pointer; }
+.expense-row:last-child { border-bottom:none; }
+
+/* Trip review */
+.review-bar-wrap { flex:1; height:8px; background:var(--border); border-radius:4px; margin:0 10px; overflow:hidden; }
+.review-bar-fill { height:100%; border-radius:4px; background:var(--primary); }
+.review-bar-fill.over { background:var(--danger); }
+.review-l1 { display:flex; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); cursor:pointer; }
+.review-l1:last-child { border-bottom:none; }
+.review-l1-name { font-size:14px; font-weight:500; width:80px; flex-shrink:0; }
+.review-l1-amt { font-size:13px; font-weight:600; width:90px; flex-shrink:0; text-align:right; }
+.review-l1-pct { font-size:12px; color:var(--text2); width:50px; flex-shrink:0; text-align:right; }
+.review-l2 { display:flex; align-items:center; padding:6px 0 6px 16px; font-size:12px; color:var(--text2); border-bottom:1px solid #f0f0f0; }
+.review-l2:last-child { border-bottom:none; }
+.review-l2-name { width:72px; flex-shrink:0; }
+.review-l2-amt { width:80px; flex-shrink:0; text-align:right; font-weight:500; color:var(--text); }
+.review-l2-pct { width:46px; flex-shrink:0; text-align:right; }
+.review-total-bar { height:12px; background:var(--border); border-radius:6px; margin:6px 0 14px; overflow:hidden; }
+.review-total-fill { height:100%; border-radius:6px; transition:width 0.4s; }
+
+/* Action sheet */
+.action-sheet { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px; background:#fff; border-radius:18px 18px 0 0; padding:10px 0 20px; z-index:350; animation:slideUp 0.2s; }
+.action-sheet .action-btn { display:block; width:100%; padding:14px 20px; text-align:center; border:none; background:none; font-size:15px; cursor:pointer; border-bottom:1px solid var(--border); color:var(--text); }
+.action-sheet .action-btn:last-child { border-bottom:none; }
+.action-sheet .action-btn.danger { color:var(--danger); }
+.action-sheet .action-btn:active { background:#f5f5f5; }
+
+/* Category manage */
+.cat-row { display:flex; align-items:center; padding:10px 8px; border-bottom:1px solid var(--border); cursor:pointer; transition:background 0.15s; user-select:none; }
+.cat-row:active { background:#f0f2f5; }
+.cat-row-l1 { font-weight:600; font-size:15px; }
+.cat-row-l2 { padding-left:28px; font-size:14px; }
+.cat-expand { margin-left:auto; color:var(--text2); font-size:10px; transition:transform 0.2s; }
+.cat-expand.open { transform:rotate(180deg); }
+.cat-count { font-size:11px; color:var(--text2); margin-left:8px; font-weight:400; }
+.cat-chips { display:flex; flex-wrap:wrap; gap:5px; padding:8px 8px 8px 28px; }
+.cat-chip { background:#f0f2f5; padding:4px 10px; border-radius:12px; font-size:12px; color:var(--text); cursor:pointer; transition:background 0.15s; }
+.cat-chip:active { background:#dde1e8; }
+.action-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.3); z-index:400; display:flex; align-items:flex-end; justify-content:center; animation:fadeIn 0.15s; }
+.cat-more { margin-left:auto; padding:4px 10px; color:var(--text2); font-size:16px; letter-spacing:2px; cursor:pointer; }
+.cat-row[draggable="true"] { cursor:grab; }
+.cat-row.dragging { opacity:0.35; }
+.cat-row.drag-over { border-top:2px solid var(--primary); }
+.cat-tab-row { display:flex; gap:0; margin-bottom:14px; border-radius:10px; overflow:hidden; border:1px solid var(--border); }
+.cat-tab-btn { flex:1; padding:8px; text-align:center; font-size:13px; border:none; background:#fff; color:var(--text2); cursor:pointer; transition:all 0.15s; }
+.cat-tab-btn.active { background:var(--primary); color:#fff; }
+
+/* Currency manage */
+.currency-item { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border); }
+.currency-item .curr-code { font-weight:600; font-size:14px; }
+.currency-item .curr-name { font-size:12px; color:var(--text2); margin-left:8px; }
+.currency-item .curr-check { color:var(--success); font-weight:700; }
+
+.view-toggle { display:flex; gap:8px; margin-bottom:12px; align-items:center; }
+.view-toggle .toggle-btn { padding:7px 16px; border-radius:8px; border:1.5px solid var(--border); background:#fff; font-size:13px; cursor:pointer; transition:all 0.15s; }
+.view-toggle .toggle-btn.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+.view-toggle .spacer { flex:1; }
+
+input[type="date"] { color-scheme:light; }
+.cat-level-box { display:inline-block; border:1.5px solid var(--border); border-radius:10px; padding:10px 8px; font-size:12px; color:var(--text2); background:var(--bg); min-width:46px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; box-sizing:border-box; }
+.pay-badge { display:inline-block; font-size:10px; color:var(--primary); background:rgba(0,122,255,0.08); border-radius:4px; padding:1px 6px; margin-left:6px; }
+.payee-badge { display:inline-block; font-size:10px; color:var(--success, #34c759); background:rgba(52,199,89,0.1); border-radius:4px; padding:1px 6px; margin-left:6px; }
+.review-tabs { display:flex; gap:8px; margin-bottom:12px; }
+.review-tab { flex:1; padding:6px; text-align:center; border-radius:8px; font-size:13px; cursor:pointer; border:1px solid var(--border); color:var(--text2); background:var(--bg); }
+.review-tab.active { color:#fff; background:var(--primary); border-color:var(--primary); }
+
+/* ===== Monthly Review (mr-) ===== */
+.mr-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.mr-back { font-size:14px; color:var(--primary); cursor:pointer; font-weight:500; }
+.mr-year-nav { display:flex; align-items:center; gap:10px; font-size:16px; font-weight:500; }
+.mr-year-btn { color:var(--text2); cursor:pointer; font-size:13px; padding:2px 6px; }
+.mr-summary-card { text-align:center; background:var(--bg); }
+.mr-summary-label { font-size:13px; color:var(--text2); margin-bottom:4px; }
+.mr-summary-amount { font-size:26px; font-weight:600; }
+.mr-legend { display:flex; gap:14px; font-size:11px; color:var(--text2); margin-bottom:8px; }
+.mr-legend-dot { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:4px; vertical-align:-1px; }
+.mr-legend-fixed { background:#E3F0FB; }
+.mr-legend-flex { background:var(--bg); }
+.mr-table-wrap { position:relative; }
+.mr-table-scroll { overflow-x:auto; border:0.5px solid var(--border); border-radius:12px; -webkit-overflow-scrolling:touch; }
+.mr-table-fade { position:absolute; top:0; right:0; bottom:0; width:18px; pointer-events:none; background:linear-gradient(to right, rgba(255,255,255,0), var(--card) 90%); border-radius:0 12px 12px 0; }
+.mr-table { border-collapse:collapse; font-size:12px; white-space:nowrap; }
+.mr-table th, .mr-table td { padding:6px 8px; text-align:right; }
+.mr-table th:first-child, .mr-table td:first-child { text-align:left; }
+.mr-table thead th { font-weight:500; border-bottom:0.5px solid var(--border); }
+.mr-table thead th { text-align:center; }
+.mr-table .mr-sticky-l0 { position:sticky; left:0; z-index:2; background:var(--card); }
+.mr-table .mr-sticky-l1 { position:sticky; left:50px; z-index:2; background:var(--card); border-right:0.5px solid var(--border); }
+.mr-table .mr-sticky-r1 { position:sticky; right:0; z-index:2; background:var(--card); border-left:1px solid var(--border); }
+.mr-table .mr-grp-blue { background:#E3F0FB; color:#3A7CB5; }
+.mr-table .mr-grp-dark { background:#E8EAED; color:#555; }
+.mr-table .mr-grp-light { background:#F4F5F7; color:#666; }
+.mr-table .mr-grp-start { border-left:1px solid var(--border); }
+.mr-table .mr-col-total { border-left:1px solid var(--border); }
+.mr-table tbody tr.mr-current { background:#EEF6FF; }
+.mr-table tbody tr.mr-current .mr-sticky-l0, .mr-table tbody tr.mr-current .mr-sticky-l1, .mr-table tbody tr.mr-current .mr-sticky-r1 { background:#EEF6FF; }
+.mr-table tbody tr.mr-ytd { background:#EEF6FF; font-weight:600; font-size:13px; }
+.mr-table tbody tr.mr-ytd .mr-sticky-l0, .mr-table tbody tr.mr-ytd .mr-sticky-l1, .mr-table tbody tr.mr-ytd .mr-sticky-r1 { background:#EEF6FF; }
+.mr-table tbody tr.mr-future td { color:#C5CCD3; }
+.mr-table tbody td.mr-balance-pos { color:var(--success); font-weight:600; }
+.mr-table tbody td.mr-balance-neg { color:var(--danger); font-weight:600; }
+.mr-table tbody tr.mr-ytd td.mr-balance-pos, .mr-table tbody tr.mr-ytd td.mr-balance-neg { font-size:13px; }
+.mr-budget-edit { color:var(--primary); cursor:pointer; text-decoration:underline dotted; }
+.mr-special-card { background:var(--card); border:0.5px solid var(--border); border-radius:14px; padding:14px 16px; margin-bottom:10px; }
+.mr-special-card.mr-over { border-color:var(--danger); }
+.mr-special-top { display:flex; align-items:center; gap:14px; margin-bottom:10px; }
+.mr-special-name { font-size:15px; font-weight:500; }
+.mr-special-nums { font-size:13px; color:var(--text2); }
+.mr-special-card.mr-over .mr-special-nums { color:var(--danger); }
+.mr-special-list { border-top:0.5px solid var(--border); padding-top:8px; display:flex; flex-direction:column; gap:6px; }
+.mr-special-row { display:flex; justify-content:space-between; font-size:13px; }
+.mr-special-row span:first-child { color:var(--text2); }
+.mr-special-empty { font-size:12px; color:var(--text2); text-align:center; padding:4px 0; }
+.mr-monthly-adjust-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px; }
+.mr-monthly-adjust-grid .form-row { margin-bottom:0; }
+.mr-monthly-adjust-grid label { font-size:11px; }
+.mr-monthly-adjust-grid input { padding:8px 6px; font-size:12px; }
+
+/* ===== Monthly Review: Desktop ===== */
+@media (min-width: 860px) {
+  #page-review.active {
+    position:fixed; inset:0; width:100%; max-width:none; z-index:250;
+    background:var(--bg); overflow-y:auto; padding:24px 20px 48px;
+  }
+  #page-review .mr-header, #page-review .mr-legend, #page-review .mr-table-wrap,
+  #page-review .section-title, #page-review #reviewSpecialCards {
+    max-width:1600px; margin-left:auto; margin-right:auto;
+  }
+  #page-review .mr-summary-card { max-width:400px; margin:0 auto 16px; }
+  #page-review .mr-table { width:100%; font-size:13px; }
+  #page-review .mr-table th, #page-review .mr-table td { padding:7px 9px; }
+  #page-review .mr-table .mr-sticky-l0, #page-review .mr-table .mr-sticky-l1, #page-review .mr-table .mr-sticky-r1 {
+    position:static;
+  }
+  #page-review .mr-table-fade { display:none; }
+  #page-review #reviewSpecialCards { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  #page-review #reviewSpecialCards .mr-special-card { margin-bottom:0; }
+}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <!-- Daily Tab -->
+  <div class="page active" id="page-daily">
+    <div class="card" id="budget-card"></div>
+    <button class="btn btn-outline" style="width:100%;margin-bottom:14px;" onclick="showMonthlyReview()">📊 月度复盘</button>
+    <div class="card" id="month-stats-card"></div>
+    <div class="card"><div class="section-title">近6个月收支趋势</div><canvas id="barChart" width="360" height="200"></canvas></div>
+    <div class="card"><div class="section-title">本月分类占比</div><canvas id="pieChart" width="280" height="280"></canvas><div id="pie-list"></div></div>
+  </div>
+
+  <!-- Travel Tab -->
+  <div class="page" id="page-travel">
+    <div class="trip-selector">
+      <select id="tripSelect" onchange="renderTravel()"><option value="">-- 选择行程 --</option></select>
+      <button class="btn btn-outline btn-sm" onclick="showTripModal()">+ 新建行程</button>
+    </div>
+    <div id="trip-content"></div>
+  </div>
+
+  <!-- Records Tab -->
+  <div class="page" id="page-records">
+    <div class="view-toggle">
+      <button class="toggle-btn active" data-view="day" onclick="switchRecordView('day')">按日</button>
+      <button class="toggle-btn" data-view="cat" onclick="switchRecordView('cat')">按分类</button>
+      <span class="spacer"></span>
+      <button class="btn-link" onclick="showCatManageModal()">管理分类</button>
+    </div>
+    <div id="records-month-bar"></div>
+    <div id="records-content"></div>
+  </div>
+
+  <!-- Todo Tab -->
+  <div class="page" id="page-todos">
+    <div class="cat-pills" id="todoCatPills"></div>
+    <div class="section-title">未完成 <button class="btn-link" onclick="showTodoCatManage()">管理分类</button></div>
+    <div id="todo-undone"></div>
+    <div class="section-title" style="margin-top:14px;">已完成</div>
+    <div id="todo-done"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="showTodoModal()">+ 新增事项</button>
+  </div>
+
+  <!-- Rate Tab -->
+  <div class="page" id="page-rates">
+    <div class="card">
+      <div class="form-row-inline">
+        <div class="form-row"><label>基准货币</label><select id="baseCurrency" class="input-box" onchange="renderRates()"></select></div>
+        <div class="form-row"><label>金额</label><input type="number" id="rateAmount" class="input-box" value="1" step="any" oninput="renderRates()"></div>
+      </div>
+    </div>
+    <div class="card" id="rateCards"></div>
+    <div style="display:flex;gap:10px;margin-bottom:10px;">
+      <button class="btn btn-outline btn-sm" style="flex:1;" onclick="showCurrencyManage()">管理币种</button>
+      <button class="btn btn-primary btn-sm" style="flex:1;" onclick="fetchRates()">更新汇率</button>
+    </div>
+    <div style="font-size:11px;color:var(--text2);text-align:center;" id="rateUpdateTime"></div>
+    <div class="card" style="margin-top:14px;">
+      <div class="section-title">数据备份</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">所有数据存储在本设备浏览器中，建议定期导出备份，更换设备/浏览器时可导入恢复。</div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-outline btn-sm" style="flex:1;" onclick="exportAppData()">导出备份</button>
+        <button class="btn btn-outline btn-sm" style="flex:1;" onclick="importAppData()">导入备份</button>
+      </div>
+      <div style="margin-top:10px;">
+        <button class="btn btn-outline btn-sm" id="gistSyncBtn" style="width:100%;" onclick="showGistPanel()">☁ 配置云同步</button>
+      </div>
+      <input type="file" id="importFileInput" accept="application/json" style="display:none;" onchange="handleImportFile(event)">
+    </div>
+  </div>
+
+  <!-- Monthly Review Page -->
+  <div class="page" id="page-review">
+    <div class="mr-header">
+      <span class="mr-back" onclick="closeMonthlyReview()">返回</span>
+      <div class="mr-year-nav">
+        <span class="mr-year-btn" onclick="changeReviewYear(-1)">&#9664;</span>
+        <span id="reviewYearLabel">2026年</span>
+        <span class="mr-year-btn" onclick="changeReviewYear(1)">&#9654;</span>
+      </div>
+      <button class="btn-link" onclick="showBudgetModal()">预算设置</button>
+    </div>
+    <div class="card mr-summary-card">
+      <div class="mr-summary-label">年度总结余</div>
+      <div class="mr-summary-amount" id="reviewYearBalance">&yen; 0</div>
+    </div>
+    <div class="mr-table-wrap">
+      <div class="mr-table-scroll" id="reviewTableScroll"></div>
+      <div class="mr-table-fade"></div>
+    </div>
+    <div class="section-title" style="margin-top:18px;">年度专项支出</div>
+    <div id="reviewSpecialCards"></div>
+  </div>
+
+  <!-- FAB -->
+  <button class="fab-template" id="fabTemplateBtn" onclick="showTemplateQuickPick()">⚡</button>
+  <button class="fab" id="fabBtn" onclick="showRecordModal()">+</button>
+
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <div class="tab-item active" data-tab="daily" onclick="switchTab('daily')"><span class="tab-icon">&#127968;</span>日常</div>
+    <div class="tab-item" data-tab="travel" onclick="switchTab('travel')"><span class="tab-icon">&#9992;</span>旅游</div>
+    <div class="tab-item" data-tab="records" onclick="switchTab('records')"><span class="tab-icon">&#128176;</span>记账</div>
+    <div class="tab-item" data-tab="todos" onclick="switchTab('todos')"><span class="tab-icon">&#128203;</span>事项</div>
+    <div class="tab-item" data-tab="rates" onclick="switchTab('rates')"><span class="tab-icon">&#128185;</span>汇率</div>
+  </div>
+</div>
+
+<script>
+// ============ UTILS ============
+var $ = function(id) { return document.getElementById(id); };
+var genId = function() { return Date.now().toString(36) + Math.random().toString(36).slice(2,8); };
+var formatMoney = function(n) { return Number(n||0).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+var todayStr = function() { return new Date().toISOString().slice(0,10); };
+var escHtml = function(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); };
+var CURRENCY_SYMBOLS = { CNY:'\u00A5', USD:'$', JPY:'\u00A5', EUR:'\u20AC', GBP:'\u00A3', KRW:'\u20A9', THB:'\u0E3F' };
+var CURRENCY_NAMES = {CNY:'人民币',USD:'美元',JPY:'日元',EUR:'欧元',GBP:'英镑',KRW:'韩元',THB:'泰铢',AUD:'澳元',CAD:'加元',HKD:'港币',SGD:'新加坡元',MYR:'马来西亚林吉特',PHP:'菲律宾比索',IDR:'印尼盾',VND:'越南盾',INR:'印度卢比',CHF:'瑞士法郎',NZD:'新西兰元',AED:'阿联酋迪拉姆',RUB:'俄罗斯卢布',BRL:'巴西雷亚尔',MXN:'墨西哥比索'};
+var formatAmount = function(rec) {
+  var cur = rec.currency || 'CNY';
+  if (cur==='CNY') return '\u00A5' + formatMoney(rec.amount);
+  if (cur==='JPY') return 'JPY ' + formatMoney(rec.amount);
+  var sym = CURRENCY_SYMBOLS[cur];
+  return (sym && sym!=='\u00A5' ? sym : cur+' ') + formatMoney(rec.amount);
+};
+var convertToCNY = function(amount, currency) {
+  if (currency==='CNY' || !currency) return amount;
+  var rate = appData.rates[currency];
+  return rate ? amount / rate : amount;
+};
+var getTripById = function(id) {
+  for (var i=0;i<appData.trips.length;i++) { if (appData.trips[i].id===id) return appData.trips[i]; }
+  return null;
+};
+var getTripSpent = function(tripId) {
+  var sum = 0;
+  for (var i=0;i<appData.records.length;i++) {
+    var r = appData.records[i];
+    if (r.tripId===tripId && r.recordType==='expense') sum += getRmbAmt(r);
+  }
+  return sum;
+};
+var getTripSettlementTotal = function(tripId) {
+  return getTripSpent(tripId);
+};
+
+// ============ DATA ============
+function getDefaultData() {
+  return {
+    trips: [],
+    records: [],
+    todos: [],
+    dailyCats: [
+      {name:'餐饮',subs:[{name:'正餐',subs:[{name:'早餐'},{name:'午餐'},{name:'晚餐'}]},{name:'简餐',subs:[{name:'下午茶'},{name:'夜宵'}]},{name:'零食饮品',subs:[{name:'奶茶咖啡'},{name:'零食'}]}]},
+      {name:'交通',subs:[{name:'市内',subs:[{name:'地铁公交'},{name:'打车'},{name:'共享单车'}]},{name:'城际',subs:[{name:'火车'},{name:'大巴'}]},{name:'航空',subs:[{name:'国内机票'},{name:'国际机票'}]}]},
+      {name:'购物',subs:[{name:'日用品',subs:[{name:'超市'},{name:'个护'}]},{name:'服饰',subs:[{name:'衣服'},{name:'鞋包'}]},{name:'数码',subs:[{name:'配件'},{name:'设备'}]}]},
+      {name:'娱乐',subs:[{name:'餐饮娱乐',subs:[{name:'聚餐'},{name:'酒吧'}]},{name:'文体',subs:[{name:'电影'},{name:'演出'},{name:'运动'}]}]},
+      {name:'通讯',subs:[{name:'话费',subs:[]},{name:'流量',subs:[{name:'国内流量'},{name:'国际流量'}]}]},
+      {name:'居住',subs:[{name:'房租',subs:[]},{name:'水电',subs:[{name:'水费'},{name:'电费'},{name:'燃气'}]},{name:'物业',subs:[]}]},
+      {name:'其他',subs:[{name:'医疗',subs:[{name:'看病'},{name:'药品'}]},{name:'人情',subs:[{name:'红包'},{name:'礼物'}]},{name:'其他',subs:[]}]}
+    ],
+    travelCats: [
+      {name:'餐饮',subs:[{name:'正餐',subs:[{name:'早餐'},{name:'午餐'},{name:'晚餐'}]},{name:'小吃',subs:[{name:'街头小吃'},{name:'甜品'}]}]},
+      {name:'交通',subs:[{name:'航空',subs:[{name:'国际机票'},{name:'国内机票'}]},{name:'市内',subs:[{name:'地铁'},{name:'公交'},{name:'打车'},{name:'租车'}]},{name:'城际',subs:[{name:'火车'},{name:'大巴'},{name:'轮渡'}]}]},
+      {name:'住宿',subs:[{name:'酒店',subs:[{name:'经济型'},{name:'舒适型'},{name:'豪华型'}]},{name:'民宿',subs:[]}]},
+      {name:'门票',subs:[{name:'景点',subs:[{name:'博物馆'},{name:'自然景区'},{name:'主题公园'}]},{name:'演出',subs:[{name:'音乐会'},{name:'戏剧'}]}]},
+      {name:'购物',subs:[{name:'纪念品',subs:[]},{name:'免税店',subs:[]},{name:'日用',subs:[]}]},
+      {name:'娱乐',subs:[{name:'酒吧夜店',subs:[]},{name:'当地体验',subs:[]}]},
+      {name:'通讯',subs:[{name:'SIM卡/WiFi',subs:[]}]},
+      {name:'其他',subs:[{name:'小费',subs:[]},{name:'签证费用',subs:[]},{name:'保险',subs:[]},{name:'其他',subs:[]}]}
+    ],
+    todoCats: ['证件','保险','通讯','财务','装备','健康','预定'],
+    budget: { year: new Date().getFullYear(), total: 120000, insurance:0, special:0, travel:0, prepay:0, monthlyAdjust:[0,0,0,0,0,0,0,0,0,0,0,0] },
+    templates: [],
+    rates: { USD:0.138, JPY:21.56, EUR:0.126, GBP:0.108, KRW:189.5, THB:4.58 },
+    activeCurrencies: ['USD','JPY','EUR','GBP','KRW','THB'],
+    paymentMethods: ['现金','微信','支付宝','银行卡','信用卡','公交卡'],
+    rateUpdateTime: ''
+  };
+}
+
+var appData;
+function loadData() {
+  try {
+    var raw = localStorage.getItem('travelAssistantData');
+    if (raw) { appData = JSON.parse(raw); migrateData(); return; }
+  } catch(e) {}
+  appData = getDefaultData();
+  saveData();
+}
+function migrateData() {
+  if (!appData.budget) appData.budget = getDefaultData().budget;
+  if (appData.budget.insurance === undefined) appData.budget.insurance = 0;
+  if (appData.budget.special === undefined) appData.budget.special = 0;
+  if (appData.budget.travel === undefined) appData.budget.travel = 0;
+  if (appData.budget.prepay === undefined) appData.budget.prepay = 0;
+  if (!Array.isArray(appData.templates)) appData.templates = [];
+  if (!Array.isArray(appData.budget.monthlyAdjust) || appData.budget.monthlyAdjust.length !== 12) {
+    appData.budget.monthlyAdjust = [0,0,0,0,0,0,0,0,0,0,0,0];
+  }
+}
+function saveData() {
+  localStorage.setItem('travelAssistantData', JSON.stringify(appData));
+  if (localStorage.getItem(LS_GIST_TOKEN) && localStorage.getItem(LS_GIST_ID)) {
+    clearTimeout(saveData._timer);
+    saveData._timer = setTimeout(function(){ pushToGist(false); }, 800);
+  }
+}
+
+// ============ GIST 云同步 ============
+var GIST_FILENAME = 'jizhang_data.json';
+var LS_GIST_TOKEN = 'jizhang_gist_token';
+var LS_GIST_ID = 'jizhang_gist_id';
+
+function showGistPanel() {
+  var token = localStorage.getItem(LS_GIST_TOKEN) || '';
+  var gistId = localStorage.getItem(LS_GIST_ID) || '';
+  var html = '<div class="modal-sheet"><h3>\u2601 Gist \u4e91\u540c\u6b65</h3>' +
+    '<div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6;">\u6570\u636e\u540c\u6b65\u5230 GitHub Gist\uff0c\u624b\u673a\u3001\u7535\u8111\u6253\u5f00\u540c\u4e00\u4efd\u6570\u636e\u3002<br>' +
+    '<a href="https://github.com/settings/tokens/new?scopes=gist&description=记账同步" target="_blank" style="color:var(--primary);">\u70b9\u8fd9\u91cc\u751f\u6210 Token</a>\uff08\u53ea\u52fe\u9009 gist \u6743\u9650\u5373\u53ef\uff09</div>' +
+    '<div class="form-row"><label>GitHub Token</label><input type="password" id="gistToken" class="input-box" placeholder="ghp_xxxxxxxxxxxx" value="' + token + '"></div>' +
+    '<div class="form-row"><label>Gist ID\uff08\u7b2c\u4e00\u6b21\u7559\u7a7a\u81ea\u52a8\u521b\u5efa\uff09</label><input type="text" id="gistId" class="input-box" placeholder="\u7559\u7a7a\u5219\u81ea\u52a8\u521b\u5efa\u65b0 Gist" value="' + gistId + '"></div>' +
+    '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
+    '<button class="btn btn-primary btn-sm" style="flex:1;" onclick="saveGistConfig()">\u4fdd\u5b58\u914d\u7f6e</button>' +
+    '<button class="btn btn-outline btn-sm" style="flex:1;" onclick="pushToGist(true)">\u7acb\u5373\u4e0a\u4f20</button>' +
+    '<button class="btn btn-outline btn-sm" style="flex:1;" onclick="pullFromGist(true)">\u4ece\u4e91\u7aef\u62c9\u53d6</button>' +
+    '</div>' +
+    '<div id="gistStatus" style="font-size:12px;min-height:18px;text-align:center;margin-bottom:10px;"></div>' +
+    '<button class="btn btn-outline" style="width:100%;" onclick="closeAllModals()">\u5173\u95ed</button>' +
+    '</div>';
+  openModal(html);
+}
+
+function saveGistConfig() {
+  var token = ($('gistToken').value || '').trim();
+  var gistId = ($('gistId').value || '').trim();
+  if (!token) { setGistStatus('请填写 Token', 'error'); return; }
+  localStorage.setItem(LS_GIST_TOKEN, token);
+  if (gistId) {
+    localStorage.setItem(LS_GIST_ID, gistId);
+    setGistStatus('配置已保存 ✓', 'ok');
+    updateGistBtnLabel();
+  } else {
+    createGist(token);
+  }
+}
+
+function createGist(token) {
+  setGistStatus('正在创建 Gist…', '');
+  var files = {};
+  files[GIST_FILENAME] = { content: JSON.stringify(appData, null, 2) };
+  fetch('https://api.github.com/gists', {
+    method: 'POST',
+    headers: { Authorization: 'token ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ description: '记账专项助手数据备份', public: false, files: files })
+  }).then(function(res) {
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  }).then(function(data) {
+    localStorage.setItem(LS_GIST_ID, data.id);
+    if ($('gistId')) $('gistId').value = data.id;
+    setGistStatus('Gist 创建成功，ID 已自动填入 ✓', 'ok');
+    updateGistBtnLabel();
+  }).catch(function(e) { setGistStatus('创建失败：' + e.message, 'error'); });
+}
+
+function pushToGist(manual) {
+  var token = localStorage.getItem(LS_GIST_TOKEN);
+  var gistId = localStorage.getItem(LS_GIST_ID);
+  if (!token || !gistId) { if (manual) setGistStatus('请先配置 Token 和 Gist ID', 'error'); return; }
+  if (manual) setGistStatus('上传中…', '');
+  var files = {};
+  files[GIST_FILENAME] = { content: JSON.stringify(appData, null, 2) };
+  fetch('https://api.github.com/gists/' + gistId, {
+    method: 'PATCH',
+    headers: { Authorization: 'token ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ files: files })
+  }).then(function(res) {
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (manual) { setGistStatus('上传成功 ✓ ' + new Date().toLocaleTimeString(), 'ok'); updateGistBtnLabel(); }
+  }).catch(function(e) { if (manual) setGistStatus('上传失败：' + e.message, 'error'); });
+}
+
+function pullFromGist(manual) {
+  var token = localStorage.getItem(LS_GIST_TOKEN);
+  var gistId = localStorage.getItem(LS_GIST_ID);
+  if (!token || !gistId) { if (manual) setGistStatus('请先配置 Token 和 Gist ID', 'error'); return; }
+  if (manual) setGistStatus('下载中…', '');
+  fetch('https://api.github.com/gists/' + gistId, { headers: { Authorization: 'token ' + token } })
+    .then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+    .then(function(data) {
+      var file = data.files && data.files[GIST_FILENAME];
+      if (!file) throw new Error('Gist 中没有找到数据文件');
+      var content = JSON.parse(file.content);
+      if (!content || typeof content !== 'object' || !Array.isArray(content.records)) throw new Error('数据格式不正确');
+      appData = content;
+      localStorage.setItem('travelAssistantData', JSON.stringify(appData));
+      if (manual) setGistStatus('从云端拉取成功 ✓ 即将刷新页面', 'ok');
+      setTimeout(function(){ location.reload(); }, 600);
+    }).catch(function(e) { if (manual) setGistStatus('失败：' + e.message, 'error'); });
+}
+
+function setGistStatus(msg, type) {
+  var el = $('gistStatus'); if (!el) return;
+  el.textContent = msg;
+  el.style.color = type === 'error' ? 'var(--danger)' : (type === 'ok' ? 'var(--success)' : 'var(--text2)');
+}
+
+function updateGistBtnLabel() {
+  var btn = $('gistSyncBtn'); if (!btn) return;
+  var connected = !!(localStorage.getItem(LS_GIST_TOKEN) && localStorage.getItem(LS_GIST_ID));
+  btn.textContent = connected ? '☁ 已连接云同步' : '☁ 配置云同步';
+}
+
+// ============ BACKUP ============
+function exportAppData() {
+  var blob = new Blob([JSON.stringify(appData, null, 2)], {type:'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  var ts = new Date();
+  var pad = function(n){ return n<10?'0'+n:''+n; };
+  var fname = '记账数据备份_' + ts.getFullYear() + pad(ts.getMonth()+1) + pad(ts.getDate()) + '_' + pad(ts.getHours()) + pad(ts.getMinutes()) + '.json';
+  a.href = url;
+  a.download = fname;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+}
+function importAppData() {
+  $('importFileInput').value = '';
+  $('importFileInput').click();
+}
+function handleImportFile(e) {
+  var file = e.target.files && e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var data;
+    try {
+      data = JSON.parse(ev.target.result);
+    } catch (err) {
+      alert('文件解析失败，请确认是本应用导出的JSON备份文件');
+      return;
+    }
+    if (!data || typeof data !== 'object' || !Array.isArray(data.records)) {
+      alert('文件格式不正确，请确认是本应用导出的JSON备份文件');
+      return;
+    }
+    if (!confirm('导入将覆盖当前所有数据，确定要继续吗？建议先导出当前数据备份。')) return;
+    appData = data;
+    saveData();
+    alert('导入成功');
+    location.reload();
+  };
+  reader.onerror = function() { alert('文件读取失败'); };
+  reader.readAsText(file);
+}
+
+// ============ STATE ============
+var currentTab = 'daily';
+var recordViewMode = 'day';
+var recordMonth = '';
+var collapsedDates = {};
+var recRecordType = 'expense';
+var todoCatFilter = '全部';
+var calYear, calMonth, calSelectedDate = null;
+var collapsedTripDates = {};
+var longPressTimer = null;
+
+// ============ TAB SWITCH ============
+function switchTab(tab) {
+  currentTab = tab;
+  var tabs = document.querySelectorAll('.tab-item');
+  for (var i=0;i<tabs.length;i++) { tabs[i].classList.toggle('active', tabs[i].dataset.tab === tab); }
+  var pages = document.querySelectorAll('.page');
+  for (var j=0;j<pages.length;j++) { pages[j].classList.remove('active'); }
+  var fab = $('fabBtn');
+  fab.style.display = (tab === 'records') ? 'flex' : 'none';
+  var fabT = $('fabTemplateBtn');
+  fabT.style.display = (tab === 'records' && appData.templates && appData.templates.length > 0) ? 'flex' : 'none';
+  $('page-' + tab).classList.add('active');
+  closeAllModals();
+  renderTab(tab);
+}
+
+function renderTab(tab) {
+  switch(tab) {
+    case 'daily': renderDaily(); break;
+    case 'travel': renderTravel(); break;
+    case 'records': renderRecords(); break;
+    case 'todos': renderTodos(); break;
+    case 'rates': renderRates(); break;
+  }
+}
+
+// ============ MODAL ============
+function openModal(html, id) {
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  if (id) overlay.id = id;
+  overlay.innerHTML = html;
+  overlay.addEventListener('click', function(e) { if(e.target===overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+  return overlay;
+}
+
+function closeAllModals() {
+  var els = document.querySelectorAll('.modal-overlay, .action-overlay, .action-sheet');
+  for (var i=0;i<els.length;i++) { els[i].remove(); }
+}
+
+function hideModal(id) {
+  var el = $(id);
+  if (el) el.remove();
+}
+
+// ============ DAILY TAB ============
+function renderDaily() {
+  var now = new Date();
+  var year = now.getFullYear();
+  var month = now.getMonth();
+  var budget = appData.budget.total;
+
+  var yearStart = year + '-01-01';
+  var yearEnd = (year+1) + '-01-01';
+  var yearSpent = 0;
+  var monthIncome = 0, monthExpense = 0;
+  var monthStart = year + '-' + (month<9?'0':'') + (month+1) + '-01';
+  var monthEnd;
+  if (month === 11) { monthEnd = (year+1) + '-01-01'; }
+  else { monthEnd = year + '-' + (month<8?'0':'') + (month+2) + '-01'; }
+
+  for (var i=0;i<appData.records.length;i++) {
+    var r = appData.records[i];
+    if (r.type !== 'daily') continue;
+    var amt = getRmbAmt(r);
+    if (r.date >= yearStart && r.date < yearEnd) {
+      if (r.recordType === 'expense') yearSpent += amt;
+    }
+    if (r.date >= monthStart && r.date < monthEnd) {
+      if (r.recordType === 'expense') monthExpense += amt;
+      else monthIncome += amt;
+    }
+  }
+
+  var pct = budget > 0 ? Math.min(yearSpent / budget * 100, 150) : 0;
+  var monthBalance = monthIncome - monthExpense;
+
+  $('budget-card').innerHTML =
+    '<div class="section-title">' + year + '年预算 <button class="btn-link" onclick="showBudgetModal()">设置预算</button></div>' +
+    '<div class="ring-container">' +
+    '<canvas id="budgetRing" width="110" height="110"></canvas>' +
+    '<div class="ring-info">' +
+    '<div class="ring-label">已花费</div>' +
+    '<div class="ring-amount">&yen;' + formatMoney(yearSpent) + '</div>' +
+    '<div class="ring-pct" style="color:' + (pct>100?'var(--danger)':'var(--text2)') + '">' + pct.toFixed(1) + '% / &yen;' + formatMoney(budget) + '</div>' +
+    '</div></div>';
+  drawRing('budgetRing', pct, pct > 100 ? '#E74C3C' : '#4A90D9', '#E8ECF1');
+
+  $('month-stats-card').innerHTML =
+    '<div class="section-title">当月收支</div>' +
+    '<div class="stats-row">' +
+    '<div class="stat-col green"><div class="stat-val">&yen;' + formatMoney(monthIncome) + '</div><div class="stat-label">月收入</div></div>' +
+    '<div class="stat-col red"><div class="stat-val">&yen;' + formatMoney(monthExpense) + '</div><div class="stat-label">月支出</div></div>' +
+    '<div class="stat-col ' + (monthBalance>=0?'green':'red') + '"><div class="stat-val">&yen;' + formatMoney(monthBalance) + '</div><div class="stat-label">月结余</div></div>' +
+    '</div>';
+
+  // Bar chart - last 6 months
+  var barLabels = [], barValues = [], barColors = [];
+  for (var bi=5;bi>=0;bi--) {
+    var m = new Date(year, month - bi, 1);
+    var ms = m.getFullYear() + '-' + (m.getMonth()<9?'0':'') + (m.getMonth()+1) + '-01';
+    var me;
+    if (m.getMonth()===11) { me = (m.getFullYear()+1)+'-01-01'; }
+    else { me = m.getFullYear()+'-'+(m.getMonth()<8?'0':'')+(m.getMonth()+2)+'-01'; }
+    var sum = 0;
+    for (var ri=0;ri<appData.records.length;ri++) {
+      var rr = appData.records[ri];
+      if (rr.type==='daily' && rr.recordType==='expense' && rr.date>=ms && rr.date<me) sum += getRmbAmt(rr);
+    }
+    barLabels.push((m.getMonth()+1)+'月');
+    barValues.push(sum);
+    barColors.push('#4A90D9');
+  }
+  drawBarChart('barChart', barLabels, barValues, barColors);
+
+  // Pie chart
+  var catMap = {};
+  for (var pi=0;pi<appData.records.length;pi++) {
+    var pr = appData.records[pi];
+    if (pr.type==='daily' && pr.recordType==='expense' && pr.date>=monthStart && pr.date<monthEnd) {
+      var key = pr.catPath[0] || '其他';
+      catMap[key] = (catMap[key]||0) + getRmbAmt(pr);
+    }
+  }
+  var pieKeys = Object.keys(catMap);
+  var pieItems = [];
+  for (var pk=0;pk<pieKeys.length;pk++) { pieItems.push({name:pieKeys[pk], value:catMap[pieKeys[pk]]}); }
+  pieItems.sort(function(a,b){return b.value-a.value;});
+  var pieColors = ['#4A90D9','#5DADE2','#3498DB','#2980B9','#1ABC9C','#2ECC71','#F39C12','#E67E22','#E74C3C','#9B59B6'];
+  var totalPie = 0;
+  for (var pt=0;pt<pieItems.length;pt++) { totalPie += pieItems[pt].value; }
+  var pieHtml = '';
+  for (var phi=0;phi<pieItems.length;phi++) {
+    var item = pieItems[phi];
+    var p = totalPie>0 ? (item.value/totalPie*100).toFixed(1) : 0;
+    pieHtml += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px;">' +
+      '<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + (pieColors[phi]||'#ccc') + ';margin-right:6px;"></span>' + item.name + '</span>' +
+      '<span>&yen;' + formatMoney(item.value) + ' (' + p + '%)</span></div>';
+  }
+  $('pie-list').innerHTML = pieHtml;
+  var drawItems = [];
+  for (var di=0;di<pieItems.length;di++) { drawItems.push({name:pieItems[di].name,value:pieItems[di].value,color:pieColors[di]||'#ccc'}); }
+  drawPieChart('pieChart', drawItems);
+}
+
+function showBudgetModal() {
+  var b = appData.budget;
+  var monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  var adjustHtml = '';
+  for (var mi=0; mi<12; mi++) {
+    adjustHtml += '<div class="form-row"><label>' + monthNames[mi] + '微调</label><input type="number" id="adjustInput'+mi+'" value="' + (b.monthlyAdjust[mi]||0) + '" step="any"></div>';
+  }
+  var overlay = openModal('<div class="modal-sheet" style="max-height:90vh;overflow-y:auto;"><h3>设置年度预算</h3>' +
+    '<div class="form-row"><label>年度总预算 (CNY)</label><input type="number" id="budgetInput" value="' + b.total + '"></div>' +
+    '<div class="form-row-inline"><div class="form-row"><label>保险预算</label><input type="number" id="budgetInsurance" value="' + (b.insurance||0) + '"></div>' +
+    '<div class="form-row"><label>特殊预算</label><input type="number" id="budgetSpecial" value="' + (b.special||0) + '"></div></div>' +
+    '<div class="form-row-inline"><div class="form-row"><label>旅游预算（含旅游礼物）</label><input type="number" id="budgetTravel" value="' + (b.travel||0) + '"></div>' +
+    '<div class="form-row"><label>预花费预算</label><input type="number" id="budgetPrepay" value="' + (b.prepay||0) + '"></div></div>' +
+    '<div style="font-size:12px;color:var(--text2);margin:12px 0 8px;">月度日常预算 = (年度总预算 - 以上4项专项预算) ÷ 12，每月可在下方单独微调（可正可负，用于结转上月结余等）</div>' +
+    '<div class="mr-monthly-adjust-grid">' + adjustHtml + '</div>' +
+    '<div class="btn-row"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button><button class="btn btn-primary" onclick="saveBudget()">保存</button></div></div>');
+}
+function saveBudget() {
+  var b = appData.budget;
+  b.total = parseFloat($('budgetInput').value) || 0;
+  b.insurance = parseFloat($('budgetInsurance').value) || 0;
+  b.special = parseFloat($('budgetSpecial').value) || 0;
+  b.travel = parseFloat($('budgetTravel').value) || 0;
+  b.prepay = parseFloat($('budgetPrepay').value) || 0;
+  var adjust = [];
+  for (var mi=0; mi<12; mi++) { adjust.push(parseFloat($('adjustInput'+mi).value) || 0); }
+  b.monthlyAdjust = adjust;
+  saveData();
+  closeAllModals();
+  renderDaily();
+  if ($('page-review') && $('page-review').classList.contains('active')) renderMonthlyReview();
+}
+
+// ============ MONTHLY REVIEW ============
+var REVIEW_GROUPS = [
+  {label:'居住', kind:'fixed', cols:[
+    {label:'房租', path:['居住','房租']},
+    {label:'水电气', path:['居住','水电气']},
+    {label:'通信费', path:['居住','通信费']},
+    {label:'居住杂项', path:['居住','居住杂项']}
+  ]},
+  {label:'饮食', kind:'flex', cols:[
+    {label:'正餐', path:['饮食','正餐']},
+    {label:'零食', path:['饮食','零食']},
+    {label:'补品辅食', path:['饮食','补品辅食']}
+  ]},
+  {label:'交通', kind:'flex', cols:[{label:'交通', path:['交通']}]},
+  {label:'个人形象', kind:'flex', cols:[{label:'个人形象', path:['个人形象']}]},
+  {label:'购物', kind:'flex', cols:[
+    {label:'电子产品', path:['购物','电子产品']},
+    {label:'家居用品', path:['购物','家居用品']}
+  ]},
+  {label:'订阅费', kind:'fixed', cols:[{label:'订阅费', path:['订阅费']}]},
+  {label:'教育', kind:'fixed', cols:[{label:'教育', path:['教育']}]},
+  {label:'娱乐', kind:'flex', cols:[{label:'娱乐', path:['娱乐']}]},
+  {label:'运动', kind:'flex', cols:[{label:'运动', path:['运动']}]},
+  {label:'社交', kind:'flex', cols:[{label:'社交', path:['社交']}]},
+  {label:'医疗', kind:'fixed', cols:[{label:'医疗', path:['医疗']}]}
+];
+var REVIEW_COLS = (function(){
+  var arr = [];
+  for (var gi=0; gi<REVIEW_GROUPS.length; gi++) {
+    var g = REVIEW_GROUPS[gi];
+    for (var ci=0; ci<g.cols.length; ci++) { arr.push({label:g.cols[ci].label, path:g.cols[ci].path, kind:g.kind}); }
+  }
+  return arr;
+})();
+var reviewYear = new Date().getFullYear();
+
+function catMatchesPath(catPath, prefix) {
+  if (!catPath || catPath.length < prefix.length) return false;
+  for (var i=0;i<prefix.length;i++) { if (catPath[i] !== prefix[i]) return false; }
+  return true;
+}
+function reviewMonthRange(year, m0) {
+  var ms = year + '-' + (m0<9?'0':'') + (m0+1) + '-01';
+  var ny = m0===11 ? year+1 : year;
+  var nm = m0===11 ? 0 : m0+1;
+  var me = ny + '-' + (nm<9?'0':'') + (nm+1) + '-01';
+  return [ms, me];
+}
+function isFutureReviewMonth(year, m0) {
+  var now = new Date();
+  if (year > now.getFullYear()) return true;
+  if (year < now.getFullYear()) return false;
+  return m0 > now.getMonth();
+}
+function sumCatForRange(ms, me, prefix) {
+  var sum = 0;
+  for (var i=0;i<appData.records.length;i++) {
+    var r = appData.records[i];
+    if (r.type!=='daily' || r.recordType!=='expense') continue;
+    if (r.date < ms || r.date >= me) continue;
+    if (catMatchesPath(r.catPath, prefix)) sum += getRmbAmt(r);
+  }
+  return sum;
+}
+function getReviewMonthlyBudget(m0) {
+  var b = appData.budget;
+  var specialTotal = (b.insurance||0)+(b.special||0)+(b.travel||0)+(b.prepay||0);
+  var base = (b.total - specialTotal) / 12;
+  return base + (b.monthlyAdjust && b.monthlyAdjust[m0] || 0);
+}
+function getAnnualCatData(year, prefix) {
+  var ys = year+'-01-01', ye=(year+1)+'-01-01';
+  var sum = 0, list = [];
+  for (var i=0;i<appData.records.length;i++) {
+    var r = appData.records[i];
+    if (r.type!=='daily' || r.recordType!=='expense') continue;
+    if (r.date < ys || r.date >= ye) continue;
+    if (catMatchesPath(r.catPath, prefix)) { sum += getRmbAmt(r); list.push(r); }
+  }
+  list.sort(function(a,b){ return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
+  return {sum:sum, list:list};
+}
+function fmtCell(v) {
+  if (v === null || v === undefined) return '-';
+  if (v === 0) return '-';
+  return formatMoney(v);
+}
+function fmtBudgetCell(v) {
+  return formatMoney(v);
+}
+
+function showMonthlyReview() {
+  reviewYear = new Date().getFullYear();
+  var pages = document.querySelectorAll('.page');
+  for (var i=0;i<pages.length;i++) { pages[i].classList.remove('active'); }
+  $('page-review').classList.add('active');
+  closeAllModals();
+  renderMonthlyReview();
+  window.scrollTo(0,0);
+}
+function closeMonthlyReview() {
+  switchTab('daily');
+}
+function changeReviewYear(delta) {
+  reviewYear += delta;
+  renderMonthlyReview();
+}
+
+function renderMonthlyReview() {
+  $('reviewYearLabel').textContent = reviewYear + '年';
+  var monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+  // Build per-month data
+  var months = [];
+  for (var m0=0; m0<12; m0++) {
+    var future = isFutureReviewMonth(reviewYear, m0);
+    var budget = getReviewMonthlyBudget(m0);
+    var colVals = [];
+    var total = 0;
+    if (!future) {
+      var range = reviewMonthRange(reviewYear, m0);
+      for (var ci=0; ci<REVIEW_COLS.length; ci++) {
+        var v = sumCatForRange(range[0], range[1], REVIEW_COLS[ci].path);
+        colVals.push(v);
+        total += v;
+      }
+    } else {
+      for (var ci2=0; ci2<REVIEW_COLS.length; ci2++) colVals.push(null);
+      total = null;
+    }
+    var balance = future ? null : (budget - total);
+    months.push({m0:m0, future:future, budget:budget, colVals:colVals, total:total, balance:balance});
+  }
+
+  // Year-to-date totals
+  var ytdBudget = 0, ytdTotal = 0, ytdColTotals = [];
+  for (var ci3=0; ci3<REVIEW_COLS.length; ci3++) ytdColTotals.push(0);
+  var hasYtd = false;
+  for (var mi=0; mi<12; mi++) {
+    if (!months[mi].future) {
+      hasYtd = true;
+      ytdBudget += months[mi].budget;
+      ytdTotal += months[mi].total;
+      for (var ci4=0; ci4<REVIEW_COLS.length; ci4++) ytdColTotals[ci4] += months[mi].colVals[ci4];
+    }
+  }
+  var fullYearBudget = 0;
+  for (var mi2=0; mi2<12; mi2++) fullYearBudget += months[mi2].budget;
+
+  // Annual special data
+  var insData = getAnnualCatData(reviewYear, ['保险']);
+  var spcData = getAnnualCatData(reviewYear, ['特殊']);
+  var travData = getAnnualCatData(reviewYear, ['旅游']);
+  var travGiftData = getAnnualCatData(reviewYear, ['旅游礼物']);
+  var prepayData = getAnnualCatData(reviewYear, ['预花费']);
+  var travelActual = travData.sum + travGiftData.sum;
+  var b = appData.budget;
+  var specials = [
+    {name:'保险', budget:b.insurance||0, actual:insData.sum, list:insData.list},
+    {name:'特殊', budget:b.special||0, actual:spcData.sum, list:spcData.list},
+    {name:'旅游 + 旅游礼物', budget:b.travel||0, actual:travelActual, list:travData.list.concat(travGiftData.list).sort(function(a,c){return a.date<c.date?-1:(a.date>c.date?1:0);})},
+    {name:'预花费', budget:b.prepay||0, actual:prepayData.sum, list:prepayData.list}
+  ];
+  var specialBalanceSum = 0;
+  for (var si=0; si<specials.length; si++) { specialBalanceSum += (specials[si].budget - specials[si].actual); }
+
+  // Year total balance
+  var yearTotalBalance = (hasYtd ? (ytdBudget - ytdTotal) : 0) + specialBalanceSum;
+  var balEl = $('reviewYearBalance');
+  balEl.textContent = '\u00A5 ' + formatMoney(yearTotalBalance);
+  balEl.style.color = yearTotalBalance >= 0 ? 'var(--success)' : 'var(--danger)';
+
+  // ===== Build table =====
+  var html = '<table class="mr-table"><thead>';
+  // precompute per-column group boundary (first column of each group gets a divider)
+  var colGroupStart = [];
+  for (var gpi=0; gpi<REVIEW_GROUPS.length; gpi++) {
+    var gp = REVIEW_GROUPS[gpi];
+    for (var gci=0; gci<gp.cols.length; gci++) { colGroupStart.push(gci===0); }
+  }
+
+  // group class lookup: 居住=blue, 饮食=dark, 交通起交替light/dark
+  var grpClasses = [];
+  for (var gpi=0; gpi<REVIEW_GROUPS.length; gpi++) {
+    var gname = REVIEW_GROUPS[gpi].label;
+    if (gname==='居住') grpClasses.push('mr-grp-blue');
+    else if (gname==='饮食') grpClasses.push('mr-grp-dark');
+    else grpClasses.push((gpi%2===0)?'mr-grp-light':'mr-grp-dark');
+  }
+
+  // header row 1 (groups)
+  html += '<tr><th rowspan="2" class="mr-sticky-l0">月份</th><th rowspan="2" class="mr-sticky-l1">预算</th>';
+  for (var gi=0; gi<REVIEW_GROUPS.length; gi++) {
+    var g = REVIEW_GROUPS[gi];
+    html += '<th colspan="'+g.cols.length+'" class="'+grpClasses[gi]+' mr-grp-start">'+escHtml(g.label)+'</th>';
+  }
+  html += '<th rowspan="2" class="mr-col-total">合计</th><th rowspan="2" class="mr-sticky-r1">结余</th></tr>';
+  // header row 2 (cols)
+  html += '<tr>';
+  for (var gi2=0; gi2<REVIEW_GROUPS.length; gi2++) {
+    var g2 = REVIEW_GROUPS[gi2];
+    for (var ci5=0; ci5<g2.cols.length; ci5++) {
+      var lbl = g2.cols.length>1 ? g2.cols[ci5].label : '';
+      html += '<th class="'+grpClasses[gi2]+(ci5===0?' mr-grp-start':'')+'">'+escHtml(lbl)+'</th>';
+    }
+  }
+  html += '</tr></thead><tbody>';
+
+  // month rows (1-12)
+  var now = new Date();
+  for (var m=0; m<12; m++) {
+    var md = months[m];
+    var isCurrent = (reviewYear===now.getFullYear() && m===now.getMonth());
+    var rowClass = md.future ? 'mr-future' : (isCurrent ? 'mr-current' : '');
+    html += '<tr'+(rowClass?(' class="'+rowClass+'"'):'')+'>';
+    html += '<td class="mr-sticky-l0">'+monthNames[m]+(isCurrent?' (本月)':'')+'</td>';
+    html += '<td class="mr-sticky-l1"><span class="mr-budget-edit" onclick="editMonthAdjust('+m+')">'+fmtBudgetCell(md.budget)+'</span></td>';
+    for (var ci7=0; ci7<REVIEW_COLS.length; ci7++) {
+      html += '<td'+(colGroupStart[ci7]?' class="mr-grp-start"':'')+'>'+fmtCell(md.colVals[ci7])+'</td>';
+    }
+    html += '<td class="mr-col-total">'+fmtCell(md.total)+'</td>';
+    var balClass = md.balance===null ? '' : (md.balance>=0?' mr-balance-pos':' mr-balance-neg');
+    html += '<td class="mr-sticky-r1'+balClass+'">'+(md.balance===null?'-':formatMoney(md.balance))+'</td>';
+    html += '</tr>';
+  }
+
+  // YTD row at bottom
+  var ytdBal = hasYtd ? (ytdBudget - ytdTotal) : null;
+  html += '<tr class="mr-ytd">';
+  html += '<td class="mr-sticky-l0">年度合计</td>';
+  html += '<td class="mr-sticky-l1">'+fmtBudgetCell(fullYearBudget)+'</td>';
+  for (var ci6=0; ci6<REVIEW_COLS.length; ci6++) {
+    html += '<td'+(colGroupStart[ci6]?' class="mr-grp-start"':'')+'>'+(hasYtd?fmtCell(ytdColTotals[ci6]):'-')+'</td>';
+  }
+  html += '<td class="mr-col-total">'+(hasYtd?fmtCell(ytdTotal):'-')+'</td>';
+  html += '<td class="mr-sticky-r1'+(ytdBal===null?'':(ytdBal>=0?' mr-balance-pos':' mr-balance-neg'))+'">'+(ytdBal===null?'-':formatMoney(ytdBal))+'</td>';
+  html += '</tr>';
+  html += '</tbody></table>';
+  $('reviewTableScroll').innerHTML = html;
+
+  // ===== Annual special cards =====
+  var cardsHtml = '';
+  for (var sci=0; sci<specials.length; sci++) {
+    var sp = specials[sci];
+    var pct = sp.budget>0 ? Math.min(sp.actual/sp.budget, 1) : (sp.actual>0?1:0);
+    var over = sp.budget>0 && sp.actual > sp.budget;
+    var circumference = 2*Math.PI*18;
+    var dashoffset = circumference * (1-pct);
+    var ringColor = over ? 'var(--danger)' : 'var(--success)';
+    cardsHtml += '<div class="mr-special-card'+(over?' mr-over':'')+'">';
+    cardsHtml += '<div class="mr-special-top"><svg width="44" height="44" viewBox="0 0 44 44">' +
+      '<circle cx="22" cy="22" r="18" fill="none" stroke="var(--border)" stroke-width="5"></circle>' +
+      '<circle cx="22" cy="22" r="18" fill="none" stroke="'+ringColor+'" stroke-width="5" stroke-linecap="round" stroke-dasharray="'+circumference.toFixed(2)+'" stroke-dashoffset="'+dashoffset.toFixed(2)+'" transform="rotate(-90 22 22)"></circle>' +
+      '</svg><div style="flex:1;"><div class="mr-special-name">'+escHtml(sp.name)+'</div>' +
+      '<div class="mr-special-nums">'+formatMoney(sp.actual)+' / '+formatMoney(sp.budget)+'</div></div></div>';
+    if (sp.list.length === 0) {
+      cardsHtml += '<div class="mr-special-list"><div class="mr-special-empty">暂无记录</div></div>';
+    } else {
+      cardsHtml += '<div class="mr-special-list">';
+      for (var li=0; li<sp.list.length; li++) {
+        var rec = sp.list[li];
+        var dateShort = rec.date ? (parseInt(rec.date.slice(5,7),10) + '/' + parseInt(rec.date.slice(8,10),10)) : '';
+        var noteText = rec.note ? (' ' + rec.note) : '';
+        cardsHtml += '<div class="mr-special-row" onclick="showRecordAction(\''+rec.id+'\')"><span>'+dateShort+noteText+'</span><span>'+formatMoney(getRmbAmt(rec))+'</span></div>';
+      }
+      cardsHtml += '</div>';
+    }
+    cardsHtml += '</div>';
+  }
+  $('reviewSpecialCards').innerHTML = cardsHtml;
+}
+
+function editMonthAdjust(m0) {
+  var monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  var current = appData.budget.monthlyAdjust[m0] || 0;
+  var html = '<div class="modal-sheet"><h3>'+monthNames[m0]+' 预算微调</h3>' +
+    '<div class="form-row"><label>微调金额（可正可负，CNY）</label><input type="number" id="singleAdjustInput" value="'+current+'" step="any"></div>' +
+    '<div class="btn-row"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button><button class="btn btn-primary" onclick="saveSingleAdjust('+m0+')">保存</button></div></div>';
+  openModal(html);
+}
+function saveSingleAdjust(m0) {
+  var v = parseFloat($('singleAdjustInput').value) || 0;
+  appData.budget.monthlyAdjust[m0] = v;
+  saveData();
+  closeAllModals();
+  renderMonthlyReview();
+}
+
+// ============ CANVAS CHARTS ============
+function drawRing(canvasId, pct, color, bgColor) {
+  var canvas = $(canvasId);
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var w = canvas.width, h = canvas.height;
+  var cx = w/2, cy = h/2, r = 42, lw = 10;
+  ctx.clearRect(0,0,w,h);
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.strokeStyle=bgColor; ctx.lineWidth=lw; ctx.stroke();
+  if (pct > 0) {
+    var angle = Math.min(pct, 100) / 100 * Math.PI * 2;
+    ctx.beginPath(); ctx.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+angle); ctx.strokeStyle=color; ctx.lineWidth=lw; ctx.stroke();
+  }
+  ctx.fillStyle='#2C3E50'; ctx.font='bold 16px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(Math.round(pct)+'%', cx, cy);
+}
+
+function drawBarChart(canvasId, labels, values, colors) {
+  var canvas = $(canvasId);
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var w = canvas.width, h = canvas.height;
+  var pad = { top:20, right:20, bottom:30, left:50 };
+  var cw = w - pad.left - pad.right, ch = h - pad.top - pad.bottom;
+  ctx.clearRect(0,0,w,h);
+  var maxV = Math.max.apply(null, values.concat([100]));
+  var barW = cw / labels.length * 0.6;
+  var gap = cw / labels.length;
+  ctx.strokeStyle='#eee'; ctx.lineWidth=1;
+  for (var i=0;i<=4;i++) {
+    var y = pad.top + ch * i / 4;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w-pad.right, y); ctx.stroke();
+  }
+  for (var vi=0;vi<values.length;vi++) {
+    var x = pad.left + gap * vi + gap/2 - barW/2;
+    var bh = Math.max(values[vi]/maxV*ch, 0);
+    var by = pad.top + ch - bh;
+    ctx.fillStyle = colors[vi] || '#4A90D9';
+    ctx.fillRect(x, by, barW, bh);
+    ctx.fillStyle='#2C3E50'; ctx.font='11px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('¥'+(values[vi]/1000).toFixed(1)+'k', x+barW/2, by-6);
+    ctx.fillText(labels[vi], x+barW/2, pad.top+ch+16);
+  }
+}
+
+function drawPieChart(canvasId, items) {
+  var canvas = $(canvasId);
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var w = canvas.width, h = canvas.height;
+  var cx = w/2, cy = h/2, r = 100;
+  ctx.clearRect(0,0,w,h);
+  var total = 0;
+  for (var i=0;i<items.length;i++) { total += items[i].value; }
+  if (total === 0) {
+    ctx.fillStyle='#ccc'; ctx.font='14px sans-serif'; ctx.textAlign='center'; ctx.fillText('暂无数据',cx,cy);
+    return;
+  }
+  var angle = -Math.PI/2;
+  for (var j=0;j<items.length;j++) {
+    var slice = items[j].value/total * Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,angle,angle+slice);
+    ctx.fillStyle = items[j].color; ctx.fill();
+    angle += slice;
+  }
+}
+
+// ============ TRAVEL TAB ============
+function selectTrip(tripId) {
+  var sel = $('tripSelect');
+  if (sel) { sel.value = tripId; }
+  renderTravel();
+}
+
+function renderTravel() {
+  var sel = $('tripSelect');
+  if (!sel) return;
+  var savedVal = sel.value;
+  var opts = '<option value="">-- 选择行程 --</option>';
+  for (var i=0;i<appData.trips.length;i++) {
+    opts += '<option value="' + appData.trips[i].id + '">' + appData.trips[i].name + '</option>';
+  }
+  sel.innerHTML = opts;
+  sel.value = savedVal;
+  var tripId = sel.value;
+  if (!tripId) {
+    if (appData.trips.length > 0) {
+      var sortedTrips = appData.trips.slice().sort(function(a,b){ return (b.startDate||'').localeCompare(a.startDate||''); });
+      // Group by year
+      var yearGroups = {};
+      for (var si=0; si<sortedTrips.length; si++) {
+        var st = sortedTrips[si];
+        var yr = (st.startDate||'').substring(0,4) || '未知年份';
+        if (!yearGroups[yr]) yearGroups[yr] = [];
+        yearGroups[yr].push(st);
+      }
+      var years = Object.keys(yearGroups).sort(function(a,b){ return b.localeCompare(a); });
+      var html = '';
+      var ringTasks = [];
+      for (var yi=0; yi<years.length; yi++) {
+        var year = years[yi];
+        var yearTotal = 0;
+        for (var yti=0; yti<yearGroups[year].length; yti++) { yearTotal += getTripSpent(yearGroups[year][yti].id); }
+        html += '<div style="display:flex;justify-content:space-between;align-items:baseline;margin:14px 0 8px;padding-left:4px;">' +
+          '<span style="font-size:13px;font-weight:600;color:var(--text);">' + year + '年</span>' +
+          '<span style="font-size:12px;color:var(--danger);font-weight:500;">支出 &yen;' + formatMoney(yearTotal) + '</span></div>';
+        var trips = yearGroups[year];
+        for (var ti=0; ti<trips.length; ti++) {
+          var t = trips[ti];
+          var spent = getTripSpent(t.id);
+          var pct = t.totalBudget > 0 ? Math.min(spent / t.totalBudget * 100, 150) : 0;
+          var canvasId = 'tripRing_' + t.id;
+          html += '<div class="card" style="cursor:pointer;" onclick="selectTrip(\'' + t.id + '\')">' +
+            '<div class="section-title">' + escHtml(t.name) + '</div>' +
+            '<div style="font-size:12px;color:var(--text2);margin-bottom:8px;">' + (t.startDate||'') + ' ~ ' + (t.endDate||'') + '</div>' +
+            '<div class="ring-container">' +
+            '<canvas id="' + canvasId + '" width="110" height="110"></canvas>' +
+            '<div class="ring-info">' +
+            '<div class="ring-label">已花费</div>' +
+            '<div class="ring-amount">&yen;' + formatMoney(spent) + '</div>' +
+            '<div class="ring-pct" style="color:' + (pct>100?'var(--danger)':'var(--text2)') + '">' + pct.toFixed(1) + '% / &yen;' + formatMoney(t.totalBudget) + '</div>' +
+            '</div></div>' +
+            '<div style="text-align:center;color:var(--text2);font-size:12px;margin-top:8px;">点击查看详情</div>' +
+            '</div>';
+          ringTasks.push({id:canvasId, pct:pct, color:pct>100?'#E74C3C':'#4A90D9'});
+        }
+      }
+      $('trip-content').innerHTML = html;
+      setTimeout(function(){
+        for (var ri=0; ri<ringTasks.length; ri++) {
+          drawRing(ringTasks[ri].id, ringTasks[ri].pct, ringTasks[ri].color, '#E8ECF1');
+        }
+      }, 50);
+    } else {
+      $('trip-content').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2);">暂无行程，请新建</div>';
+    }
+    return;
+  }
+  var trip = getTripById(tripId);
+  if (!trip) return;
+  var tripSpent = getTripSpent(tripId);
+  var tPct = trip.totalBudget > 0 ? Math.min(tripSpent / trip.totalBudget * 100, 150) : 0;
+
+  var html = '<div class="card">' +
+    '<div class="section-title">' + trip.name + '<span class="cat-more" onclick="event.stopPropagation();showTripActionMenu(\'' + trip.id + '\')">\u00B7\u00B7\u00B7</span></div>' +
+    '<div style="font-size:12px;color:var(--text2);margin-bottom:8px;">' + (trip.startDate||'') + ' ~ ' + (trip.endDate||'') + '</div>' +
+    '<button class="btn btn-outline btn-sm" style="width:100%;margin-bottom:10px;" onclick="showTripReview()">📊 复盘看板</button>' +
+    '<div class="ring-container">' +
+    '<canvas id="tripRing" width="110" height="110"></canvas>' +
+    '<div class="ring-info">' +
+    '<div class="ring-label">已花费</div>' +
+    '<div class="ring-amount">&yen;' + formatMoney(tripSpent) + '</div>' +
+    '<div class="ring-pct" style="color:' + (tPct>100?'var(--danger)':'var(--text2)') + '">' + tPct.toFixed(1) + '% / &yen;' + formatMoney(trip.totalBudget) + '</div>' +
+    '</div></div></div>';
+
+  var now = new Date();
+  if (!calYear) { calYear = now.getFullYear(); calMonth = now.getMonth(); }
+  html += '<div class="card"><div class="cal-header">' +
+    '<button onclick="changeCalMonth(-1)">\u25C0</button>' +
+    '<span class="cal-title">' + calYear + '年' + (calMonth+1) + '月</span>' +
+    '<button onclick="changeCalMonth(1)">\u25B6</button></div>' +
+    '<div class="cal-grid">';
+  var dayHeaders = ['日','一','二','三','四','五','六'];
+  for (var dh=0;dh<dayHeaders.length;dh++) { html += '<div class="cal-day-header">' + dayHeaders[dh] + '</div>'; }
+  var firstDay = new Date(calYear, calMonth, 1).getDay();
+  var daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  for (var ei=0;ei<firstDay;ei++) html += '<div class="cal-day other-month"></div>';
+  for (var d=1;d<=daysInMonth;d++) {
+    var pd = (calMonth<9?'0':'') + (calMonth+1);
+    var dd = (d<10?'0':'') + d;
+    var dateStr = calYear + '-' + pd + '-' + dd;
+    var hasNodes = false;
+    if (trip.dayNodes) {
+      for (var ni=0;ni<trip.dayNodes.length;ni++) { if (trip.dayNodes[ni].date===dateStr) { hasNodes=true; break; } }
+    }
+    var isToday = dateStr === todayStr();
+    var isSel = dateStr === calSelectedDate;
+    html += '<div class="cal-day' + (hasNodes?' has-nodes':'') + (isToday?' today':'') + (isSel?' selected':'') + '" onclick="selectCalDate(\'' + dateStr + '\')">' + d + '</div>';
+  }
+  html += '</div></div>';
+
+  if (calSelectedDate) {
+    var nodes = [];
+    if (trip.dayNodes) {
+      for (var nni=0;nni<trip.dayNodes.length;nni++) {
+        if (trip.dayNodes[nni].date===calSelectedDate) nodes.push(trip.dayNodes[nni]);
+      }
+    }
+    html += '<div class="card"><div class="section-title">' + calSelectedDate + ' 行程</div>';
+    if (nodes.length===0) html += '<div style="color:var(--text2);font-size:13px;text-align:center;padding:10px;">暂无行程安排</div>';
+    else {
+      for (var nd=0;nd<nodes.length;nd++) {
+        var ndn = nodes[nd];
+        html += '<div class="day-node-card" onclick="event.stopPropagation();showNodeActionMenu(\'' + trip.id + '\',\'' + ndn.id + '\')">' +
+          '<div class="node-info"><div class="node-time">' + (ndn.time||'') + '</div><div class="node-loc">' + (ndn.location||'') + '</div><div class="node-note">' + (ndn.note||'') + '</div></div></div>';
+      }
+    }
+    html += '<button class="btn btn-outline btn-sm" style="width:100%;margin-top:8px;" onclick="showDayNodeModal()">+ 添加行程节点</button></div>';
+  }
+
+  // Trip expenses
+  var tripExpenses = [];
+  for (var ei=0; ei<appData.records.length; ei++) {
+    if (appData.records[ei].tripId===tripId && appData.records[ei].recordType==='expense') tripExpenses.push(appData.records[ei]);
+  }
+  tripExpenses.sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+  html += '<div class="card"><div class="section-title">行程费用<button class="btn btn-outline btn-sm" onclick="showTripExpenseModal()">+ 添加</button></div>';
+  if (tripExpenses.length===0) {
+    html += '<div style="color:var(--text2);font-size:13px;text-align:center;padding:10px;">暂无费用记录</div>';
+  } else {
+    var expGroups = {};
+    for (var egi=0; egi<tripExpenses.length; egi++) {
+      var ger = tripExpenses[egi];
+      if (!expGroups[ger.date]) expGroups[ger.date] = { records: [], dayExpense: 0 };
+      expGroups[ger.date].records.push(ger);
+      expGroups[ger.date].dayExpense += getRmbAmt(ger);
+    }
+    var expDates = Object.keys(expGroups).sort(function(a,b){ return b.localeCompare(a); });
+    for (var edi=0; edi<expDates.length; edi++) {
+      var edate = expDates[edi];
+      var eg = expGroups[edate];
+      var eCollapsed = !collapsedTripDates[tripId] || !collapsedTripDates[tripId][edate];
+      html += '<div class="date-group">' +
+        '<div class="date-group-header'+(eCollapsed?' collapsed':'')+'" onclick="toggleTripDate(\''+tripId+'\',\''+edate+'\')">' +
+          '<span>'+(edate||'')+'</span>' +
+          '<span class="day-sum">支出 ¥'+formatMoney(eg.dayExpense)+'</span>' +
+        '</div>' +
+        '<div class="date-group-body'+(eCollapsed?' collapsed':'')+'">';
+      for (var ei=0; ei<eg.records.length; ei++) {
+        var exp = eg.records[ei];
+        var catName = exp.catPath ? exp.catPath.join(' > ') : '';
+        var expRmb = getRmbAmt(exp);
+        var expSub = '';
+        var expOrig = '';
+        if (exp.originalAmount > 0) {
+          expOrig = '<div style="font-size:10px;color:var(--text2);">原币金额: ' + (exp.originalCurrency||'') + ' ' + formatMoney(exp.originalAmount) + '</div>';
+        }
+        if (exp.amountForeign > 0 && exp.currency) {
+          expSub = '<div style="font-size:10px;color:var(--text2);">实付: ' + exp.currency + ' ' + formatMoney(exp.amountForeign) + ' × ' + (exp.exchangeRate||'?') + '</div>';
+        } else if (!exp.amountForeign && exp.currency && exp.currency !== 'CNY' && exp.amountCNY !== undefined) {
+          expSub = '<div style="font-size:10px;color:var(--text2);">实付: ' + exp.currency + ' ' + formatMoney(exp.amount||0) + '</div>';
+        }
+        var expSplit = '';
+        if (exp.payee && exp.peopleCount > 1) {
+          expSplit = '<div style="font-size:10px;color:var(--primary);">' + exp.payee + ' ÷' + exp.peopleCount + '人</div>';
+        } else if (exp.payee) {
+          expSplit = '<div style="font-size:10px;color:var(--primary);">' + exp.payee + '</div>';
+        }
+        html += '<div class="expense-row" onclick="showRecordAction(\'' + exp.id + '\')"><div>' +
+          '<div style="font-size:13px;">' + escHtml(catName) + '</div>' +
+          (exp.note?'<div style="font-size:11px;color:var(--text2);">'+escHtml(exp.note)+'</div>':'') + '</div>' +
+          '<div style="text-align:right;"><div style="font-weight:600;color:var(--danger);">&yen;' + formatMoney(expRmb) + '</div>' + expOrig + expSub + expSplit + '</div></div>';
+      }
+      html += '</div></div>';
+    }
+  }
+  html += '</div>';
+
+  html += '<button class="btn btn-outline" style="width:100%;margin-top:10px;color:var(--danger);border-color:var(--danger);" onclick="showSettlementModal()">结账转入日常</button>';
+  $('trip-content').innerHTML = html;
+  setTimeout(function(){ drawRing('tripRing', tPct, tPct>100?'#E74C3C':'#4A90D9','#E8ECF1'); }, 50);
+}
+
+function changeCalMonth(delta) {
+  calMonth += delta;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  renderTravel();
+}
+
+function selectCalDate(dateStr) {
+  calSelectedDate = calSelectedDate === dateStr ? null : dateStr;
+  renderTravel();
+}
+
+function toggleTripDate(tripId, date) {
+  if (!collapsedTripDates[tripId]) collapsedTripDates[tripId] = {};
+  if (collapsedTripDates[tripId][date]) {
+    delete collapsedTripDates[tripId][date];
+  } else {
+    collapsedTripDates[tripId][date] = true;
+  }
+  renderTravel();
+}
+
+function showTripModal() {
+  var overlay = openModal('<div class="modal-sheet"><h3>新建行程</h3>' +
+    '<div class="form-row"><label>行程名称</label><input type="text" id="tripName"></div>' +
+    '<div class="form-row"><label>开始日期</label><input type="date" id="tripStart"></div>' +
+    '<div class="form-row"><label>结束日期</label><input type="date" id="tripEnd"></div>' +
+    '<div class="form-row"><label>总预算 (CNY)</label><input type="number" id="tripBudget" value="10000"></div>' +
+    '<div class="btn-row"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button><button class="btn btn-primary" onclick="saveTrip()">保存</button></div></div>');
+}
+function saveTrip() {
+  var name = $('tripName').value.trim();
+  if (!name) return alert('请输入行程名称');
+  var newId = genId();
+  appData.trips.push({
+    id: newId, name: name,
+    startDate: $('tripStart').value,
+    endDate: $('tripEnd').value,
+    totalBudget: parseFloat($('tripBudget').value) || 0,
+    dayNodes: []
+  });
+  saveData();
+  closeAllModals();
+  $('tripSelect').value = newId;
+  renderTravel();
+}
+
+function showDayNodeModal() {
+  var selTripId = $('tripSelect').value;
+  var overlay = openModal('<div class="modal-sheet"><h3>添加行程节点</h3>' +
+    '<div class="form-row"><label>日期</label><input type="date" id="nodeDate" value="' + (calSelectedDate||todayStr()) + '"></div>' +
+    '<div class="form-row"><label>时间</label><input type="time" id="nodeTime"></div>' +
+    '<div class="form-row"><label>地点</label><input type="text" id="nodeLocation"></div>' +
+    '<div class="form-row"><label>备注</label><textarea id="nodeNote"></textarea></div>' +
+    '<div class="btn-row"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button><button class="btn btn-primary" onclick="saveDayNode(\'' + selTripId + '\')">保存</button></div></div>');
+}
+function saveDayNode(tripId) {
+  var trip = getTripById(tripId);
+  if (!trip) return;
+  if (!trip.dayNodes) trip.dayNodes = [];
+  trip.dayNodes.push({
+    id: genId(),
+    date: $('nodeDate').value,
+    time: $('nodeTime').value,
+    location: $('nodeLocation').value,
+    note: $('nodeNote').value
+  });
+  saveData();
+  closeAllModals();
+  renderTravel();
+}
+
+function startLongPressNode(nodeId, e) {
+  cancelLongPress();
+  longPressTimer = setTimeout(function() {
+    var tripId = $('tripSelect').value;
+    var trip = getTripById(tripId);
+    if (!trip) return;
+    if (confirm('确定删除该行程节点？')) {
+      trip.dayNodes = trip.dayNodes.filter(function(n){ return n.id !== nodeId; });
+      saveData();
+      renderTravel();
+    }
+    longPressTimer = null;
+  }, 800);
+}
+function cancelLongPress() {
+  if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+}
+
+function showSettlementModal() {
+  var tripId = $('tripSelect').value;
+  var trip = getTripById(tripId);
+  if (!trip) return;
+  var total = getTripSettlementTotal(tripId);
+  if (total===0) { alert('该行程尚无支出记录'); return; }
+  var cats = '';
+  for (var ci=0;ci<appData.dailyCats.length;ci++) { cats += '<option value="' + appData.dailyCats[ci].name + '">' + appData.dailyCats[ci].name + '</option>'; }
+  var overlay = openModal('<div class="modal-sheet"><h3>结账转入日常</h3>' +
+    '<div style="text-align:center;margin-bottom:12px;font-size:15px;">行程「' + trip.name + '」共花费 <b>&yen;' + formatMoney(total) + '</b></div>' +
+    '<div class="form-row"><label>转入日常类别</label><select id="settleCat">' + cats + '</select></div>' +
+    '<div class="btn-row"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button><button class="btn btn-primary" onclick="doSettlement(\'' + tripId + '\')">确认转入</button></div></div>');
+}
+function showTripExpenseModal() {
+  var tripId = $('tripSelect').value;
+  if (!tripId) return;
+  closeAllModals();
+  var catOpts = '';
+  var tc = appData.tripCats || appData.travelCats;
+  for (var ci=0; ci<tc.length; ci++) {
+    catOpts += '<option value="'+tc[ci].name+'">'+tc[ci].name+'</option>';
+  }
+  var payOpts = buildPaymentDatalist();
+  var payeeOpts = buildPayeeDatalist();
+  var curListOpts = buildCurrencyDatalist();
+  var overlay = openModal('<div class="modal-sheet"><h3>添加行程费用</h3>' +
+    '<div class="form-row"><label>类别</label><select id="tripExpCat">'+catOpts+'</select></div>' +
+    '<div class="form-row"><label>金额</label><div style="display:flex;align-items:center;gap:6px;"><input type="number" id="tripExpAmt" step="0.01" placeholder="0.00" style="flex:1;min-width:0;" oninput="onTripPayeeChange()"><span style="font-size:12px;color:var(--text2);white-space:nowrap;">RMB</span><span id="tripExpSplitHint" style="font-size:11px;color:var(--primary);white-space:nowrap;display:none;"></span></div></div>' +
+    '<div class="form-row"><label>日期</label><input type="date" id="tripExpDate" value="'+todayStr()+'"></div>' +
+    '<div class="form-row"><label>原币金额</label><div style="display:flex;gap:6px;"><input type="number" id="tripExpOrigAmt" step="0.01" placeholder="金额" style="flex:1;"><input type="text" id="tripExpOrigCurrency" list="tripCurrencyDataList" placeholder="币种" style="width:70px;" autocomplete="off"></div></div>' +
+    '<datalist id="tripCurrencyDataList">'+curListOpts+'</datalist>' +
+    '<div class="form-row"><label>实付币种</label><div style="display:flex;gap:6px;"><input type="number" id="tripExpForeign" step="0.01" placeholder="金额" style="flex:1;" oninput="autoCalcTripRmb()"><input type="text" id="tripExpCurrency" list="tripCurrencyDataList" placeholder="币种" style="width:85px;" autocomplete="off"><div style="display:flex;align-items:center;gap:6px;"><input type="number" id="tripExpRate" step="0.000001" placeholder="汇率" style="width:96px;" oninput="autoCalcTripRmb()"><button type="button" class="btn btn-outline btn-sm" onclick="fetchRealtimeRateForTrip()" style="padding:4px 6px;font-size:11px;white-space:nowrap;">获取</button></div></div></div>' +
+    '<datalist id="tripPayDatalist">'+payOpts+'</datalist>' +
+    '<datalist id="tripPayeeDatalist">'+payeeOpts+'</datalist>' +
+    '<div class="form-row"><label>支付人</label><div style="display:flex;gap:8px;align-items:center;"><input type="text" id="tripExpPayee" list="tripPayeeDatalist" placeholder="选填" autocomplete="off" onchange="onTripPayeeChange()" oninput="onTripPayeeChange()" style="flex:1;min-width:0;"><span id="tripExpPeopleWrap" style="display:none"><select id="tripExpPeople" style="width:90px;" onchange="onTripPayeeChange()"><option value="1">1人</option><option value="2">2人</option><option value="3">3人</option><option value="4">4人</option></select></span></div></div>' +
+    '<div class="form-row"><label>支付</label><input type="text" id="tripExpPayment" list="tripPayDatalist" placeholder="如微信、现金" autocomplete="off"></div>' +
+    '<div class="form-row"><label>备注</label><input type="text" id="tripExpNote" placeholder="如签证费、机票等"></div>' +
+    '<div class="btn-row"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button><button class="btn btn-primary" onclick="saveTripExpense(\''+tripId+'\')">保存</button></div></div>');
+}
+function onTripPayeeChange() {
+  var payeeVal = ($('tripExpPayee').value||'').trim();
+  var wrap = document.getElementById('tripExpPeopleWrap');
+  if (wrap) {
+    if (payeeVal) { wrap.style.display = ''; }
+    else { wrap.style.display = 'none'; $('tripExpPeople').value = '1'; }
+  }
+  var hint = $('tripExpSplitHint');
+  if (!hint) return;
+  var amt = parseFloat($('tripExpAmt').value) || 0;
+  var count = payeeVal ? (parseInt($('tripExpPeople').value) || 1) : 1;
+  if (payeeVal && count > 1 && amt > 0) {
+    hint.textContent = '人均 ¥' + formatMoney(amt / count);
+    hint.style.display = '';
+  } else {
+    hint.style.display = 'none';
+  }
+}
+function autoCalcTripRmb() {
+  var foreign = parseFloat($('tripExpForeign').value) || 0;
+  var currency = ($('tripExpCurrency').value||'').trim();
+  var rate = parseFloat($('tripExpRate').value) || 0;
+  if (foreign > 0 && rate > 0) { $('tripExpAmt').value = foreign * rate; }
+  else if (foreign > 0) { $('tripExpAmt').value = foreign; }
+  onTripPayeeChange();
+}
+function fetchRealtimeRateForTrip() {
+  var currency = ($('tripExpCurrency').value||'').trim().toUpperCase();
+  if (!currency) { alert('请先填写实付币种'); return; }
+  if (currency === 'CNY') { $('tripExpRate').value = '1'; autoCalcTripRmb(); return; }
+  var rate = appData.rates[currency];
+  if (rate && rate > 0) {
+    $('tripExpRate').value = (1 / rate).toFixed(6);
+    autoCalcTripRmb();
+  } else {
+    alert('未找到 ' + currency + ' 的汇率，请在汇率管理中补充');
+  }
+}
+function saveTripExpense(tripId) {
+  var catName = $('tripExpCat').value;
+  var amt = parseFloat($('tripExpAmt').value);
+  if (!catName || !amt || amt<=0) return alert('请填写类别和金额');
+  var orgAmt = parseFloat($('tripExpOrigAmt').value) || 0;
+  var orgCur = ($('tripExpOrigCurrency').value||'').trim();
+  var foreign = parseFloat($('tripExpForeign').value) || 0;
+  var currency = ($('tripExpCurrency').value||'').trim();
+  var rate = parseFloat($('tripExpRate').value) || 0;
+  var payee = ($('tripExpPayee').value||'').trim();
+  var peopleCount = payee ? (parseInt($('tripExpPeople').value) || 1) : 1;
+  var payment = ($('tripExpPayment').value||'').trim();
+  appData.records.push({
+    id: genId(), type:'travel', catPath:[catName], amount:amt, originalAmount:orgAmt, originalCurrency:orgCur, currency:currency, amountForeign:foreign, exchangeRate:rate,
+    date: $('tripExpDate').value, recordType:'expense', note: $('tripExpNote').value.trim(), tripId:tripId,
+    payee: payee, peopleCount: peopleCount, paymentMethod: payment
+  });
+  saveData();
+  closeAllModals();
+  renderTravel();
+}
+function doSettlement(tripId) {
+  var trip = getTripById(tripId);
+  if (!trip) return;
+  var total = getTripSettlementTotal(tripId);
+  appData.records.push({
+    id: genId(), type:'daily', catPath:[$('settleCat').value], amount:total, originalAmount:0, originalCurrency:'', amountForeign:0, exchangeRate:0, currency:'CNY', amountCNY:total,
+    date: todayStr(), recordType:'expense', note:'旅游结账: ' + trip.name, tripId:null
+  });
+  saveData();
+  closeAllModals();
+  renderTravel();
+}
+
+// ============ TRIP REVIEW ============
+function showTripReview() {
+  var selTripId = $('tripSelect').value;
+  if (!selTripId) return;
+  var trip = getTripById(selTripId);
+  if (!trip) return;
+  closeAllModals();
+
+  // Collect trip expenses
+  var expenses = [];
+  var total = 0;
+  for (var ri=0;ri<appData.records.length;ri++) {
+    var r = appData.records[ri];
+    if (r.tripId!==selTripId || r.recordType!=='expense') continue;
+    var amt = getRmbAmt(r);
+    total += amt;
+    expenses.push({ record: r, amt: amt });
+  }
+
+  var reviewView = 'cat'; // default view
+
+  function buildReviewContent() {
+    var pct = trip.totalBudget>0 ? Math.min(total/trip.totalBudget*100, 100) : 0;
+    var barColor = pct>=100 ? 'var(--danger)' : (pct>=80 ? '#f0ad4e' : 'var(--primary)');
+
+    var inner = '<div class="review-tabs">' +
+      '<div class="review-tab'+(reviewView==='cat'?' active':'')+'" onclick="_reviewSwitchView(\'cat\')">按分类</div>' +
+      '<div class="review-tab'+(reviewView==='payee'?' active':'')+'" onclick="_reviewSwitchView(\'payee\')">按支付人</div>' +
+    '</div>';
+
+    if (reviewView === 'cat') {
+      inner += buildCatView();
+    } else {
+      inner += buildPayeeView();
+    }
+
+    return inner;
+  }
+
+  function buildCatView() {
+    var l1Map = {};
+    for (var ei=0;ei<expenses.length;ei++) {
+      var e = expenses[ei];
+      var cp = e.record.catPath || [];
+      var l1 = cp[0] || '未分类';
+      var l2 = cp[1] || '';
+      if (!l1Map[l1]) l1Map[l1] = { total:0, items:{} };
+      l1Map[l1].total += e.amt;
+      if (l2) { l1Map[l1].items[l2] = (l1Map[l1].items[l2]||0) + e.amt; }
+    }
+    var l1List = Object.keys(l1Map).sort(function(a,b){ return l1Map[b].total - l1Map[a].total; });
+    var html = '';
+    for (var li=0;li<l1List.length;li++) {
+      var l1Name = l1List[li];
+      var l1Total = l1Map[l1Name].total;
+      var l1Pct = total>0 ? l1Total/total*100 : 0;
+      var l2Keys = Object.keys(l1Map[l1Name].items).sort(function(a,b){ return l1Map[l1Name].items[b] - l1Map[l1Name].items[a]; });
+      var l1BarW = Math.max(l1Pct, 2);
+      html += '<div class="review-l1" onclick="var n=this.nextElementSibling;n.style.display=n.style.display===\'none\'?\'block\':\'none\'">' +
+        '<span class="review-l1-name">' + escHtml(l1Name) + '</span>' +
+        '<div class="review-bar-wrap"><div class="review-bar-fill" style="width:'+l1BarW+'%"></div></div>' +
+        '<span class="review-l1-amt">¥' + formatMoney(l1Total) + '</span>' +
+        '<span class="review-l1-pct">' + l1Pct.toFixed(1) + '%</span></div>';
+      if (l2Keys.length>0) {
+        html += '<div class="review-l2-block" style="display:none;">';
+        for (var l2i=0;l2i<l2Keys.length;l2i++) {
+          var l2Name = l2Keys[l2i];
+          var l2Amt = l1Map[l1Name].items[l2Name];
+          var l2Pct = total>0 ? l2Amt/total*100 : 0;
+          var l2BarW = Math.max(l2Pct, 1);
+          html += '<div class="review-l2">' +
+            '<span class="review-l2-name">├ ' + escHtml(l2Name) + '</span>' +
+            '<div class="review-bar-wrap" style="height:6px;"><div class="review-bar-fill" style="width:'+l2BarW+'%"></div></div>' +
+            '<span class="review-l2-amt">¥' + formatMoney(l2Amt) + '</span>' +
+            '<span class="review-l2-pct">' + l2Pct.toFixed(1) + '%</span></div>';
+        }
+        html += '</div>';
+      }
+    }
+    return html;
+  }
+
+  function buildPayeeView() {
+    var payeeMap = {};
+    var payeeRawMap = {};
+    var myTotal = 0;
+    for (var ei=0;ei<expenses.length;ei++) {
+      var e = expenses[ei];
+      if (e.record.payee) {
+        var payee = e.record.payee;
+        if (!payeeMap[payee]) { payeeMap[payee] = 0; payeeRawMap[payee] = 0; }
+        payeeMap[payee] += e.amt;
+        var pc = e.record.peopleCount || 1;
+        payeeRawMap[payee] += pc > 1 ? e.amt * pc : e.amt;
+      } else {
+        myTotal += e.amt;
+      }
+    }
+    var payeeList = Object.keys(payeeMap).sort(function(a,b){ return payeeMap[b] - payeeMap[a]; });
+    var aaTotal = 0;
+    var rawTotalSum = 0;
+    for (var pi=0;pi<payeeList.length;pi++) {
+      aaTotal += payeeMap[payeeList[pi]];
+      rawTotalSum += payeeRawMap[payeeList[pi]];
+    }
+    var aaCount = payeeList.length;
+    var perPerson = aaCount > 0 ? rawTotalSum / aaCount : 0;
+
+    var html = '';
+    // 我自己（置顶）
+    if (myTotal > 0) {
+      var myPct = total>0 ? myTotal/total*100 : 0;
+      html += '<div class="review-l1">' +
+        '<span class="review-l1-name" style="color:var(--text2);">我自己</span>' +
+        '<div class="review-bar-wrap"><div class="review-bar-fill" style="width:'+Math.max(myPct,2)+'%;background:#ccc;"></div></div>' +
+        '<span class="review-l1-amt" style="color:var(--text2);">¥' + formatMoney(myTotal) + '</span>' +
+        '<span class="review-l1-pct">' + myPct.toFixed(1) + '%</span></div>';
+    }
+    // 支付人列表
+    for (var pi=0;pi<payeeList.length;pi++) {
+      var pName = payeeList[pi];
+      var pTotal = payeeMap[pName];
+      var pPct = aaTotal>0 ? pTotal/aaTotal*100 : 0;
+      var pBarW = Math.max(pPct, 2);
+      html += '<div class="review-l1">' +
+        '<span class="review-l1-name">' + escHtml(pName) + '</span>' +
+        '<div class="review-bar-wrap"><div class="review-bar-fill" style="width:'+pBarW+'%"></div></div>' +
+        '<span class="review-l1-amt">¥' + formatMoney(pTotal) + '</span>' +
+        '<span class="review-l1-pct">' + pPct.toFixed(1) + '%</span></div>';
+    }
+    // AA 平账区
+    if (aaCount >= 2) {
+      // 计算过程
+      var calcParts = [];
+      for (var ci=0;ci<payeeList.length;ci++) {
+        calcParts.push('¥' + formatMoney(payeeMap[payeeList[ci]]));
+      }
+      html += '<div style="margin-top:14px;padding-top:12px;border-top:2px solid var(--border);">' +
+        '<div style="font-size:12px;color:var(--text2);line-height:1.8;">' +
+          '<div>分摊前总花费：' + calcParts.join(' + ') + ' = <b>¥' + formatMoney(aaTotal) + '</b>  × ' + aaCount + '人 = <b style="color:var(--text);">¥' + formatMoney(rawTotalSum) + '</b></div>' +
+          '<div>人均应付：' + formatMoney(rawTotalSum) + ' ÷ ' + aaCount + ' = <b style="color:var(--primary);">¥' + formatMoney(perPerson) + '</b></div>' +
+        '</div>';
+      // 差额明细
+      html += '<div style="margin-top:10px;padding:10px;background:#f9fafb;border-radius:8px;font-size:12px;line-height:1.9;">';
+      for (var di=0;di<payeeList.length;di++) {
+        var dn = payeeList[di];
+        var pTotal = payeeMap[dn];
+        var rawTotal = payeeRawMap[dn];
+        var diff = rawTotal - perPerson;
+        var sign = diff >= 0 ? '+' : '';
+        var color = diff >= 0 ? 'var(--success)' : 'var(--danger)';
+        var label = diff >= 0 ? '多付' : '少付';
+        html += '<div style="display:flex;justify-content:space-between;">' +
+          '<span>' + escHtml(dn) + ' 垫付 ¥' + formatMoney(pTotal) + ' × ' + aaCount + ' = <b>¥' + formatMoney(rawTotal) + '</b></span>' +
+          '<span style="color:' + color + ';">' + label + ' ' + sign + '¥' + formatMoney(Math.abs(diff)) + '</span></div>';
+      }
+      html += '</div>';
+    }
+    return html;
+  }
+
+  var pct = trip.totalBudget>0 ? Math.min(total/trip.totalBudget*100, 100) : 0;
+  var barColor = pct>=100 ? 'var(--danger)' : (pct>=80 ? '#f0ad4e' : 'var(--primary)');
+
+  var container = document.createElement('div'); container.className='modal-overlay'; container.id='reviewOverlay';
+  container.onclick = function(e) { if(e.target===container) container.remove(); };
+  container.innerHTML = '<div class="modal-sheet" id="reviewSheet" style="max-height:85vh;overflow-y:auto;">' +
+    '<h3 style="margin-bottom:2px;">📊 ' + escHtml(trip.name) + ' 复盘看板</h3>' +
+    '<div style="font-size:13px;color:var(--text2);margin-bottom:12px;">' + (trip.startDate||'') + ' ~ ' + (trip.endDate||'') + ' · 总预算 ¥' + formatMoney(trip.totalBudget) + '</div>' +
+    '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">' +
+      '<span style="font-size:22px;font-weight:700;">¥' + formatMoney(total) + '</span>' +
+      '<span style="font-size:13px;color:'+(pct>=100?'var(--danger)':'var(--text2)')+';">' + pct.toFixed(1) + '%</span>' +
+    '</div>' +
+    '<div class="review-total-bar"><div class="review-total-fill" style="width:'+pct+'%;background:'+barColor+';"></div></div>' +
+    '<div id="reviewContentWrap">' + buildReviewContent() + '</div>' +
+    '<button class="btn btn-outline" style="width:100%;margin-top:16px;" onclick="this.closest(\'.modal-overlay\').remove()">关闭</button>' +
+    '</div>';
+  document.body.appendChild(container);
+
+  window._reviewSwitchView = function(view) {
+    reviewView = view;
+    document.getElementById('reviewContentWrap').innerHTML = buildReviewContent();
+    var tabs = document.querySelectorAll('#reviewSheet .review-tab');
+    for (var ti=0;ti<tabs.length;ti++) { tabs[ti].classList.toggle('active', tabs[ti].textContent===(view==='cat'?'按分类':'按支付人')); }
+  };
+}
+
+// ============ TRIP ACTIONS ============
+function showTripActionMenu(tripId) {
+  closeAllModals();
+  var wrap = document.createElement('div');
+  wrap.innerHTML = '<div class="action-overlay" onclick="if(event.target===this)this.remove()">' +
+    '<div class="action-sheet" style="position:relative;left:auto;transform:none;width:100%;max-width:480px;border-radius:18px 18px 0 0;animation:slideUp 0.25s;" onclick="event.stopPropagation()">' +
+    '<button class="action-btn" onclick="editTrip(\''+tripId+'\')">编辑行程</button>' +
+    '<button class="action-btn danger" onclick="deleteTrip(\''+tripId+'\')">删除行程</button>' +
+    '<button class="action-btn" onclick="this.closest(\'.action-overlay\').remove()">取消</button>' +
+    '</div></div>';
+  document.body.appendChild(wrap.firstElementChild);
+}
+
+function editTrip(tripId) {
+  closeAllModals();
+  var trip = getTripById(tripId);
+  if (!trip) return;
+  var overlay = openModal('<div class="modal-sheet"><h3>编辑行程</h3>' +
+    '<div class="form-row"><label>行程名称</label><input type="text" id="editTripName" value="' + escHtml(trip.name) + '"></div>' +
+    '<div class="form-row"><label>开始日期</label><input type="date" id="editTripStart" value="' + (trip.startDate||'') + '"></div>' +
+    '<div class="form-row"><label>结束日期</label><input type="date" id="editTripEnd" value="' + (trip.endDate||'') + '"></div>' +
+    '<div class="form-row"><label>总预算 (CNY)</label><input type="number" id="editTripBudget" value="' + (trip.totalBudget||0) + '"></div>' +
+    '<div class="btn-row"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button><button class="btn btn-primary" onclick="saveEditTrip(\'' + tripId + '\')">保存</button></div></div>');
+}
+
+function saveEditTrip(tripId) {
+  var trip = getTripById(tripId);
+  if (!trip) return;
+  var name = $('editTripName').value.trim();
+  if (!name) return alert('请输入行程名称');
+  trip.name = name;
+  trip.startDate = $('editTripStart').value;
+  trip.endDate = $('editTripEnd').value;
+  trip.totalBudget = parseFloat($('editTripBudget').value) || 0;
+  saveData();
+  closeAllModals();
+  renderTravel();
+}
+
+function deleteTrip(tripId) {
+  closeAllModals();
+  var trip = getTripById(tripId);
+  if (!trip) return;
+  if (!confirm('确定删除行程「' + trip.name + '」？行程下的所有节点将一并删除。')) return;
+  appData.trips = appData.trips.filter(function(t){ return t.id !== tripId; });
+  saveData();
+  renderTravel();
+}
+
+// ============ NODE ACTIONS ============
+function showNodeActionMenu(tripId, nodeId) {
+  closeAllModals();
+  var wrap = document.createElement('div');
+  wrap.innerHTML = '<div class="action-overlay" onclick="if(event.target===this)this.remove()">' +
+    '<div class="action-sheet" style="position:relative;left:auto;transform:none;width:100%;max-width:480px;border-radius:18px 18px 0 0;animation:slideUp 0.25s;" onclick="event.stopPropagation()">' +
+    '<button class="action-btn" onclick="editNode(\''+tripId+'\',\''+nodeId+'\')">编辑节点</button>' +
+    '<button class="action-btn danger" onclick="deleteNode(\''+tripId+'\',\''+nodeId+'\')">删除节点</button>' +
+    '<button class="action-btn" onclick="this.closest(\'.action-overlay\').remove()">取消</button>' +
+    '</div></div>';
+  document.body.appendChild(wrap.firstElementChild);
+}
+
+function editNode(tripId, nodeId) {
+  closeAllModals();
+  var trip = getTripById(tripId);
+  if (!trip || !trip.dayNodes) return;
+  var node = null;
+  for (var ni=0;ni<trip.dayNodes.length;ni++) { if (trip.dayNodes[ni].id===nodeId) { node=trip.dayNodes[ni]; break; } }
+  if (!node) return;
+  var overlay = openModal('<div class="modal-sheet"><h3>编辑行程节点</h3>' +
+    '<div class="form-row"><label>日期</label><input type="date" id="editNodeDate" value="' + (node.date||'') + '"></div>' +
+    '<div class="form-row"><label>时间</label><input type="time" id="editNodeTime" value="' + (node.time||'') + '"></div>' +
+    '<div class="form-row"><label>地点</label><input type="text" id="editNodeLocation" value="' + escHtml(node.location||'') + '"></div>' +
+    '<div class="form-row"><label>备注</label><textarea id="editNodeNote">' + escHtml(node.note||'') + '</textarea></div>' +
+    '<div class="btn-row"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button><button class="btn btn-primary" onclick="saveEditNode(\'' + tripId + '\',\'' + nodeId + '\')">保存</button></div></div>');
+}
+
+function saveEditNode(tripId, nodeId) {
+  var trip = getTripById(tripId);
+  if (!trip || !trip.dayNodes) return;
+  var node = null;
+  for (var ni=0;ni<trip.dayNodes.length;ni++) { if (trip.dayNodes[ni].id===nodeId) { node=trip.dayNodes[ni]; break; } }
+  if (!node) return;
+  node.date = $('editNodeDate').value;
+  node.time = $('editNodeTime').value;
+  node.location = $('editNodeLocation').value;
+  node.note = $('editNodeNote').value;
+  saveData();
+  closeAllModals();
+  renderTravel();
+}
+
+function deleteNode(tripId, nodeId) {
+  closeAllModals();
+  var trip = getTripById(tripId);
+  if (!trip || !trip.dayNodes) return;
+  if (!confirm('确定删除该行程节点？')) return;
+  trip.dayNodes = trip.dayNodes.filter(function(n){ return n.id !== nodeId; });
+  saveData();
+  renderTravel();
+}
+
+// ============ RECORDS TAB ============
+function switchRecordView(view) {
+  recordViewMode = view;
+  var btns = document.querySelectorAll('.toggle-btn');
+  for (var i=0;i<btns.length;i++) { btns[i].classList.toggle('active', btns[i].dataset.view===view); }
+  renderRecords();
+}
+
+function renderRecords() {
+  // Ensure recordMonth is initialized
+  if (!recordMonth) {
+    var now = new Date();
+    recordMonth = now.getFullYear() + '-' + (now.getMonth()<9?'0':'') + (now.getMonth()+1);
+  }
+  if (recordViewMode === 'day') renderRecordsByDay();
+  else renderRecordsByCat();
+}
+
+function parseAmountExpr(str) {
+  if (!str || str === '') return 0;
+  str = String(str).trim();
+  // 只含数字、小数点、逗号、加号时才做解析，否则直接parseFloat
+  if (!/^[\d.,+\s]+$/.test(str)) return parseFloat(str) || 0;
+  // 逗号和加号都视为加法
+  var parts = str.replace(/,/g, '+').split('+');
+  var sum = 0;
+  for (var i=0; i<parts.length; i++) {
+    var v = parseFloat(parts[i].trim());
+    if (!isNaN(v)) sum += v;
+  }
+  return Math.round(sum * 100) / 100;
+}
+
+function getRmbAmt(record) {
+  // New format: amount is always RMB
+  var raw = 0;
+  if (record.amountForeign !== undefined) raw = record.amount || 0;
+  else raw = record.amountCNY || record.amount || 0;
+  // AA split: divide by people count if > 1, then round to fen
+  var result = (record.peopleCount && record.peopleCount > 1) ? raw / record.peopleCount : raw;
+  return Math.round(result * 100) / 100;
+}
+
+function buildMonthBar() {
+  var now = new Date();
+  var curMonth = now.getFullYear() + '-' + (now.getMonth()<9?'0':'') + (now.getMonth()+1);
+  var monthsSet = {};
+  for (var i=0;i<appData.records.length;i++) {
+    var m = appData.records[i].date.substring(0,7);
+    monthsSet[m] = (monthsSet[m]||0) + 1;
+  }
+  var months = Object.keys(monthsSet).sort(function(a,b){return b.localeCompare(a);});
+  if (!recordMonth || !monthsSet[recordMonth]) {
+    recordMonth = monthsSet[curMonth] ? curMonth : (months[0] || curMonth);
+  }
+  
+  var bar = '<select id="recordsMonthSel" onchange="onRecordsMonthChange()">';
+  for (var mi=0;mi<months.length;mi++) {
+    bar += '<option value="'+months[mi]+'"'+(months[mi]===recordMonth?' selected':'')+'>'+months[mi]+'</option>';
+  }
+  if (!monthsSet[curMonth]) bar += '<option value="'+curMonth+'"'+(curMonth===recordMonth?' selected':'')+'>'+curMonth+' (无记录)</option>';
+  bar += '</select>';
+  
+  var monthExpense = 0, monthIncome = 0;
+  for (var ri=0;ri<appData.records.length;ri++) {
+    var rr = appData.records[ri];
+    if (rr.date.substring(0,7) !== recordMonth) continue;
+    var rrRmb = getRmbAmt(rr);
+    if (rr.recordType === 'expense') monthExpense += rrRmb;
+    else if (rr.recordType === 'income') monthIncome += rrRmb;
+  }
+  if (monthExpense > 0) bar += '<span class="month-expense">支出 ¥'+formatMoney(monthExpense)+'</span>';
+  if (monthIncome > 0) bar += '<span class="month-income">收入 ¥'+formatMoney(monthIncome)+'</span>';
+  if (monthExpense===0 && monthIncome===0) bar += '<span class="month-total">本月暂无记录</span>';
+  $('records-month-bar').innerHTML = bar;
+}
+
+function renderRecordsByDay() {
+  buildMonthBar();
+  
+  // Filter records for selected month
+  var records = [];
+  for (var ri2=0;ri2<appData.records.length;ri2++) {
+    if (appData.records[ri2].date.substring(0,7) === recordMonth) records.push(appData.records[ri2]);
+  }
+  records.sort(function(a,b){ return b.date.localeCompare(a.date) || (a.id||'').localeCompare(b.id||''); });
+  var groups = {};
+  for (var ri3=0;ri3<records.length;ri3++) {
+    var r = records[ri3];
+    if (!groups[r.date]) groups[r.date] = { records: [], dayExpense: 0 };
+    groups[r.date].records.push(r);
+    if (r.recordType === 'expense') groups[r.date].dayExpense += getRmbAmt(r);
+  }
+  var dates = Object.keys(groups).sort(function(a,b){return b.localeCompare(a);});
+  var html = '';
+  for (var di=0;di<dates.length;di++) {
+    var date = dates[di];
+    var g = groups[date];
+    var isCollapsed = !(collapsedDates[recordMonth] && collapsedDates[recordMonth][date]);
+    html += '<div class="date-group">' +
+      '<div class="date-group-header'+(isCollapsed?' collapsed':'')+'" onclick="toggleDate(\''+date+'\')">' +
+        '<span>'+date+'</span>' +
+        '<span class="day-sum">支出 ¥'+formatMoney(g.dayExpense)+'</span>' +
+      '</div>' +
+      '<div class="date-group-body'+(isCollapsed?' collapsed':'')+'">';
+    for (var gi=0;gi<g.records.length;gi++) {
+      var gr = g.records[gi];
+      var trip = gr.tripId ? getTripById(gr.tripId) : null;
+      var cp = gr.catPath||[];
+      var catPath = cp.length>0 ? cp[cp.length-1] : '';
+      var isIncome = gr.recordType === 'income';
+      var rmb = getRmbAmt(gr);
+      var foreignInfo = '';
+      var originalInfo = '';
+      if (gr.originalAmount > 0) {
+        originalInfo = '<span style="font-size:10px;color:var(--text2);">原币金额: ' + (gr.originalCurrency||'') + ' ' + formatMoney(gr.originalAmount) + '</span>';
+      }
+      if (gr.amountForeign > 0 && gr.currency) {
+        foreignInfo = '<span style="font-size:10px;color:var(--text2);">实付: ' + gr.currency + ' ' + formatMoney(gr.amountForeign) + ' × ' + (gr.exchangeRate||'?') + '</span>';
+      } else if (!gr.amountForeign && gr.currency && gr.currency !== 'CNY' && gr.amountCNY !== undefined) {
+        foreignInfo = '<span style="font-size:10px;color:var(--text2);">实付: ' + gr.currency + ' ' + formatMoney(gr.amount||0) + '</span>';
+      }
+      var splitInfo = '';
+      if (gr.payee && gr.peopleCount > 1) {
+        splitInfo = '<span class="payee-badge">' + gr.payee + ' ÷' + gr.peopleCount + '人</span>';
+      } else if (gr.payee) {
+        splitInfo = '<span class="payee-badge">' + gr.payee + '</span>';
+      }
+      html += '<div class="record-item" onclick="showRecordAction(\'' + gr.id + '\')">' +
+        '<div class="rec-top"><span class="rec-cat">' + catPath + (trip?'<span class="badge-travel">旅游:'+trip.name+'</span>':'') + (gr.paymentMethod?'<span class="pay-badge">'+gr.paymentMethod+'</span>':'') + splitInfo + '</span>' +
+        '<span class="rec-amount ' + (isIncome?'income':'expense') + '">' + (isIncome?'+':'-') + '&yen;' + formatMoney(rmb) + '</span></div>' +
+        (originalInfo?'<div class="rec-note">'+originalInfo+'</div>':'') + (foreignInfo?'<div class="rec-note"'+(originalInfo?' style="margin-top:2px;"':'')+'>'+foreignInfo+'</div>':'') + (gr.note?'<div class="rec-note"'+(originalInfo||foreignInfo?' style="margin-top:2px;"':'')+'>'+gr.note+'</div>':'') + '</div>';
+    }
+    html += '</div></div>';
+  }
+  if (!dates.length) html = '<div style="text-align:center;padding:40px;color:var(--text2);">该月暂无记账记录</div>';
+  $('records-content').innerHTML = html;
+}
+
+function toggleDate(date) {
+  if (!collapsedDates[recordMonth]) collapsedDates[recordMonth] = {};
+  if (collapsedDates[recordMonth][date]) {
+    delete collapsedDates[recordMonth][date];
+  } else {
+    collapsedDates[recordMonth][date] = true;
+  }
+  // Re-render to apply toggle
+  renderRecordsByDay();
+}
+
+function onRecordsMonthChange() {
+  recordMonth = $('recordsMonthSel').value;
+  renderRecords();
+}
+
+function renderRecordsByCat() {
+  buildMonthBar();
+  var ms = recordMonth + '-01';
+  var meParts = recordMonth.split('-');
+  var meYear = parseInt(meParts[0]), meMonth = parseInt(meParts[1]);
+  if (meMonth===12) { meYear++; meMonth=1; } else { meMonth++; }
+  var me = meYear + '-' + (meMonth<10?'0'+meMonth:meMonth) + '-01';
+  var catMap = {};
+  for (var i=0;i<appData.records.length;i++) {
+    var r = appData.records[i];
+    if (r.recordType==='expense' && r.date>=ms && r.date<me) {
+      var key = r.catPath[0] || '其他';
+      catMap[key] = (catMap[key]||0) + getRmbAmt(r);
+    }
+  }
+  var keys = Object.keys(catMap);
+  var items = [];
+  for (var k=0;k<keys.length;k++) { items.push({name:keys[k],value:catMap[keys[k]]}); }
+  items.sort(function(a,b){return b.value-a.value;});
+  var pieColors = ['#4A90D9','#5DADE2','#3498DB','#2980B9','#1ABC9C','#2ECC71','#F39C12','#E67E22','#E74C3C','#9B59B6'];
+  var total = 0;
+  for (var ti=0;ti<items.length;ti++) { total += items[ti].value; }
+  var html = '<div class="card"><canvas id="recPieChart" width="280" height="280"></canvas><div>';
+  for (var hi=0;hi<items.length;hi++) {
+    var item = items[hi];
+    var p = total>0?(item.value/total*100).toFixed(1):0;
+    html += '<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;">' +
+      '<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+(pieColors[hi]||'#ccc')+';margin-right:6px;"></span>'+item.name+'</span>' +
+      '<span>&yen;'+formatMoney(item.value)+' ('+p+'%)</span></div>';
+  }
+  html += '</div></div>';
+  if (!items.length) html = '<div style="text-align:center;padding:40px;color:var(--text2);">本月暂无支出</div>';
+  $('records-content').innerHTML = html;
+  var drawItems = [];
+  for (var di=0;di<items.length;di++) { drawItems.push({name:items[di].name,value:items[di].value,color:pieColors[di]||'#ccc'}); }
+  setTimeout(function(){ drawPieChart('recPieChart', drawItems); }, 50);
+}
+
+function buildPaymentDatalist() {
+  var methods = (appData.paymentMethods||[]).slice();
+  for (var i=0;i<appData.records.length;i++) {
+    var pm = appData.records[i].paymentMethod;
+    if (pm && methods.indexOf(pm)===-1) methods.push(pm);
+  }
+  var html = '';
+  for (var i=0;i<methods.length;i++) { html += '<option value="'+methods[i]+'">'; }
+  return html;
+}
+
+function buildPayeeDatalist() {
+  var names = (appData.payeeNames||[]).slice();
+  for (var i=0;i<appData.records.length;i++) {
+    var p = appData.records[i].payee;
+    if (p && names.indexOf(p)===-1) names.push(p);
+  }
+  var html = '';
+  for (var i=0;i<names.length;i++) { html += '<option value="'+names[i]+'">'; }
+  return html;
+}
+
+function buildCurrencyDatalist() {
+  var curList = (appData.activeCurrencies||[]).slice();
+  for (var i=0;i<appData.records.length;i++) {
+    var c = appData.records[i].currency;
+    if (c && curList.indexOf(c)===-1) curList.push(c);
+  }
+  var html = '';
+  for (var i=0;i<curList.length;i++) { html += '<option value="'+curList[i]+'">'; }
+  return html;
+}
+
+function onAmountInput() {
+  onPayeeChange(); // 更新分摊提示
+}
+function onAmountBlur() {
+  // 失焦时如果是表达式则计算并显示结果预览（但保留原始字符串）
+  var el = $('recAmount');
+  if (!el) return;
+  var val = el.value.trim();
+  if (val.indexOf(',') !== -1 || val.indexOf('+') !== -1) {
+    var sum = parseAmountExpr(val);
+    // 在split hint位置显示合计提示
+    var hint = document.getElementById('recAmountHint');
+    if (hint) { hint.textContent = '= ' + formatMoney(sum); hint.style.display = ''; }
+  } else {
+    var hint2 = document.getElementById('recAmountHint');
+    if (hint2) hint2.style.display = 'none';
+  }
+  onPayeeChange();
+}
+
+function autoCalcRmb() {
+  var foreign = parseFloat($('recForeignAmt').value) || 0;
+  var rate = parseFloat($('recExRate').value) || 0;
+  if (foreign > 0 && rate > 0) {
+    $('recAmount').value = (foreign * rate).toFixed(2);
+    var hint = document.getElementById('recAmountHint');
+    if (hint) hint.style.display = 'none';
+    onPayeeChange();
+  }
+}
+
+function onPayeeChange() {
+  var payeeVal = ($('recPayee').value||'').trim();
+  var wrap = document.getElementById('recPeopleWrap');
+  if (wrap) {
+    wrap.style.display = payeeVal ? '' : 'none';
+    if (!payeeVal && $('recPeople')) $('recPeople').value = '2';
+  }
+  var hint = document.getElementById('recSplitHint');
+  if (hint) {
+    var amt = parseAmountExpr($('recAmount').value||'');
+    var count = payeeVal ? (parseInt($('recPeople').value) || 1) : 1;
+    if (payeeVal && count > 1 && amt > 0) {
+      hint.textContent = '人均 ¥' + formatMoney(amt / count);
+      hint.style.display = '';
+    } else {
+      hint.style.display = 'none';
+    }
+  }
+}
+
+function fetchRealtimeRate() {
+  var currency = ($('recPayCurrency').value||'').trim().toUpperCase();
+  if (!currency) return;
+  if (currency === 'CNY') { $('recExRate').value = '1'; autoCalcRmb(); return; }
+  var rate = appData.rates[currency];
+  if (rate && rate > 0) {
+    $('recExRate').value = (1 / rate).toFixed(6);
+    autoCalcRmb();
+  } else {
+    alert('未找到 ' + currency + ' 的汇率，请在汇率管理中补充');
+  }
+}
+
+function showRecordModal(editId, tpl) {
+  var editRecord = null;
+  if (editId) {
+    for (var i=0;i<appData.records.length;i++) { if (appData.records[i].id===editId) { editRecord=appData.records[i]; break; } }
+  }
+  recRecordType = editRecord ? (editRecord.recordType || 'expense') : 'expense';
+  var defTripId = editRecord ? (editRecord.tripId||'daily') : (tpl ? (tpl.tripId||'daily') : 'daily');
+  var tripOpts = '';
+  for (var ti=0;ti<appData.trips.length;ti++) { tripOpts += '<option value="'+appData.trips[ti].id+'"'+(defTripId===appData.trips[ti].id?' selected':'')+'>旅游: '+appData.trips[ti].name+'</option>'; }
+  var defRmbAmt = '';
+  var defOriginalAmount = '';
+  var defOriginalCurrency = '';
+  var defForeignAmt = '';
+  var defPayCurrency = '';
+  var defExRate = '';
+  if (editRecord) {
+    var oldCur = editRecord.currency || '';
+    defOriginalAmount = editRecord.originalAmount || '';
+    defOriginalCurrency = editRecord.originalCurrency || '';
+    if (editRecord.amountForeign || (oldCur && oldCur !== 'CNY')) {
+      // 外币记录
+      defRmbAmt = editRecord.amountForeign ? editRecord.amount : (editRecord.amountCNY || editRecord.amount || '');
+      defForeignAmt = editRecord.amountForeign || editRecord.amount || '';
+      defPayCurrency = editRecord.currency || '';
+      var num = parseFloat(defRmbAmt);
+      var den = parseFloat(defForeignAmt);
+      defExRate = editRecord.exchangeRate || (num && den ? (num / den).toFixed(6) : '');
+    } else {
+      // CNY 记录：amount 即 RMB，优先回显原始表达式
+      defRmbAmt = editRecord.amountExpr || editRecord.amount || editRecord.amountCNY || '';
+    }
+  }
+  var defDate = editRecord ? editRecord.date : todayStr();
+  var defNote = editRecord ? (editRecord.note||'') : (tpl ? (tpl.note||'') : '');
+  var defType = editRecord ? editRecord.recordType : 'expense';
+  var defCatPath = editRecord ? (editRecord.catPath||[]) : (tpl ? (tpl.catPath||[]) : []);
+
+  var defPayment = editRecord ? (editRecord.paymentMethod||'') : (tpl ? (tpl.paymentMethod||'') : '');
+  var defPayee = editRecord ? (editRecord.payee||'') : '';
+  var defPeopleCount = editRecord ? (editRecord.peopleCount||0) : 0;
+  var payOpts = buildPaymentDatalist();
+  var payeeOpts = buildPayeeDatalist();
+  var curListOpts = buildCurrencyDatalist();
+  var peopleSel = '<select id="recPeople" style="width:90px;" onchange="onPayeeChange()"><option value="2"'+(defPeopleCount<=2?' selected':'')+'>2人</option><option value="3"'+(defPeopleCount===3?' selected':'')+'>3人</option><option value="4"'+(defPeopleCount===4?' selected':'')+'>4人</option></select>';
+  var payeeVisible = (defTripId !== 'daily') ? '' : 'style="display:none"';
+  var peopleVisible = (defTripId !== 'daily' && defPayee) ? '' : 'style="display:none"';
+  var overlay = openModal('<div class="modal-sheet" id="recordModalSheet"><h3>'+(editId?'编辑':'记一笔')+'</h3>' +
+    '<div class="form-row"><label>归属</label><select id="recBelong" onchange="onRecBelongChange()">' +
+    '<option value="daily"'+(defTripId==='daily'?' selected':'')+'>日常</option>'+tripOpts+'</select></div>' +
+    '<div class="form-row-inline"><div class="form-row" style="flex:1;"><label>日期</label><input type="date" id="recDate" value="'+defDate+'"></div>' +
+    '<div class="form-row" style="flex:2;"><label>类别</label><div style="display:flex;gap:6px;align-items:center;">' +
+    '<select id="recCat" class="input-box" onchange="onRecCatChange()" style="flex:1;min-width:0;"></select>' +
+    '<span id="recCatL2" class="cat-level-box"></span>' +
+    '<span id="recCatL1" class="cat-level-box"></span>' +
+    '</div></div></div>' +
+    '<div class="form-row"><label>金额</label><div style="display:flex;align-items:center;gap:6px;"><input type="text" inputmode="decimal" id="recAmount" value="'+defRmbAmt+'" placeholder="0.00" style="flex:1;min-width:0;" oninput="onAmountInput()" onblur="onAmountBlur()"><span style="font-size:12px;color:var(--text2);white-space:nowrap;">RMB</span><span id="recAmountHint" style="font-size:11px;color:var(--primary);white-space:nowrap;display:none;"></span><span id="recSplitHint" style="font-size:11px;color:var(--primary);white-space:nowrap;display:none;"></span></div></div>' +
+    '<div class="form-row"><label>原币金额</label><div style="display:flex;gap:6px;">' +
+      '<input type="number" id="recOriginalAmount" value="'+defOriginalAmount+'" step="0.01" placeholder="0.00" style="flex:1.2;min-width:0;">' +
+      '<input type="text" id="recOriginalCurrency" list="currencyDataList" value="'+defOriginalCurrency+'" placeholder="币种" style="width:90px;" autocomplete="off">' +
+    '</div></div>' +
+    '<datalist id="currencyDataList">'+curListOpts+'</datalist>' +
+    '<div class="form-row"><label>实付币种</label><div style="display:flex;gap:6px;">' +
+      '<input type="number" id="recForeignAmt" value="'+defForeignAmt+'" step="0.01" placeholder="0.00" style="flex:1;" oninput="autoCalcRmb()">' +
+      '<input type="text" id="recPayCurrency" list="currencyDataList" value="'+defPayCurrency+'" placeholder="币种" style="width:85px;" autocomplete="off">' +
+      '<div style="display:flex;align-items:center;gap:6px;">' +
+        '<input type="number" id="recExRate" value="'+defExRate+'" step="0.000001" placeholder="汇率" style="width:96px;" oninput="autoCalcRmb()">' +
+        '<button type="button" class="btn btn-outline btn-sm" onclick="fetchRealtimeRate()" style="padding:4px 6px;font-size:11px;white-space:nowrap;">获取</button>' +
+      '</div>' +
+    '</div></div>' +
+    '<datalist id="payDatalist">'+payOpts+'</datalist>' +
+    '<datalist id="payeeDatalist">'+payeeOpts+'</datalist>' +
+    '<div class="form-row" id="recPayeeRow" '+payeeVisible+'><label>支付人</label><div style="display:flex;gap:8px;align-items:center;"><input type="text" id="recPayee" list="payeeDatalist" value="'+defPayee+'" placeholder="选填" autocomplete="off" onchange="onPayeeChange()" oninput="onPayeeChange()" style="flex:1;min-width:0;"><span id="recPeopleWrap" '+peopleVisible+'>'+peopleSel+'</span></div></div>' +
+    '<div class="form-row"><label>支付</label><input type="text" id="recPayment" list="payDatalist" value="'+defPayment+'" placeholder="" autocomplete="off"></div>' +
+    '<div class="form-row" id="recTypeRow" style="display:'+(defTripId==='daily'?'block':'none')+'"><label>类型</label><select id="recTypeSel" onchange="recRecordType=this.value">' +
+    '<option value="expense"'+(defType==='expense'?' selected':'')+'>支出</option><option value="income"'+(defType==='income'?' selected':'')+'>收入</option></select></div>' +
+    '<div class="form-row"><label>备注</label><input type="text" id="recNote" value="'+defNote+'" placeholder="选填"></div>' +
+    '<div class="btn-row"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button>' +
+    (editId ? '' : '<button class="btn btn-outline" onclick="saveAsTemplate()" style="flex:0.8;font-size:12px;">⚡存模板</button>') +
+    '<button class="btn btn-primary" onclick="'+(editId?'saveEditRecord(\''+editId+'\')':'saveRecord()')+'">保存</button></div></div>', 'recordModalOverlay');
+  overlay._editCatPath = defCatPath;
+  onRecBelongChange();
+}
+
+function onRecBelongChange() {
+  var belong = $('recBelong').value;
+  var payeeRow = document.getElementById('recPayeeRow');
+  if (belong === 'daily') {
+    if (payeeRow) payeeRow.style.display = 'none';
+  } else {
+    if (payeeRow) payeeRow.style.display = 'block';
+    onPayeeChange();
+  }
+  var cats = belong === 'daily' ? appData.dailyCats : appData.travelCats;
+  var leafOptions = [];
+  function collect(cat, path) {
+    var p = path.concat(cat.name);
+    if (cat.subs && cat.subs.length>0) {
+      for (var j=0;j<cat.subs.length;j++) { collect(cat.subs[j], p); }
+    } else {
+      // 叶子节点
+      var display = cat.name;
+      // 如果叶子节点名称在全局重复，加父级标注
+      var dupCount = 0;
+      for (var k=0;k<leafOptions.length;k++) { if (leafOptions[k].name===cat.name) dupCount++; }
+      if (dupCount>0) display = (p.length>1 ? p[p.length-2]+' > ' : '') + cat.name;
+      leafOptions.push({
+        name: cat.name,
+        display: display,
+        path: p,
+        value: p.join('||')
+      });
+    }
+  }
+  for (var i=0;i<cats.length;i++) { collect(cats[i], []); }
+  var opts = '';
+  for (var i=0;i<leafOptions.length;i++) { opts += '<option value="'+leafOptions[i].value+'">'+leafOptions[i].display+'</option>'; }
+  $('recCat').innerHTML = opts;
+  $('recTypeRow').style.display = belong === 'daily' ? 'block' : 'none';
+  if (belong !== 'daily') recRecordType = 'expense';
+  var overlay = document.getElementById('recordModalOverlay');
+  if (overlay && overlay._editCatPath && overlay._editCatPath.length>0) {
+    $('recCat').value = overlay._editCatPath.join('||');
+    overlay._editCatPath = null;
+  }
+  onRecCatChange();
+}
+function onRecCatChange() {
+  var val = $('recCat').value;
+  var parts = val ? val.split('||') : [];
+  $('recCatL2').textContent = parts.length>1 ? parts[1] : '';
+  $('recCatL1').textContent = parts.length>0 ? parts[0] : '';
+}
+
+function saveRecord() {
+  var belong = $('recBelong').value;
+  var amountRaw = ($('recAmount').value||'').trim();
+  var rmbAmount = parseAmountExpr(amountRaw);
+  var hasExpr = amountRaw.indexOf(',') !== -1 || amountRaw.indexOf('+') !== -1;
+  var originalAmount = parseFloat($('recOriginalAmount').value) || 0;
+  var originalCurrency = ($('recOriginalCurrency').value||'').trim().toUpperCase();
+  var foreignAmt = parseFloat($('recForeignAmt').value) || 0;
+  var payCurrency = ($('recPayCurrency').value||'').trim().toUpperCase();
+  var exRate = parseFloat($('recExRate').value) || 0;
+  var catPath = $('recCat').value ? $('recCat').value.split('||') : [];
+  var record = {
+    id: genId(),
+    type: belong === 'daily' ? 'daily' : 'travel',
+    catPath: catPath,
+    amount: rmbAmount,
+    amountExpr: hasExpr ? amountRaw : undefined,
+    originalAmount: originalAmount || 0,
+    originalCurrency: originalCurrency,
+    amountForeign: foreignAmt || 0,
+    currency: payCurrency,
+    exchangeRate: exRate || 0,
+    date: $('recDate').value,
+    recordType: belong === 'daily' ? recRecordType : 'expense',
+    note: $('recNote').value,
+    tripId: belong === 'daily' ? null : belong,
+    paymentMethod: ($('recPayment').value||'').trim(),
+    payee: payeeVal = ($('recPayee').value||'').trim(),
+    peopleCount: payeeVal ? (parseInt($('recPeople')?$('recPeople').value:'1') || 1) : 1
+  };
+  appData.records.push(record);
+  saveData();
+  closeAllModals();
+  renderRecords();
+}
+
+function saveEditRecord(editId) {
+  var record = null;
+  for (var i=0;i<appData.records.length;i++) { if (appData.records[i].id===editId) { record=appData.records[i]; break; } }
+  if (!record) return;
+  var belong = $('recBelong').value;
+  record.type = belong === 'daily' ? 'daily' : 'travel';
+  record.tripId = belong === 'daily' ? null : belong;
+  record.catPath = $('recCat').value ? $('recCat').value.split('||') : [];
+  var amountRaw2 = ($('recAmount').value||'').trim();
+  var hasExpr2 = amountRaw2.indexOf(',') !== -1 || amountRaw2.indexOf('+') !== -1;
+  record.amount = parseAmountExpr(amountRaw2);
+  record.amountExpr = hasExpr2 ? amountRaw2 : undefined;
+  record.originalAmount = parseFloat($('recOriginalAmount').value) || 0;
+  record.originalCurrency = ($('recOriginalCurrency').value||'').trim().toUpperCase();
+  record.amountForeign = parseFloat($('recForeignAmt').value) || 0;
+  record.currency = ($('recPayCurrency').value||'').trim().toUpperCase();
+  record.exchangeRate = parseFloat($('recExRate').value) || 0;
+  record.date = $('recDate').value;
+  record.recordType = belong === 'daily' ? recRecordType : 'expense';
+  record.note = $('recNote').value;
+  record.paymentMethod = ($('recPayment').value||'').trim();
+  record.payee = ($('recPayee').value||'').trim();
+  record.peopleCount = record.payee ? (parseInt($('recPeople')?$('recPeople').value:'1') || 1) : 1;
+  saveData();
+  closeAllModals();
+  renderRecords();
+}
+
+// ============ TEMPLATES ============
+function refreshTemplateFab() {
+  var fabT = $('fabTemplateBtn');
+  if (fabT) fabT.style.display = (currentTab==='records' && appData.templates && appData.templates.length>0) ? 'flex' : 'none';
+}
+
+function saveAsTemplate() {
+  var catVal = $('recCat').value;
+  if (!catVal) { alert('请先选择分类'); return; }
+  var html = '<div class="modal-sheet"><h3>存为快捷模板</h3>' +
+    '<div class="form-row"><label>模板名称</label><input type="text" id="tplName" placeholder="如：食材周汇总" autocomplete="off"></div>' +
+    '<div class="btn-row"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button>' +
+    '<button class="btn btn-primary" onclick="confirmSaveTemplate()">保存</button></div></div>';
+  openModal(html);
+}
+
+function confirmSaveTemplate() {
+  var name = ($('tplName').value||'').trim();
+  if (!name) { alert('请填写模板名称'); return; }
+  var tpl = {
+    id: genId(),
+    name: name,
+    tripId: $('recBelong').value === 'daily' ? null : $('recBelong').value,
+    catPath: $('recCat').value ? $('recCat').value.split('||') : [],
+    paymentMethod: ($('recPayment').value||'').trim(),
+    note: ($('recNote').value||'').trim()
+  };
+  appData.templates.push(tpl);
+  saveData();
+  closeAllModals();
+  refreshTemplateFab();
+  alert('模板"'+name+'"已保存，下次点击⚡快速使用');
+}
+
+function showTemplateQuickPick() {
+  if (!appData.templates || appData.templates.length===0) return;
+  var listHtml = '';
+  for (var i=0; i<appData.templates.length; i++) {
+    var t = appData.templates[i];
+    var catName = t.catPath ? t.catPath.join(' > ') : '';
+    listHtml +=
+      '<div style="display:flex;align-items:center;padding:12px 0;border-bottom:0.5px solid var(--border);">' +
+        '<div style="flex:1;cursor:pointer;" onclick="applyTemplate(\''+t.id+'\')">' +
+          '<div style="font-size:14px;font-weight:500;">'+escHtml(t.name)+'</div>' +
+          '<div style="font-size:12px;color:var(--text2);margin-top:2px;">'+escHtml(catName)+(t.note?' · '+escHtml(t.note):'')+'</div>' +
+        '</div>' +
+        '<span style="font-size:12px;color:var(--danger);cursor:pointer;padding:4px 8px;" onclick="deleteTemplate(\''+t.id+'\')">删除</span>' +
+      '</div>';
+  }
+  var html = '<div class="modal-sheet"><h3>选择模板</h3>' +
+    '<div style="max-height:55vh;overflow-y:auto;">'+listHtml+'</div>' +
+    '<div style="margin-top:14px;"><button class="btn btn-outline" style="width:100%;" onclick="this.closest(\'.modal-overlay\').remove()">取消</button></div></div>';
+  openModal(html);
+}
+
+function applyTemplate(tplId) {
+  var tpl = null;
+  for (var i=0; i<appData.templates.length; i++) { if (appData.templates[i].id===tplId) { tpl=appData.templates[i]; break; } }
+  if (!tpl) return;
+  closeAllModals();
+  showRecordModal(null, tpl);
+}
+
+function deleteTemplate(tplId) {
+  if (!confirm('确定删除此模板？')) return;
+  appData.templates = appData.templates.filter(function(t){ return t.id!==tplId; });
+  saveData();
+  closeAllModals();
+  refreshTemplateFab();
+  if (appData.templates.length>0) showTemplateQuickPick();
+}
+
+// ============ RECORD ACTION ============
+function showRecordAction(recordId) {
+  closeAllModals();
+  var wrap = document.createElement('div');
+  wrap.innerHTML = '<div class="action-overlay" onclick="if(event.target===this)this.remove()">' +
+    '<div class="action-sheet" style="position:relative;left:auto;transform:none;width:100%;max-width:480px;border-radius:18px 18px 0 0;animation:slideUp 0.25s;" onclick="event.stopPropagation()">' +
+    '<button class="action-btn" onclick="editRecord(\''+recordId+'\')">编辑</button>' +
+    '<button class="action-btn danger" onclick="deleteRecord(\''+recordId+'\')">删除</button>' +
+    '<button class="action-btn" onclick="this.closest(\'.action-overlay\').remove()">取消</button>' +
+    '</div></div>';
+  document.body.appendChild(wrap.firstElementChild);
+}
+
+function editRecord(recordId) {
+  closeAllModals();
+  showRecordModal(recordId);
+}
+
+function deleteRecord(recordId) {
+  closeAllModals();
+  if (confirm('确定删除该记录？')) {
+    appData.records = appData.records.filter(function(r){ return r.id !== recordId; });
+    saveData();
+    renderRecords();
+  }
+}
+
+// ============ CATEGORY MANAGE ============
+function showCatManageModal() {
+  catManageTab = 'daily';
+  catExpandState = {};
+  var overlay = openModal('<div class="modal-sheet" style="max-height:90vh;">' +
+    '<h3>管理类别</h3>' +
+    '<div class="cat-tab-row">' +
+      '<button class="cat-tab-btn active" id="catTabDaily" onclick="switchCatManageTab(\'daily\')">日常类别</button>' +
+      '<button class="cat-tab-btn" id="catTabTravel" onclick="switchCatManageTab(\'travel\')">旅游类别</button>' +
+    '</div>' +
+    '<div id="catManageList" style="margin:12px 0;min-height:100px;"></div>' +
+    '<button class="btn btn-outline btn-sm" style="width:100%;margin-top:6px;" onclick="addRootCat()">+ 新增1级类别</button>' +
+    '<div class="btn-row"><button class="btn btn-primary" onclick="closeAllModals();renderRecords();">完成</button></div>' +
+    '</div>', 'catManageOverlay');
+  renderCatManage();
+}
+
+var catManageTab = 'daily';
+var catExpandState = {};
+
+function switchCatManageTab(tab) {
+  catManageTab = tab;
+  catExpandState = {};
+  document.getElementById('catTabDaily').className = 'cat-tab-btn' + (tab==='daily'?' active':'');
+  document.getElementById('catTabTravel').className = 'cat-tab-btn' + (tab==='travel'?' active':'');
+  renderCatManage();
+}
+
+function renderCatManage() {
+  var cats = catManageTab==='daily' ? appData.dailyCats : appData.travelCats;
+  var listEl = document.getElementById('catManageList');
+  if (!listEl) return;
+  var html = '';
+  for (var i=0;i<cats.length;i++) { html += renderCatL1(cats[i], i, catManageTab); }
+  if (!cats.length) html = '<div style="text-align:center;color:var(--text2);padding:20px;">暂无类别</div>';
+  listEl.innerHTML = html;
+}
+
+function renderCatL1(cat, idx, type) {
+  var path = cat.name;
+  var expanded = catExpandState[path];
+  var subCount = (cat.subs||[]).length;
+  var html = '<div class="cat-row cat-row-l1" draggable="true" '+
+    'ondragstart="onDragStart(event,\''+type+'\',-1,'+idx+',1)" '+
+    'ondragend="onDragEnd(event)" '+
+    'ondragover="onDragOver(event,\''+type+'\',-1,'+idx+',1)" '+
+    'ondragleave="onDragLeave(event)" '+
+    'ondrop="onDrop(event,\''+type+'\',-1,'+idx+',1)" '+
+    'onclick="toggleCatExpand(\''+path+'\')">' +
+    '<span>'+cat.name+'</span>' +
+    (subCount ? '<span class="cat-count">'+subCount+'个2级</span>' : '') +
+    '<span class="cat-more" onclick="event.stopPropagation();showCatActionMenu(\''+type+'\',\''+path+'\',1,\''+idx+'\')">\u00B7\u00B7\u00B7</span>' +
+    '</div>';
+  if (expanded && cat.subs) {
+    for (var j=0;j<cat.subs.length;j++) {
+      var sub = cat.subs[j];
+      var subPath = path+'.'+sub.name;
+      var subCount2 = (sub.subs||[]).length;
+      html += '<div class="cat-row cat-row-l2" draggable="true" '+
+        'ondragstart="onDragStart(event,\''+type+'\','+idx+','+j+',2)" '+
+        'ondragend="onDragEnd(event)" '+
+        'ondragover="onDragOver(event,\''+type+'\','+idx+','+j+',2)" '+
+        'ondragleave="onDragLeave(event)" '+
+        'ondrop="onDrop(event,\''+type+'\','+idx+','+j+',2)" '+
+        'onclick="showCatActionMenu(\''+type+'\',\''+subPath+'\',2,\''+idx+','+j+'\')">' +
+        '<span>'+sub.name+'</span>' +
+        (subCount2 ? '<span class="cat-count">'+subCount2+'个3级</span>' : '') +
+        '<span class="cat-more" onclick="event.stopPropagation();showCatActionMenu(\''+type+'\',\''+subPath+'\',2,\''+idx+','+j+'\')">\u00B7\u00B7\u00B7</span>' +
+        '</div>';
+      if (sub.subs && sub.subs.length) {
+        html += '<div class="cat-chips">';
+        for (var k=0;k<sub.subs.length;k++) {
+          var sub3 = sub.subs[k];
+          var sub3Path = subPath+'.'+sub3.name;
+          html += '<span class="cat-chip" onclick="event.stopPropagation();showCatActionMenu(\''+type+'\',\''+sub3Path+'\',3,\''+idx+','+j+','+k+'\')">'+sub3.name+'</span>';
+        }
+        html += '</div>';
+      }
+    }
+  }
+  return html;
+}
+
+function toggleCatExpand(path) {
+  catExpandState[path] = !catExpandState[path];
+  renderCatManage();
+}
+
+var dragInfo = null;
+
+function onDragStart(e, type, pidx, idx, level) {
+  dragInfo = { type: type, pidx: pidx, idx: idx, level: level };
+  e.target.classList.add('dragging');
+}
+
+function onDragEnd(e) {
+  e.target.classList.remove('dragging');
+  var overs = document.querySelectorAll('.drag-over');
+  for (var i=0;i<overs.length;i++) overs[i].classList.remove('drag-over');
+  dragInfo = null;
+}
+
+function onDragOver(e, type, pidx, idx, level) {
+  e.preventDefault();
+  if (!dragInfo || dragInfo.type !== type || dragInfo.level !== level) return;
+  if (dragInfo.pidx !== pidx) return;
+  if (dragInfo.idx === idx) return;
+  e.target.classList.add('drag-over');
+}
+
+function onDragLeave(e) {
+  e.target.classList.remove('drag-over');
+}
+
+function onDrop(e, type, pidx, idx, level) {
+  e.preventDefault();
+  e.target.classList.remove('drag-over');
+  if (!dragInfo || dragInfo.type !== type || dragInfo.level !== level) return;
+  if (dragInfo.pidx !== pidx) return;
+  var cats = type === 'daily' ? appData.dailyCats : appData.travelCats;
+  var arr = level === 1 ? cats : cats[dragInfo.pidx].subs;
+  var moved = arr.splice(dragInfo.idx, 1)[0];
+  arr.splice(dragInfo.idx < idx ? idx - 1 : idx, 0, moved);
+  saveData();
+  catExpandState = {};
+  renderCatManage();
+}
+
+function showCatActionMenu(type, path, level, idxStr) {
+  var existing = document.querySelector('.action-overlay');
+  if (existing) existing.remove();
+  var name = path.split('.').pop();
+  var btn = '<button class="action-btn" onclick="this.parentElement.parentElement.remove();editCatAction(\''+type+'\',\''+path+'\','+level+',\''+idxStr+'\')">✏️ 编辑名称</button>';
+  if (level < 3) {
+    btn += '<button class="action-btn" onclick="this.parentElement.parentElement.remove();addSubCatAction(\''+type+'\',\''+path+'\','+level+')">➕ 添加子类别</button>';
+  }
+  btn += '<button class="action-btn danger" onclick="this.parentElement.parentElement.remove();deleteCatAction(\''+type+'\',\''+path+'\','+level+')">🗑 删除</button>' +
+    '<button class="action-btn" onclick="this.parentElement.parentElement.remove()" style="color:var(--text2);">取消</button>';
+  var wrap = document.createElement('div');
+  wrap.innerHTML = '<div class="action-overlay" onclick="if(event.target===this)this.remove()">' +
+    '<div class="action-sheet" style="position:relative;left:auto;transform:none;width:100%;max-width:480px;border-radius:18px 18px 0 0;animation:slideUp 0.25s;" onclick="event.stopPropagation()">' +
+    '<div style="text-align:center;padding:14px;font-size:13px;color:var(--text2);border-bottom:1px solid var(--border);">'+name+'</div>' +
+    btn + '</div></div>';
+  document.body.appendChild(wrap.firstElementChild);
+}
+
+function editCatAction(type, path, level, idxStr) {
+  var name = prompt('新名称:');
+  if (!name || !name.trim()) return;
+  editCatNameInner(type, path, name.trim());
+  saveData(); renderCatManage();
+}
+
+function addSubCatAction(type, path, level) {
+  var name = prompt('子类别名称:');
+  if (!name || !name.trim()) return;
+  addSubCatInner(type, path, name.trim());
+  saveData();
+  catExpandState[path] = true;
+  renderCatManage();
+}
+
+function deleteCatAction(type, path, level) {
+  // Check if any records use this category path
+  var parts = path.split('.');
+  var hasRecords = false;
+  for (var ri=0; ri<appData.records.length; ri++) {
+    var r = appData.records[ri];
+    if (!r.catPath || r.catPath.length < parts.length) continue;
+    var match = true;
+    for (var pi=0; pi<parts.length; pi++) { if (r.catPath[pi]!==parts[pi]) { match=false; break; } }
+    if (match) { hasRecords=true; break; }
+  }
+  var catName = parts[parts.length-1];
+  if (hasRecords) {
+    if (!confirm('类别「'+catName+'」下已有记账记录。\n点"确定"保留记录（移除此类别标记），点"取消"删除记录。')) {
+      // Delete records that use this category path
+      appData.records = appData.records.filter(function(r){
+        if (!r.catPath || r.catPath.length < parts.length) return true;
+        for (var pi=0; pi<parts.length; pi++) { if (r.catPath[pi]!==parts[pi]) return true; }
+        return false;
+      });
+      deleteCatInner(type, path);
+      saveData(); renderCatManage(); renderRecords();
+      return;
+    }
+    // Keep records but remove category info (clear catPath for matching records)
+    for (var ri2=0; ri2<appData.records.length; ri2++) {
+      var r2 = appData.records[ri2];
+      if (!r2.catPath || r2.catPath.length < parts.length) continue;
+      var m = true;
+      for (var pi2=0; pi2<parts.length; pi2++) { if (r2.catPath[pi2]!==parts[pi2]) { m=false; break; } }
+      if (m) r2.catPath = [];
+    }
+  }
+  if (!hasRecords || confirm('确定删除「'+catName+'」及其所有子类别？')) {
+    deleteCatInner(type, path);
+    saveData(); renderCatManage();
+  }
+}
+
+function addRootCat() {
+  var name = prompt('新增1级类别名称:');
+  if (!name || !name.trim()) return;
+  var cats = catManageTab==='daily' ? appData.dailyCats : appData.travelCats;
+  for (var i=0;i<cats.length;i++) { if (cats[i].name===name.trim()) { alert('类别已存在'); return; } }
+  cats.push({ name:name.trim(), subs:[] });
+  saveData(); renderCatManage();
+}
+
+function addSubCatInner(type, path, name) {
+  var cats = type==='daily' ? appData.dailyCats : appData.travelCats;
+  var parts = path.split('.');
+  var current = cats;
+  for (var i=0;i<parts.length;i++) {
+    var found = null;
+    for (var j=0;j<current.length;j++) { if (current[j].name===parts[i]) { found=current[j]; break; } }
+    if (!found) return;
+    current = found.subs || [];
+  }
+  for (var k=0;k<current.length;k++) { if (current[k].name===name) { alert('类别已存在'); return; } }
+  current.push({ name:name, subs:[] });
+}
+
+function editCatNameInner(type, path, newName) {
+  var cats = type==='daily' ? appData.dailyCats : appData.travelCats;
+  var parts = path.split('.');
+  // Update category tree
+  if (parts.length===1) {
+    for (var i=0;i<cats.length;i++) { if (cats[i].name===parts[0]) { cats[i].name=newName; break; } }
+  } else {
+    var current = cats;
+    for (var j=0;j<parts.length-1;j++) {
+      var found = null;
+      for (var k=0;k<current.length;k++) { if (current[k].name===parts[j]) { found=current[k]; break; } }
+      if (!found) return;
+      current = found.subs || [];
+    }
+    for (var m=0;m<current.length;m++) { if (current[m].name===parts[parts.length-1]) { current[m].name=newName; break; } }
+  }
+  // Update existing records that use this category path
+  var recType = type==='daily' ? 'daily' : null;
+  for (var ri=0; ri<appData.records.length; ri++) {
+    var r = appData.records[ri];
+    if (recType && r.type!=='daily') continue;
+    if (!r.catPath) continue;
+    for (var pi=0; pi<r.catPath.length; pi++) {
+      if (pi<parts.length && r.catPath[pi]===parts[pi]) {
+        if (pi===parts.length-1 && r.catPath.length>=parts.length) {
+          r.catPath[parts.length-1] = newName;
+        }
+      } else { break; }
+    }
+  }
+}
+
+function deleteCatInner(type, path) {
+  var cats = type==='daily' ? appData.dailyCats : appData.travelCats;
+  var parts = path.split('.');
+  if (parts.length===1) {
+    for (var i=0;i<cats.length;i++) { if (cats[i].name===parts[0]) { cats.splice(i,1); break; } }
+  } else {
+    var current = cats;
+    for (var j=0;j<parts.length-1;j++) {
+      var found = null;
+      for (var k=0;k<current.length;k++) { if (current[k].name===parts[j]) { found=current[k]; break; } }
+      if (!found) return;
+      current = found.subs || [];
+    }
+    for (var m=0;m<current.length;m++) { if (current[m].name===parts[parts.length-1]) { current.splice(m,1); break; } }
+  }
+}
+
+
+// ============ TODO TAB ============
+function renderTodos() {
+  var pillHtml = '<div class="cat-pill'+(todoCatFilter==='全部'?' active':'')+'" onclick="todoCatFilter=\'全部\';renderTodos();">全部</div>';
+  for (var i=0;i<appData.todoCats.length;i++) {
+    var c = appData.todoCats[i];
+    pillHtml += '<div class="cat-pill'+(todoCatFilter===c?' active':'')+'" onclick="todoCatFilter=\''+c+'\';renderTodos();">'+c+'</div>';
+  }
+  $('todoCatPills').innerHTML = pillHtml;
+
+  var todos = [];
+  for (var ti=0;ti<appData.todos.length;ti++) { todos.push(appData.todos[ti]); }
+  if (todoCatFilter !== '全部') { todos = todos.filter(function(t){ return t.category === todoCatFilter; }); }
+
+  var undone = todos.filter(function(t){ return !t.done; }).sort(function(a,b) {
+    if (!a.deadline && !b.deadline) return 0;
+    if (!a.deadline) return 1;
+    if (!b.deadline) return -1;
+    return a.deadline.localeCompare(b.deadline);
+  });
+  var done = todos.filter(function(t){ return t.done; });
+
+  function renderList(list, isDone) {
+    var html = '';
+    for (var li=0;li<list.length;li++) {
+      var t = list[li];
+      var overdue = !isDone && t.deadline && t.deadline < todayStr();
+      var trip = t.tripId ? getTripById(t.tripId) : null;
+      html += '<div class="todo-item'+(isDone?' done':'')+'" onpointerdown="startLongPressTodo(\''+t.id+'\',event)" onpointerup="cancelLongPress()" onpointerleave="cancelLongPress()">' +
+        '<div class="todo-check'+(isDone?' done':'')+'" onclick="toggleTodo(\''+t.id+'\')"></div>' +
+        '<div class="todo-info"><div class="todo-title">'+t.title+'</div>' +
+        '<div class="todo-meta">'+(t.category||'')+(trip?' \u00b7 '+trip.name:'')+(t.deadline?' \u00b7 '+t.deadline:'')+(overdue?' <span style="color:var(--danger);">逾期</span>':'')+'</div></div></div>';
+    }
+    return html || '<div style="color:var(--text2);font-size:13px;text-align:center;padding:10px;">暂无</div>';
+  }
+
+  $('todo-undone').innerHTML = renderList(undone, false);
+  $('todo-done').innerHTML = renderList(done, true);
+}
+
+function showTodoModal() {
+  var catOpts = '';
+  for (var i=0;i<appData.todoCats.length;i++) { catOpts += '<option value="'+appData.todoCats[i]+'">'+appData.todoCats[i]+'</option>'; }
+  var tripOpts = '<option value="">日常</option>';
+  for (var ti=0;ti<appData.trips.length;ti++) { tripOpts += '<option value="'+appData.trips[ti].id+'">旅游: '+appData.trips[ti].name+'</option>'; }
+  var overlay = openModal('<div class="modal-sheet"><h3>新增事项</h3>' +
+    '<div class="form-row"><label>标题</label><input type="text" id="todoTitle"></div>' +
+    '<div class="form-row"><label>分类</label><select id="todoCat">'+catOpts+'</select></div>' +
+    '<div class="form-row"><label>归属</label><select id="todoBelong" onchange="onTodoBelongChange()">'+tripOpts+'</select></div>' +
+    '<div class="form-row"><label>截止日期 <span id="todoDeadlineHint" style="color:var(--danger);display:none;">*必填</span></label><input type="date" id="todoDeadline"></div>' +
+    '<div class="btn-row"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button><button class="btn btn-primary" onclick="saveTodo()">保存</button></div></div>');
+  onTodoBelongChange();
+}
+function onTodoBelongChange() {
+  var isTrip = !!$('todoBelong').value;
+  $('todoDeadlineHint').style.display = isTrip ? 'inline' : 'none';
+}
+function saveTodo() {
+  var title = $('todoTitle').value.trim();
+  if (!title) return alert('请输入标题');
+  var tripId = $('todoBelong').value || null;
+  var deadline = $('todoDeadline').value;
+  if (tripId && !deadline) return alert('旅游归属事项必须填写截止日期');
+  appData.todos.push({
+    id: genId(), title: title, category: $('todoCat').value, deadline: deadline, tripId: tripId, done: false
+  });
+  saveData();
+  closeAllModals();
+  renderTodos();
+}
+function toggleTodo(id) {
+  for (var i=0;i<appData.todos.length;i++) {
+    if (appData.todos[i].id===id) { appData.todos[i].done=!appData.todos[i].done; break; }
+  }
+  saveData();
+  renderTodos();
+}
+function startLongPressTodo(todoId, e) {
+  cancelLongPress();
+  longPressTimer = setTimeout(function() {
+    if (confirm('确定删除该事项？')) {
+      appData.todos = appData.todos.filter(function(t){ return t.id !== todoId; });
+      saveData();
+      renderTodos();
+    }
+    longPressTimer = null;
+  }, 800);
+}
+
+function showTodoCatManage() {
+  var html = '<div class="modal-sheet"><h3>管理事项分类</h3>';
+  for (var i=0;i<appData.todoCats.length;i++) {
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">' +
+      '<span>'+appData.todoCats[i]+'</span>' +
+      '<span><button class="btn-sm" style="font-size:10px;margin-right:4px;" onclick="editTodoCat('+i+')">改名</button>' +
+      '<button class="btn-sm" style="font-size:10px;color:var(--danger);" onclick="deleteTodoCat('+i+')">删除</button></span></div>';
+  }
+  html += '<div style="margin-top:10px;display:flex;gap:8px;">' +
+    '<input type="text" id="newTodoCat" placeholder="新分类名称" style="flex:1;padding:8px;border:1.5px solid var(--border);border-radius:8px;">' +
+    '<button class="btn btn-primary btn-sm" onclick="addTodoCat()">添加</button></div>' +
+    '<div class="btn-row"><button class="btn btn-outline" onclick="closeAllModals();renderTodos();">完成</button></div></div>';
+  var overlay = openModal(html);
+}
+function addTodoCat() {
+  var name = $('newTodoCat').value.trim();
+  if (!name) return;
+  for (var i=0;i<appData.todoCats.length;i++) { if (appData.todoCats[i]===name) { alert('分类已存在'); return; } }
+  appData.todoCats.push(name);
+  saveData();
+  closeAllModals();
+  showTodoCatManage();
+}
+function editTodoCat(i) {
+  var newName = prompt('新名称:', appData.todoCats[i]);
+  if (newName && newName.trim()) { appData.todoCats[i]=newName.trim(); saveData(); closeAllModals(); showTodoCatManage(); }
+}
+function deleteTodoCat(i) {
+  if (confirm('确定删除该分类？')) { appData.todoCats.splice(i,1); saveData(); closeAllModals(); showTodoCatManage(); }
+}
+
+// ============ RATES TAB ============
+function renderRates() {
+  var rates = appData.rates;
+  var active = appData.activeCurrencies;
+  var baseInfo = CURRENCY_NAMES;
+
+  var baseSel = $('baseCurrency');
+  if (active.indexOf('CNY')<0) active.unshift('CNY');
+  var selOpts = '';
+  for (var i=0;i<active.length;i++) {
+    var code = active[i];
+    selOpts += '<option value="'+code+'">'+code+' - '+(baseInfo[code]||code)+'</option>';
+  }
+  baseSel.innerHTML = selOpts;
+
+  var base = baseSel.value;
+  var baseRate = rates[base] || 1;
+  var amount = parseFloat($('rateAmount').value) || 1;
+
+  var cardsHtml = '';
+  for (var ai=0;ai<active.length;ai++) {
+    var c = active[ai];
+    if (c===base) continue;
+    var infoName = baseInfo[c] || c;
+    var targetRate = rates[c] || 1;
+    var rate = baseRate > 0 ? targetRate / baseRate : 0;
+    var converted = amount * rate;
+    cardsHtml += '<div class="rate-card"><div class="rate-info"><h4>'+c+'</h4><span>'+infoName+'</span></div>' +
+      '<div class="rate-value"><div class="rate-amount">1 '+base+' = '+rate.toFixed(4)+' '+c+'</div>' +
+      '<div class="rate-converted">'+amount+' '+base+' = ' + formatMoney(converted) + ' '+c+'</div></div></div>';
+  }
+  $('rateCards').innerHTML = cardsHtml || '<div style="text-align:center;color:var(--text2);padding:20px;">请选择币种</div>';
+  $('rateUpdateTime').textContent = appData.rateUpdateTime ? '上次更新: '+appData.rateUpdateTime : '';
+  updateGistBtnLabel();
+}
+
+function showCurrencyManage() {
+  var allCodes = ['CNY','USD','JPY','EUR','GBP','KRW','THB','AUD','CAD','HKD','SGD','MYR','PHP','IDR','VND','INR','CHF','NZD','AED','RUB','BRL','MXN'];
+  var names = CURRENCY_NAMES;
+  var html = '<div class="modal-sheet"><h3>管理币种</h3><div style="max-height:400px;overflow-y:auto;">';
+  for (var i=0;i<allCodes.length;i++) {
+    var c = allCodes[i];
+    var isActive = appData.activeCurrencies.indexOf(c) >= 0;
+    html += '<div class="currency-item" onclick="toggleCurrency(\''+c+'\')">' +
+      '<span><span class="curr-code">'+c+'</span><span class="curr-name">'+(names[c]||c)+'</span></span>' +
+      '<span class="curr-check">'+(isActive?'\u2713':'')+'</span></div>';
+  }
+  html += '</div><div class="btn-row"><button class="btn btn-primary" onclick="closeAllModals();renderRates();">完成</button></div></div>';
+  var overlay = openModal(html);
+}
+function toggleCurrency(code) {
+  if (code==='CNY') return;
+  var idx = appData.activeCurrencies.indexOf(code);
+  if (idx>=0) appData.activeCurrencies.splice(idx,1);
+  else appData.activeCurrencies.push(code);
+  saveData();
+  closeAllModals();
+  showCurrencyManage();
+}
+
+function fetchRates() {
+  var event = window.event;
+  var btn = event ? event.target : document.querySelector('[onclick="fetchRates()"]');
+  btn.textContent = '更新中...'; btn.disabled = true;
+  fetch('https://open.er-api.com/v6/latest/CNY')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (data.result==='success' && data.rates) {
+        appData.rates = data.rates;
+        appData.rateUpdateTime = new Date().toLocaleString('zh-CN');
+        saveData();
+        renderRates();
+      } else { alert('汇率更新失败'); }
+    })
+    .catch(function(){ alert('网络错误，请稍后重试'); })
+    .finally(function(){ btn.textContent='更新汇率'; btn.disabled=false; });
+}
+
+// ============ INIT ============
+function init() {
+  loadData();
+  renderTab('daily');
+  $('fabBtn').style.display = 'none';
+}
+
+init();
+</script>
+</body>
+</html>
