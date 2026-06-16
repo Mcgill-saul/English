@@ -191,6 +191,24 @@ select {
 .cal-day.has-nodes::after { content:''; position:absolute; bottom:3px; left:50%; transform:translateX(-50%); width:5px; height:5px; border-radius:50%; background:var(--primary); }
 .cal-day.selected { background:var(--primary); color:#fff; }
 
+/* Records Calendar (rc-) */
+.rc-header { display:flex; align-items:center; justify-content:space-between; padding:4px 0 10px; }
+.rc-header .rc-title { font-weight:600; font-size:15px; }
+.rc-header button { background:none; border:none; font-size:18px; cursor:pointer; padding:4px 10px; color:var(--primary); }
+.rc-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; margin-bottom:16px; }
+.rc-day-header { font-size:11px; color:var(--text2); text-align:center; padding:4px 0 8px; }
+.rc-cell { aspect-ratio:1; border-radius:10px; cursor:pointer; transition:background 0.15s; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; }
+.rc-cell:active { background:#eaf2fb; }
+.rc-cell.rc-other { color:#D5DAE0; cursor:default; }
+.rc-cell.rc-other:active { background:none; }
+.rc-cell .rc-date-num { font-size:13px; color:var(--text); }
+.rc-cell.rc-today .rc-date-num { color:var(--primary); font-weight:700; }
+.rc-cell.rc-today { box-shadow:inset 0 0 0 1.5px var(--primary); }
+.rc-cell .rc-amt-expense { font-size:12px; font-weight:600; color:var(--danger); line-height:1.25; }
+.rc-cell .rc-amt-income { font-size:12px; font-weight:600; color:var(--success); line-height:1.25; }
+.rc-day-modal-row { display:flex; justify-content:space-between; align-items:flex-start; padding:10px 0; border-bottom:0.5px solid var(--border); cursor:pointer; }
+.rc-day-modal-row:last-child { border-bottom:none; }
+
 /* Trip selector */
 .trip-selector { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
 .trip-selector select { flex:1; padding:8px 10px; border-radius:10px; border:1.5px solid var(--border); font-size:13px; background:#fff; }
@@ -384,8 +402,8 @@ input[type="date"] { color-scheme:light; }
       <span class="spacer"></span>
       <button class="btn-link" onclick="showCatManageModal()">管理分类</button>
     </div>
-    <div id="records-month-bar"></div>
-    <div id="records-content"></div>
+    <div id="records-cal-bar"></div>
+    <div id="records-cal-grid"></div>
   </div>
 
   <!-- Todo Tab -->
@@ -717,6 +735,7 @@ function handleImportFile(e) {
 var currentTab = 'daily';
 var recordViewMode = 'day';
 var recordMonth = '';
+var rcCalYear = null, rcCalMonth = null;
 var collapsedDates = {};
 var recRecordType = 'expense';
 var todoCatFilter = '全部';
@@ -1969,12 +1988,12 @@ function deleteNode(tripId, nodeId) {
 
 // ============ RECORDS TAB ============
 function renderRecords() {
-  // Ensure recordMonth is initialized
-  if (!recordMonth) {
+  if (rcCalYear === null) {
     var now = new Date();
-    recordMonth = now.getFullYear() + '-' + (now.getMonth()<9?'0':'') + (now.getMonth()+1);
+    rcCalYear = now.getFullYear();
+    rcCalMonth = now.getMonth();
   }
-  renderRecordsByDay();
+  renderRecordsCalendar();
 }
 
 function parseAmountExpr(str) {
@@ -2002,116 +2021,130 @@ function getRmbAmt(record) {
   return Math.round(result * 100) / 100;
 }
 
-function buildMonthBar() {
-  var now = new Date();
-  var curMonth = now.getFullYear() + '-' + (now.getMonth()<9?'0':'') + (now.getMonth()+1);
-  var monthsSet = {};
+function changeRecCalMonth(delta) {
+  rcCalMonth += delta;
+  if (rcCalMonth < 0) { rcCalMonth = 11; rcCalYear--; }
+  if (rcCalMonth > 11) { rcCalMonth = 0; rcCalYear++; }
+  renderRecordsCalendar();
+}
+
+function getDayTotals(dateStr) {
+  var expense = 0, income = 0, count = 0;
   for (var i=0;i<appData.records.length;i++) {
-    var m = appData.records[i].date.substring(0,7);
-    monthsSet[m] = (monthsSet[m]||0) + 1;
+    var r = appData.records[i];
+    if (r.date !== dateStr) continue;
+    var amt = getRmbAmt(r);
+    if (r.recordType === 'expense') expense += amt; else income += amt;
+    count++;
   }
-  var months = Object.keys(monthsSet).sort(function(a,b){return b.localeCompare(a);});
-  if (!recordMonth || !monthsSet[recordMonth]) {
-    recordMonth = monthsSet[curMonth] ? curMonth : (months[0] || curMonth);
-  }
-  
-  var bar = '<select id="recordsMonthSel" onchange="onRecordsMonthChange()">';
-  for (var mi=0;mi<months.length;mi++) {
-    bar += '<option value="'+months[mi]+'"'+(months[mi]===recordMonth?' selected':'')+'>'+months[mi]+'</option>';
-  }
-  if (!monthsSet[curMonth]) bar += '<option value="'+curMonth+'"'+(curMonth===recordMonth?' selected':'')+'>'+curMonth+' (无记录)</option>';
-  bar += '</select>';
-  
-  var monthExpense = 0, monthIncome = 0;
-  for (var ri=0;ri<appData.records.length;ri++) {
-    var rr = appData.records[ri];
-    if (rr.date.substring(0,7) !== recordMonth) continue;
-    var rrRmb = getRmbAmt(rr);
-    if (rr.recordType === 'expense') monthExpense += rrRmb;
-    else if (rr.recordType === 'income') monthIncome += rrRmb;
-  }
-  if (monthExpense > 0) bar += '<span class="month-expense">支出 ¥'+formatMoney(monthExpense)+'</span>';
-  if (monthIncome > 0) bar += '<span class="month-income">收入 ¥'+formatMoney(monthIncome)+'</span>';
-  if (monthExpense===0 && monthIncome===0) bar += '<span class="month-total">本月暂无记录</span>';
-  $('records-month-bar').innerHTML = bar;
+  return { expense: expense, income: income, count: count };
 }
 
-function renderRecordsByDay() {
-  buildMonthBar();
-  
-  // Filter records for selected month
-  var records = [];
-  for (var ri2=0;ri2<appData.records.length;ri2++) {
-    if (appData.records[ri2].date.substring(0,7) === recordMonth) records.push(appData.records[ri2]);
+function renderRecordsCalendar() {
+  var dayHeaders = ['日','一','二','三','四','五','六'];
+  var now = new Date();
+  var pad2 = function(n){ return n<10?'0'+n:''+n; };
+
+  var bar = '<div class="rc-header">' +
+    '<button onclick="changeRecCalMonth(-1)">&#9664;</button>' +
+    '<span class="rc-title">' + rcCalYear + '年' + (rcCalMonth+1) + '月</span>' +
+    '<button onclick="changeRecCalMonth(1)">&#9654;</button></div>';
+  $('records-cal-bar').innerHTML = bar;
+
+  var html = '<div class="rc-grid">';
+  for (var dh=0;dh<dayHeaders.length;dh++) { html += '<div class="rc-day-header">' + dayHeaders[dh] + '</div>'; }
+
+  var firstDay = new Date(rcCalYear, rcCalMonth, 1).getDay();
+  var daysInMonth = new Date(rcCalYear, rcCalMonth+1, 0).getDate();
+  var prevMonthDays = new Date(rcCalYear, rcCalMonth, 0).getDate();
+
+  // leading days from previous month (faded, not clickable)
+  for (var li=0; li<firstDay; li++) {
+    var pd = prevMonthDays - firstDay + 1 + li;
+    html += '<div class="rc-cell rc-other"><span class="rc-date-num">' + pd + '</span></div>';
   }
-  records.sort(function(a,b){ return b.date.localeCompare(a.date) || (a.id||'').localeCompare(b.id||''); });
-  var groups = {};
-  for (var ri3=0;ri3<records.length;ri3++) {
-    var r = records[ri3];
-    if (!groups[r.date]) groups[r.date] = { records: [], dayExpense: 0 };
-    groups[r.date].records.push(r);
-    if (r.recordType === 'expense') groups[r.date].dayExpense += getRmbAmt(r);
-  }
-  var dates = Object.keys(groups).sort(function(a,b){return b.localeCompare(a);});
-  var html = '';
-  for (var di=0;di<dates.length;di++) {
-    var date = dates[di];
-    var g = groups[date];
-    var isCollapsed = !(collapsedDates[recordMonth] && collapsedDates[recordMonth][date]);
-    html += '<div class="date-group">' +
-      '<div class="date-group-header'+(isCollapsed?' collapsed':'')+'" onclick="toggleDate(\''+date+'\')">' +
-        '<span>'+date+'</span>' +
-        '<span class="day-sum">支出 ¥'+formatMoney(g.dayExpense)+'</span>' +
-      '</div>' +
-      '<div class="date-group-body'+(isCollapsed?' collapsed':'')+'">';
-    for (var gi=0;gi<g.records.length;gi++) {
-      var gr = g.records[gi];
-      var trip = gr.tripId ? getTripById(gr.tripId) : null;
-      var cp = gr.catPath||[];
-      var catPath = cp.length>0 ? cp[cp.length-1] : '';
-      var isIncome = gr.recordType === 'income';
-      var rmb = getRmbAmt(gr);
-      var foreignInfo = '';
-      var originalInfo = '';
-      if (gr.originalAmount > 0) {
-        originalInfo = '<span style="font-size:10px;color:var(--text2);">原币金额: ' + (gr.originalCurrency||'') + ' ' + formatMoney(gr.originalAmount) + '</span>';
-      }
-      if (gr.amountForeign > 0 && gr.currency) {
-        foreignInfo = '<span style="font-size:10px;color:var(--text2);">实付: ' + gr.currency + ' ' + formatMoney(gr.amountForeign) + ' × ' + (gr.exchangeRate||'?') + '</span>';
-      } else if (!gr.amountForeign && gr.currency && gr.currency !== 'CNY' && gr.amountCNY !== undefined) {
-        foreignInfo = '<span style="font-size:10px;color:var(--text2);">实付: ' + gr.currency + ' ' + formatMoney(gr.amount||0) + '</span>';
-      }
-      var splitInfo = '';
-      if (gr.payee && gr.peopleCount > 1) {
-        splitInfo = '<span class="payee-badge">' + gr.payee + ' ÷' + gr.peopleCount + '人</span>';
-      } else if (gr.payee) {
-        splitInfo = '<span class="payee-badge">' + gr.payee + '</span>';
-      }
-      html += '<div class="record-item" onclick="showRecordAction(\'' + gr.id + '\')">' +
-        '<div class="rec-top"><span class="rec-cat">' + catPath + (trip?'<span class="badge-travel">旅游:'+trip.name+'</span>':'') + (gr.paymentMethod?'<span class="pay-badge">'+gr.paymentMethod+'</span>':'') + splitInfo + '</span>' +
-        '<span class="rec-amount ' + (isIncome?'income':'expense') + '">' + (isIncome?'+':'-') + '&yen;' + formatMoney(rmb) + '</span></div>' +
-        (originalInfo?'<div class="rec-note">'+originalInfo+'</div>':'') + (foreignInfo?'<div class="rec-note"'+(originalInfo?' style="margin-top:2px;"':'')+'>'+foreignInfo+'</div>':'') + (gr.note?'<div class="rec-note"'+(originalInfo||foreignInfo?' style="margin-top:2px;"':'')+'>'+gr.note+'</div>':'') + '</div>';
+
+  for (var d=1; d<=daysInMonth; d++) {
+    var dateStr = rcCalYear + '-' + pad2(rcCalMonth+1) + '-' + pad2(d);
+    var isToday = (rcCalYear===now.getFullYear() && rcCalMonth===now.getMonth() && d===now.getDate());
+    var totals = getDayTotals(dateStr);
+    var inner = '';
+    if (totals.count === 0) {
+      inner = '<span class="rc-date-num">' + d + '</span>';
+    } else {
+      if (totals.expense > 0) inner += '<span class="rc-amt-expense">' + Math.round(totals.expense) + '</span>';
+      if (totals.income > 0) inner += '<span class="rc-amt-income">' + Math.round(totals.income) + '</span>';
     }
-    html += '</div></div>';
+    html += '<div class="rc-cell' + (isToday?' rc-today':'') + '" onclick="onRecCalDayClick(\'' + dateStr + '\')">' + inner + '</div>';
   }
-  if (!dates.length) html = '<div style="text-align:center;padding:40px;color:var(--text2);">该月暂无记账记录</div>';
-  $('records-content').innerHTML = html;
+
+  // trailing days from next month (faded, not clickable)
+  var totalCells = firstDay + daysInMonth;
+  var trailing = (7 - (totalCells % 7)) % 7;
+  for (var ti=1; ti<=trailing; ti++) {
+    html += '<div class="rc-cell rc-other"><span class="rc-date-num">' + ti + '</span></div>';
+  }
+
+  html += '</div>';
+  $('records-cal-grid').innerHTML = html;
 }
 
-function toggleDate(date) {
-  if (!collapsedDates[recordMonth]) collapsedDates[recordMonth] = {};
-  if (collapsedDates[recordMonth][date]) {
-    delete collapsedDates[recordMonth][date];
-  } else {
-    collapsedDates[recordMonth][date] = true;
+function onRecCalDayClick(dateStr) {
+  var totals = getDayTotals(dateStr);
+  if (totals.count === 0) {
+    if (confirm(dateStr + ' 暂无记录，是否记一笔？')) {
+      showRecordModal();
+      setTimeout(function(){ if ($('recDate')) $('recDate').value = dateStr; }, 0);
+    }
+    return;
   }
-  // Re-render to apply toggle
-  renderRecordsByDay();
+  showDayDetailModal(dateStr);
 }
 
-function onRecordsMonthChange() {
-  recordMonth = $('recordsMonthSel').value;
-  renderRecords();
+function showDayDetailModal(dateStr) {
+  var records = [];
+  for (var i=0;i<appData.records.length;i++) { if (appData.records[i].date === dateStr) records.push(appData.records[i]); }
+  records.sort(function(a,b){ return (a.id||'').localeCompare(b.id||''); });
+
+  var rowsHtml = '';
+  for (var gi=0; gi<records.length; gi++) {
+    var gr = records[gi];
+    var trip = gr.tripId ? getTripById(gr.tripId) : null;
+    var cp = gr.catPath||[];
+    var catPath = cp.length>0 ? cp[cp.length-1] : '';
+    var isIncome = gr.recordType === 'income';
+    var rmb = getRmbAmt(gr);
+    var foreignInfo = '';
+    var originalInfo = '';
+    if (gr.originalAmount > 0) {
+      originalInfo = '<div style="font-size:10px;color:var(--text2);">原币金额: ' + (gr.originalCurrency||'') + ' ' + formatMoney(gr.originalAmount) + '</div>';
+    }
+    if (gr.amountForeign > 0 && gr.currency) {
+      foreignInfo = '<div style="font-size:10px;color:var(--text2);">实付: ' + gr.currency + ' ' + formatMoney(gr.amountForeign) + ' × ' + (gr.exchangeRate||'?') + '</div>';
+    } else if (!gr.amountForeign && gr.currency && gr.currency !== 'CNY' && gr.amountCNY !== undefined) {
+      foreignInfo = '<div style="font-size:10px;color:var(--text2);">实付: ' + gr.currency + ' ' + formatMoney(gr.amount||0) + '</div>';
+    }
+    var splitInfo = '';
+    if (gr.payee && gr.peopleCount > 1) {
+      splitInfo = '<span class="payee-badge">' + gr.payee + ' ÷' + gr.peopleCount + '人</span>';
+    } else if (gr.payee) {
+      splitInfo = '<span class="payee-badge">' + gr.payee + '</span>';
+    }
+    rowsHtml += '<div class="rc-day-modal-row" onclick="closeAllModals();showRecordAction(\'' + gr.id + '\')">' +
+      '<div style="flex:1;">' +
+        '<div style="font-size:14px;">' + escHtml(catPath) + (trip?'<span class="badge-travel">旅游:'+escHtml(trip.name)+'</span>':'') + (gr.paymentMethod?'<span class="pay-badge">'+escHtml(gr.paymentMethod)+'</span>':'') + splitInfo + '</div>' +
+        (gr.note?'<div style="font-size:11px;color:var(--text2);margin-top:2px;">'+escHtml(gr.note)+'</div>':'') +
+        originalInfo + foreignInfo +
+      '</div>' +
+      '<div style="font-weight:600;white-space:nowrap;margin-left:10px;color:' + (isIncome?'var(--success)':'var(--danger)') + ';">' + (isIncome?'+':'-') + '&yen;' + formatMoney(rmb) + '</div>' +
+    '</div>';
+  }
+
+  var html = '<div class="modal-sheet" style="max-height:75vh;overflow-y:auto;"><h3>' + dateStr + '</h3>' +
+    rowsHtml +
+    '<div class="btn-row"><button class="btn btn-outline" style="flex:1;" onclick="this.closest(\'.modal-overlay\').remove()">关闭</button>' +
+    '<button class="btn btn-primary" style="flex:1;" onclick="closeAllModals();showRecordModal();setTimeout(function(){if($(\'recDate\'))$(\'recDate\').value=\'' + dateStr + '\';},0);">+ 记一笔</button></div></div>';
+  openModal(html);
 }
 
 function buildPaymentDatalist() {
