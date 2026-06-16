@@ -43,7 +43,8 @@ body {
 
 /* Card */
 .card { background:var(--card); border-radius:14px; padding:16px; margin-bottom:14px; box-shadow:var(--shadow); }
-canvas { max-width:100%; height:auto; display:block; }
+canvas.chart-canvas { max-width:100%; height:auto; display:block; }
+canvas.ring-canvas { flex-shrink:0; }
 .section-title { font-size:14px; font-weight:600; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; }
 .btn-link { font-size:12px; color:var(--primary); cursor:pointer; background:none; border:none; font-weight:500; padding:0; }
 
@@ -364,8 +365,8 @@ input[type="date"] { color-scheme:light; }
     <div class="card" id="budget-card"></div>
     <button class="btn btn-outline" style="width:100%;margin-bottom:14px;" onclick="showMonthlyReview()">📊 月度复盘</button>
     <div class="card" id="month-stats-card"></div>
-    <div class="card"><div class="section-title">近6个月收支趋势</div><canvas id="barChart" width="360" height="200"></canvas></div>
-    <div class="card"><div class="section-title">本月分类占比</div><canvas id="pieChart" width="280" height="280"></canvas><div id="pie-list"></div></div>
+    <div class="card"><div class="section-title">近6个月收支趋势</div><canvas id="barChart" class="chart-canvas" width="360" height="200"></canvas></div>
+    <div class="card"><div class="section-title">本月分类占比</div><canvas id="pieChart" class="chart-canvas" width="280" height="280"></canvas><div id="pie-list"></div></div>
   </div>
 
   <!-- Travel Tab -->
@@ -807,7 +808,7 @@ function renderDaily() {
   $('budget-card').innerHTML =
     '<div class="section-title">' + year + '年预算 <button class="btn-link" onclick="showBudgetModal()">设置预算</button></div>' +
     '<div class="ring-container">' +
-    '<canvas id="budgetRing" width="110" height="110"></canvas>' +
+    '<canvas id="budgetRing" class="ring-canvas" width="110" height="110"></canvas>' +
     '<div class="ring-info">' +
     '<div class="ring-label">已花费</div>' +
     '<div class="ring-amount">&yen;' + formatMoney(yearSpent) + '</div>' +
@@ -1323,7 +1324,7 @@ function renderTravel() {
             '<div class="section-title">' + escHtml(t.name) + '</div>' +
             '<div style="font-size:12px;color:var(--text2);margin-bottom:8px;">' + (t.startDate||'') + ' ~ ' + (t.endDate||'') + '</div>' +
             '<div class="ring-container">' +
-            '<canvas id="' + canvasId + '" width="110" height="110"></canvas>' +
+            '<canvas id="' + canvasId + '" class="ring-canvas" width="110" height="110"></canvas>' +
             '<div class="ring-info">' +
             '<div class="ring-label">已花费</div>' +
             '<div class="ring-amount">&yen;' + formatMoney(spent) + '</div>' +
@@ -1355,7 +1356,7 @@ function renderTravel() {
     '<div style="font-size:12px;color:var(--text2);margin-bottom:8px;">' + (trip.startDate||'') + ' ~ ' + (trip.endDate||'') + '</div>' +
     '<button class="btn btn-outline btn-sm" style="width:100%;margin-bottom:10px;" onclick="showTripReview()">📊 复盘看板</button>' +
     '<div class="ring-container">' +
-    '<canvas id="tripRing" width="110" height="110"></canvas>' +
+    '<canvas id="tripRing" class="ring-canvas" width="110" height="110"></canvas>' +
     '<div class="ring-info">' +
     '<div class="ring-label">已花费</div>' +
     '<div class="ring-amount">&yen;' + formatMoney(tripSpent) + '</div>' +
@@ -2137,7 +2138,7 @@ function renderRecordsByCat() {
   var pieColors = ['#4A90D9','#5DADE2','#3498DB','#2980B9','#1ABC9C','#2ECC71','#F39C12','#E67E22','#E74C3C','#9B59B6'];
   var total = 0;
   for (var ti=0;ti<items.length;ti++) { total += items[ti].value; }
-  var html = '<div class="card"><canvas id="recPieChart" width="280" height="280"></canvas><div>';
+  var html = '<div class="card"><canvas id="recPieChart" class="chart-canvas" width="280" height="280"></canvas><div>';
   for (var hi=0;hi<items.length;hi++) {
     var item = items[hi];
     var p = total>0?(item.value/total*100).toFixed(1):0;
