@@ -43,6 +43,7 @@ body {
 
 /* Card */
 .card { background:var(--card); border-radius:14px; padding:16px; margin-bottom:14px; box-shadow:var(--shadow); }
+canvas { max-width:100%; height:auto; display:block; }
 .section-title { font-size:14px; font-weight:600; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; }
 .btn-link { font-size:12px; color:var(--primary); cursor:pointer; background:none; border:none; font-weight:500; padding:0; }
 
@@ -107,20 +108,23 @@ select {
 
 /* FAB */
 .fab {
-  position:fixed; bottom:80px; right:calc(50% - 210px); width:52px; height:52px;
+  position:fixed; bottom:80px; right:20px; width:52px; height:52px;
   border-radius:50%; background:var(--primary); color:#fff; border:none;
   font-size:28px; cursor:pointer; z-index:100; box-shadow:0 4px 16px rgba(74,144,217,0.4);
   display:flex; align-items:center; justify-content:center; transition:all 0.2s;
 }
 .fab:active { transform:scale(0.92); }
 .fab-template {
-  position:fixed; bottom:140px; right:calc(50% - 214px); width:44px; height:44px;
+  position:fixed; bottom:140px; right:24px; width:44px; height:44px;
   border-radius:50%; background:#fff; color:var(--primary); border:2px solid var(--primary);
   font-size:22px; cursor:pointer; z-index:100; box-shadow:0 2px 10px rgba(74,144,217,0.25);
   display:none; align-items:center; justify-content:center; transition:all 0.2s;
 }
 .fab-template:active { transform:scale(0.92); }
-@media(min-width:480px) { .fab { right:calc(50% - 210px); } .fab-template { right:calc(50% - 214px); } }
+@media(min-width:481px) {
+  .fab { right:calc(50% - 240px + 20px); }
+  .fab-template { right:calc(50% - 240px + 24px); }
+}
 
 /* Record Item */
 .record-item { padding:12px 14px; border-radius:10px; background:var(--bg); margin-bottom:6px; cursor:pointer; transition:background 0.15s; }
@@ -1190,11 +1194,25 @@ function saveSingleAdjust(m0) {
 }
 
 // ============ CANVAS CHARTS ============
+function setupHiDpiCanvas(canvas) {
+  // 使用canvas在页面上的实际CSS显示尺寸（而非写死的width/height属性）作为绘图坐标系基准，
+  // 内部像素分辨率按设备像素比放大，避免高分屏模糊；同时所有绘图坐标都用cssW/cssH计算，
+  // 避免不同屏幕宽度下的拉伸错位
+  var dpr = window.devicePixelRatio || 1;
+  var cssW = canvas.clientWidth || parseInt(canvas.getAttribute('width'), 10) || 300;
+  var cssH = canvas.clientHeight || parseInt(canvas.getAttribute('height'), 10) || 200;
+  canvas.width = Math.round(cssW * dpr);
+  canvas.height = Math.round(cssH * dpr);
+  var ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx: ctx, w: cssW, h: cssH };
+}
+
 function drawRing(canvasId, pct, color, bgColor) {
   var canvas = $(canvasId);
   if (!canvas) return;
-  var ctx = canvas.getContext('2d');
-  var w = canvas.width, h = canvas.height;
+  var setup = setupHiDpiCanvas(canvas);
+  var ctx = setup.ctx, w = setup.w, h = setup.h;
   var cx = w/2, cy = h/2, r = 42, lw = 10;
   ctx.clearRect(0,0,w,h);
   ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.strokeStyle=bgColor; ctx.lineWidth=lw; ctx.stroke();
@@ -1209,8 +1227,8 @@ function drawRing(canvasId, pct, color, bgColor) {
 function drawBarChart(canvasId, labels, values, colors) {
   var canvas = $(canvasId);
   if (!canvas) return;
-  var ctx = canvas.getContext('2d');
-  var w = canvas.width, h = canvas.height;
+  var setup = setupHiDpiCanvas(canvas);
+  var ctx = setup.ctx, w = setup.w, h = setup.h;
   var pad = { top:20, right:20, bottom:30, left:50 };
   var cw = w - pad.left - pad.right, ch = h - pad.top - pad.bottom;
   ctx.clearRect(0,0,w,h);
@@ -1237,9 +1255,9 @@ function drawBarChart(canvasId, labels, values, colors) {
 function drawPieChart(canvasId, items) {
   var canvas = $(canvasId);
   if (!canvas) return;
-  var ctx = canvas.getContext('2d');
-  var w = canvas.width, h = canvas.height;
-  var cx = w/2, cy = h/2, r = 100;
+  var setup = setupHiDpiCanvas(canvas);
+  var ctx = setup.ctx, w = setup.w, h = setup.h;
+  var cx = w/2, cy = h/2, r = Math.min(w,h)/2 - 4;
   ctx.clearRect(0,0,w,h);
   var total = 0;
   for (var i=0;i<items.length;i++) { total += items[i].value; }
@@ -3004,6 +3022,11 @@ function init() {
   loadData();
   renderTab('daily');
   $('fabBtn').style.display = 'none';
+  var resizeTimer = null;
+  window.addEventListener('resize', function() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function() { renderTab(currentTab); }, 200);
+  });
 }
 
 init();
