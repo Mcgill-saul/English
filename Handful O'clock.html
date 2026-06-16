@@ -226,11 +226,8 @@
   .meal-food-item .fi-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
   .meal-food-item .fi-weight { color: var(--text-light); font-size: 12px; white-space: nowrap; }
   .meal-food-item .fi-kcal { font-size: 12px; font-weight: 700; color: var(--primary); white-space: nowrap; }
-  .meal-food-item .fi-expand { font-size: 11px; color: var(--text-light); line-height: 1; cursor: pointer; padding: 2px 4px; }
-  .meal-food-item .fi-macros { display: none; gap: 4px; flex-wrap: wrap; margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--border); }
-  .meal-food-item.expanded .fi-macros { display: flex; }
-  .meal-food-item.expanded .fi-expand { color: var(--primary); }
-  .meal-food-item { flex-wrap: wrap; }
+  .meal-food-item .fi-macros { display: none; }
+  .meal-food-item { flex-wrap: nowrap; }
 
   /* 小计行 */
   .meal-subtotal {
@@ -1077,7 +1074,6 @@ function renderMealFoodItem(item, idx, mealKey) {
   html += '<span class="fi-right">';
   html += '<span class="fi-weight">' + item.weight + 'g</span>';
   html += '<span class="fi-kcal">' + Math.round(item.cal) + ' kcal</span>';
-  html += '<span class="fi-expand" onclick="toggleFiMacros(event,this)">▾</span>';
   html += '</span>';
   // 第二行（折叠）：详细营养标签
   html += '<span class="fi-macros">';
@@ -1352,7 +1348,7 @@ function openSheet(mealKey, idx, name) {
   document.getElementById('sheetWeight').value = item.weight;
   document.getElementById('sheetOverlay').classList.add('open');
   document.getElementById('sheetPanel').classList.add('open');
-  setTimeout(() => document.getElementById('sheetWeight').focus(), 300);
+  setTimeout(() => { const el = document.getElementById('sheetWeight'); el.focus(); el.select(); }, 300);
 }
 
 function closeSheet() {
@@ -1585,12 +1581,6 @@ function comparePlansFull() {
   const mealCSS = { breakfast: 'breakfast', lunch: 'lunch', dinner: 'dinner', snack: 'snack' };
 
 
-function toggleFiMacros(e, btn) {
-  e.stopPropagation();
-  const item = btn.closest('.meal-food-item');
-  item.classList.toggle('expanded');
-  btn.textContent = item.classList.contains('expanded') ? '▴' : '▾';
-}
 
   function fmt(v) { return Math.round(v * 10) / 10; }
 
