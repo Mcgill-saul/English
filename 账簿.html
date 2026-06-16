@@ -381,8 +381,6 @@ input[type="date"] { color-scheme:light; }
   <!-- Records Tab -->
   <div class="page" id="page-records">
     <div class="view-toggle">
-      <button class="toggle-btn active" data-view="day" onclick="switchRecordView('day')">按日</button>
-      <button class="toggle-btn" data-view="cat" onclick="switchRecordView('cat')">按分类</button>
       <span class="spacer"></span>
       <button class="btn-link" onclick="showCatManageModal()">管理分类</button>
     </div>
@@ -1962,21 +1960,13 @@ function deleteNode(tripId, nodeId) {
 }
 
 // ============ RECORDS TAB ============
-function switchRecordView(view) {
-  recordViewMode = view;
-  var btns = document.querySelectorAll('.toggle-btn');
-  for (var i=0;i<btns.length;i++) { btns[i].classList.toggle('active', btns[i].dataset.view===view); }
-  renderRecords();
-}
-
 function renderRecords() {
   // Ensure recordMonth is initialized
   if (!recordMonth) {
     var now = new Date();
     recordMonth = now.getFullYear() + '-' + (now.getMonth()<9?'0':'') + (now.getMonth()+1);
   }
-  if (recordViewMode === 'day') renderRecordsByDay();
-  else renderRecordsByCat();
+  renderRecordsByDay();
 }
 
 function parseAmountExpr(str) {
@@ -2114,44 +2104,6 @@ function toggleDate(date) {
 function onRecordsMonthChange() {
   recordMonth = $('recordsMonthSel').value;
   renderRecords();
-}
-
-function renderRecordsByCat() {
-  buildMonthBar();
-  var ms = recordMonth + '-01';
-  var meParts = recordMonth.split('-');
-  var meYear = parseInt(meParts[0]), meMonth = parseInt(meParts[1]);
-  if (meMonth===12) { meYear++; meMonth=1; } else { meMonth++; }
-  var me = meYear + '-' + (meMonth<10?'0'+meMonth:meMonth) + '-01';
-  var catMap = {};
-  for (var i=0;i<appData.records.length;i++) {
-    var r = appData.records[i];
-    if (r.recordType==='expense' && r.date>=ms && r.date<me) {
-      var key = r.catPath[0] || '其他';
-      catMap[key] = (catMap[key]||0) + getRmbAmt(r);
-    }
-  }
-  var keys = Object.keys(catMap);
-  var items = [];
-  for (var k=0;k<keys.length;k++) { items.push({name:keys[k],value:catMap[keys[k]]}); }
-  items.sort(function(a,b){return b.value-a.value;});
-  var pieColors = ['#4A90D9','#5DADE2','#3498DB','#2980B9','#1ABC9C','#2ECC71','#F39C12','#E67E22','#E74C3C','#9B59B6'];
-  var total = 0;
-  for (var ti=0;ti<items.length;ti++) { total += items[ti].value; }
-  var html = '<div class="card"><canvas id="recPieChart" class="chart-canvas" width="280" height="280"></canvas><div>';
-  for (var hi=0;hi<items.length;hi++) {
-    var item = items[hi];
-    var p = total>0?(item.value/total*100).toFixed(1):0;
-    html += '<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;">' +
-      '<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+(pieColors[hi]||'#ccc')+';margin-right:6px;"></span>'+item.name+'</span>' +
-      '<span>&yen;'+formatMoney(item.value)+' ('+p+'%)</span></div>';
-  }
-  html += '</div></div>';
-  if (!items.length) html = '<div style="text-align:center;padding:40px;color:var(--text2);">本月暂无支出</div>';
-  $('records-content').innerHTML = html;
-  var drawItems = [];
-  for (var di=0;di<items.length;di++) { drawItems.push({name:items[di].name,value:items[di].value,color:pieColors[di]||'#ccc'}); }
-  setTimeout(function(){ drawPieChart('recPieChart', drawItems); }, 50);
 }
 
 function buildPaymentDatalist() {
