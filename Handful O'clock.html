@@ -399,29 +399,22 @@
   .food-card-main .food-macros { display: flex; flex-wrap: wrap; gap: 6px; padding-right: 80px; }
   .food-card-main .food-actions { position: absolute; top: 10px; right: 12px; display: flex; gap: 6px; }
 
-  .food-sort-btns {
-    display: flex; flex-direction: column; border-left: 1px solid var(--border);
-    flex-shrink: 0; width: 32px;
+  .food-drag-handle {
+    display: flex; align-items: center; justify-content: center;
+    border-left: 1px solid var(--border); flex-shrink: 0; width: 32px;
+    cursor: grab; color: #bbb; font-size: 16px; user-select: none;
+    touch-action: none;
   }
-  .btn-sort {
-    flex: 1; border: none; background: transparent; cursor: pointer;
-    font-size: 11px; color: var(--text-light); padding: 0;
-    transition: background 0.15s, color 0.15s;
+  .food-drag-handle:active { cursor: grabbing; background: #f0f1f3; }
+  .food-card.lib-dragging { opacity: 0.5; }
+  .food-card.lib-drag-over { border-top: 2px solid var(--primary); }
+  .type-drag-handle {
+    cursor: grab; color: #bbb; font-size: 16px; margin-left: auto;
+    padding: 0 4px; user-select: none; touch-action: none; flex-shrink: 0;
   }
-  .btn-sort:hover { background: var(--primary); color: #fff; }
-  .btn-sort.sort-disabled { opacity: 0.25; pointer-events: none; }
-
-  .type-sort-btns {
-    display: inline-flex; gap: 2px; margin-left: 6px;
-  }
-  .btn-sort-type {
-    width: 20px; height: 20px; border: 1px solid var(--border); border-radius: 4px;
-    background: #fff; cursor: pointer; font-size: 10px; color: var(--text-light);
-    line-height: 18px; text-align: center; padding: 0;
-    transition: background 0.15s, color 0.15s;
-  }
-  .btn-sort-type:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
-  .btn-sort-type.sort-disabled { opacity: 0.25; pointer-events: none; }
+  .type-drag-handle:active { cursor: grabbing; }
+  .food-type-group.type-dragging { opacity: 0.5; }
+  .food-type-group.type-drag-over { border-top: 2px solid var(--primary); }
 
   /* 底部浮层 */
   .sheet-overlay {
@@ -1832,21 +1825,18 @@ function renderFoodLibrary() {
     const gid = 'food-group-' + ti;
     const isFirstType = ti === 0;
     const isLastType = ti === typeOrder.length - 1;
-    html += '<div class="food-type-group">';
+    html += '<div class="food-type-group" data-type="' + escAttr(type) + '">';
     html += '<div class="food-type-header" onclick="toggleFoodGroup(\'' + gid + '\',this)">';
-    html += '<span class="food-type-toggle">▾</span> ';
+    html += '<span class="food-type-toggle">▸</span> ';
     html += '<span>' + escHtml(type) + '</span>';
     html += '<span style="font-size:11px;color:var(--text-light);font-weight:normal;"> (' + groups[type].length + '个)</span>';
-    html += '<span class="type-sort-btns">';
-    html += '<button class="btn-sort-type' + (isFirstType ? ' sort-disabled' : '') + '" data-action="moveFoodType" data-type="' + escAttr(type) + '" data-dir="-1" onclick="event.stopPropagation()"' + (isFirstType ? ' disabled' : '') + '>▲</button>';
-    html += '<button class="btn-sort-type' + (isLastType ? ' sort-disabled' : '') + '" data-action="moveFoodType" data-type="' + escAttr(type) + '" data-dir="1" onclick="event.stopPropagation()"' + (isLastType ? ' disabled' : '') + '>▼</button>';
-    html += '</span>';
+    html += '<span class="type-drag-handle" title="拖拽排序" onclick="event.stopPropagation()" onmousedown="onLibTypeDown(event,this)" ontouchstart="onLibTypeDown(event,this)">⠿</span>';
     html += '</div>';
-    html += '<div class="food-type-body" id="' + gid + '">';
+    html += '<div class="food-type-body" id="' + gid + '" style="display:none">';
     groups[type].forEach((f, fi) => {
       const isFirst = fi === 0;
       const isLast = fi === groups[type].length - 1;
-      html += '<div class="food-card">';
+      html += '<div class="food-card" data-name="' + escAttr(f.name) + '" data-type="' + escAttr(type) + '">';
       html += '<div class="food-card-main">';
       html += '<div class="food-name">' + escHtml(f.name) + '</div>';
       html += '<div class="food-macros">';
@@ -1864,15 +1854,200 @@ function renderFoodLibrary() {
       html += '<button class="btn btn-danger btn-xs" onclick="deleteFood(\'' + escAttr(f.name) + '\')">删除</button>';
       html += '</div>';
       html += '</div>';
-      html += '<div class="food-sort-btns">';
-      html += '<button class="btn-sort' + (isFirst ? ' sort-disabled' : '') + '" data-action="moveFood" data-name="' + escAttr(f.name) + '" data-dir="-1"' + (isFirst ? ' disabled' : '') + '>▲</button>';
-      html += '<button class="btn-sort' + (isLast ? ' sort-disabled' : '') + '" data-action="moveFood" data-name="' + escAttr(f.name) + '" data-dir="1"' + (isLast ? ' disabled' : '') + '>▼</button>';
-      html += '</div>';
+      html += '<div class="food-drag-handle" title="拖拽排序" onmousedown="onLibItemDown(event,this.closest(\'.food-card\'))" ontouchstart="onLibItemDown(event,this.closest(\'.food-card\'))">⠿</div>';
       html += '</div>';
     });
     html += '</div></div>';
   });
   container.innerHTML = html;
+}
+
+
+
+
+// ── 食材库拖拽排序（与饮食页同款 touch/mouse 逻辑） ──
+let libDragState = null;
+
+function onLibItemDown(e, el) {
+  if (libDragState) return;
+  const cx = e.touches ? e.touches[0].clientX : e.clientX;
+  const cy = e.touches ? e.touches[0].clientY : e.clientY;
+  const rect = el.getBoundingClientRect();
+  libDragState = {
+    type: 'item',
+    el, name: el.dataset.name, foodType: el.dataset.type,
+    startX: cx, startY: cy, startTime: Date.now(),
+    offsetY: cy - rect.top,
+    moved: false, dragging: false, placeholder: null, insertIdx: -1,
+    siblings: Array.from(el.parentNode.querySelectorAll('.food-card'))
+  };
+  bindLibDragEvents();
+}
+
+function onLibTypeDown(e, handle) {
+  e.stopPropagation();
+  if (libDragState) return;
+  const group = handle.closest('.food-type-group');
+  if (!group) return;
+  const cx = e.touches ? e.touches[0].clientX : e.clientX;
+  const cy = e.touches ? e.touches[0].clientY : e.clientY;
+  const rect = group.getBoundingClientRect();
+  libDragState = {
+    type: 'group',
+    el: group, typeName: group.dataset.type,
+    startX: cx, startY: cy, startTime: Date.now(),
+    offsetY: cy - rect.top,
+    moved: false, dragging: false, placeholder: null, insertIdx: -1,
+    siblings: Array.from(group.parentNode.querySelectorAll('.food-type-group'))
+  };
+  bindLibDragEvents();
+}
+
+function bindLibDragEvents() {
+  const onMove = (ev) => {
+    if (!libDragState) return;
+    const cx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+    const cy = ev.touches ? ev.touches[0].clientY : ev.clientY;
+    const dx = Math.abs(cx - libDragState.startX);
+    const dy = Math.abs(cy - libDragState.startY);
+    if (!libDragState.moved && (dx > 5 || dy > 5)) libDragState.moved = true;
+    if (!libDragState.dragging && libDragState.moved) {
+      libDragState.dragging = true;
+      libDragState.el.classList.add('lib-dragging');
+      document.body.style.overflow = 'hidden';
+      libDragState.placeholder = document.createElement('div');
+      const isGroup = libDragState.type === 'group';
+      libDragState.placeholder.className = isGroup ? 'food-type-group lib-drag-placeholder' : 'food-card lib-drag-placeholder';
+      libDragState.placeholder.style.minHeight = libDragState.el.offsetHeight + 'px';
+      libDragState.placeholder.style.opacity = '0.3';
+      libDragState.placeholder.style.border = '2px dashed var(--primary)';
+      libDragState.placeholder.style.borderRadius = 'var(--radius)';
+      libDragState.placeholder.style.background = 'transparent';
+      libDragState.el.parentNode.insertBefore(libDragState.placeholder, libDragState.el.nextSibling);
+    }
+    if (libDragState.dragging) {
+      libDragState.el.style.position = 'fixed';
+      libDragState.el.style.left = '12px';
+      libDragState.el.style.right = '12px';
+      libDragState.el.style.top = (cy - libDragState.offsetY) + 'px';
+      libDragState.el.style.zIndex = '200';
+      libDragState.el.style.marginBottom = '0';
+      libDragState.el.style.boxShadow = '0 6px 20px rgba(0,0,0,0.18)';
+      libFindInsert(cy);
+      ev.preventDefault();
+    }
+  };
+
+  const onEnd = () => {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onEnd);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onEnd);
+    document.body.style.overflow = '';
+    if (!libDragState) return;
+    if (libDragState.dragging) {
+      libCleanup();
+      const { insertIdx, type, name, typeName, foodType } = libDragState;
+      const siblings = libDragState.siblings;
+      // 计算最终落点 idx（排除自身）
+      const selfIdx = siblings.indexOf(libDragState.el);
+      let finalIdx = insertIdx > selfIdx ? insertIdx - 1 : insertIdx;
+      finalIdx = Math.max(0, Math.min(finalIdx, siblings.length - 1));
+      if (finalIdx !== selfIdx) {
+        if (type === 'item') {
+          libReorderItem(name, foodType, finalIdx);
+        } else {
+          libReorderType(typeName, finalIdx);
+        }
+      } else {
+        renderFoodLibrary();
+      }
+    }
+    libDragState = null;
+  };
+
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onEnd);
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('touchend', onEnd);
+}
+
+function libFindInsert(clientY) {
+  if (!libDragState || !libDragState.placeholder) return;
+  const siblings = libDragState.siblings;
+  for (let i = 0; i < siblings.length; i++) {
+    const s = siblings[i];
+    if (s === libDragState.el || s === libDragState.placeholder) continue;
+    const r = s.getBoundingClientRect();
+    if (clientY < r.top + r.height / 2) {
+      if (libDragState.insertIdx !== i) {
+        libDragState.insertIdx = i;
+        s.parentNode.insertBefore(libDragState.placeholder, s);
+      }
+      return;
+    }
+  }
+  const last = siblings[siblings.length - 1];
+  if (last && libDragState.insertIdx !== siblings.length) {
+    libDragState.insertIdx = siblings.length;
+    last.parentNode.appendChild(libDragState.placeholder);
+  }
+}
+
+function libCleanup() {
+  const el = libDragState.el;
+  el.classList.remove('lib-dragging');
+  el.style.position = '';
+  el.style.left = '';
+  el.style.right = '';
+  el.style.top = '';
+  el.style.zIndex = '';
+  el.style.marginBottom = '';
+  el.style.boxShadow = '';
+  if (libDragState.placeholder && libDragState.placeholder.parentNode) {
+    libDragState.placeholder.parentNode.removeChild(libDragState.placeholder);
+  }
+}
+
+function libReorderItem(name, foodType, toIdx) {
+  let foods = loadFoods();
+  const getType = f => (f.foodType||'').trim()||'其他';
+  const groupItems = foods.filter(f => getType(f) === foodType);
+  const others = foods.filter(f => getType(f) !== foodType);
+  const fromIdx = groupItems.findIndex(f => f.name === name);
+  if (fromIdx === -1) { renderFoodLibrary(); return; }
+  const [item] = groupItems.splice(fromIdx, 1);
+  groupItems.splice(toIdx, 0, item);
+  // 重新拼回 foods，保持分组顺序
+  const newFoods = [];
+  const seen = {};
+  foods.forEach(f => {
+    const t = getType(f);
+    if (!seen[t]) { seen[t] = true; }
+  });
+  const typeOrder = [];
+  foods.forEach(f => { const t = getType(f); if (!typeOrder.includes(t)) typeOrder.push(t); });
+  typeOrder.forEach(t => {
+    if (t === foodType) groupItems.forEach(f => newFoods.push(f));
+    else foods.filter(f => getType(f) === t).forEach(f => newFoods.push(f));
+  });
+  saveFoods(newFoods);
+  renderFoodLibrary();
+}
+
+function libReorderType(typeName, toIdx) {
+  let foods = loadFoods();
+  const getType = f => (f.foodType||'').trim()||'其他';
+  const typeOrder = [];
+  foods.forEach(f => { const t = getType(f); if (!typeOrder.includes(t)) typeOrder.push(t); });
+  const fromIdx = typeOrder.indexOf(typeName);
+  if (fromIdx === -1) { renderFoodLibrary(); return; }
+  const [t] = typeOrder.splice(fromIdx, 1);
+  typeOrder.splice(toIdx, 0, t);
+  const newFoods = [];
+  typeOrder.forEach(tp => foods.filter(f => getType(f) === tp).forEach(f => newFoods.push(f)));
+  saveFoods(newFoods);
+  renderFoodLibrary();
 }
 
 function toggleFoodGroup(gid, header) {
@@ -2038,10 +2213,7 @@ document.addEventListener('click', function(e) {
 });
 // 食物库排序按钮事件委托
 document.addEventListener('click', function(e) {
-  const btn = e.target.closest('[data-action="moveFood"]');
-  if (btn) { moveFood(btn.dataset.name, parseInt(btn.dataset.dir)); return; }
-  const typeBtn = e.target.closest('[data-action="moveFoodType"]');
-  if (typeBtn) { moveFoodType(typeBtn.dataset.type, parseInt(typeBtn.dataset.dir)); return; }
+
 });
 
 // ==================== Gist 云同步 ====================
@@ -2201,22 +2373,21 @@ function updateGistBtn() {
   <circle cx="512" cy="512" r="20" fill="#fff" opacity=".55"/>
   </svg>`;
 
-  function svgToPngBlob(svgStr, size, cb) {
+  function svgToPngDataUrl(svgStr, size, cb) {
     const img = new Image();
     const blob = new Blob([svgStr], {type: 'image/svg+xml'});
-    const url = URL.createObjectURL(blob);
+    const blobUrl = URL.createObjectURL(blob);
     img.onload = function() {
       const canvas = document.createElement('canvas');
       canvas.width = canvas.height = size;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, size, size);
-      URL.revokeObjectURL(url);
-      canvas.toBlob(cb, 'image/png');
+      canvas.getContext('2d').drawImage(img, 0, 0, size, size);
+      URL.revokeObjectURL(blobUrl);
+      cb(canvas.toDataURL('image/png'));
     };
-    img.src = url;
+    img.src = blobUrl;
   }
 
-  function registerManifest(icon192Url, icon512Url) {
+  function registerManifest(icon192, icon512) {
     const manifest = {
       name: "Handful O'Clock",
       short_name: "H O'Clock",
@@ -2226,27 +2397,23 @@ function updateGistBtn() {
       background_color: "#667eea",
       theme_color: "#667eea",
       icons: [
-        { src: icon192Url, sizes: "192x192", type: "image/png", purpose: "any maskable" },
-        { src: icon512Url, sizes: "512x512", type: "image/png", purpose: "any maskable" }
+        { src: icon192, sizes: "192x192", type: "image/png", purpose: "any maskable" },
+        { src: icon512, sizes: "512x512", type: "image/png", purpose: "any maskable" }
       ]
     };
     const mBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
-    const mUrl = URL.createObjectURL(mBlob);
     let link = document.querySelector('link[rel="manifest"]');
     if (!link) { link = document.createElement('link'); link.rel = 'manifest'; document.head.appendChild(link); }
-    link.href = mUrl;
+    link.href = URL.createObjectURL(mBlob);
 
-    // apple-touch-icon
     let atl = document.querySelector('link[rel="apple-touch-icon"]');
     if (!atl) { atl = document.createElement('link'); atl.rel = 'apple-touch-icon'; document.head.appendChild(atl); }
-    atl.href = icon512Url;
+    atl.href = icon512;
   }
 
-  svgToPngBlob(SVG_SRC, 192, function(b192) {
-    const url192 = URL.createObjectURL(b192);
-    svgToPngBlob(SVG_SRC, 512, function(b512) {
-      const url512 = URL.createObjectURL(b512);
-      registerManifest(url192, url512);
+  svgToPngDataUrl(SVG_SRC, 192, function(d192) {
+    svgToPngDataUrl(SVG_SRC, 512, function(d512) {
+      registerManifest(d192, d512);
     });
   });
 })();
