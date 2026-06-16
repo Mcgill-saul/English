@@ -610,7 +610,7 @@
     <div class="form-row">
       <div class="form-group">
         <label>食物名称</label>
-        <input type="text" id="foodName" placeholder="如：鸡胸肉">
+        <input type="text" autocomplete="off" id="foodName" placeholder="如：鸡胸肉">
       </div>
       <div class="form-group">
         <label>热量单位</label>
@@ -647,13 +647,13 @@
       </div>
       <div class="form-group">
         <label>特有营养名称</label>
-        <input type="text" id="customNutrientName" placeholder="如：膳食纤维">
+        <input type="text" autocomplete="off" id="customNutrientName" placeholder="如：膳食纤维">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label>特有营养值（每100g）</label>
-        <input type="text" id="customNutrientVal" placeholder="如：12g、200mg、5μg" value="0">
+        <input type="text" autocomplete="off" id="customNutrientVal" placeholder="如：12g、200mg、5μg" value="0">
       </div>
       <div class="form-group">
         <label>类型</label>
@@ -793,11 +793,11 @@
     <div style="display:flex;flex-direction:column;gap:12px">
       <div>
         <label style="font-size:12px;font-weight:600;color:#7f8c8d;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">GitHub Token</label>
-        <input id="gistToken" type="password" placeholder="ghp_xxxxxxxxxxxx" style="width:100%;padding:10px 12px;border:1.5px solid #e0e4ea;border-radius:8px;font-size:14px;font-family:monospace;outline:none;box-sizing:border-box">
+        <input id="gistToken" type="text" autocomplete="off" placeholder="ghp_xxxxxxxxxxxx" style="width:100%;padding:10px 12px;border:1.5px solid #e0e4ea;border-radius:8px;font-size:14px;font-family:monospace;outline:none;box-sizing:border-box">
       </div>
       <div>
         <label style="font-size:12px;font-weight:600;color:#7f8c8d;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Gist ID <span style="color:#b0b8c1;font-weight:400;text-transform:none">（留空则自动创建）</span></label>
-        <input id="gistId" placeholder="留空自动生成" style="width:100%;padding:10px 12px;border:1.5px solid #e0e4ea;border-radius:8px;font-size:14px;font-family:monospace;outline:none;box-sizing:border-box">
+        <input id="gistId" autocomplete="off" placeholder="留空自动生成" style="width:100%;padding:10px 12px;border:1.5px solid #e0e4ea;border-radius:8px;font-size:14px;font-family:monospace;outline:none;box-sizing:border-box">
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button onclick="saveGistConfig()" style="flex:1;padding:10px;background:#4a6cf7;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">保存配置</button>
