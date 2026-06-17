@@ -561,7 +561,7 @@
   <div class="sheet-title" id="sheetFoodName"></div>
   <div class="sheet-row">
     <label>重量</label>
-    <input type="number" id="sheetWeight" name="sheetWeight" autocomplete="off" inputmode="decimal" placeholder="g" step="any" min="1">
+    <input type="number" id="sheetWeight" name="weightGramsField" autocomplete="off" data-lpignore="true" inputmode="decimal" placeholder="g" step="any" min="1">
     <span style="font-size:14px;color:var(--text-light);">g</span>
   </div>
   <div class="sheet-actions">
@@ -583,7 +583,7 @@
     </div>
     <div class="form-group">
       <label>重量 (g)</label>
-      <input type="number" id="pickerWeight" placeholder="g" step="any" value="100">
+      <input type="number" id="pickerWeight" name="pickerWeightField" autocomplete="off" data-lpignore="true" inputmode="decimal" placeholder="g" step="any" value="100">
     </div>
     <div class="btn-row">
       <button class="btn btn-outline" onclick="closeFoodPicker()">取消</button>
@@ -602,7 +602,7 @@
     <div class="form-row">
       <div class="form-group">
         <label>食物名称</label>
-        <input type="text" autocomplete="off" id="foodName" placeholder="如：鸡胸肉">
+        <input data-lpignore="true" type="text" autocomplete="off" id="foodName" placeholder="如：鸡胸肉">
       </div>
       <div class="form-group">
         <label>热量单位</label>
@@ -615,41 +615,41 @@
     <div class="form-row">
       <div class="form-group">
         <label>热量 (每100g)</label>
-        <input type="number" id="foodCal" placeholder="0" step="any">
+        <input type="number" autocomplete="off" data-lpignore="true" inputmode="decimal" id="foodCal" placeholder="0" step="any">
       </div>
       <div class="form-group">
         <label>碳水 (g/100g)</label>
-        <input type="number" id="foodCarb" placeholder="0" step="any" value="0">
+        <input type="number" autocomplete="off" data-lpignore="true" inputmode="decimal" id="foodCarb" placeholder="0" step="any" value="0">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label>蛋白质 (g/100g)</label>
-        <input type="number" id="foodProtein" placeholder="0" step="any" value="0">
+        <input type="number" autocomplete="off" data-lpignore="true" inputmode="decimal" id="foodProtein" placeholder="0" step="any" value="0">
       </div>
       <div class="form-group">
         <label>脂肪 (g/100g)</label>
-        <input type="number" id="foodFat" placeholder="0" step="any" value="0">
+        <input type="number" autocomplete="off" data-lpignore="true" inputmode="decimal" id="foodFat" placeholder="0" step="any" value="0">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label>钠 (mg/100g)</label>
-        <input type="number" id="foodSodium" placeholder="0" step="any" value="0">
+        <input type="number" autocomplete="off" data-lpignore="true" inputmode="decimal" id="foodSodium" placeholder="0" step="any" value="0">
       </div>
       <div class="form-group">
         <label>特有营养名称</label>
-        <input type="text" autocomplete="off" id="customNutrientName" placeholder="如：膳食纤维">
+        <input data-lpignore="true" type="text" autocomplete="off" id="customNutrientName" placeholder="如：膳食纤维">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label>特有营养值（每100g）</label>
-        <input type="text" autocomplete="off" id="customNutrientVal" placeholder="如：12g、200mg、5μg" value="0">
+        <input data-lpignore="true" type="text" autocomplete="off" id="customNutrientVal" placeholder="如：12g、200mg、5μg" value="0">
       </div>
       <div class="form-group">
         <label>类型</label>
-        <input type="text" id="foodType" placeholder="如：碳水、蛋白质..." list="foodTypeList" autocomplete="off">
+        <input data-lpignore="true" type="text" id="foodType" placeholder="如：碳水、蛋白质..." list="foodTypeList" autocomplete="off">
         <datalist id="foodTypeList"></datalist>
       </div>
     </div>
@@ -674,17 +674,17 @@
       </div>
       <div class="form-group">
         <label>年龄</label>
-        <input type="number" id="age" placeholder="岁" value="25" min="1" max="120">
+        <input type="number" autocomplete="off" data-lpignore="true" inputmode="decimal" id="age" placeholder="岁" value="25" min="1" max="120">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label>身高 (cm)</label>
-        <input type="number" id="height" placeholder="cm" value="170" step="any" min="50" max="250">
+        <input type="number" autocomplete="off" data-lpignore="true" inputmode="decimal" id="height" placeholder="cm" value="170" step="any" min="50" max="250">
       </div>
       <div class="form-group">
         <label>体重 (kg)</label>
-        <input type="number" id="weight" placeholder="kg" value="65" step="any" min="20" max="300">
+        <input type="number" autocomplete="off" data-lpignore="true" inputmode="decimal" id="weight" placeholder="kg" value="65" step="any" min="20" max="300">
       </div>
     </div>
     <div class="form-group">
@@ -728,7 +728,7 @@
       <h3>食物热量对比</h3>
       <div class="cal-compare-input-row">
         <label>热量目标：</label>
-        <input type="number" id="calTarget" value="200" min="1" onchange="updateCalCompare()">
+        <input type="number" autocomplete="off" data-lpignore="true" inputmode="decimal" id="calTarget" value="200" min="1" onchange="updateCalCompare()">
         <span>kcal</span>
       </div>
       <div class="cal-compare-cols">
@@ -785,11 +785,11 @@
     <div style="display:flex;flex-direction:column;gap:12px">
       <div>
         <label style="font-size:12px;font-weight:600;color:#7f8c8d;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">GitHub Token</label>
-        <input id="gistToken" type="text" autocomplete="off" placeholder="ghp_xxxxxxxxxxxx" style="width:100%;padding:10px 12px;border:1.5px solid #e0e4ea;border-radius:8px;font-size:14px;font-family:monospace;outline:none;box-sizing:border-box">
+        <input id="gistToken" name="syncKeyField" type="text" autocomplete="off" data-lpignore="true" placeholder="ghp_xxxxxxxxxxxx" style="width:100%;padding:10px 12px;border:1.5px solid #e0e4ea;border-radius:8px;font-size:14px;font-family:monospace;outline:none;box-sizing:border-box">
       </div>
       <div>
         <label style="font-size:12px;font-weight:600;color:#7f8c8d;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Gist ID <span style="color:#b0b8c1;font-weight:400;text-transform:none">（留空则自动创建）</span></label>
-        <input id="gistId" autocomplete="off" placeholder="留空自动生成" style="width:100%;padding:10px 12px;border:1.5px solid #e0e4ea;border-radius:8px;font-size:14px;font-family:monospace;outline:none;box-sizing:border-box">
+        <input id="gistId" name="syncIdField" autocomplete="off" data-lpignore="true" placeholder="留空自动生成" style="width:100%;padding:10px 12px;border:1.5px solid #e0e4ea;border-radius:8px;font-size:14px;font-family:monospace;outline:none;box-sizing:border-box">
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button onclick="saveGistConfig()" style="flex:1;padding:10px;background:#4a6cf7;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">保存配置</button>
