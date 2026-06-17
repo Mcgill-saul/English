@@ -397,9 +397,31 @@
   .food-card-main {
     flex: 1; padding: 10px 12px; position: relative; min-width: 0;
   }
-  .food-card-main .food-name { font-size: 15px; font-weight: 700; margin-bottom: 6px; padding-right: 80px; }
-  .food-card-main .food-macros { display: flex; flex-wrap: wrap; gap: 6px; padding-right: 80px; }
-  .food-card-main .food-actions { position: absolute; top: 10px; right: 12px; display: flex; gap: 6px; }
+  .food-card-main .food-name { font-size: 15px; font-weight: 700; margin-bottom: 6px; padding-right: 34px; }
+  .food-card-main .food-macros { display: flex; flex-wrap: wrap; gap: 6px; padding-right: 34px; }
+  .food-card-main .food-actions { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; }
+  .food-more-btn {
+    width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--card-bg); color: var(--text-light); font-size: 16px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; line-height: 1;
+    transition: background 0.15s, color 0.15s;
+  }
+  .food-more-btn:active, .food-more-btn.active { background: var(--bg); color: var(--text); }
+  .food-action-menu {
+    position: fixed; z-index: 600; min-width: 92px;
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.14); overflow: hidden;
+    opacity: 0; transform: translateY(-4px) scale(0.97); pointer-events: none;
+    transition: opacity 0.12s, transform 0.12s;
+  }
+  .food-action-menu.open { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+  .food-action-menu button {
+    display: block; width: 100%; text-align: left; padding: 10px 14px;
+    border: none; background: none; font-size: 14px; cursor: pointer; color: var(--text);
+  }
+  .food-action-menu button:active { background: var(--bg); }
+  .food-action-menu button.menu-del { color: var(--danger); }
+  .food-action-menu .menu-divider { height: 1px; background: var(--border); }
 
   .food-drag-handle {
     display: flex; align-items: center; justify-content: center;
@@ -1822,6 +1844,7 @@ function renderFoodLibrary() {
   const foods = loadFoods();
   const container = document.getElementById('foodLibrary');
   if (foods.length === 0) { container.innerHTML = '<div class="empty-state">暂无食物数据，请先添加</div>'; return; }
+  closeFoodMenu();
 
   // 按 foods 数组顺序提取类型（保持用户手动排序后的顺序）
   const typeOrder = [];
@@ -1862,8 +1885,7 @@ function renderFoodLibrary() {
       }
       html += '</div>';
       html += '<div class="food-actions">';
-      html += '<button class="btn btn-outline btn-xs" onclick="editFood(\'' + escAttr(f.name) + '\')">编辑</button>';
-      html += '<button class="btn btn-danger btn-xs" onclick="deleteFood(\'' + escAttr(f.name) + '\')">删除</button>';
+      html += '<button class="food-more-btn" type="button" onclick="toggleFoodMenu(event,this,\'' + escAttr(f.name) + '\')">⋯</button>';
       html += '</div>';
       html += '</div>';
       html += '<div class="food-drag-handle" title="拖拽排序" onmousedown="onLibItemDown(event,this.closest(\'.food-card\'))" ontouchstart="onLibItemDown(event,this.closest(\'.food-card\'))">⠿</div>';
@@ -1874,8 +1896,70 @@ function renderFoodLibrary() {
   container.innerHTML = html;
 }
 
+// ── 食物卡片「⋯」更多菜单 ──
+let foodMenuOpenFor = null; // 当前打开菜单所属的食物名，null 表示关闭
 
+function getOrCreateFoodMenuEl() {
+  let el = document.getElementById('foodActionMenu');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'foodActionMenu';
+    el.className = 'food-action-menu';
+    document.body.appendChild(el);
+  }
+  return el;
+}
 
+function toggleFoodMenu(e, btn, name) {
+  e.stopPropagation();
+  if (foodMenuOpenFor === name) { closeFoodMenu(); return; }
+
+  const menu = getOrCreateFoodMenuEl();
+  menu.innerHTML =
+    '<button type="button" onclick="closeFoodMenu();editFood(\'' + escAttr(name) + '\')">编辑</button>' +
+    '<div class="menu-divider"></div>' +
+    '<button type="button" class="menu-del" onclick="closeFoodMenu();deleteFood(\'' + escAttr(name) + '\')">删除</button>';
+
+  // 先取消之前激活按钮的高亮
+  document.querySelectorAll('.food-more-btn.active').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  foodMenuOpenFor = name;
+
+  // 定位：默认贴在按钮右下方，若超出视口右/下边界则自动向左/向上翻转
+  menu.classList.remove('open'); // 重置以便测量尺寸
+  menu.style.left = '-9999px';
+  menu.style.top = '-9999px';
+  menu.classList.add('open');
+  requestAnimationFrame(() => {
+    const btnRect = btn.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+    let left = btnRect.right - menuRect.width;
+    let top = btnRect.bottom + 6;
+    if (left < 8) left = 8;
+    if (top + menuRect.height > window.innerHeight - 8) {
+      top = btnRect.top - menuRect.height - 6;
+    }
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+  });
+}
+
+function closeFoodMenu() {
+  const menu = document.getElementById('foodActionMenu');
+  if (menu) menu.classList.remove('open');
+  document.querySelectorAll('.food-more-btn.active').forEach(b => b.classList.remove('active'));
+  foodMenuOpenFor = null;
+}
+
+document.addEventListener('click', (e) => {
+  if (!foodMenuOpenFor) return;
+  const menu = document.getElementById('foodActionMenu');
+  if (menu && menu.contains(e.target)) return;
+  if (e.target.closest && e.target.closest('.food-more-btn')) return;
+  closeFoodMenu();
+});
+document.addEventListener('scroll', () => { if (foodMenuOpenFor) closeFoodMenu(); }, { passive: true, capture: true });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && foodMenuOpenFor) closeFoodMenu(); });
 
 // ── 食材库拖拽排序（与饮食页同款 touch/mouse 逻辑） ──
 let libDragState = null;
