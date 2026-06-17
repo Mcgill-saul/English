@@ -201,8 +201,8 @@ select {
 .rc-cell:active { background:#eaf2fb; }
 .rc-cell.rc-other { color:#D5DAE0; cursor:default; }
 .rc-cell.rc-other:active { background:none; }
-.rc-cell .rc-date-num { font-size:13px; color:var(--text); }
-.rc-cell.rc-has-data .rc-date-num { position:absolute; top:4px; left:6px; font-size:10px; color:var(--text2); }
+.rc-cell .rc-date-num { position:absolute; top:4px; left:6px; font-size:12px; color:var(--text2); }
+.rc-cell.rc-other .rc-date-num { color:#D5DAE0; }
 .rc-cell.rc-today .rc-date-num { color:var(--primary); font-weight:700; }
 .rc-cell.rc-today { box-shadow:inset 0 0 0 1.5px var(--primary); }
 .rc-cell.rc-has-expense { background:#FBEAEA; }
@@ -358,6 +358,13 @@ input[type="date"] { color-scheme:light; }
 .mr-monthly-adjust-grid label { font-size:11px; }
 .mr-monthly-adjust-grid input { padding:8px 6px; font-size:12px; }
 
+/* ===== Advanced Search ===== */
+.as-summary { display:flex; gap:16px; padding:10px 0; border-bottom:0.5px solid var(--border); margin-bottom:8px; font-size:13px; }
+.as-summary span.as-label { color:var(--text2); }
+.as-result-row { display:flex; justify-content:space-between; align-items:flex-start; padding:10px 0; border-bottom:0.5px solid var(--border); cursor:pointer; }
+.as-result-row:last-child { border-bottom:none; }
+.as-empty { text-align:center; color:var(--text2); font-size:13px; padding:30px 0; }
+
 /* ===== Monthly Review: Desktop ===== */
 @media (min-width: 860px) {
   #page-review.active {
@@ -404,14 +411,15 @@ input[type="date"] { color-scheme:light; }
   <!-- Records Tab -->
   <div class="page" id="page-records">
     <div class="view-toggle">
+      <button class="btn-link" onclick="showAdvancedSearch()">搜索</button>
       <span class="spacer"></span>
       <button class="btn-link" onclick="showCatManageModal()">管理分类</button>
     </div>
+    <div class="card" id="records-month-summary"></div>
     <div class="card">
       <div id="records-cal-bar"></div>
       <div id="records-cal-grid"></div>
     </div>
-    <div class="card" id="records-month-summary"></div>
     <div class="section-title">本月概览</div>
     <div class="card">
       <div id="records-cal-grid-current"></div>
@@ -464,6 +472,7 @@ input[type="date"] { color-scheme:light; }
         <span class="mr-year-btn" onclick="changeReviewYear(-1)">&#9664;</span>
         <span id="reviewYearLabel">2026年</span>
         <span class="mr-year-btn" onclick="changeReviewYear(1)">&#9654;</span>
+        <span class="mr-year-btn" onclick="showAdvancedSearch(reviewYear)" style="margin-left:4px;">&#128269;</span>
       </div>
       <button class="btn-link" onclick="showBudgetModal()">预算设置</button>
     </div>
@@ -999,6 +1008,36 @@ function sumCatForRange(ms, me, prefix) {
   }
   return sum;
 }
+function flattenCatNames() {
+  var names = [];
+  function walk(nodes) {
+    for (var i=0;i<nodes.length;i++) {
+      var n = nodes[i];
+      if (names.indexOf(n.name) === -1) names.push(n.name);
+      if (n.subs && n.subs.length) walk(n.subs);
+    }
+  }
+  walk(appData.dailyCats||[]);
+  walk(appData.travelCats||[]);
+  return names;
+}
+
+function findCatPrefixByName(name) {
+  // 在分类树中查找该名称所在节点，返回从根到该节点的路径（用于子树聚合匹配）
+  var result = null;
+  function walk(nodes, path) {
+    for (var i=0;i<nodes.length;i++) {
+      var n = nodes[i];
+      var newPath = path.concat([n.name]);
+      if (n.name === name) { result = newPath; return; }
+      if (n.subs && n.subs.length) { walk(n.subs, newPath); if (result) return; }
+    }
+  }
+  walk(appData.dailyCats||[], []);
+  if (!result) walk(appData.travelCats||[], []);
+  return result;
+}
+
 function getReviewMonthlyBudget(m0) {
   var b = appData.budget;
   var specialTotal = (b.insurance||0)+(b.special||0)+(b.travel||0)+(b.prepay||0);
@@ -2594,6 +2633,95 @@ function deleteRecord(recordId) {
 }
 
 // ============ CATEGORY MANAGE ============
+// ============ ADVANCED SEARCH ============
+function showAdvancedSearch(lockYear) {
+  var years = [];
+  for (var i=0;i<appData.records.length;i++) {
+    var y = (appData.records[i].date||'').slice(0,4);
+    if (y && years.indexOf(y) === -1) years.push(y);
+  }
+  years.sort(function(a,b){ return b-a; });
+
+  var catOptions = flattenCatNames();
+  var catDatalist = '<datalist id="asCatList">';
+  for (var ci=0; ci<catOptions.length; ci++) { catDatalist += '<option value="'+escHtml(catOptions[ci])+'">'; }
+  catDatalist += '</datalist>';
+
+  var yearSelHtml = '';
+  if (lockYear) {
+    yearSelHtml = '<input type="hidden" id="asYear" value="'+lockYear+'"><div class="form-row"><label>年度</label><input type="text" value="'+lockYear+'年（已锁定）" disabled style="color:var(--text2);"></div>';
+  } else {
+    var opts = '<option value="">全部</option>';
+    for (var yi=0; yi<years.length; yi++) { opts += '<option value="'+years[yi]+'">'+years[yi]+'年</option>'; }
+    yearSelHtml = '<div class="form-row"><label>年度</label><select id="asYear" class="input-box">'+opts+'</select></div>';
+  }
+
+  var html = '<div class="modal-sheet" style="max-height:90vh;overflow-y:auto;"><h3>高级搜索</h3>' +
+    yearSelHtml +
+    '<div class="form-row"><label>分类（可输入或从建议中选择）</label><input type="text" id="asCat" class="input-box" list="asCatList" placeholder="如：居住 / 房租" autocomplete="off"></div>' +
+    catDatalist +
+    '<div class="form-row"><label>备注关键词</label><input type="text" id="asNote" placeholder="如：牛肉" autocomplete="off"></div>' +
+    '<div class="btn-row"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button><button class="btn btn-primary" onclick="runAdvancedSearch()">搜索</button></div>' +
+    '<div id="asResultArea" style="margin-top:14px;"></div>' +
+    '</div>';
+  openModal(html, 'advancedSearchOverlay');
+}
+
+function runAdvancedSearch() {
+  var yearVal = ($('asYear').value||'').trim();
+  var catVal = ($('asCat').value||'').trim();
+  var noteVal = ($('asNote').value||'').trim().toLowerCase();
+
+  var catPrefix = null;
+  if (catVal) {
+    catPrefix = findCatPrefixByName(catVal);
+    if (!catPrefix) {
+      $('asResultArea').innerHTML = '<div class="as-empty">未找到名为"'+escHtml(catVal)+'"的分类，请检查输入或从建议列表中选择</div>';
+      return;
+    }
+  }
+
+  var ms = yearVal ? yearVal+'-01-01' : null;
+  var me = yearVal ? (parseInt(yearVal,10)+1)+'-01-01' : null;
+
+  var results = [];
+  for (var i=0;i<appData.records.length;i++) {
+    var r = appData.records[i];
+    if (ms && (r.date < ms || r.date >= me)) continue;
+    if (catPrefix && !catMatchesPath(r.catPath, catPrefix)) continue;
+    if (noteVal && (!r.note || r.note.toLowerCase().indexOf(noteVal) === -1)) continue;
+    results.push(r);
+  }
+  results.sort(function(a,b){ return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0); });
+
+  var expenseSum = 0, incomeSum = 0;
+  for (var ri=0; ri<results.length; ri++) {
+    if (results[ri].recordType==='expense') expenseSum += getRmbAmt(results[ri]);
+    else if (results[ri].recordType==='income') incomeSum += getRmbAmt(results[ri]);
+  }
+
+  var html = '<div class="as-summary"><span><span class="as-label">共</span> '+results.length+' <span class="as-label">笔</span></span>' +
+    '<span><span class="as-label">支出</span> <span style="color:var(--danger);font-weight:600;">&yen;'+formatMoney(expenseSum)+'</span></span>' +
+    '<span><span class="as-label">收入</span> <span style="color:var(--success);font-weight:600;">&yen;'+formatMoney(incomeSum)+'</span></span></div>';
+
+  if (results.length === 0) {
+    html += '<div class="as-empty">没有符合条件的记录</div>';
+  } else {
+    for (var hi=0; hi<results.length; hi++) {
+      var rec = results[hi];
+      var cp = rec.catPath||[];
+      var catName = cp.length>0 ? cp[cp.length-1] : '';
+      var amt = getRmbAmt(rec);
+      var amtColor = rec.recordType==='income' ? 'var(--success)' : 'var(--danger)';
+      html += '<div class="as-result-row" onclick="closeAllModals();showRecordAction(\''+rec.id+'\')"><div>' +
+        '<div style="font-size:13px;">'+escHtml(catName)+'</div>' +
+        '<div style="font-size:11px;color:var(--text2);">'+(rec.date||'')+(rec.note?' · '+escHtml(rec.note):'')+'</div></div>' +
+        '<div style="font-weight:600;color:'+amtColor+';">&yen;'+formatMoney(amt)+'</div></div>';
+    }
+  }
+  $('asResultArea').innerHTML = html;
+}
+
 function showCatManageModal() {
   catManageTab = 'daily';
   catExpandState = {};
