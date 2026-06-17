@@ -1339,19 +1339,18 @@ function openSheet(mealKey, idx, name) {
   const plans = loadPlans();
   const active = getActivePlanName();
   const item = plans[active][mealKey][idx];
+  const weightEl = document.getElementById('sheetWeight');
   document.getElementById('sheetFoodName').textContent = item.foodName;
-  document.getElementById('sheetWeight').value = item.weight;
+  weightEl.value = item.weight;
+  weightEl.removeAttribute('readonly');
   document.getElementById('sheetOverlay').classList.add('open');
   document.getElementById('sheetPanel').classList.add('open');
-  const panel = document.getElementById('sheetPanel');
-  const focusWeight = () => {
-    const el = document.getElementById('sheetWeight');
-    el.removeAttribute('readonly');
-    el.focus();
-  };
-  panel.addEventListener('transitionend', focusWeight, { once: true });
-  // 兜底：若 transitionend 未触发（如浏览器不支持/被中断）
-  setTimeout(focusWeight, 400);
+  // 直接聚焦并选中文本，方便快速修改克数；放入 setTimeout(0) 是为了
+  // 避开当前这次 click/touch 事件本身，避免被同一手势的 mouseup/touchend 立刻打断聚焦。
+  setTimeout(() => {
+    weightEl.focus();
+    weightEl.select();
+  }, 0);
 }
 
 function closeSheet() {
