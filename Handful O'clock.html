@@ -561,7 +561,7 @@
   <div class="sheet-title" id="sheetFoodName"></div>
   <div class="sheet-row">
     <label>重量</label>
-    <input type="text" id="sheetWeight" name="weightGramsField" autocomplete="off" data-lpignore="true" inputmode="decimal" pattern="[0-9]*\.?[0-9]*" placeholder="g">
+    <input type="number" id="sheetWeight" name="weightGramsField" autocomplete="off" data-lpignore="true" inputmode="decimal" step="any" min="0" placeholder="g">
     <span style="font-size:14px;color:var(--text-light);">g</span>
   </div>
   <div class="sheet-actions">
@@ -583,7 +583,7 @@
     </div>
     <div class="form-group">
       <label>重量 (g)</label>
-      <input type="text" id="pickerWeight" name="pickerWeightField" autocomplete="off" data-lpignore="true" inputmode="decimal" pattern="[0-9]*\.?[0-9]*" placeholder="g" value="100">
+      <input type="number" id="pickerWeight" name="pickerWeightField" autocomplete="off" data-lpignore="true" inputmode="decimal" step="any" min="0" placeholder="g" value="100">
     </div>
     <div class="btn-row">
       <button class="btn btn-outline" onclick="closeFoodPicker()">取消</button>
@@ -1332,6 +1332,7 @@ function reorderMealItem(mealKey, fromIdx, toIdx) {
 // ==================== 底部浮层 ====================
 let sheetMealKey = '';
 let sheetIdx = -1;
+let sheetOpenedAt = 0;
 
 function openSheet(mealKey, idx, name) {
   sheetMealKey = mealKey;
@@ -1345,15 +1346,17 @@ function openSheet(mealKey, idx, name) {
   weightEl.removeAttribute('readonly');
   document.getElementById('sheetOverlay').classList.add('open');
   document.getElementById('sheetPanel').classList.add('open');
-  // 直接聚焦并选中文本，方便快速修改克数；放入 setTimeout(0) 是为了
-  // 避开当前这次 click/touch 事件本身，避免被同一手势的 mouseup/touchend 立刻打断聚焦。
-  setTimeout(() => {
-    weightEl.focus();
-    weightEl.select();
-  }, 0);
+  sheetOpenedAt = Date.now();
+  // 必须在用户手势的同步调用栈内直接 focus，移动端浏览器才会弹出数字键盘；
+  // 一旦经过 setTimeout/Promise 等异步操作，会被判定为非用户触发而拒绝弹键盘。
+  weightEl.focus();
+  weightEl.select();
 }
 
 function closeSheet() {
+  // touchend 触发 openSheet 后，部分移动端浏览器会补发一次模拟 click，
+  // 若落在 sheetOverlay 上会把刚打开的浮层立刻关掉。这里短时间内忽略该次关闭。
+  if (Date.now() - sheetOpenedAt < 350) return;
   document.getElementById('sheetOverlay').classList.remove('open');
   document.getElementById('sheetPanel').classList.remove('open');
 }
