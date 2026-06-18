@@ -344,8 +344,8 @@ input[type="date"] { color-scheme:light; }
 .mr-back { font-size:14px; color:var(--primary); cursor:pointer; font-weight:500; }
 .mr-year-search-group { display:flex; align-items:center; gap:14px; }
 .mr-year-nav { display:flex; align-items:center; gap:10px; font-size:16px; font-weight:500; }
-.mr-search-box { display:flex; align-items:center; gap:6px; background:var(--bg); border-radius:10px; padding:6px 12px; cursor:pointer; }
-.mr-search-icon { font-size:14px; color:var(--text2); opacity:0.7; }
+.mr-search-box { display:flex; align-items:center; gap:6px; background:#E2E5EA; border-radius:10px; padding:6px 12px; cursor:pointer; }
+.mr-search-icon { font-size:14px; color:var(--text2); opacity:0.85; }
 .mr-search-box span { font-size:12px; color:var(--text2); font-weight:400; }
 .mr-year-btn { color:var(--text2); cursor:pointer; font-size:13px; padding:2px 6px; }
 .mr-summary-card { text-align:center; background:var(--bg); }
@@ -1269,20 +1269,15 @@ function renderMonthlyReview() {
   for (var m0=0; m0<12; m0++) {
     var future = isFutureReviewMonth(reviewYear, m0);
     var budget = getReviewMonthlyBudget(m0);
+    var range = reviewMonthRange(reviewYear, m0);
     var colVals = [];
     var total = 0;
-    if (!future) {
-      var range = reviewMonthRange(reviewYear, m0);
-      for (var ci=0; ci<REVIEW_COLS.length; ci++) {
-        var v = sumCatForRange(range[0], range[1], REVIEW_COLS[ci].path);
-        colVals.push(v);
-        total += v;
-      }
-    } else {
-      for (var ci2=0; ci2<REVIEW_COLS.length; ci2++) colVals.push(null);
-      total = null;
+    for (var ci=0; ci<REVIEW_COLS.length; ci++) {
+      var v = sumCatForRange(range[0], range[1], REVIEW_COLS[ci].path);
+      colVals.push(v);
+      total += v;
     }
-    var balance = future ? null : (budget - total);
+    var balance = budget - total;
     months.push({m0:m0, future:future, budget:budget, colVals:colVals, total:total, balance:balance});
   }
 
