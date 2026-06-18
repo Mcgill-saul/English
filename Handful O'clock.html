@@ -34,6 +34,12 @@
     --header-height: 48px;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  /* 全局隐藏 number 输入框的上下调节箭头（spinner） */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none; margin: 0;
+  }
+  input[type="number"] { -moz-appearance: textfield; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
     background: var(--bg);
@@ -55,6 +61,8 @@
     color: var(--primary);
     border-bottom: 1px solid var(--border);
     box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    max-width: 600px;
+    margin: 0 auto;
   }
   .page { display: none; padding: 12px 12px 0; max-width: 600px; margin: 0 auto; }
   .page.active { display: block; }
@@ -106,7 +114,10 @@
 
   /* 底部导航 */
   .bottom-nav {
-    position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+    position: fixed; bottom: 0; left: 50%; right: auto;
+    transform: translateX(-50%);
+    width: 100%; max-width: 600px;
+    z-index: 200;
     background: var(--card-bg); display: flex;
     border-top: 1px solid var(--border); box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
     height: var(--nav-height); padding-bottom: env(safe-area-inset-bottom, 0);
@@ -447,20 +458,40 @@
   }
   .sheet-overlay.open { opacity: 1; pointer-events: auto; }
   .sheet-panel {
-    position: fixed; bottom: 0; left: 0; right: 0; z-index: 501;
+    position: fixed; bottom: 0; left: 50%; right: auto;
+    transform: translateY(100%) translateX(-50%);
+    width: 100%; max-width: 600px;
+    z-index: 501;
     background: var(--card-bg); border-radius: 16px 16px 0 0;
     box-shadow: 0 -4px 24px rgba(0,0,0,0.12); padding: 20px 16px calc(20px + env(safe-area-inset-bottom, 0));
-    transform: translateY(100%); transition: transform 0.25s ease-out;
+    transition: transform 0.25s ease-out;
   }
-  .sheet-panel.open { transform: translateY(0); }
-  .sheet-title { font-size: 17px; font-weight: 700; margin-bottom: 16px; }
-  .sheet-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
-  .sheet-row label { font-size: 14px; color: var(--text-light); white-space: nowrap; }
-  .sheet-row input { flex: 1; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 16px; }
-  .sheet-row input:focus { border-color: var(--primary); outline: none; }
+  .sheet-panel.open { transform: translateY(0) translateX(-50%); }
+  .sheet-title-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 18px; }
+  .sheet-title { font-size: 18px; font-weight: 700; }
+  .sheet-row { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .sheet-row label { font-size: 14px; color: var(--text-light); white-space: nowrap; flex-shrink: 0; }
+  .sheet-row .sheet-input-wrap {
+    display: flex; align-items: center; gap: 8px;
+    border: 1.5px solid var(--border); border-radius: 8px; padding: 0 12px;
+    transition: border-color 0.2s;
+  }
+  .sheet-row .sheet-input-wrap:focus-within { border-color: var(--primary); }
+  .sheet-row .sheet-input-wrap input {
+    width: 100px; border: none; padding: 10px 0;
+    font-size: 16px; background: transparent;
+  }
+  .sheet-row .sheet-input-wrap input:focus { outline: none; }
+  .sheet-row .sheet-input-wrap .unit { font-size: 13px; color: var(--text-light); flex-shrink: 0; }
   .sheet-actions { display: flex; gap: 10px; }
-  .sheet-actions .btn { flex: 1; padding: 12px; font-size: 15px; }
-  .btn-sheet-del { background: none; border: none; color: var(--danger); font-size: 15px; cursor: pointer; padding: 8px 0; }
+  .sheet-actions .btn { flex: 1; padding: 12px; font-size: 15px; border-radius: 9px; }
+  .btn-sheet-del {
+    flex-shrink: 0; display: flex; align-items: center; gap: 5px;
+    background: none; border: 1.5px solid var(--danger); color: var(--danger);
+    font-size: 14px; font-weight: 600; cursor: pointer; line-height: 1.2;
+    padding: 8px 14px; border-radius: 9px; transition: background 0.15s, color 0.15s;
+  }
+  .btn-sheet-del:active { background: var(--danger); color: #fff; }
 
   /* 食谱对比页面 - 宽屏专用 */
   .compare-page { max-width: 100%; padding: 20px 24px; }
@@ -552,7 +583,6 @@
   <!-- 食谱管理栏 -->
   <div class="plan-bar">
     <select id="planSelect" onchange="onPlanSelectChange()">
-      <option value="">-- 新建食谱 --</option>
     </select>
     <button class="btn btn-outline btn-sm" id="saveBtn" onclick="savePlan()">保存</button>
     <div class="more-wrap">
@@ -580,17 +610,21 @@
 <!-- 底部浮层 - 编辑食物 -->
 <div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
 <div class="sheet-panel" id="sheetPanel">
-  <div class="sheet-title" id="sheetFoodName"></div>
+  <div class="sheet-title-row">
+    <div class="sheet-title" id="sheetFoodName"></div>
+    <button class="btn-sheet-del" onclick="deleteSheetFood()">🗑 删除</button>
+  </div>
   <div class="sheet-row">
     <label>重量</label>
-    <input type="number" id="sheetWeight" name="weightGramsField" autocomplete="off" data-lpignore="true" inputmode="decimal" step="any" min="0" placeholder="g">
-    <span style="font-size:14px;color:var(--text-light);">g</span>
+    <div class="sheet-input-wrap">
+      <input type="number" id="sheetWeight" name="weightGramsField" autocomplete="off" data-lpignore="true" inputmode="decimal" step="any" min="0" placeholder="0">
+      <span class="unit">g</span>
+    </div>
   </div>
   <div class="sheet-actions">
     <button class="btn btn-outline" onclick="closeSheet()">取消</button>
     <button class="btn btn-primary" onclick="saveSheetWeight()">保存</button>
   </div>
-  <button class="btn-sheet-del" onclick="deleteSheetFood()">删除此食物</button>
 </div>
 
 <!-- 食物选择弹窗 -->
@@ -900,9 +934,11 @@ function updatePlanSelect() {
   const active = getActivePlanName();
   let html = '';
   const names = Object.keys(plans).sort();
-  names.forEach(n => { html += '<option value="' + escAttr(n) + '"' + (n === active ? ' selected' : '') + '>' + escHtml(n) + '</option>'; });
-  if (names.length === 0) { html = '<option value="">-- 新建食谱 --</option>'; }
-  else { html = '<option value="">-- 新建食谱 --</option>' + html; }
+  if (names.length === 0) {
+    html = '<option value="" disabled selected>暂无食谱，点击 ⋮ 新建</option>';
+  } else {
+    names.forEach(n => { html += '<option value="' + escAttr(n) + '"' + (n === active ? ' selected' : '') + '>' + escHtml(n) + '</option>'; });
+  }
   select.innerHTML = html;
   updateUnsavedIndicator();
 }
@@ -935,7 +971,7 @@ function deletePlanViaMenu() {
 function onPlanSelectChange() {
   const select = document.getElementById('planSelect');
   const newName = select.value;
-  if (!newName) { newPlan(); return; }
+  if (!newName) return; // 占位项（暂无食谱），不触发任何操作，新建请用 ⋮ 菜单
 
   const active = getActivePlanName();
   if (active === newName) return; // same
