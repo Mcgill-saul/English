@@ -11,6 +11,34 @@
 <meta name="apple-mobile-web-app-title" content="账簿">
 <meta name="theme-color" content="#4A90D9">
 
+<!--
+============================================================
+  账簿 - 功能索引（按需 Ctrl+F 搜索下方标记快速定位）
+============================================================
+  数据结构      搜索 "appData = {" / "function getDefaultData" / "function migrateData"
+  日常Tab       搜索 "function renderDaily"（预算环/近6月趋势/本月饼图，完整口径不受专项标记影响）
+  旅游Tab       搜索 "function renderTravel" / "function renderTripCalendar"（行程、日历、复盘、结账）
+  记账Tab       搜索 "function renderRecordsCalendar" / "buildCalGridHtml"（日历视图，已取代旧的按日列表）
+               搜索 "function showDayDetailModal"（点日历某天弹出的当天明细）
+  记一笔表单    搜索 "function showRecordModal"（含金额表达式解析 parseAmountExpr、专项标记字段）
+  快捷模板      搜索 "TEMPLATES"（存为模板 / 闪电按钮快速记账）
+  事项Tab       搜索 "function renderTodos"
+  汇率Tab       搜索 "function renderRates"（含数据备份导出/导入、Gist云同步配置）
+  分类管理      搜索 "function showCatManageModal"
+  月度复盘      搜索 "MONTHLY REVIEW"（17列分类大表、年度专项支出、专项标记排除逻辑见 sumCatForRange）
+  资产负债      搜索 "ASSETS PANEL"（月度复盘页内可折叠面板：银行卡/待还款/投资，全局共享不分年度）
+  高级搜索      搜索 "ADVANCED SEARCH"（按分类子树聚合 + 备注关键词，两处入口：记账Tab顶部/月度复盘🔍）
+  通用工具函数  getRmbAmt（取人民币金额）、catMatchesPath/findCatPrefixByName（分类树匹配）、
+               convertToCNY（汇率换算）、openModal/closeAllModals（弹窗）、formatMoney/escHtml
+
+  关键设计约定：
+  - 分类层级代表"消费场景归属"，月度大表17列与此对应；"专项标记"是独立于分类的预算归属标记，
+    打了标记的记录会从月度大表中排除，转而计入对应的年度专项小计（目前仅"特殊"专项支持标记）。
+  - 日常Tab统计 vs 月度复盘大表 vs 高级搜索：三者口径不同，是有意为之——
+    日常Tab/高级搜索=完整口径（不排除专项标记记录）；月度复盘大表=预算口径（排除专项标记记录）。
+============================================================
+-->
+
 <style>
 :root {
   --primary:#4A90D9; --danger:#E74C3C; --success:#27AE60; --bg:#F5F6FA;
@@ -25,6 +53,10 @@ body {
   user-select:none;
 }
 .app { width:100%; max-width:480px; background:var(--bg); min-height:100vh; position:relative; overflow-x:hidden; }
+.backup-reminder-bar { display:flex; align-items:center; justify-content:space-between; gap:10px; background:#FDF3E3; color:#9A6B1F; font-size:12px; padding:8px 16px; }
+.backup-reminder-bar .btn-link { font-size:12px; color:#9A6B1F; font-weight:600; text-decoration:underline; }
+.backup-reminder-actions { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.backup-reminder-dismiss { cursor:pointer; color:#9A6B1F; opacity:0.7; font-size:13px; }
 .page { padding:16px 16px 80px; display:none; }
 .page.active { display:block; }
 
@@ -413,6 +445,13 @@ input[type="date"] { color-scheme:light; }
 <body>
 
 <div class="app" id="app">
+  <div id="backupReminderBar" class="backup-reminder-bar" style="display:none;">
+    <span id="backupReminderText"></span>
+    <span class="backup-reminder-actions">
+      <button class="btn-link" onclick="goBackupFromReminder()">去备份</button>
+      <span class="backup-reminder-dismiss" onclick="dismissBackupReminder()">&#10005;</span>
+    </span>
+  </div>
   <!-- Daily Tab -->
   <div class="page active" id="page-daily">
     <div class="card" id="budget-card"></div>
@@ -473,7 +512,7 @@ input[type="date"] { color-scheme:light; }
       <button class="btn btn-primary btn-sm" style="flex:1;" onclick="fetchRates()">更新汇率</button>
     </div>
     <div style="font-size:11px;color:var(--text2);text-align:center;" id="rateUpdateTime"></div>
-    <div class="card" style="margin-top:14px;">
+    <div class="card" id="dataBackupCard" style="margin-top:14px;">
       <div class="section-title">数据备份</div>
       <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">所有数据存储在本设备浏览器中，建议定期导出备份，更换设备/浏览器时可导入恢复。</div>
       <div style="display:flex;gap:10px;">
@@ -535,6 +574,47 @@ input[type="date"] { color-scheme:light; }
 </div>
 
 <script>
+/*
+ ============================================================
+ 账簿 - 功能区块索引（按出现顺序，配合搜索 "// ===" 跳转）
+ ------------------------------------------------------------
+ UTILS              通用工具函数（$、genId、formatMoney、escHtml等）
+ DATA                appData结构定义、默认值、加载/保存/迁移
+ GIST 云同步          GitHub Gist备份配置、推送、拉取
+ BACKUP              本地JSON导出/导入、自动备份提醒
+ STATE               全局状态变量（当前Tab、选中月份等）
+ TAB SWITCH          5个主Tab之间的切换与渲染分发
+ MODAL               通用弹窗创建/关闭辅助函数
+ DAILY TAB           "日常"Tab：预算环、当月收支、近6月趋势、月度饼图
+ MONTHLY REVIEW       "月度复盘"页：17列分类大表、年度专项、资产负债、
+                      预算设置（年度+4项专项+12月微调）
+ CANVAS CHARTS        圆环/柱状图/饼图的高清适配绘制逻辑
+ TRAVEL TAB           "旅游"Tab：行程列表、日历、节点、结账
+ TRIP ACTIONS         行程的编辑/删除
+ NODE ACTIONS         行程节点的编辑/删除
+ RECORDS TAB          "记账"Tab：日历视图、当天明细、记一笔表单主逻辑
+ TEMPLATES            快捷模板的保存/选用/删除
+ RECORD ACTION        单条记录的操作菜单（编辑/删除）
+ ADVANCED SEARCH       高级搜索（按分类子树聚合 + 备注模糊匹配）
+ ASSETS PANEL         资产负债面板（银行卡/待还款/投资，全局共享数据）
+ CATEGORY MANAGE      分类树管理（增删改、拖拽排序）
+ TODO TAB             "事项"Tab：待办列表、分类管理
+ RATES TAB            "汇率"Tab：实时汇率换算、币种管理
+ INIT                 启动入口
+
+ 数据结构要点：
+ - appData.records[]：所有收支记录，type区分daily/travel，
+   catPath为分类路径数组，specialTag可选标记（目前仅"特殊"，
+   打了标记的支出不计入月度复盘大表，但仍计入日常Tab/高级搜索）
+ - appData.budget：{total, insurance, special, travel, prepay,
+   monthlyAdjust[12]} 年度预算与4项专项预算及月度微调
+ - appData.assets：{bankCards[], debts[], investments[]} 全局共享，
+   不分年度
+ - 改动统计口径前请确认影响范围：日常Tab / 月度复盘大表 /
+   年度专项 / 高级搜索，这4处口径可能不同，是有意为之
+ ============================================================
+*/
+
 // ============ UTILS ============
 var $ = function(id) { return document.getElementById(id); };
 var genId = function() { return Date.now().toString(36) + Math.random().toString(36).slice(2,8); };
@@ -603,7 +683,8 @@ function getDefaultData() {
     activeCurrencies: ['USD','JPY','EUR','GBP','KRW','THB'],
     paymentMethods: ['现金','微信','支付宝','银行卡','信用卡','公交卡'],
     rateUpdateTime: '',
-    assets: { bankCards: [], debts: [], investments: [] }
+    assets: { bankCards: [], debts: [], investments: [] },
+    lastBackupTime: ''
   };
 }
 
@@ -630,6 +711,7 @@ function migrateData() {
   if (!Array.isArray(appData.assets.bankCards)) appData.assets.bankCards = [];
   if (!Array.isArray(appData.assets.debts)) appData.assets.debts = [];
   if (!Array.isArray(appData.assets.investments)) appData.assets.investments = [];
+  if (appData.lastBackupTime === undefined) appData.lastBackupTime = '';
 }
 function saveData() {
   localStorage.setItem('travelAssistantData', JSON.stringify(appData));
@@ -709,6 +791,7 @@ function pushToGist(manual) {
     body: JSON.stringify({ files: files })
   }).then(function(res) {
     if (!res.ok) throw new Error('HTTP ' + res.status);
+    markBackupDone();
     if (manual) { setGistStatus('上传成功 ✓ ' + new Date().toLocaleTimeString(), 'ok'); updateGistBtnLabel(); }
   }).catch(function(e) { if (manual) setGistStatus('上传失败：' + e.message, 'error'); });
 }
@@ -727,6 +810,7 @@ function pullFromGist(manual) {
       if (!content || typeof content !== 'object' || !Array.isArray(content.records)) throw new Error('数据格式不正确');
       appData = content;
       localStorage.setItem('travelAssistantData', JSON.stringify(appData));
+      markBackupDone();
       if (manual) setGistStatus('从云端拉取成功 ✓ 即将刷新页面', 'ok');
       setTimeout(function(){ location.reload(); }, 600);
     }).catch(function(e) { if (manual) setGistStatus('失败：' + e.message, 'error'); });
@@ -758,10 +842,51 @@ function exportAppData() {
   a.click();
   document.body.removeChild(a);
   setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  markBackupDone();
 }
 function importAppData() {
   $('importFileInput').value = '';
   $('importFileInput').click();
+}
+
+// ============ BACKUP REMINDER ============
+var BACKUP_REMIND_DAYS = 30;
+function markBackupDone() {
+  appData.lastBackupTime = new Date().toISOString();
+  saveData();
+  hideBackupReminder();
+}
+function daysSinceLastBackup() {
+  if (!appData.lastBackupTime) return Infinity;
+  var diffMs = Date.now() - new Date(appData.lastBackupTime).getTime();
+  return Math.floor(diffMs / 86400000);
+}
+function checkBackupReminder() {
+  var days = daysSinceLastBackup();
+  if (days < BACKUP_REMIND_DAYS) return;
+  var bar = $('backupReminderBar');
+  if (!bar) return;
+  var text = appData.lastBackupTime
+    ? ('距上次备份已 ' + days + ' 天，建议备份一下')
+    : '还没有备份过数据，建议先备份一次';
+  $('backupReminderText').textContent = text;
+  bar.style.display = 'flex';
+}
+function hideBackupReminder() {
+  var bar = $('backupReminderBar');
+  if (bar) bar.style.display = 'none';
+}
+function dismissBackupReminder() {
+  // 仅本次关闭，不写入lastBackupTime，下次打开仍会提醒
+  hideBackupReminder();
+}
+function goBackupFromReminder() {
+  hideBackupReminder();
+  switchTab('rates');
+  setTimeout(function(){
+    var card = $('dataBackupCard');
+    if (card) card.scrollIntoView({behavior:'smooth', block:'center'});
+  }, 100);
 }
 function handleImportFile(e) {
   var file = e.target.files && e.target.files[0];
@@ -1090,9 +1215,9 @@ function getAnnualCatData(year, prefix, specialTag) {
     var r = appData.records[i];
     if (r.type!=='daily' || r.recordType!=='expense') continue;
     if (r.date < ys || r.date >= ye) continue;
-    var matchByCat = catMatchesPath(r.catPath, prefix);
-    var matchByTag = specialTag && r.specialTag === specialTag && !matchByCat;
-    if (matchByCat || matchByTag) { sum += getRmbAmt(r); list.push(r); }
+    // 指定了specialTag时，只认专项标记，不看分类（分类此时与专项归属无关）
+    var matched = specialTag ? (r.specialTag === specialTag) : catMatchesPath(r.catPath, prefix);
+    if (matched) { sum += getRmbAmt(r); list.push(r); }
   }
   list.sort(function(a,b){ return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
   return {sum:sum, list:list};
@@ -1166,7 +1291,7 @@ function renderMonthlyReview() {
 
   // Annual special data
   var insData = getAnnualCatData(reviewYear, ['保险']);
-  var spcData = getAnnualCatData(reviewYear, ['特殊'], '特殊');
+  var spcData = getAnnualCatData(reviewYear, null, '特殊');
   var travData = getAnnualCatData(reviewYear, ['旅游']);
   var travGiftData = getAnnualCatData(reviewYear, ['旅游礼物']);
   var prepayData = getAnnualCatData(reviewYear, ['预花费']);
@@ -2462,7 +2587,7 @@ function showRecordModal(editId, tpl) {
     '<option value="expense"'+(defType==='expense'?' selected':'')+'>支出</option><option value="income"'+(defType==='income'?' selected':'')+'>收入</option></select></div>' +
     '<div class="form-row"><label>专项</label><select id="recSpecialTag"><option value=""'+(defSpecialTag===''?' selected':'')+'>无</option><option value="特殊"'+(defSpecialTag==='特殊'?' selected':'')+'>特殊</option></select></div>' +
     '</div>' +
-    '<div class="form-row"><label>备注</label><input type="text" id="recNote" value="'+defNote+'" placeholder="选填"></div>' +
+    '<div class="form-row"><label>备注</label><input type="text" id="recNote" value="'+defNote+'" placeholder="选填" autocomplete="off"></div>' +
     '<div class="btn-row"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button>' +
     (editId ? '' : '<button class="btn btn-outline" onclick="saveAsTemplate()" style="flex:0.8;font-size:12px;">⚡存模板</button>') +
     '<button class="btn btn-primary" onclick="'+(editId?'saveEditRecord(\''+editId+'\')':'saveRecord()')+'">保存</button></div></div>', 'recordModalOverlay');
@@ -2685,7 +2810,6 @@ function deleteRecord(recordId) {
   }
 }
 
-// ============ CATEGORY MANAGE ============
 // ============ ADVANCED SEARCH ============
 function showAdvancedSearch(lockYear) {
   var years = [];
@@ -2894,6 +3018,7 @@ function deleteAssetItem(groupKey, itemId) {
   renderAssetsPanel();
 }
 
+// ============ CATEGORY MANAGE ============
 function showCatManageModal() {
   catManageTab = 'daily';
   catExpandState = {};
@@ -3369,6 +3494,7 @@ function init() {
   loadData();
   renderTab('daily');
   $('fabBtn').style.display = 'none';
+  checkBackupReminder();
   var resizeTimer = null;
   window.addEventListener('resize', function() {
     clearTimeout(resizeTimer);
