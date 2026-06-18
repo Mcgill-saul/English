@@ -381,6 +381,15 @@
     display: inline-flex; align-items: center; gap: 2px;
     padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;
   }
+  /* 食物库列表中的5项固定营养标签：统一宽度以实现纵向对齐 */
+  .food-macros.fixed-cols .macro-tag {
+    box-sizing: border-box; justify-content: flex-start;
+  }
+  .food-macros.fixed-cols .tag-cal { width: 86px; }
+  .food-macros.fixed-cols .tag-carb { width: 76px; }
+  .food-macros.fixed-cols .tag-protein { width: 86px; }
+  .food-macros.fixed-cols .tag-fat { width: 72px; }
+  .food-macros.fixed-cols .tag-sodium { width: 72px; }
   .tag-protein { background: #fde8e8; color: var(--protein); }
   .tag-carb { background: #fef3e2; color: var(--carb); }
   .tag-fat { background: #e8f4fd; color: var(--fat); }
@@ -1495,7 +1504,7 @@ function renderSummaryCard() {
   const keys = ['breakfast', 'lunch', 'dinner', 'snack'];
   const labels = { breakfast: '早餐', lunch: '午餐', dinner: '晚餐', snack: '加餐' };
   const icons = { breakfast: '☀', lunch: '☀', dinner: '☾', snack: '+' };
-  const colors = { breakfast: '#f59e0b', lunch: '#10b981', dinner: '#6366f1', snack: '#94a3b8' };
+  const colors = { breakfast: '#f59e0b', lunch: '#10b981', dinner: '#fb7185', snack: '#94a3b8' };
   const totals = keys.map(mk => {
     const items = meals[mk] || [];
     return items.reduce((acc, m) => acc + (m.cal || 0), 0);
@@ -1521,9 +1530,9 @@ function renderSummaryCard() {
       cumPct += pct;
     });
     const svg = '<svg viewBox="0 0 72 72" width="72" height="72">'
+      + '<circle cx="' + cx2 + '" cy="' + cy2 + '" r="' + r2 + '" fill="none"'
+      + ' stroke="rgba(255,255,255,0.15)" stroke-width="' + sw2 + '"/>'
       + rings
-      + '<circle cx="' + cx2 + '" cy="' + cy2 + '" r="' + (r2 - sw2/2) + '" fill="none"'
-      + ' stroke="rgba(255,255,255,0.15)" stroke-width="' + (sw2 + 2) + '"/>'
       + '<text x="' + cx2 + '" y="' + (cy2 - 4) + '" text-anchor="middle" fill="#fff" font-size="13" font-weight="800">'
       + Math.round(grand) + '</text>'
       + '<text x="' + cx2 + '" y="' + (cy2 + 9) + '" text-anchor="middle" fill="rgba(255,255,255,.7)" font-size="8">kcal</text>'
@@ -1905,7 +1914,7 @@ function renderFoodLibrary() {
       html += '<div class="food-card" data-name="' + escAttr(f.name) + '" data-type="' + escAttr(type) + '">';
       html += '<div class="food-card-main">';
       html += '<div class="food-name">' + escHtml(f.name) + '</div>';
-      html += '<div class="food-macros">';
+      html += '<div class="food-macros fixed-cols">';
       html += '<span class="macro-tag tag-cal">' + f.calPer100g + ' kcal</span>';
       html += '<span class="macro-tag tag-carb">碳水 ' + f.carb + 'g</span>';
       html += '<span class="macro-tag tag-protein">蛋白质 ' + f.protein + 'g</span>';
