@@ -367,15 +367,16 @@ input[type="date"] { color-scheme:light; }
 
 /* ===== Assets Panel ===== */
 .mr-assets-toggle { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; cursor:pointer; font-size:15px; font-weight:500; }
-.mr-assets-group { margin-bottom:14px; }
-.mr-assets-group-title { display:flex; justify-content:space-between; align-items:center; font-size:13px; font-weight:500; color:var(--text2); margin-bottom:6px; }
-.mr-assets-group-title .btn-link { font-size:12px; }
-.mr-asset-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:0.5px solid var(--border); }
+.mr-assets-cols { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; align-items:start; }
+.mr-assets-cols .mr-assets-group { margin-bottom:0; min-width:0; }
+.mr-assets-group-title { display:flex; flex-direction:column; gap:2px; font-size:12px; font-weight:500; color:var(--text2); margin-bottom:6px; }
+.mr-assets-group-title .btn-link { font-size:11px; align-self:flex-start; }
+.mr-asset-row { display:flex; flex-direction:column; align-items:flex-start; padding:6px 0; border-bottom:0.5px solid var(--border); gap:2px; }
 .mr-asset-row:last-child { border-bottom:none; }
-.mr-asset-row-name { font-size:13px; }
+.mr-asset-row-name { font-size:12px; word-break:break-all; }
 .mr-asset-row-amt { font-size:13px; font-weight:600; }
-.mr-asset-row-sub { font-size:11px; color:var(--text2); }
-.mr-assets-subtotal { display:flex; justify-content:space-between; font-size:12px; color:var(--text2); padding-top:6px; }
+.mr-asset-row-sub { font-size:10px; color:var(--text2); }
+.mr-assets-subtotal { display:flex; flex-direction:column; gap:1px; font-size:11px; color:var(--text2); padding-top:6px; }
 .mr-assets-total-card { background:var(--bg); border-radius:10px; padding:12px 14px; margin-top:6px; }
 .mr-assets-total-row { display:flex; justify-content:space-between; align-items:baseline; padding:4px 0; font-size:13px; }
 .mr-assets-total-row.mr-assets-final { font-size:16px; font-weight:600; border-top:0.5px solid var(--border); margin-top:6px; padding-top:10px; }
@@ -399,6 +400,13 @@ input[type="date"] { color-scheme:light; }
   #page-review .mr-table-fade { display:none; }
   #page-review #reviewSpecialCards { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
   #page-review #reviewSpecialCards .mr-special-card { margin-bottom:0; }
+  #page-review .mr-assets-cols { gap:24px; }
+  #page-review .mr-assets-group-title { flex-direction:row; justify-content:space-between; align-items:center; font-size:13px; }
+  #page-review .mr-assets-group-title .btn-link { font-size:12px; }
+  #page-review .mr-asset-row { flex-direction:row; justify-content:space-between; align-items:center; }
+  #page-review .mr-asset-row-name { font-size:13px; }
+  #page-review .mr-asset-row-amt { font-size:13px; }
+  #page-review .mr-assets-subtotal { flex-direction:row; justify-content:space-between; font-size:12px; }
 }
 </style>
 </head>
@@ -1033,6 +1041,7 @@ function sumCatForRange(ms, me, prefix) {
   for (var i=0;i<appData.records.length;i++) {
     var r = appData.records[i];
     if (r.type!=='daily' || r.recordType!=='expense') continue;
+    if (r.specialTag) continue; // 打了专项标记的记录走年度专项预算，不计入月度大表
     if (r.date < ms || r.date >= me) continue;
     if (catMatchesPath(r.catPath, prefix)) sum += getRmbAmt(r);
   }
@@ -1074,14 +1083,16 @@ function getReviewMonthlyBudget(m0) {
   var base = (b.total - specialTotal) / 12;
   return base + (b.monthlyAdjust && b.monthlyAdjust[m0] || 0);
 }
-function getAnnualCatData(year, prefix) {
+function getAnnualCatData(year, prefix, specialTag) {
   var ys = year+'-01-01', ye=(year+1)+'-01-01';
   var sum = 0, list = [];
   for (var i=0;i<appData.records.length;i++) {
     var r = appData.records[i];
     if (r.type!=='daily' || r.recordType!=='expense') continue;
     if (r.date < ys || r.date >= ye) continue;
-    if (catMatchesPath(r.catPath, prefix)) { sum += getRmbAmt(r); list.push(r); }
+    var matchByCat = catMatchesPath(r.catPath, prefix);
+    var matchByTag = specialTag && r.specialTag === specialTag && !matchByCat;
+    if (matchByCat || matchByTag) { sum += getRmbAmt(r); list.push(r); }
   }
   list.sort(function(a,b){ return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
   return {sum:sum, list:list};
@@ -1155,7 +1166,7 @@ function renderMonthlyReview() {
 
   // Annual special data
   var insData = getAnnualCatData(reviewYear, ['保险']);
-  var spcData = getAnnualCatData(reviewYear, ['特殊']);
+  var spcData = getAnnualCatData(reviewYear, ['特殊'], '特殊');
   var travData = getAnnualCatData(reviewYear, ['旅游']);
   var travGiftData = getAnnualCatData(reviewYear, ['旅游礼物']);
   var prepayData = getAnnualCatData(reviewYear, ['预花费']);
@@ -1267,8 +1278,11 @@ function renderMonthlyReview() {
       for (var li=0; li<sp.list.length; li++) {
         var rec = sp.list[li];
         var dateShort = rec.date ? (parseInt(rec.date.slice(5,7),10) + '/' + parseInt(rec.date.slice(8,10),10)) : '';
-        var noteText = rec.note ? (' ' + rec.note) : '';
-        cardsHtml += '<div class="mr-special-row" onclick="showRecordAction(\''+rec.id+'\')"><span>'+dateShort+noteText+'</span><span>'+formatMoney(getRmbAmt(rec))+'</span></div>';
+        var cp = rec.catPath||[];
+        var leafCat = cp.length>0 ? cp[cp.length-1] : '';
+        var catText = leafCat ? (' ' + escHtml(leafCat)) : '';
+        var noteText = rec.note ? (' ' + escHtml(rec.note)) : '';
+        cardsHtml += '<div class="mr-special-row" onclick="showRecordAction(\''+rec.id+'\')"><span>'+dateShort+catText+noteText+'</span><span>'+formatMoney(getRmbAmt(rec))+'</span></div>';
       }
       cardsHtml += '</div>';
     }
@@ -2257,7 +2271,7 @@ function showDayDetailModal(dateStr) {
     }
     rowsHtml += '<div class="rc-day-modal-row" onclick="closeAllModals();showRecordAction(\'' + gr.id + '\')">' +
       '<div style="flex:1;">' +
-        '<div style="font-size:14px;">' + escHtml(catPath) + (trip?'<span class="badge-travel">旅游:'+escHtml(trip.name)+'</span>':'') + (gr.paymentMethod?'<span class="pay-badge">'+escHtml(gr.paymentMethod)+'</span>':'') + splitInfo + '</div>' +
+        '<div style="font-size:14px;">' + escHtml(catPath) + (trip?'<span class="badge-travel">旅游:'+escHtml(trip.name)+'</span>':'') + (gr.paymentMethod?'<span class="pay-badge">'+escHtml(gr.paymentMethod)+'</span>':'') + (gr.specialTag?'<span class="pay-badge" style="background:#FDEEDD;color:#B5772E;">专项:'+escHtml(gr.specialTag)+'</span>':'') + splitInfo + '</div>' +
         (gr.note?'<div style="font-size:11px;color:var(--text2);margin-top:2px;">'+escHtml(gr.note)+'</div>':'') +
         originalInfo + foreignInfo +
       '</div>' +
@@ -2404,6 +2418,7 @@ function showRecordModal(editId, tpl) {
   var defDate = editRecord ? editRecord.date : todayStr();
   var defNote = editRecord ? (editRecord.note||'') : (tpl ? (tpl.note||'') : '');
   var defType = editRecord ? editRecord.recordType : 'expense';
+  var defSpecialTag = editRecord ? (editRecord.specialTag||'') : (tpl ? (tpl.specialTag||'') : '');
   var defCatPath = editRecord ? (editRecord.catPath||[]) : (tpl ? (tpl.catPath||[]) : []);
 
   var defPayment = editRecord ? (editRecord.paymentMethod||'') : (tpl ? (tpl.paymentMethod||'') : '');
@@ -2424,17 +2439,17 @@ function showRecordModal(editId, tpl) {
     '<span id="recCatL2" class="cat-level-box"></span>' +
     '<span id="recCatL1" class="cat-level-box"></span>' +
     '</div></div></div>' +
-    '<div class="form-row"><label>金额</label><div style="display:flex;align-items:center;gap:6px;"><input type="text" inputmode="decimal" id="recAmount" value="'+defRmbAmt+'" placeholder="0.00" style="flex:1;min-width:0;" oninput="onAmountInput()" onblur="onAmountBlur()"><span style="font-size:12px;color:var(--text2);white-space:nowrap;">RMB</span><span id="recAmountHint" style="font-size:11px;color:var(--primary);white-space:nowrap;display:none;"></span><span id="recSplitHint" style="font-size:11px;color:var(--primary);white-space:nowrap;display:none;"></span></div></div>' +
+    '<div class="form-row"><label>金额</label><div style="display:flex;align-items:center;gap:6px;"><input type="text" inputmode="decimal" id="recAmount" value="'+defRmbAmt+'" placeholder="0.00" autocomplete="off" style="flex:1;min-width:0;" oninput="onAmountInput()" onblur="onAmountBlur()"><span style="font-size:12px;color:var(--text2);white-space:nowrap;">RMB</span><span id="recAmountHint" style="font-size:11px;color:var(--primary);white-space:nowrap;display:none;"></span><span id="recSplitHint" style="font-size:11px;color:var(--primary);white-space:nowrap;display:none;"></span></div></div>' +
     '<div class="form-row"><label>原币金额</label><div style="display:flex;gap:6px;">' +
-      '<input type="number" id="recOriginalAmount" value="'+defOriginalAmount+'" step="0.01" placeholder="0.00" style="flex:1.2;min-width:0;">' +
+      '<input type="number" id="recOriginalAmount" value="'+defOriginalAmount+'" step="0.01" placeholder="0.00" autocomplete="off" style="flex:1.2;min-width:0;">' +
       '<input type="text" id="recOriginalCurrency" list="currencyDataList" value="'+defOriginalCurrency+'" placeholder="币种" style="width:90px;" autocomplete="off">' +
     '</div></div>' +
     '<datalist id="currencyDataList">'+curListOpts+'</datalist>' +
     '<div class="form-row"><label>实付币种</label><div style="display:flex;gap:6px;">' +
-      '<input type="number" id="recForeignAmt" value="'+defForeignAmt+'" step="0.01" placeholder="0.00" style="flex:1;" oninput="autoCalcRmb()">' +
+      '<input type="number" id="recForeignAmt" value="'+defForeignAmt+'" step="0.01" placeholder="0.00" autocomplete="off" style="flex:1;" oninput="autoCalcRmb()">' +
       '<input type="text" id="recPayCurrency" list="currencyDataList" value="'+defPayCurrency+'" placeholder="币种" style="width:85px;" autocomplete="off">' +
       '<div style="display:flex;align-items:center;gap:6px;">' +
-        '<input type="number" id="recExRate" value="'+defExRate+'" step="0.000001" placeholder="汇率" style="width:96px;" oninput="autoCalcRmb()">' +
+        '<input type="number" id="recExRate" value="'+defExRate+'" step="0.000001" placeholder="汇率" autocomplete="off" style="width:96px;" oninput="autoCalcRmb()">' +
         '<button type="button" class="btn btn-outline btn-sm" onclick="fetchRealtimeRate()" style="padding:4px 6px;font-size:11px;white-space:nowrap;">获取</button>' +
       '</div>' +
     '</div></div>' +
@@ -2442,8 +2457,11 @@ function showRecordModal(editId, tpl) {
     '<datalist id="payeeDatalist">'+payeeOpts+'</datalist>' +
     '<div class="form-row" id="recPayeeRow" '+payeeVisible+'><label>支付人</label><div style="display:flex;gap:8px;align-items:center;"><input type="text" id="recPayee" list="payeeDatalist" value="'+defPayee+'" placeholder="选填" autocomplete="off" onchange="onPayeeChange()" oninput="onPayeeChange()" style="flex:1;min-width:0;"><span id="recPeopleWrap" '+peopleVisible+'>'+peopleSel+'</span></div></div>' +
     '<div class="form-row"><label>支付</label><input type="text" id="recPayment" list="payDatalist" value="'+defPayment+'" placeholder="" autocomplete="off"></div>' +
-    '<div class="form-row" id="recTypeRow" style="display:'+(defTripId==='daily'?'block':'none')+'"><label>类型</label><select id="recTypeSel" onchange="recRecordType=this.value">' +
+    '<div class="form-row-inline" id="recTypeRow" style="display:'+(defTripId==='daily'?'flex':'none')+'">' +
+    '<div class="form-row"><label>类型</label><select id="recTypeSel" onchange="recRecordType=this.value">' +
     '<option value="expense"'+(defType==='expense'?' selected':'')+'>支出</option><option value="income"'+(defType==='income'?' selected':'')+'>收入</option></select></div>' +
+    '<div class="form-row"><label>专项</label><select id="recSpecialTag"><option value=""'+(defSpecialTag===''?' selected':'')+'>无</option><option value="特殊"'+(defSpecialTag==='特殊'?' selected':'')+'>特殊</option></select></div>' +
+    '</div>' +
     '<div class="form-row"><label>备注</label><input type="text" id="recNote" value="'+defNote+'" placeholder="选填"></div>' +
     '<div class="btn-row"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button>' +
     (editId ? '' : '<button class="btn btn-outline" onclick="saveAsTemplate()" style="flex:0.8;font-size:12px;">⚡存模板</button>') +
@@ -2486,7 +2504,7 @@ function onRecBelongChange() {
   var opts = '';
   for (var i=0;i<leafOptions.length;i++) { opts += '<option value="'+leafOptions[i].value+'">'+leafOptions[i].display+'</option>'; }
   $('recCat').innerHTML = opts;
-  $('recTypeRow').style.display = belong === 'daily' ? 'block' : 'none';
+  $('recTypeRow').style.display = belong === 'daily' ? 'flex' : 'none';
   if (belong !== 'daily') recRecordType = 'expense';
   var overlay = document.getElementById('recordModalOverlay');
   if (overlay && overlay._editCatPath && overlay._editCatPath.length>0) {
@@ -2526,6 +2544,7 @@ function saveRecord() {
     exchangeRate: exRate || 0,
     date: $('recDate').value,
     recordType: belong === 'daily' ? recRecordType : 'expense',
+    specialTag: (belong === 'daily' && $('recSpecialTag')) ? ($('recSpecialTag').value||'') : '',
     note: $('recNote').value,
     tripId: belong === 'daily' ? null : belong,
     paymentMethod: ($('recPayment').value||'').trim(),
@@ -2557,6 +2576,7 @@ function saveEditRecord(editId) {
   record.exchangeRate = parseFloat($('recExRate').value) || 0;
   record.date = $('recDate').value;
   record.recordType = belong === 'daily' ? recRecordType : 'expense';
+  record.specialTag = (belong === 'daily' && $('recSpecialTag')) ? ($('recSpecialTag').value||'') : '';
   record.note = $('recNote').value;
   record.paymentMethod = ($('recPayment').value||'').trim();
   record.payee = ($('recPayee').value||'').trim();
@@ -2773,7 +2793,7 @@ function renderAssetsPanel() {
 
   var netTotal = bankTotal + investTotal - debtTotal;
 
-  var html = '';
+  var html = '<div class="mr-assets-cols">';
 
   html += '<div class="mr-assets-group"><div class="mr-assets-group-title"><span>银行卡</span><button class="btn-link" onclick="showAssetItemModal(\'bankCards\')">+ 添加</button></div>';
   if (a.bankCards.length===0) { html += '<div class="as-empty" style="padding:10px 0;">暂无</div>'; }
@@ -2806,6 +2826,8 @@ function renderAssetsPanel() {
     }
   }
   html += '<div class="mr-assets-subtotal"><span>小计（已折合人民币）</span><span>&yen;'+formatMoney(investTotal)+'</span></div></div>';
+
+  html += '</div>';
 
   html += '<div class="mr-assets-total-card">' +
     '<div class="mr-assets-total-row"><span>银行卡 + 投资 - 待还款</span><span></span></div>' +
