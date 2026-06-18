@@ -408,16 +408,18 @@
   .food-card-main {
     flex: 1; padding: 10px 12px; position: relative; min-width: 0;
   }
-  .food-card-main .food-name { font-size: 15px; font-weight: 700; margin-bottom: 6px; padding-right: 34px; }
-  .food-card-main .food-macros { display: flex; flex-wrap: wrap; gap: 6px; padding-right: 34px; }
-  .food-card-main .food-actions { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; }
+  .food-card-main .food-name { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .food-card-main .food-macros { display: flex; flex-wrap: wrap; gap: 6px; }
   .food-more-btn {
-    width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border);
-    background: var(--card-bg); color: var(--text-light); font-size: 16px; font-weight: 700;
-    display: flex; align-items: center; justify-content: center; cursor: pointer; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    border: none; outline: none; flex-shrink: 0; width: 36px;
+    background: var(--bg); color: #bbb; font-size: 18px; font-weight: 700;
+    cursor: grab; user-select: none; touch-action: none; line-height: 1;
     transition: background 0.15s, color 0.15s;
+    -webkit-tap-highlight-color: transparent;
   }
-  .food-more-btn:active, .food-more-btn.active { background: var(--bg); color: var(--text); }
+  .food-more-btn:focus { outline: none; }
+  .food-more-btn:active, .food-more-btn.active { background: #f0f1f3; color: var(--text); cursor: grabbing; }
   .food-action-menu {
     position: fixed; z-index: 600; min-width: 92px;
     background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px;
@@ -434,13 +436,6 @@
   .food-action-menu button.menu-del { color: var(--danger); }
   .food-action-menu .menu-divider { height: 1px; background: var(--border); }
 
-  .food-drag-handle {
-    display: flex; align-items: center; justify-content: center;
-    border-left: 1px solid var(--border); flex-shrink: 0; width: 32px;
-    cursor: grab; color: #bbb; font-size: 16px; user-select: none;
-    touch-action: none;
-  }
-  .food-drag-handle:active { cursor: grabbing; background: #f0f1f3; }
   .food-card.lib-dragging { opacity: 0.5; }
   .food-card.lib-drag-over { border-top: 2px solid var(--primary); }
   .type-drag-handle {
@@ -472,13 +467,13 @@
   .sheet-row { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
   .sheet-row label { font-size: 14px; color: var(--text-light); white-space: nowrap; flex-shrink: 0; }
   .sheet-row .sheet-input-wrap {
-    display: flex; align-items: center; gap: 8px;
+    flex: 1; display: flex; align-items: center; justify-content: space-between; gap: 8px;
     border: 1.5px solid var(--border); border-radius: 8px; padding: 0 12px;
     transition: border-color 0.2s;
   }
   .sheet-row .sheet-input-wrap:focus-within { border-color: var(--primary); }
   .sheet-row .sheet-input-wrap input {
-    width: 100px; border: none; padding: 10px 0;
+    flex: 1; min-width: 0; border: none; padding: 10px 0;
     font-size: 16px; background: transparent;
   }
   .sheet-row .sheet-input-wrap input:focus { outline: none; }
@@ -1920,11 +1915,8 @@ function renderFoodLibrary() {
         html += '<span class="macro-tag" style="background:#e8f5e9;color:#2e7d32;">' + escHtml(f.customName) + ' ' + (f.customValRaw || (f.customValNum + 'g')) + '</span>';
       }
       html += '</div>';
-      html += '<div class="food-actions">';
-      html += '<button class="food-more-btn" type="button" onclick="toggleFoodMenu(event,this,\'' + escAttr(f.name) + '\')">⋯</button>';
       html += '</div>';
-      html += '</div>';
-      html += '<div class="food-drag-handle" title="拖拽排序" onmousedown="onLibItemDown(event,this.closest(\'.food-card\'))" ontouchstart="onLibItemDown(event,this.closest(\'.food-card\'))">⠿</div>';
+      html += '<button class="food-more-btn" type="button" title="拖拽排序 / 点击更多" onmousedown="onLibItemDown(event,this.closest(\'.food-card\'))" ontouchstart="onLibItemDown(event,this.closest(\'.food-card\'))" onclick="onFoodMoreBtnClick(event,this,\'' + escAttr(f.name) + '\')">⋮</button>';
       html += '</div>';
     });
     html += '</div></div>';
@@ -1944,6 +1936,12 @@ function getOrCreateFoodMenuEl() {
     document.body.appendChild(el);
   }
   return el;
+}
+
+function onFoodMoreBtnClick(e, btn, name) {
+  e.stopPropagation();
+  if (libJustDragged) return; // 刚完成一次拖拽，不弹出菜单
+  toggleFoodMenu(e, btn, name);
 }
 
 function toggleFoodMenu(e, btn, name) {
@@ -1999,6 +1997,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && foodMenu
 
 // ── 食材库拖拽排序（与饮食页同款 touch/mouse 逻辑） ──
 let libDragState = null;
+let libJustDragged = false;
 
 function onLibItemDown(e, el) {
   if (libDragState) return;
@@ -2078,6 +2077,8 @@ function bindLibDragEvents() {
     document.body.style.overflow = '';
     if (!libDragState) return;
     if (libDragState.dragging) {
+      libJustDragged = true;
+      setTimeout(() => { libJustDragged = false; }, 300);
       libCleanup();
       const { insertIdx, type, name, typeName, foodType } = libDragState;
       const siblings = libDragState.siblings;
