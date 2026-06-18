@@ -79,7 +79,6 @@ canvas.chart-canvas { max-width:100%; height:auto; display:block; }
 canvas.ring-canvas { flex-shrink:0; width:128px; height:128px; max-width:128px; }
 .section-title { font-size:14px; font-weight:600; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; }
 .btn-link { font-size:12px; color:var(--primary); cursor:pointer; background:none; border:none; font-weight:500; padding:0; }
-.btn-search { font-size:11px; font-weight:600; letter-spacing:0.03em; color:var(--primary); background:var(--card); border:1.5px solid var(--primary); border-radius:8px; padding:5px 10px; cursor:pointer; }
 
 /* Buttons */
 .btn { padding:10px 20px; border-radius:10px; border:none; font-size:14px; font-weight:500; cursor:pointer; transition:all 0.15s; }
@@ -343,7 +342,11 @@ input[type="date"] { color-scheme:light; }
 .mr-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; gap:8px; }
 .mr-header-right { display:flex; align-items:center; gap:10px; flex-shrink:0; }
 .mr-back { font-size:14px; color:var(--primary); cursor:pointer; font-weight:500; }
+.mr-year-search-group { display:flex; align-items:center; gap:14px; }
 .mr-year-nav { display:flex; align-items:center; gap:10px; font-size:16px; font-weight:500; }
+.mr-search-box { display:flex; align-items:center; gap:6px; background:var(--bg); border-radius:10px; padding:6px 12px; cursor:pointer; }
+.mr-search-icon { font-size:14px; color:var(--text2); opacity:0.7; }
+.mr-search-box span { font-size:12px; color:var(--text2); font-weight:400; }
 .mr-year-btn { color:var(--text2); cursor:pointer; font-size:13px; padding:2px 6px; }
 .mr-summary-card { text-align:center; background:var(--bg); }
 .mr-summary-label { font-size:13px; color:var(--text2); margin-bottom:4px; }
@@ -475,7 +478,9 @@ input[type="date"] { color-scheme:light; }
   <!-- Records Tab -->
   <div class="page" id="page-records">
     <div class="view-toggle">
-      <button class="btn-search" onclick="showAdvancedSearch()">SEARCH</button>
+      <div class="mr-search-box" onclick="showAdvancedSearch()">
+        <span class="mr-search-icon">&#128269;</span><span>Search</span>
+      </div>
       <span class="spacer"></span>
       <button class="btn-link" onclick="showCatManageModal()">管理分类</button>
     </div>
@@ -532,15 +537,17 @@ input[type="date"] { color-scheme:light; }
   <div class="page" id="page-review">
     <div class="mr-header">
       <span class="mr-back" onclick="closeMonthlyReview()">返回</span>
-      <div class="mr-year-nav">
-        <span class="mr-year-btn" onclick="changeReviewYear(-1)">&#9664;</span>
-        <span id="reviewYearLabel">2026年</span>
-        <span class="mr-year-btn" onclick="changeReviewYear(1)">&#9654;</span>
+      <div class="mr-year-search-group">
+        <div class="mr-year-nav">
+          <span class="mr-year-btn" onclick="changeReviewYear(-1)">&#9664;</span>
+          <span id="reviewYearLabel">2026年</span>
+          <span class="mr-year-btn" onclick="changeReviewYear(1)">&#9654;</span>
+        </div>
+        <div class="mr-search-box" onclick="showAdvancedSearch(reviewYear)">
+          <span class="mr-search-icon">&#128269;</span><span>Search</span>
+        </div>
       </div>
-      <div class="mr-header-right">
-        <button class="btn-search" onclick="showAdvancedSearch(reviewYear)">SEARCH</button>
-        <button class="btn-link" onclick="showBudgetModal()">预算设置</button>
-      </div>
+      <button class="btn-link" onclick="showBudgetModal()">预算设置</button>
     </div>
     <div class="card mr-summary-card">
       <div class="mr-summary-label">年度总结余</div>
