@@ -79,6 +79,7 @@ canvas.chart-canvas { max-width:100%; height:auto; display:block; }
 canvas.ring-canvas { flex-shrink:0; width:128px; height:128px; max-width:128px; }
 .section-title { font-size:14px; font-weight:600; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; }
 .btn-link { font-size:12px; color:var(--primary); cursor:pointer; background:none; border:none; font-weight:500; padding:0; }
+.btn-search { font-size:11px; font-weight:600; letter-spacing:0.03em; color:var(--primary); background:var(--card); border:1.5px solid var(--primary); border-radius:8px; padding:5px 10px; cursor:pointer; }
 
 /* Buttons */
 .btn { padding:10px 20px; border-radius:10px; border:none; font-size:14px; font-weight:500; cursor:pointer; transition:all 0.15s; }
@@ -339,7 +340,8 @@ input[type="date"] { color-scheme:light; }
 .review-tab.active { color:#fff; background:var(--primary); border-color:var(--primary); }
 
 /* ===== Monthly Review (mr-) ===== */
-.mr-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.mr-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; gap:8px; }
+.mr-header-right { display:flex; align-items:center; gap:10px; flex-shrink:0; }
 .mr-back { font-size:14px; color:var(--primary); cursor:pointer; font-weight:500; }
 .mr-year-nav { display:flex; align-items:center; gap:10px; font-size:16px; font-weight:500; }
 .mr-year-btn { color:var(--text2); cursor:pointer; font-size:13px; padding:2px 6px; }
@@ -473,7 +475,7 @@ input[type="date"] { color-scheme:light; }
   <!-- Records Tab -->
   <div class="page" id="page-records">
     <div class="view-toggle">
-      <button class="btn-link" onclick="showAdvancedSearch()">搜索</button>
+      <button class="btn-search" onclick="showAdvancedSearch()">SEARCH</button>
       <span class="spacer"></span>
       <button class="btn-link" onclick="showCatManageModal()">管理分类</button>
     </div>
@@ -534,9 +536,11 @@ input[type="date"] { color-scheme:light; }
         <span class="mr-year-btn" onclick="changeReviewYear(-1)">&#9664;</span>
         <span id="reviewYearLabel">2026年</span>
         <span class="mr-year-btn" onclick="changeReviewYear(1)">&#9654;</span>
-        <span class="mr-year-btn" onclick="showAdvancedSearch(reviewYear)" style="margin-left:4px;">&#128269;</span>
       </div>
-      <button class="btn-link" onclick="showBudgetModal()">预算设置</button>
+      <div class="mr-header-right">
+        <button class="btn-search" onclick="showAdvancedSearch(reviewYear)">SEARCH</button>
+        <button class="btn-link" onclick="showBudgetModal()">预算设置</button>
+      </div>
     </div>
     <div class="card mr-summary-card">
       <div class="mr-summary-label">年度总结余</div>
