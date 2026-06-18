@@ -1281,17 +1281,14 @@ function renderMonthlyReview() {
     months.push({m0:m0, future:future, budget:budget, colVals:colVals, total:total, balance:balance});
   }
 
-  // Year-to-date totals
+  // 年度合计（含未来月份已记录的数据）
   var ytdBudget = 0, ytdTotal = 0, ytdColTotals = [];
   for (var ci3=0; ci3<REVIEW_COLS.length; ci3++) ytdColTotals.push(0);
-  var hasYtd = false;
+  var hasYtd = true;
   for (var mi=0; mi<12; mi++) {
-    if (!months[mi].future) {
-      hasYtd = true;
-      ytdBudget += months[mi].budget;
-      ytdTotal += months[mi].total;
-      for (var ci4=0; ci4<REVIEW_COLS.length; ci4++) ytdColTotals[ci4] += months[mi].colVals[ci4];
-    }
+    ytdBudget += months[mi].budget;
+    ytdTotal += months[mi].total;
+    for (var ci4=0; ci4<REVIEW_COLS.length; ci4++) ytdColTotals[ci4] += months[mi].colVals[ci4];
   }
   var fullYearBudget = 0;
   for (var mi2=0; mi2<12; mi2++) fullYearBudget += months[mi2].budget;
