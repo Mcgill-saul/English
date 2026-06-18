@@ -631,6 +631,8 @@ var $ = function(id) { return document.getElementById(id); };
 var genId = function() { return Date.now().toString(36) + Math.random().toString(36).slice(2,8); };
 var formatMoney = function(n) { return Number(n||0).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2}); };
 var todayStr = function() { return new Date().toISOString().slice(0,10); };
+// 将 YYYY-MM-DD 格式化为 MM/DD（月日均补零）
+var fmtDateShort = function(d) { return d ? d.slice(5,7) + '/' + d.slice(8,10) : ''; };
 var escHtml = function(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); };
 var CURRENCY_SYMBOLS = { CNY:'\u00A5', USD:'$', JPY:'\u00A5', EUR:'\u20AC', GBP:'\u00A3', KRW:'\u20A9', THB:'\u0E3F' };
 var CURRENCY_NAMES = {CNY:'人民币',USD:'美元',JPY:'日元',EUR:'欧元',GBP:'英镑',KRW:'韩元',THB:'泰铢',AUD:'澳元',CAD:'加元',HKD:'港币',SGD:'新加坡元',MYR:'马来西亚林吉特',PHP:'菲律宾比索',IDR:'印尼盾',VND:'越南盾',INR:'印度卢比',CHF:'瑞士法郎',NZD:'新西兰元',AED:'阿联酋迪拉姆',RUB:'俄罗斯卢布',BRL:'巴西雷亚尔',MXN:'墨西哥比索'};
@@ -1406,7 +1408,7 @@ function renderMonthlyReview() {
       cardsHtml += '<div class="mr-special-list">';
       for (var li=0; li<sp.list.length; li++) {
         var rec = sp.list[li];
-        var dateShort = rec.date ? (parseInt(rec.date.slice(5,7),10) + '/' + parseInt(rec.date.slice(8,10),10)) : '';
+        var dateShort = fmtDateShort(rec.date);
         var cp = rec.catPath||[];
         var leafCat = cp.length>0 ? cp[cp.length-1] : '';
         var catText = leafCat ? (' ' + escHtml(leafCat)) : '';
