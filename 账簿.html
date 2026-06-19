@@ -420,20 +420,7 @@ input[type="date"] { color-scheme:light; }
 
 /* ===== Monthly Review: Desktop ===== */
 @media (min-width: 860px) {
-  #page-annual.active {
-    display: flex; flex-direction: column; overflow-x: hidden;
-  }
-  #page-annual .mr-header, #page-annual .mr-table-wrap {
-    max-width: 900px; margin-left: auto; margin-right: auto; width: 100%;
-  }
-  #page-annual .mr-table { width: 100%; font-size: 13px; }
-  #page-annual .mr-table th, #page-annual .mr-table td { padding: 7px 9px; }
-  #page-annual .mr-table .mr-sticky-l0, #page-annual .mr-table .mr-sticky-l1, #page-annual .mr-table .mr-sticky-r1 {
-    position: sticky; z-index: 2;
-  }
-  #page-annual .mr-table-fade { display: none; }
-  /* 列标题宽度受限时自动换行 */
-  .mr-table th { white-space: normal; word-break: keep-all; min-width: 36px; }
+  #page-review.active {
     position:fixed; inset:0; width:100%; max-width:none; z-index:250;
     background:var(--bg); overflow-y:auto; padding:24px 20px 48px;
   }
@@ -448,7 +435,7 @@ input[type="date"] { color-scheme:light; }
     position:static;
   }
   #page-review .mr-table-fade { display:none; }
-  #page-review #reviewSpecialCards { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  #page-review #reviewSpecialCards { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
   #page-review #reviewSpecialCards .mr-special-card { margin-bottom:0; }
   #page-review .mr-assets-cols { gap:24px; }
   #page-review .mr-assets-group-title { flex-direction:row; justify-content:space-between; align-items:center; font-size:13px; }
@@ -457,6 +444,21 @@ input[type="date"] { color-scheme:light; }
   #page-review .mr-asset-row-name { font-size:13px; }
   #page-review .mr-asset-row-amt { font-size:13px; }
   #page-review .mr-assets-subtotal { flex-direction:row; justify-content:space-between; font-size:12px; }
+  /* ===== Annual Review: Desktop ===== */
+  #page-annual.active {
+    position:fixed; inset:0; width:100%; max-width:none; z-index:250;
+    background:var(--bg); overflow-y:auto; padding:24px 20px 48px;
+  }
+  #page-annual .mr-header, #page-annual .mr-table-wrap {
+    max-width:none; margin-left:auto; margin-right:auto;
+  }
+  #page-annual .mr-table { width:100%; font-size:11.5px; }
+  #page-annual .mr-table th, #page-annual .mr-table td { padding:5px 6px; text-align:center; }
+  #page-annual .mr-table .mr-sticky-l0, #page-annual .mr-table .mr-sticky-l1, #page-annual .mr-table .mr-sticky-r1 {
+    position:static;
+  }
+  #page-annual .mr-table-fade { display:none; }
+  #page-annual .mr-table th { white-space:normal; word-break:keep-all; min-width:36px; }
 }
 </style>
 </head>
@@ -730,6 +732,7 @@ function getDefaultData() {
     ],
     todoCats: ['证件','保险','通讯','财务','装备','健康','预定'],
     budgetByYear: {},
+    annualOverride: {},
     templates: [],
     rates: { USD:0.138, JPY:21.56, EUR:0.126, GBP:0.108, KRW:189.5, THB:4.58 },
     activeCurrencies: ['USD','JPY','EUR','GBP','KRW','THB'],
@@ -765,6 +768,7 @@ function migrateData() {
     delete appData.budget;
   }
   if (!appData.budgetByYear) appData.budgetByYear = {};
+  if (!appData.annualOverride) appData.annualOverride = {};
   if (!Array.isArray(appData.templates)) appData.templates = [];
   if (!appData.assets) appData.assets = { bankCards: [], debts: [], investments: [] };
   if (!Array.isArray(appData.assets.bankCards)) appData.assets.bankCards = [];
@@ -1135,10 +1139,6 @@ function renderDaily() {
 function showBudgetModal() {
   var curY = new Date().getFullYear();
   var modalYear = (typeof reviewYear !== 'undefined') ? reviewYear : curY;
-  var yearOpts = '';
-  for (var y = curY - 5; y <= curY + 1; y++) {
-    yearOpts += '<option value="'+y+'"'+(y===modalYear?' selected':'')+'>'+y+'年</option>';
-  }
   var b = getBudgetForYear(modalYear);
   var monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
   var adjustHtml = '';
@@ -1146,7 +1146,7 @@ function showBudgetModal() {
     adjustHtml += '<div class="form-row"><label>' + monthNames[mi] + '微调</label><input type="number" id="adjustInput'+mi+'" value="' + (b.monthlyAdjust[mi]||0) + '" step="any"></div>';
   }
   var overlay = openModal('<div class="modal-sheet" style="max-height:90vh;overflow-y:auto;"><h3>设置年度预算</h3>' +
-    '<div class="form-row-inline"><div class="form-row"><label>年份</label><select id="budgetYear" class="input-box" onchange="onBudgetYearChange()">' + yearOpts + '</select></div>' +
+    '<div class="form-row-inline"><div class="form-row"><label>年份</label><input type="number" id="budgetYear" class="input-box" value="' + modalYear + '" min="2000" max="2099" onchange="onBudgetYearChange()" onblur="onBudgetYearChange()"></div>' +
     '<div class="form-row"><label>年度总预算 (CNY)</label><input type="number" id="budgetInput" value="' + b.total + '"></div></div>' +
     '<div class="form-row-inline"><div class="form-row"><label>保险预算</label><input type="number" id="budgetInsurance" value="' + (b.insurance||0) + '"></div>' +
     '<div class="form-row"><label>特殊预算</label><input type="number" id="budgetSpecial" value="' + (b.special||0) + '"></div></div>' +
@@ -1366,14 +1366,12 @@ function renderMonthlyReview() {
   var spcData = getAnnualCatData(reviewYear, null, '特殊');
   var travData = getAnnualCatData(reviewYear, ['旅游']);
   var travGiftData = getAnnualCatData(reviewYear, ['旅游礼物']);
-  var prepayData = getAnnualCatData(reviewYear, ['预花费']);
   var travelActual = travData.sum + travGiftData.sum;
   var b = getBudgetForYear(reviewYear);
   var specials = [
     {name:'保险', budget:b.insurance||0, actual:insData.sum, list:insData.list},
     {name:'特殊', budget:b.special||0, actual:spcData.sum, list:spcData.list},
-    {name:'旅游 + 旅游礼物', budget:b.travel||0, actual:travelActual, list:travData.list.concat(travGiftData.list).sort(function(a,c){return a.date<c.date?-1:(a.date>c.date?1:0);})},
-    {name:'预花费', budget:b.prepay||0, actual:prepayData.sum, list:prepayData.list}
+    {name:'旅游', budget:b.travel||0, actual:travelActual, travList:travData.list, giftList:travGiftData.list, isTravelCard:true}
   ];
   var specialBalanceSum = 0;
   for (var si=0; si<specials.length; si++) { specialBalanceSum += (specials[si].budget - specials[si].actual); }
@@ -1466,22 +1464,48 @@ function renderMonthlyReview() {
     cardsHtml += '<div class="mr-special-top"><svg width="44" height="44" viewBox="0 0 44 44">' +
       '<circle cx="22" cy="22" r="18" fill="none" stroke="var(--border)" stroke-width="5"></circle>' +
       '<circle cx="22" cy="22" r="18" fill="none" stroke="'+ringColor+'" stroke-width="5" stroke-linecap="round" stroke-dasharray="'+circumference.toFixed(2)+'" stroke-dashoffset="'+dashoffset.toFixed(2)+'" transform="rotate(-90 22 22)"></circle>' +
-      '</svg><div style="flex:1;"><div class="mr-special-name">'+escHtml(sp.name)+'</div>' +
+      '</svg><div style="flex:1;"><div class="mr-special-name">'+escHtml(sp.name)+(sp.isTravelCard?' + 旅游礼物':'')+'</div>' +
       '<div class="mr-special-nums">'+formatMoney(sp.actual)+' / '+formatMoney(sp.budget)+'</div></div></div>';
-    if (sp.list.length === 0) {
-      cardsHtml += '<div class="mr-special-list"><div class="mr-special-empty">暂无记录</div></div>';
+
+    if (sp.isTravelCard) {
+      // 左右两栏：左边旅游，右边旅游礼物
+      var renderCol = function(list) {
+        if (list.length === 0) return '<div class="mr-special-empty">暂无记录</div>';
+        var s = '';
+        for (var li=0; li<list.length; li++) {
+          var rec = list[li];
+          var ds = fmtDateShort(rec.date);
+          var cp = rec.catPath||[]; var lc = cp.length>0?cp[cp.length-1]:'';
+          var ct = lc?' '+escHtml(lc):''; var nt = rec.note?' '+escHtml(rec.note):'';
+          s += '<div class="mr-special-row" onclick="showRecordAction(\''+rec.id+'\')"><span>'+ds+ct+nt+'</span><span>'+formatMoney(getRmbAmt(rec))+'</span></div>';
+        }
+        return s;
+      };
+      cardsHtml += '<div style="display:flex;gap:0;">' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-size:11px;font-weight:600;color:var(--text2);padding:6px 0 4px;">旅游 <span style="font-weight:400;">'+formatMoney(travData.sum)+'</span></div>' +
+          '<div class="mr-special-list">'+renderCol(sp.travList)+'</div>' +
+        '</div>' +
+        '<div style="width:0.5px;background:var(--border);margin:0 10px;"></div>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-size:11px;font-weight:600;color:var(--text2);padding:6px 0 4px;">旅游礼物 <span style="font-weight:400;">'+formatMoney(travGiftData.sum)+'</span></div>' +
+          '<div class="mr-special-list">'+renderCol(sp.giftList)+'</div>' +
+        '</div>' +
+      '</div>';
     } else {
-      cardsHtml += '<div class="mr-special-list">';
-      for (var li=0; li<sp.list.length; li++) {
-        var rec = sp.list[li];
-        var dateShort = fmtDateShort(rec.date);
-        var cp = rec.catPath||[];
-        var leafCat = cp.length>0 ? cp[cp.length-1] : '';
-        var catText = leafCat ? (' ' + escHtml(leafCat)) : '';
-        var noteText = rec.note ? (' ' + escHtml(rec.note)) : '';
-        cardsHtml += '<div class="mr-special-row" onclick="showRecordAction(\''+rec.id+'\')"><span>'+dateShort+catText+noteText+'</span><span>'+formatMoney(getRmbAmt(rec))+'</span></div>';
+      if (sp.list.length === 0) {
+        cardsHtml += '<div class="mr-special-list"><div class="mr-special-empty">暂无记录</div></div>';
+      } else {
+        cardsHtml += '<div class="mr-special-list">';
+        for (var li2=0; li2<sp.list.length; li2++) {
+          var rec2 = sp.list[li2];
+          var dateShort = fmtDateShort(rec2.date);
+          var cp2 = rec2.catPath||[]; var leafCat = cp2.length>0?cp2[cp2.length-1]:'';
+          var catText = leafCat?' '+escHtml(leafCat):''; var noteText = rec2.note?' '+escHtml(rec2.note):'';
+          cardsHtml += '<div class="mr-special-row" onclick="showRecordAction(\''+rec2.id+'\')"><span>'+dateShort+catText+noteText+'</span><span>'+formatMoney(getRmbAmt(rec2))+'</span></div>';
+        }
+        cardsHtml += '</div>';
       }
-      cardsHtml += '</div>';
     }
     cardsHtml += '</div>';
   }
@@ -1591,19 +1615,22 @@ function renderAnnualReview() {
     var ys = year+'-01-01', ye=(year+1)+'-01-01';
     var b = getBudgetForYear(year);
     var yearBudget = b.total || 0;
+    var ov = appData.annualOverride[year] || {};
 
-    // 日常分类合计
+    // 日常分类：有覆盖值用覆盖值，否则从记录计算
     var colVals = [], basicTotal = 0;
     for (var ci=0; ci<REVIEW_COLS.length; ci++) {
-      var v = sumCatForRange(ys, ye, REVIEW_COLS[ci].path);
+      var key = 'col_'+ci;
+      var v = (ov[key] !== undefined) ? ov[key] : sumCatForRange(ys, ye, REVIEW_COLS[ci].path);
       colVals.push(v);
       basicTotal += v;
     }
 
-    // 专项合计
+    // 专项：有覆盖值用覆盖值，否则从记录计算
     var specialVals = [], specialTotal = 0;
     for (var si=0; si<ANNUAL_SPECIAL_COLS.length; si++) {
-      var sv = ANNUAL_SPECIAL_COLS[si].getData(year);
+      var skey = 'sp_'+si;
+      var sv = (ov[skey] !== undefined) ? ov[skey] : ANNUAL_SPECIAL_COLS[si].getData(year);
       specialVals.push(sv);
       specialTotal += sv;
     }
@@ -1611,25 +1638,85 @@ function renderAnnualReview() {
     var grandTotal = basicTotal + specialTotal;
     var balance = yearBudget - grandTotal;
     var isCur = (year === curYear);
+    var hasOv = Object.keys(ov).length > 0;
     html += '<tr'+(isCur?' class="mr-current"':'')+'>';
-    html += '<td class="mr-sticky-l0">'+year+(isCur?' (今年)':'')+'</td>';
-    html += '<td class="mr-sticky-l1">'+fmtBudgetCell(yearBudget)+'</td>';
+    // 年份单元格：可点击进入编辑
+    html += '<td class="mr-sticky-l0" style="cursor:pointer;user-select:none;" onclick="editAnnualRow('+year+')" title="点击编辑该年数据">'+year+(isCur?' (今年)':'')+(hasOv?' ✏':'')+'</td>';
+    html += '<td class="mr-sticky-l1" style="text-align:center;">'+fmtBudgetCell(yearBudget)+'</td>';
     for (var ci2=0; ci2<REVIEW_COLS.length; ci2++) {
-      html += '<td'+(colGroupStart[ci2]?' class="mr-grp-start"':'')+'>'+fmtCell(colVals[ci2])+'</td>';
+      html += '<td style="text-align:center;"'+(colGroupStart[ci2]?' class="mr-grp-start"':'')+'>'+fmtCell(colVals[ci2])+'</td>';
     }
-    html += '<td class="mr-col-total">'+fmtCell(basicTotal)+'</td>';
+    html += '<td class="mr-col-total" style="text-align:center;">'+fmtCell(basicTotal)+'</td>';
     for (var si2=0; si2<ANNUAL_SPECIAL_COLS.length; si2++) {
-      html += '<td class="'+(si2===0?'mr-grp-start ':'')+'mr-grp-blue">'+fmtCell(specialVals[si2])+'</td>';
+      html += '<td style="text-align:center;" class="'+(si2===0?'mr-grp-start ':'')+'mr-grp-blue">'+fmtCell(specialVals[si2])+'</td>';
     }
-    html += '<td class="mr-grp-blue">'+fmtCell(specialTotal)+'</td>';
-    html += '<td class="mr-col-total">'+fmtCell(grandTotal)+'</td>';
+    html += '<td class="mr-grp-blue" style="text-align:center;">'+fmtCell(specialTotal)+'</td>';
+    html += '<td class="mr-col-total" style="text-align:center;">'+fmtCell(grandTotal)+'</td>';
     var balClass = balance>=0 ? ' mr-balance-pos' : ' mr-balance-neg';
-    html += '<td class="mr-sticky-r1'+balClass+'">'+formatMoney(balance)+'</td>';
+    html += '<td class="mr-sticky-r1'+balClass+'" style="text-align:center;">'+formatMoney(balance)+'</td>';
     html += '</tr>';
   }
 
   html += '</tbody></table>';
   $('annualTableScroll').innerHTML = html;
+}
+
+function editAnnualRow(year) {
+  var ov = appData.annualOverride[year] || {};
+  var ys = year+'-01-01', ye=(year+1)+'-01-01';
+  var fields = [];
+  // 日常分类
+  for (var ci=0; ci<REVIEW_COLS.length; ci++) {
+    var key = 'col_'+ci;
+    var cur = (ov[key] !== undefined) ? ov[key] : sumCatForRange(ys, ye, REVIEW_COLS[ci].path);
+    fields.push({ key:key, label:REVIEW_COLS[ci].label||REVIEW_COLS[ci].path[REVIEW_COLS[ci].path.length-1], val:cur });
+  }
+  // 专项
+  for (var si=0; si<ANNUAL_SPECIAL_COLS.length; si++) {
+    var skey = 'sp_'+si;
+    var scur = (ov[skey] !== undefined) ? ov[skey] : ANNUAL_SPECIAL_COLS[si].getData(year);
+    fields.push({ key:skey, label:ANNUAL_SPECIAL_COLS[si].label, val:scur });
+  }
+
+  var inputsHtml = '';
+  for (var fi=0; fi<fields.length; fi++) {
+    inputsHtml += '<div class="form-row"><label>'+escHtml(fields[fi].label)+'</label>' +
+      '<input type="number" id="annualOv_'+fields[fi].key+'" value="'+(fields[fi].val||0)+'" step="any" min="0"></div>';
+  }
+
+  openModal('<div class="modal-sheet" style="max-height:85vh;overflow-y:auto;">' +
+    '<h3>编辑 '+year+' 年数据</h3>' +
+    '<div style="font-size:12px;color:var(--text2);margin-bottom:12px;">填写后将覆盖该年自动统计值。清空某项并保存则恢复自动统计。</div>' +
+    '<div class="mr-monthly-adjust-grid">'+inputsHtml+'</div>' +
+    '<div class="btn-row">' +
+      '<button class="btn btn-outline" onclick="clearAnnualOverride('+year+')">清除覆盖</button>' +
+      '<button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button>' +
+      '<button class="btn btn-primary" onclick="saveAnnualRow('+year+')">保存</button>' +
+    '</div></div>');
+}
+
+function saveAnnualRow(year) {
+  if (!appData.annualOverride) appData.annualOverride = {};
+  var ov = {};
+  for (var ci=0; ci<REVIEW_COLS.length; ci++) {
+    var el = $('annualOv_col_'+ci);
+    if (el && el.value !== '') ov['col_'+ci] = parseFloat(el.value) || 0;
+  }
+  for (var si=0; si<ANNUAL_SPECIAL_COLS.length; si++) {
+    var sel = $('annualOv_sp_'+si);
+    if (sel && sel.value !== '') ov['sp_'+si] = parseFloat(sel.value) || 0;
+  }
+  appData.annualOverride[year] = ov;
+  saveData();
+  document.querySelector('.modal-overlay').remove();
+  renderAnnualReview();
+}
+
+function clearAnnualOverride(year) {
+  if (appData.annualOverride) delete appData.annualOverride[year];
+  saveData();
+  document.querySelector('.modal-overlay').remove();
+  renderAnnualReview();
 }
 
 // ============ CANVAS CHARTS ============
