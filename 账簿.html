@@ -2921,7 +2921,7 @@ function renderAssetsPanel() {
   for (var j=0;j<a.debts.length;j++) debtTotal += (a.debts[j].amount||0);
   for (var k=0;k<a.investments.length;k++) investTotal += convertToCNY(a.investments[k].amount||0, a.investments[k].currency);
 
-  var netTotal = bankTotal + investTotal - debtTotal;
+  var netTotal = bankTotal + investTotal + debtTotal;
 
   var html = '<div class="mr-assets-cols">';
 
@@ -2960,7 +2960,6 @@ function renderAssetsPanel() {
   html += '</div>';
 
   html += '<div class="mr-assets-total-card">' +
-    '<div class="mr-assets-total-row"><span>银行卡 + 投资 - 待还款</span><span></span></div>' +
     '<div class="mr-assets-total-row mr-assets-final"><span>当前净资产</span><span style="color:'+(netTotal>=0?'var(--success)':'var(--danger)')+';">&yen;'+formatMoney(netTotal)+'</span></div>' +
     '<div class="mr-assets-total-row" style="color:var(--text2);"><span>年度总结余（参考对照）</span><span>&yen;'+formatMoney(lastReviewYearBalance)+'</span></div>' +
     '</div>';
