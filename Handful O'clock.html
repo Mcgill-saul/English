@@ -85,6 +85,26 @@
     gap: 6px;
   }
   .form-group { margin-bottom: 10px; }
+  .sync-card {
+    display: flex; align-items: center; gap: 12px; cursor: pointer;
+    -webkit-tap-highlight-color: transparent; transition: background 0.15s;
+  }
+  .sync-card:active { background: var(--bg); }
+  .sync-card-icon {
+    flex-shrink: 0; width: 40px; height: 40px; border-radius: 10px;
+    background: #e8eaf6; color: var(--primary); font-size: 19px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sync-card.connected .sync-card-icon { background: #e3f9ed; color: #27ae60; }
+  .sync-card-text { flex: 1; min-width: 0; }
+  .sync-card-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+  .sync-card-badge {
+    font-size: 10px; font-weight: 700; color: #27ae60; background: #e3f9ed;
+    padding: 1px 7px; border-radius: 10px; display: none;
+  }
+  .sync-card.connected .sync-card-badge { display: inline-block; }
+  .sync-card-sub { font-size: 12px; color: var(--text-light); margin-top: 2px; line-height: 1.4; }
+  .sync-card-arrow { flex-shrink: 0; font-size: 20px; color: var(--text-light); }
   .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-light); margin-bottom: 3px; }
   .form-group input, .form-group select {
     width: 100%; padding: 10px 12px; border: 1.5px solid var(--border);
@@ -770,6 +790,15 @@
     <button class="btn btn-primary btn-block" onclick="calculateBMR()">计算能量需求</button>
     <div id="bmrResult"></div>
   </div>
+
+  <div class="card sync-card" id="bodySyncCard" onclick="openGistPanel()">
+    <div class="sync-card-icon">☁</div>
+    <div class="sync-card-text">
+      <div class="sync-card-title">云同步<span class="sync-card-badge" id="bodySyncBadge">已连接</span></div>
+      <div class="sync-card-sub" id="bodySyncSub">将数据同步到 GitHub Gist，换设备也能访问同一份数据</div>
+    </div>
+    <div class="sync-card-arrow">›</div>
+  </div>
 </div>
 
 <!-- ==================== 页面4：食谱对比 ==================== -->
@@ -825,9 +854,6 @@
   </div>
   <div class="nav-item" data-page="page-compare" onclick="switchPage('page-compare');updateCompareChecks();loadCalCompareFoods();">
     <span class="nav-icon">🔍</span><span>对比</span>
-  </div>
-  <div class="nav-item" id="gistNavBtn" onclick="openGistPanel()" style="cursor:pointer">
-    <span class="nav-icon">☁</span><span>同步</span>
   </div>
 </div>
 
@@ -2477,9 +2503,10 @@ function setGistStatus(msg, type) {
 }
 function updateGistBtn() {
   const connected = !!(localStorage.getItem(LS_GIST_TOKEN) && localStorage.getItem(LS_GIST_ID));
-  const btn = document.getElementById('gistNavBtn'); if (!btn) return;
-  btn.style.color = connected ? '#27ae60' : '';
-  btn.title = connected ? '已连接 Gist' : 'Gist 云同步';
+  const card = document.getElementById('bodySyncCard'); if (!card) return;
+  card.classList.toggle('connected', connected);
+  const sub = document.getElementById('bodySyncSub');
+  if (sub) sub.textContent = connected ? '已连接 Gist，数据可在多设备间同步' : '将数据同步到 GitHub Gist，换设备也能访问同一份数据';
 }
 
 </script>
