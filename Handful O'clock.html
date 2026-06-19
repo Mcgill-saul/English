@@ -1504,7 +1504,7 @@ function renderSummaryCard() {
   const keys = ['breakfast', 'lunch', 'dinner', 'snack'];
   const labels = { breakfast: '早餐', lunch: '午餐', dinner: '晚餐', snack: '加餐' };
   const icons = { breakfast: '☀', lunch: '☀', dinner: '☾', snack: '+' };
-  const colors = { breakfast: '#f59e0b', lunch: '#10b981', dinner: '#fb7185', snack: '#94a3b8' };
+  const colors = { breakfast: '#f59e0b', lunch: '#10b981', dinner: '#3498db', snack: '#94a3b8' };
   const totals = keys.map(mk => {
     const items = meals[mk] || [];
     return items.reduce((acc, m) => acc + (m.cal || 0), 0);
