@@ -420,7 +420,20 @@ input[type="date"] { color-scheme:light; }
 
 /* ===== Monthly Review: Desktop ===== */
 @media (min-width: 860px) {
-  #page-review.active {
+  #page-annual.active {
+    display: flex; flex-direction: column; overflow-x: hidden;
+  }
+  #page-annual .mr-header, #page-annual .mr-table-wrap {
+    max-width: 900px; margin-left: auto; margin-right: auto; width: 100%;
+  }
+  #page-annual .mr-table { width: 100%; font-size: 13px; }
+  #page-annual .mr-table th, #page-annual .mr-table td { padding: 7px 9px; }
+  #page-annual .mr-table .mr-sticky-l0, #page-annual .mr-table .mr-sticky-l1, #page-annual .mr-table .mr-sticky-r1 {
+    position: sticky; z-index: 2;
+  }
+  #page-annual .mr-table-fade { display: none; }
+  /* 列标题宽度受限时自动换行 */
+  .mr-table th { white-space: normal; word-break: keep-all; min-width: 36px; }
     position:fixed; inset:0; width:100%; max-width:none; z-index:250;
     background:var(--bg); overflow-y:auto; padding:24px 20px 48px;
   }
@@ -460,7 +473,8 @@ input[type="date"] { color-scheme:light; }
   <!-- Daily Tab -->
   <div class="page active" id="page-daily">
     <div class="card" id="budget-card"></div>
-    <button class="btn btn-outline" style="width:100%;margin-bottom:14px;" onclick="showMonthlyReview()">📊 月度复盘</button>
+    <button class="btn btn-outline" style="width:100%;margin-bottom:8px;" onclick="showMonthlyReview()">📊 月度复盘</button>
+    <button class="btn btn-outline" style="width:100%;margin-bottom:14px;" onclick="showAnnualReview()">📈 年度复盘</button>
     <div class="card" id="month-stats-card"></div>
     <div class="card"><div class="section-title">近6个月收支趋势</div><canvas id="barChart" class="chart-canvas" width="360" height="200"></canvas></div>
     <div class="card"><div class="section-title">本月分类占比</div><canvas id="pieChart" class="chart-canvas" width="280" height="280"></canvas><div id="pie-list"></div></div>
@@ -570,7 +584,22 @@ input[type="date"] { color-scheme:light; }
     </div>
   </div>
 
-  <!-- FAB -->
+  <!-- Annual Review Page -->
+  <div class="page" id="page-annual">
+    <div class="mr-header">
+      <span class="mr-back" onclick="closeAnnualReview()">返回</span>
+      <div class="mr-year-search-group">
+        <span style="font-size:16px;font-weight:600;">年度复盘</span>
+      </div>
+      <button class="btn-link" onclick="showBudgetModal()">预算设置</button>
+    </div>
+    <div class="mr-table-wrap">
+      <div class="mr-table-scroll" id="annualTableScroll"></div>
+      <div class="mr-table-fade"></div>
+    </div>
+  </div>
+
+
   <button class="fab-template" id="fabTemplateBtn" onclick="showTemplateQuickPick()">⚡</button>
   <button class="fab" id="fabBtn" onclick="showRecordModal()">+</button>
 
@@ -633,6 +662,16 @@ var formatMoney = function(n) { return Number(n||0).toLocaleString('zh-CN',{mini
 var todayStr = function() { return new Date().toISOString().slice(0,10); };
 // 将 YYYY-MM-DD 格式化为 MM/DD（月日均补零）
 var fmtDateShort = function(d) { return d ? d.slice(5,7) + '/' + d.slice(8,10) : ''; };
+// 获取指定年份预算对象，不存在则初始化为全0
+function getBudgetForYear(year) {
+  var y = String(year);
+  if (!appData.budgetByYear[y]) {
+    appData.budgetByYear[y] = { total:0, insurance:0, special:0, travel:0, prepay:0, monthlyAdjust:[0,0,0,0,0,0,0,0,0,0,0,0] };
+  }
+  var b = appData.budgetByYear[y];
+  if (!Array.isArray(b.monthlyAdjust) || b.monthlyAdjust.length !== 12) b.monthlyAdjust = [0,0,0,0,0,0,0,0,0,0,0,0];
+  return b;
+}
 var escHtml = function(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); };
 var CURRENCY_SYMBOLS = { CNY:'\u00A5', USD:'$', JPY:'\u00A5', EUR:'\u20AC', GBP:'\u00A3', KRW:'\u20A9', THB:'\u0E3F' };
 var CURRENCY_NAMES = {CNY:'人民币',USD:'美元',JPY:'日元',EUR:'欧元',GBP:'英镑',KRW:'韩元',THB:'泰铢',AUD:'澳元',CAD:'加元',HKD:'港币',SGD:'新加坡元',MYR:'马来西亚林吉特',PHP:'菲律宾比索',IDR:'印尼盾',VND:'越南盾',INR:'印度卢比',CHF:'瑞士法郎',NZD:'新西兰元',AED:'阿联酋迪拉姆',RUB:'俄罗斯卢布',BRL:'巴西雷亚尔',MXN:'墨西哥比索'};
@@ -690,7 +729,7 @@ function getDefaultData() {
       {name:'其他',subs:[{name:'小费',subs:[]},{name:'签证费用',subs:[]},{name:'保险',subs:[]},{name:'其他',subs:[]}]}
     ],
     todoCats: ['证件','保险','通讯','财务','装备','健康','预定'],
-    budget: { year: new Date().getFullYear(), total: 120000, insurance:0, special:0, travel:0, prepay:0, monthlyAdjust:[0,0,0,0,0,0,0,0,0,0,0,0] },
+    budgetByYear: {},
     templates: [],
     rates: { USD:0.138, JPY:21.56, EUR:0.126, GBP:0.108, KRW:189.5, THB:4.58 },
     activeCurrencies: ['USD','JPY','EUR','GBP','KRW','THB'],
@@ -711,15 +750,22 @@ function loadData() {
   saveData();
 }
 function migrateData() {
-  if (!appData.budget) appData.budget = getDefaultData().budget;
-  if (appData.budget.insurance === undefined) appData.budget.insurance = 0;
-  if (appData.budget.special === undefined) appData.budget.special = 0;
-  if (appData.budget.travel === undefined) appData.budget.travel = 0;
-  if (appData.budget.prepay === undefined) appData.budget.prepay = 0;
-  if (!Array.isArray(appData.templates)) appData.templates = [];
-  if (!Array.isArray(appData.budget.monthlyAdjust) || appData.budget.monthlyAdjust.length !== 12) {
-    appData.budget.monthlyAdjust = [0,0,0,0,0,0,0,0,0,0,0,0];
+  // 旧版 budget → 迁移到 budgetByYear[当前年]
+  if (appData.budget && !appData.budgetByYear) {
+    var curY = new Date().getFullYear();
+    appData.budgetByYear = {};
+    appData.budgetByYear[curY] = {
+      total: appData.budget.total || 0,
+      insurance: appData.budget.insurance || 0,
+      special: appData.budget.special || 0,
+      travel: appData.budget.travel || 0,
+      prepay: appData.budget.prepay || 0,
+      monthlyAdjust: Array.isArray(appData.budget.monthlyAdjust) ? appData.budget.monthlyAdjust : [0,0,0,0,0,0,0,0,0,0,0,0]
+    };
+    delete appData.budget;
   }
+  if (!appData.budgetByYear) appData.budgetByYear = {};
+  if (!Array.isArray(appData.templates)) appData.templates = [];
   if (!appData.assets) appData.assets = { bankCards: [], debts: [], investments: [] };
   if (!Array.isArray(appData.assets.bankCards)) appData.assets.bankCards = [];
   if (!Array.isArray(appData.assets.debts)) appData.assets.debts = [];
@@ -991,7 +1037,7 @@ function renderDaily() {
   var now = new Date();
   var year = now.getFullYear();
   var month = now.getMonth();
-  var budget = appData.budget.total;
+  var budget = getBudgetForYear(year).total;
 
   var yearStart = year + '-01-01';
   var yearEnd = (year+1) + '-01-01';
@@ -1087,14 +1133,21 @@ function renderDaily() {
 }
 
 function showBudgetModal() {
-  var b = appData.budget;
+  var curY = new Date().getFullYear();
+  var modalYear = (typeof reviewYear !== 'undefined') ? reviewYear : curY;
+  var yearOpts = '';
+  for (var y = curY - 5; y <= curY + 1; y++) {
+    yearOpts += '<option value="'+y+'"'+(y===modalYear?' selected':'')+'>'+y+'年</option>';
+  }
+  var b = getBudgetForYear(modalYear);
   var monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
   var adjustHtml = '';
   for (var mi=0; mi<12; mi++) {
     adjustHtml += '<div class="form-row"><label>' + monthNames[mi] + '微调</label><input type="number" id="adjustInput'+mi+'" value="' + (b.monthlyAdjust[mi]||0) + '" step="any"></div>';
   }
   var overlay = openModal('<div class="modal-sheet" style="max-height:90vh;overflow-y:auto;"><h3>设置年度预算</h3>' +
-    '<div class="form-row"><label>年度总预算 (CNY)</label><input type="number" id="budgetInput" value="' + b.total + '"></div>' +
+    '<div class="form-row-inline"><div class="form-row"><label>年份</label><select id="budgetYear" class="input-box" onchange="onBudgetYearChange()">' + yearOpts + '</select></div>' +
+    '<div class="form-row"><label>年度总预算 (CNY)</label><input type="number" id="budgetInput" value="' + b.total + '"></div></div>' +
     '<div class="form-row-inline"><div class="form-row"><label>保险预算</label><input type="number" id="budgetInsurance" value="' + (b.insurance||0) + '"></div>' +
     '<div class="form-row"><label>特殊预算</label><input type="number" id="budgetSpecial" value="' + (b.special||0) + '"></div></div>' +
     '<div class="form-row-inline"><div class="form-row"><label>旅游预算（含旅游礼物）</label><input type="number" id="budgetTravel" value="' + (b.travel||0) + '"></div>' +
@@ -1103,8 +1156,20 @@ function showBudgetModal() {
     '<div class="mr-monthly-adjust-grid">' + adjustHtml + '</div>' +
     '<div class="btn-row"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button><button class="btn btn-primary" onclick="saveBudget()">保存</button></div></div>');
 }
+function onBudgetYearChange() {
+  var y = parseInt($('budgetYear').value);
+  var b = getBudgetForYear(y);
+  $('budgetInput').value = b.total || 0;
+  $('budgetInsurance').value = b.insurance || 0;
+  $('budgetSpecial').value = b.special || 0;
+  $('budgetTravel').value = b.travel || 0;
+  $('budgetPrepay').value = b.prepay || 0;
+  var monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  for (var mi=0; mi<12; mi++) { $('adjustInput'+mi).value = b.monthlyAdjust[mi] || 0; }
+}
 function saveBudget() {
-  var b = appData.budget;
+  var y = parseInt($('budgetYear').value);
+  var b = getBudgetForYear(y);
   b.total = parseFloat($('budgetInput').value) || 0;
   b.insurance = parseFloat($('budgetInsurance').value) || 0;
   b.special = parseFloat($('budgetSpecial').value) || 0;
@@ -1117,6 +1182,7 @@ function saveBudget() {
   closeAllModals();
   renderDaily();
   if ($('page-review') && $('page-review').classList.contains('active')) renderMonthlyReview();
+  if ($('page-annual') && $('page-annual').classList.contains('active')) renderAnnualReview();
 }
 
 // ============ MONTHLY REVIEW ============
@@ -1217,7 +1283,7 @@ function findCatPrefixByName(name) {
 }
 
 function getReviewMonthlyBudget(m0) {
-  var b = appData.budget;
+  var b = getBudgetForYear(reviewYear);
   var specialTotal = (b.insurance||0)+(b.special||0)+(b.travel||0)+(b.prepay||0);
   var base = (b.total - specialTotal) / 12;
   return base + (b.monthlyAdjust && b.monthlyAdjust[m0] || 0);
@@ -1302,7 +1368,7 @@ function renderMonthlyReview() {
   var travGiftData = getAnnualCatData(reviewYear, ['旅游礼物']);
   var prepayData = getAnnualCatData(reviewYear, ['预花费']);
   var travelActual = travData.sum + travGiftData.sum;
-  var b = appData.budget;
+  var b = getBudgetForYear(reviewYear);
   var specials = [
     {name:'保险', budget:b.insurance||0, actual:insData.sum, list:insData.list},
     {name:'特殊', budget:b.special||0, actual:spcData.sum, list:spcData.list},
@@ -1426,7 +1492,7 @@ function renderMonthlyReview() {
 
 function editMonthAdjust(m0) {
   var monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-  var current = appData.budget.monthlyAdjust[m0] || 0;
+  var current = getBudgetForYear(reviewYear).monthlyAdjust[m0] || 0;
   var html = '<div class="modal-sheet"><h3>'+monthNames[m0]+' 预算微调</h3>' +
     '<div class="form-row"><label>微调金额（可正可负，CNY）</label><input type="number" id="singleAdjustInput" value="'+current+'" step="any"></div>' +
     '<div class="btn-row"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button><button class="btn btn-primary" onclick="saveSingleAdjust('+m0+')">保存</button></div></div>';
@@ -1434,10 +1500,136 @@ function editMonthAdjust(m0) {
 }
 function saveSingleAdjust(m0) {
   var v = parseFloat($('singleAdjustInput').value) || 0;
-  appData.budget.monthlyAdjust[m0] = v;
+  getBudgetForYear(reviewYear).monthlyAdjust[m0] = v;
   saveData();
   closeAllModals();
   renderMonthlyReview();
+}
+
+// ============ ANNUAL REVIEW ============
+function showAnnualReview() {
+  var pages = document.querySelectorAll('.page');
+  for (var i=0;i<pages.length;i++) { pages[i].classList.remove('active'); }
+  $('page-annual').classList.add('active');
+  closeAllModals();
+  renderAnnualReview();
+  window.scrollTo(0,0);
+}
+function closeAnnualReview() {
+  switchTab('daily');
+}
+
+// 年度专项列定义
+var ANNUAL_SPECIAL_COLS = [
+  { label:'保险',     getData: function(y) { return getAnnualCatData(y, ['保险']).sum; } },
+  { label:'特殊',     getData: function(y) { return getAnnualCatData(y, null, '特殊').sum; } },
+  { label:'旅游',     getData: function(y) { return getAnnualCatData(y, ['旅游']).sum; } },
+  { label:'旅游礼物', getData: function(y) { return getAnnualCatData(y, ['旅游礼物']).sum; } }
+];
+
+function renderAnnualReview() {
+  // 确定年份范围：最早有记录的年 ~ 当前年
+  var curYear = new Date().getFullYear();
+  var minYear = curYear;
+  for (var ri=0; ri<appData.records.length; ri++) {
+    var d = appData.records[ri].date;
+    if (d) { var y = parseInt(d.slice(0,4)); if (!isNaN(y) && y < minYear) minYear = y; }
+  }
+  var years = [];
+  for (var yr=minYear; yr<=curYear; yr++) years.push(yr);
+
+  // 复用月度复盘的grpClasses和colGroupStart
+  var grpClasses = [];
+  var colGroupStart = [];
+  for (var gpi=0; gpi<REVIEW_GROUPS.length; gpi++) {
+    var gname = REVIEW_GROUPS[gpi].label;
+    var cls = gname==='居住' ? 'mr-grp-blue' : (gname==='饮食' ? 'mr-grp-dark' : ((gpi%2===0)?'mr-grp-light':'mr-grp-dark'));
+    for (var gci=0; gci<REVIEW_GROUPS[gpi].cols.length; gci++) {
+      grpClasses.push(cls);
+      colGroupStart.push(gci===0);
+    }
+  }
+
+  var html = '<table class="mr-table"><thead>';
+
+  // Header row 1: 年份 | 年预算 | [分类组] | 基本开销合计 | 专项(colspan=5) | 总合计 | 余额
+  html += '<tr>';
+  html += '<th rowspan="2" class="mr-sticky-l0">年份</th>';
+  html += '<th rowspan="2" class="mr-sticky-l1">年预算</th>';
+  var h1offset = 0;
+  for (var gi=0; gi<REVIEW_GROUPS.length; gi++) {
+    var g = REVIEW_GROUPS[gi];
+    html += '<th colspan="'+g.cols.length+'" class="'+grpClasses[h1offset]+' mr-grp-start">'+escHtml(g.label)+'</th>';
+    h1offset += g.cols.length;
+  }
+  html += '<th rowspan="2" class="mr-col-total">年度基本<br>开销合计</th>';
+  html += '<th colspan="'+(ANNUAL_SPECIAL_COLS.length+1)+'" class="mr-grp-blue mr-grp-start">专项</th>';
+  html += '<th rowspan="2" class="mr-col-total">总合计</th>';
+  html += '<th rowspan="2" class="mr-sticky-r1">余额</th>';
+  html += '</tr>';
+
+  // Header row 2: 各列小标题
+  html += '<tr>';
+  var h2offset = 0;
+  for (var gi2=0; gi2<REVIEW_GROUPS.length; gi2++) {
+    var g2 = REVIEW_GROUPS[gi2];
+    for (var ci5=0; ci5<g2.cols.length; ci5++) {
+      var lbl = g2.cols.length>1 ? g2.cols[ci5].label : '';
+      html += '<th class="'+grpClasses[h2offset]+(ci5===0?' mr-grp-start':'')+'">'+escHtml(lbl)+'</th>';
+      h2offset++;
+    }
+  }
+  for (var sci=0; sci<ANNUAL_SPECIAL_COLS.length; sci++) {
+    html += '<th class="mr-grp-blue'+(sci===0?' mr-grp-start':'')+'">'+escHtml(ANNUAL_SPECIAL_COLS[sci].label)+'</th>';
+  }
+  html += '<th class="mr-grp-blue">专项合计</th>';
+  html += '</tr></thead><tbody>';
+
+  // 数据行：每年一行
+  for (var yi=0; yi<years.length; yi++) {
+    var year = years[yi];
+    var ys = year+'-01-01', ye=(year+1)+'-01-01';
+    var b = getBudgetForYear(year);
+    var yearBudget = b.total || 0;
+
+    // 日常分类合计
+    var colVals = [], basicTotal = 0;
+    for (var ci=0; ci<REVIEW_COLS.length; ci++) {
+      var v = sumCatForRange(ys, ye, REVIEW_COLS[ci].path);
+      colVals.push(v);
+      basicTotal += v;
+    }
+
+    // 专项合计
+    var specialVals = [], specialTotal = 0;
+    for (var si=0; si<ANNUAL_SPECIAL_COLS.length; si++) {
+      var sv = ANNUAL_SPECIAL_COLS[si].getData(year);
+      specialVals.push(sv);
+      specialTotal += sv;
+    }
+
+    var grandTotal = basicTotal + specialTotal;
+    var balance = yearBudget - grandTotal;
+    var isCur = (year === curYear);
+    html += '<tr'+(isCur?' class="mr-current"':'')+'>';
+    html += '<td class="mr-sticky-l0">'+year+(isCur?' (今年)':'')+'</td>';
+    html += '<td class="mr-sticky-l1">'+fmtBudgetCell(yearBudget)+'</td>';
+    for (var ci2=0; ci2<REVIEW_COLS.length; ci2++) {
+      html += '<td'+(colGroupStart[ci2]?' class="mr-grp-start"':'')+'>'+fmtCell(colVals[ci2])+'</td>';
+    }
+    html += '<td class="mr-col-total">'+fmtCell(basicTotal)+'</td>';
+    for (var si2=0; si2<ANNUAL_SPECIAL_COLS.length; si2++) {
+      html += '<td class="'+(si2===0?'mr-grp-start ':'')+'mr-grp-blue">'+fmtCell(specialVals[si2])+'</td>';
+    }
+    html += '<td class="mr-grp-blue">'+fmtCell(specialTotal)+'</td>';
+    html += '<td class="mr-col-total">'+fmtCell(grandTotal)+'</td>';
+    var balClass = balance>=0 ? ' mr-balance-pos' : ' mr-balance-neg';
+    html += '<td class="mr-sticky-r1'+balClass+'">'+formatMoney(balance)+'</td>';
+    html += '</tr>';
+  }
+
+  html += '</tbody></table>';
+  $('annualTableScroll').innerHTML = html;
 }
 
 // ============ CANVAS CHARTS ============
