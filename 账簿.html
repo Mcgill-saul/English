@@ -2961,7 +2961,7 @@ function renderAssetsPanel() {
 
   html += '<div class="mr-assets-total-card">' +
     '<div class="mr-assets-total-row mr-assets-final"><span>当前净资产</span><span style="color:'+(netTotal>=0?'var(--success)':'var(--danger)')+';">&yen;'+formatMoney(netTotal)+'</span></div>' +
-    '<div class="mr-assets-total-row" style="color:var(--text2);"><span>年度总结余（参考对照）</span><span>&yen;'+formatMoney(lastReviewYearBalance)+'</span></div>' +
+    '<div class="mr-assets-total-row" style="color:var(--text2);"><span>较年度总结余</span><span style="color:'+((netTotal-lastReviewYearBalance)>=0?'var(--success)':'var(--danger)')+';">'+(netTotal-lastReviewYearBalance<0?'-':'')+formatMoney(Math.abs(netTotal-lastReviewYearBalance))+'</span></div>' +
     '</div>';
 
   $('assetsPanel').innerHTML = html;
