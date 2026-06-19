@@ -1465,10 +1465,9 @@ function renderMonthlyReview() {
       '<circle cx="22" cy="22" r="18" fill="none" stroke="var(--border)" stroke-width="5"></circle>' +
       '<circle cx="22" cy="22" r="18" fill="none" stroke="'+ringColor+'" stroke-width="5" stroke-linecap="round" stroke-dasharray="'+circumference.toFixed(2)+'" stroke-dashoffset="'+dashoffset.toFixed(2)+'" transform="rotate(-90 22 22)"></circle>' +
       '</svg><div style="flex:1;"><div class="mr-special-name">'+escHtml(sp.name)+(sp.isTravelCard?' + 旅游礼物':'')+'</div>' +
-      '<div class="mr-special-nums">'+formatMoney(sp.actual)+' / '+formatMoney(sp.budget)+'</div></div></div>';
-
+      '<div class="mr-special-nums">'+formatMoney(sp.actual)+' / '+formatMoney(sp.budget)+'<span style="margin-left:14px;color:'+(sp.budget-sp.actual>=0?'var(--success)':'var(--danger)')+';">'+( sp.budget-sp.actual < 0 ? '-'+formatMoney(Math.abs(sp.budget-sp.actual)) : formatMoney(sp.budget-sp.actual) )+'</span></div></div></div>';
     if (sp.isTravelCard) {
-      // 左右两栏：左边旅游，右边旅游礼物
+      // 全宽分隔线 + 左右两栏（旅游3份，礼物2份）
       var renderCol = function(list) {
         if (list.length === 0) return '<div class="mr-special-empty">暂无记录</div>';
         var s = '';
@@ -1481,15 +1480,15 @@ function renderMonthlyReview() {
         }
         return s;
       };
-      cardsHtml += '<div style="display:flex;gap:0;">' +
-        '<div style="flex:1;min-width:0;">' +
-          '<div style="font-size:11px;font-weight:600;color:var(--text2);padding:6px 0 4px;">旅游 <span style="font-weight:400;">'+formatMoney(travData.sum)+'</span></div>' +
-          '<div class="mr-special-list">'+renderCol(sp.travList)+'</div>' +
+      cardsHtml += '<div style="border-top:0.5px solid var(--border);margin-top:10px;padding-top:8px;display:flex;gap:0;">' +
+        '<div style="flex:3;min-width:0;">' +
+          '<div style="font-size:11px;font-weight:600;color:var(--text2);padding-bottom:4px;">旅游 <span style="font-weight:400;">'+formatMoney(travData.sum)+'</span></div>' +
+          '<div style="display:flex;flex-direction:column;gap:6px;">'+renderCol(sp.travList)+'</div>' +
         '</div>' +
         '<div style="width:0.5px;background:var(--border);margin:0 10px;"></div>' +
-        '<div style="flex:1;min-width:0;">' +
-          '<div style="font-size:11px;font-weight:600;color:var(--text2);padding:6px 0 4px;">旅游礼物 <span style="font-weight:400;">'+formatMoney(travGiftData.sum)+'</span></div>' +
-          '<div class="mr-special-list">'+renderCol(sp.giftList)+'</div>' +
+        '<div style="flex:2;min-width:0;">' +
+          '<div style="font-size:11px;font-weight:600;color:var(--text2);padding-bottom:4px;">旅游礼物 <span style="font-weight:400;">'+formatMoney(travGiftData.sum)+'</span></div>' +
+          '<div style="display:flex;flex-direction:column;gap:6px;">'+renderCol(sp.giftList)+'</div>' +
         '</div>' +
       '</div>';
     } else {
