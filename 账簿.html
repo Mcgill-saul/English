@@ -258,6 +258,14 @@ select {
 .ring-info .ring-amount { font-size:26px; font-weight:700; margin-top:4px; }
 .ring-info .ring-pct { font-size:14px; margin-top:6px; }
 
+/* Piggy bank card */
+.piggy-card { display:flex; align-items:center; gap:20px; cursor:pointer; }
+.piggy-icon-circle { flex-shrink:0; width:84px; height:84px; border-radius:50%; background:#FFF6DE; display:flex; align-items:center; justify-content:center; font-size:50px; }
+.piggy-info { flex:1; min-width:0; }
+.piggy-info .piggy-label { font-size:13px; color:var(--text2); display:flex; align-items:center; justify-content:space-between; }
+.piggy-info .piggy-amount { font-size:26px; font-weight:700; margin-top:4px; }
+.piggy-info .piggy-sub { font-size:12px; color:var(--text2); margin-top:6px; }
+
 /* Three-col stats */
 .stats-row { display:flex; gap:10px; }
 .stat-col { flex:1; text-align:center; padding:12px 6px; background:var(--bg); border-radius:10px; }
@@ -478,8 +486,8 @@ input[type="date"] { color-scheme:light; }
   <div class="page active" id="page-daily">
     <div class="card" id="budget-card"></div>
     <button class="btn btn-outline" style="width:100%;margin-bottom:8px;" onclick="showMonthlyReview()">📊 月度复盘</button>
-    <button class="btn btn-outline" style="width:100%;margin-bottom:8px;" onclick="showAnnualReview()">📈 年度复盘</button>
-    <button class="btn btn-outline" style="width:100%;margin-bottom:14px;" onclick="showPiggyBank()">🐷 储蓄罐</button>
+    <button class="btn btn-outline" style="width:100%;margin-bottom:14px;" onclick="showAnnualReview()">📈 年度复盘</button>
+    <div class="card piggy-card" id="piggy-card" onclick="showPiggyBank()"></div>
     <div class="card" id="month-stats-card"></div>
     <div class="card"><div class="section-title">近6个月收支趋势</div><canvas id="barChart" class="chart-canvas" width="360" height="200"></canvas></div>
     <div class="card"><div class="section-title">本月分类占比</div><canvas id="pieChart" class="chart-canvas" width="280" height="280"></canvas><div id="pie-list"></div></div>
@@ -1108,6 +1116,8 @@ function renderDaily() {
     '<div class="stat-col ' + (monthBalance>=0?'green':'red') + '"><div class="stat-val">&yen;' + formatMoney(monthBalance) + '</div><div class="stat-label">月结余</div></div>' +
     '</div>';
 
+  renderPiggyCard();
+
   // Bar chart - last 6 months
   var barLabels = [], barValues = [], barColors = [];
   for (var bi=5;bi>=0;bi--) {
@@ -1374,6 +1384,22 @@ function getPiggyBalance() {
   var entriesSum = 0;
   for (var i=0;i<entries.length;i++) entriesSum += (entries[i].amount||0);
   return rollover + entriesSum - getPiggyExpenseTotal();
+}
+function renderPiggyCard() {
+  var el = $('piggy-card');
+  if (!el) return;
+  var balance = getPiggyBalance();
+  var entries = getPiggyEntries();
+  var depositSum = 0;
+  for (var i=0;i<entries.length;i++) depositSum += (entries[i].amount||0);
+  var withdrawSum = getPiggyExpenseTotal();
+  el.innerHTML =
+    '<div class="piggy-icon-circle">🪙</div>' +
+    '<div class="piggy-info">' +
+    '<div class="piggy-label"><span>储蓄罐</span><span style="color:var(--text2);">›</span></div>' +
+    '<div class="piggy-amount" style="color:' + (balance>=0?'var(--text)':'var(--danger)') + ';">&yen;' + formatMoney(balance) + '</div>' +
+    '<div class="piggy-sub">累计存入 &yen;' + formatMoney(depositSum) + ' · 取出 &yen;' + formatMoney(withdrawSum) + '</div>' +
+    '</div>';
 }
 function getSpecialTransfer(year, specialName) {
   var entries = getPiggyEntries();
@@ -1653,8 +1679,11 @@ function renderMonthlyReview() {
   for (var sci=0; sci<specials.length; sci++) {
     var sp = specials[sci];
     if (sp.isNoBudget) {
+      var piggyBal = getPiggyBalance();
       cardsHtml += '<div class="mr-special-card">';
-      cardsHtml += '<div class="mr-special-top"><div style="flex:1;"><div class="mr-special-name">'+escHtml(sp.name)+'</div>' +
+      cardsHtml += '<div class="mr-special-top">' +
+        '<div style="flex-shrink:0;width:44px;height:44px;border-radius:50%;background:#FFF6DE;display:flex;align-items:center;justify-content:center;font-size:24px;">🪙</div>' +
+        '<div style="flex:1;"><div class="mr-special-name">'+escHtml(sp.name)+'<span style="margin-left:14px;font-weight:700;color:var(--success);">&yen;'+formatMoney(piggyBal)+'</span></div>' +
         '<div class="mr-special-nums">今年支出 '+formatMoney(sp.actual)+'</div></div></div>';
       if (sp.list.length === 0) {
         cardsHtml += '<div class="mr-special-list"><div class="mr-special-empty">暂无记录</div></div>';
