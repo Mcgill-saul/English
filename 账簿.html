@@ -160,6 +160,13 @@ select {
   .fab-template { right:calc(50% - 240px + 24px); }
 }
 
+/* 记账日历：真实手机屏幕(<=480px)比桌面测试窗口窄，格子(aspect-ratio:1)会更小，
+   字号需同步缩小，避免4位数金额撑爆格子 */
+@media(max-width:480px) {
+  .rc-cell .rc-date-num { font-size:10px; top:3px; left:5px; }
+  .rc-cell .rc-amt-expense, .rc-cell .rc-amt-income { font-size:11px; }
+}
+
 /* Record Item */
 .record-item { padding:12px 14px; border-radius:10px; background:var(--bg); margin-bottom:6px; cursor:pointer; transition:background 0.15s; }
 .record-item:active { background:#e0e4ed; }
