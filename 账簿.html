@@ -45,7 +45,8 @@
   --card:#FFFFFF; --text:#2C3E50; --text2:#7F8C8D; --border:#E8ECF1;
   --shadow:0 2px 12px rgba(0,0,0,0.06);
 }
-* { margin:0; padding:0; box-sizing:border-box; -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+html { -webkit-text-size-adjust:none; -moz-text-size-adjust:none; text-size-adjust:none; }
+* { margin:0; padding:0; box-sizing:border-box; -webkit-text-size-adjust:none; text-size-adjust:none; }
 body {
   font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   background:#e8ecf1; display:flex; justify-content:center; min-height:100vh;
@@ -2016,7 +2017,7 @@ function drawBarChart(canvasId, labels, values, colors) {
   if (!canvas) return;
   var setup = setupHiDpiCanvas(canvas);
   var ctx = setup.ctx, w = setup.w, h = setup.h;
-  var pad = { top:20, right:20, bottom:30, left:50 };
+  var pad = { top:20, right:20, bottom:30, left:20 };
   var cw = w - pad.left - pad.right, ch = h - pad.top - pad.bottom;
   ctx.clearRect(0,0,w,h);
   var maxV = Math.max.apply(null, values.concat([100]));
