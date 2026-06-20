@@ -1347,7 +1347,8 @@ function getPiggyMonthlyRollover() {
     for (var m0 = 0; m0 < monthsToCount; m0++) {
       var mb = getMonthlyBudgetForYear(y, m0);
       var range = reviewMonthRange(y, m0);
-      var actual = sumCatForRange(range[0], range[1], []);
+      var actual = 0;
+      for (var ci=0; ci<REVIEW_COLS.length; ci++) actual += sumCatForRange(range[0], range[1], REVIEW_COLS[ci].path);
       total += (mb - actual);
     }
   }
