@@ -390,6 +390,8 @@ input[type="date"] { color-scheme:light; }
 .mr-special-row { display:flex; justify-content:space-between; font-size:13px; }
 .mr-special-row span:first-child { color:var(--text2); }
 .mr-special-empty { font-size:12px; color:var(--text2); text-align:center; padding:4px 0; }
+.mr-special-transfer-tag { margin-top:10px; padding:7px 10px; border-radius:8px; background:var(--bg); color:var(--primary); font-size:12px; text-align:center; cursor:pointer; border:1px dashed var(--border); }
+.mr-special-transfer-tag.mr-transferred { color:var(--success); border:1px solid var(--border); background:#EEF7F0; cursor:pointer; }
 .mr-monthly-adjust-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px; }
 .mr-monthly-adjust-grid .form-row { margin-bottom:0; }
 .mr-monthly-adjust-grid label { font-size:11px; }
@@ -435,7 +437,7 @@ input[type="date"] { color-scheme:light; }
     position:static;
   }
   #page-review .mr-table-fade { display:none; }
-  #page-review #reviewSpecialCards { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  #page-review #reviewSpecialCards { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
   #page-review #reviewSpecialCards .mr-special-card { margin-bottom:0; }
   #page-review .mr-assets-cols { gap:24px; }
   #page-review .mr-assets-group-title { flex-direction:row; justify-content:space-between; align-items:center; font-size:13px; }
@@ -476,7 +478,8 @@ input[type="date"] { color-scheme:light; }
   <div class="page active" id="page-daily">
     <div class="card" id="budget-card"></div>
     <button class="btn btn-outline" style="width:100%;margin-bottom:8px;" onclick="showMonthlyReview()">📊 月度复盘</button>
-    <button class="btn btn-outline" style="width:100%;margin-bottom:14px;" onclick="showAnnualReview()">📈 年度复盘</button>
+    <button class="btn btn-outline" style="width:100%;margin-bottom:8px;" onclick="showAnnualReview()">📈 年度复盘</button>
+    <button class="btn btn-outline" style="width:100%;margin-bottom:14px;" onclick="showPiggyBank()">🐷 储蓄罐</button>
     <div class="card" id="month-stats-card"></div>
     <div class="card"><div class="section-title">近6个月收支趋势</div><canvas id="barChart" class="chart-canvas" width="360" height="200"></canvas></div>
     <div class="card"><div class="section-title">本月分类占比</div><canvas id="pieChart" class="chart-canvas" width="280" height="280"></canvas><div id="pie-list"></div></div>
@@ -599,6 +602,21 @@ input[type="date"] { color-scheme:light; }
       <div class="mr-table-scroll" id="annualTableScroll"></div>
       <div class="mr-table-fade"></div>
     </div>
+  </div>
+
+  <div class="page" id="page-piggy">
+    <div class="mr-header">
+      <span class="mr-back" onclick="closePiggyBank()">返回</span>
+      <div class="mr-year-search-group">
+        <span style="font-size:16px;font-weight:600;">🐷 储蓄罐</span>
+      </div>
+      <button class="btn-link" onclick="showPiggyManualInModal()">手动存入</button>
+    </div>
+    <div class="card mr-summary-card">
+      <div class="mr-summary-label">储蓄罐余额</div>
+      <div class="mr-summary-amount" id="piggyBalance">&yen; 0</div>
+    </div>
+    <div class="card" id="piggyFlowList"></div>
   </div>
 
 
@@ -733,6 +751,7 @@ function getDefaultData() {
     todoCats: ['证件','保险','通讯','财务','装备','健康','预定'],
     budgetByYear: {},
     annualOverride: {},
+    piggyBank: { entries: [] },
     templates: [],
     rates: { USD:0.138, JPY:21.56, EUR:0.126, GBP:0.108, KRW:189.5, THB:4.58 },
     activeCurrencies: ['USD','JPY','EUR','GBP','KRW','THB'],
@@ -769,6 +788,8 @@ function migrateData() {
   }
   if (!appData.budgetByYear) appData.budgetByYear = {};
   if (!appData.annualOverride) appData.annualOverride = {};
+  if (!appData.piggyBank) appData.piggyBank = { entries: [] };
+  if (!Array.isArray(appData.piggyBank.entries)) appData.piggyBank.entries = [];
   if (!Array.isArray(appData.templates)) appData.templates = [];
   if (!appData.assets) appData.assets = { bankCards: [], debts: [], investments: [] };
   if (!Array.isArray(appData.assets.bankCards)) appData.assets.bankCards = [];
@@ -1282,11 +1303,14 @@ function findCatPrefixByName(name) {
   return result;
 }
 
-function getReviewMonthlyBudget(m0) {
-  var b = getBudgetForYear(reviewYear);
+function getMonthlyBudgetForYear(year, m0) {
+  var b = getBudgetForYear(year);
   var specialTotal = (b.insurance||0)+(b.special||0)+(b.travel||0)+(b.prepay||0);
   var base = (b.total - specialTotal) / 12;
   return base + (b.monthlyAdjust && b.monthlyAdjust[m0] || 0);
+}
+function getReviewMonthlyBudget(m0) {
+  return getMonthlyBudgetForYear(reviewYear, m0);
 }
 function getAnnualCatData(year, prefix, specialTag) {
   var ys = year+'-01-01', ye=(year+1)+'-01-01';
@@ -1309,6 +1333,176 @@ function fmtCell(v) {
 }
 function fmtBudgetCell(v) {
   return formatMoney(v);
+}
+
+// ============ PIGGY BANK 储蓄罐 ============
+var PIGGY_START_YEAR = 2026;
+// 月结余累计：从2026年1月起，到当前月份的上个月为止，逐月"预算-实际"求和（超支倒扣，不存储，每次实时计算）
+function getPiggyMonthlyRollover() {
+  var now = new Date();
+  var curY = now.getFullYear(), curM = now.getMonth();
+  var total = 0;
+  for (var y = PIGGY_START_YEAR; y <= curY; y++) {
+    var monthsToCount = (y === curY) ? curM : 12;
+    for (var m0 = 0; m0 < monthsToCount; m0++) {
+      var mb = getMonthlyBudgetForYear(y, m0);
+      var range = reviewMonthRange(y, m0);
+      var actual = sumCatForRange(range[0], range[1], []);
+      total += (mb - actual);
+    }
+  }
+  return total;
+}
+// 储蓄罐取出总额（所有年份，打了"储蓄罐"专项标记的支出）
+function getPiggyExpenseTotal() {
+  var sum = 0;
+  for (var i=0;i<appData.records.length;i++) {
+    var r = appData.records[i];
+    if (r.type!=='daily' || r.recordType!=='expense') continue;
+    if (r.specialTag !== '储蓄罐') continue;
+    sum += getRmbAmt(r);
+  }
+  return sum;
+}
+function getPiggyEntries() {
+  return appData.piggyBank && Array.isArray(appData.piggyBank.entries) ? appData.piggyBank.entries : [];
+}
+function getPiggyBalance() {
+  var rollover = getPiggyMonthlyRollover();
+  var entries = getPiggyEntries();
+  var entriesSum = 0;
+  for (var i=0;i<entries.length;i++) entriesSum += (entries[i].amount||0);
+  return rollover + entriesSum - getPiggyExpenseTotal();
+}
+function getSpecialTransfer(year, specialName) {
+  var entries = getPiggyEntries();
+  for (var i=0;i<entries.length;i++) {
+    var e = entries[i];
+    if (e.type==='special_transfer' && e.year===year && e.specialName===specialName) return e;
+  }
+  return null;
+}
+
+function showPiggyBank() {
+  var pages = document.querySelectorAll('.page');
+  for (var i=0;i<pages.length;i++) { pages[i].classList.remove('active'); }
+  $('page-piggy').classList.add('active');
+  closeAllModals();
+  renderPiggyBank();
+}
+function closePiggyBank() {
+  switchTab('daily');
+}
+function renderPiggyBank() {
+  var balance = getPiggyBalance();
+  var rollover = getPiggyMonthlyRollover();
+  var balEl = $('piggyBalance');
+  balEl.textContent = '\u00A5 ' + formatMoney(balance);
+  balEl.style.color = balance >= 0 ? 'var(--success)' : 'var(--danger)';
+
+  // 汇总真实流水（手动存入 + 专项转入）与储蓄罐支出记录，按日期倒序排列
+  var entries = getPiggyEntries();
+  var flow = [];
+  for (var i=0;i<entries.length;i++) {
+    var e = entries[i];
+    flow.push({ id:e.id, date:e.date, amount:e.amount, kind:'in', label: e.type==='manual_in' ? ('手动存入'+(e.note?'·'+e.note:'')) : ('年度专项转入·'+e.specialName) });
+  }
+  for (var j=0;j<appData.records.length;j++) {
+    var r = appData.records[j];
+    if (r.type!=='daily' || r.recordType!=='expense' || r.specialTag!=='储蓄罐') continue;
+    var cp = r.catPath||[]; var leaf = cp.length>0?cp[cp.length-1]:'';
+    flow.push({ id:r.id, date:r.date, amount:-getRmbAmt(r), kind:'out', label:(leaf?leaf:'支出')+(r.note?' '+r.note:''), recId:r.id });
+  }
+  flow.sort(function(a,b){ return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0); });
+
+  var html = '<div class="mr-special-list">';
+  html += '<div class="mr-special-row" style="cursor:default;color:var(--text2);"><span>月结余累计（'+PIGGY_START_YEAR+'年起，不含本月）</span><span style="color:'+(rollover>=0?'var(--success)':'var(--danger)')+';">'+(rollover<0?'-'+formatMoney(Math.abs(rollover)):'+'+formatMoney(rollover))+'</span></div>';
+  if (flow.length === 0) {
+    html += '<div class="mr-special-empty">暂无存入/取出记录</div>';
+  } else {
+    for (var k=0;k<flow.length;k++) {
+      var f = flow[k];
+      var amtColor = f.amount>=0 ? 'var(--success)' : 'var(--danger)';
+      var amtText = f.amount>=0 ? '+'+formatMoney(f.amount) : '-'+formatMoney(Math.abs(f.amount));
+      var clickFn = f.kind==='out' ? "showRecordAction('"+f.recId+"')" : "showPiggyEntryEditModal('"+f.id+"')";
+      html += '<div class="mr-special-row" onclick="'+clickFn+'"><span>'+fmtDateShort(f.date)+' '+escHtml(f.label)+'</span><span style="color:'+amtColor+';">'+amtText+'</span></div>';
+    }
+  }
+  html += '</div>';
+  $('piggyFlowList').innerHTML = html;
+}
+
+function showPiggyManualInModal() {
+  var todayD = todayStr();
+  openModal('<div class="modal-sheet"><h3>手动存入储蓄罐</h3>' +
+    '<div class="form-row"><label>金额</label><input type="number" id="piggyInAmount" step="0.01" placeholder="0.00"></div>' +
+    '<div class="form-row"><label>日期</label><input type="date" id="piggyInDate" value="'+todayD+'"></div>' +
+    '<div class="form-row"><label>备注（可选）</label><input type="text" id="piggyInNote" placeholder="例如：年终奖一部分"></div>' +
+    '<div class="btn-row"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button>' +
+    '<button class="btn btn-primary" onclick="savePiggyManualIn()">存入</button></div></div>');
+}
+function savePiggyManualIn() {
+  var amount = parseFloat($('piggyInAmount').value) || 0;
+  if (amount <= 0) { alert('请输入有效金额'); return; }
+  var date = $('piggyInDate').value || todayStr();
+  var note = ($('piggyInNote').value||'').trim();
+  getPiggyEntries().push({ id:genId(), type:'manual_in', amount:amount, date:date, note:note });
+  saveData();
+  document.querySelector('.modal-overlay').remove();
+  renderPiggyBank();
+}
+
+function showPiggyEntryEditModal(entryId) {
+  var entries = getPiggyEntries();
+  var e = null;
+  for (var i=0;i<entries.length;i++) { if (entries[i].id===entryId) { e=entries[i]; break; } }
+  if (!e) return;
+  var title = e.type==='manual_in' ? '编辑手动存入' : ('编辑专项转入·'+e.specialName+' '+e.year+'年');
+  openModal('<div class="modal-sheet"><h3>'+escHtml(title)+'</h3>' +
+    '<div class="form-row"><label>金额</label><input type="number" id="piggyEditAmount" value="'+e.amount+'" step="0.01"></div>' +
+    '<div class="form-row"><label>日期</label><input type="date" id="piggyEditDate" value="'+e.date+'"></div>' +
+    (e.type==='manual_in' ? '<div class="form-row"><label>备注</label><input type="text" id="piggyEditNote" value="'+escHtml(e.note||'')+'"></div>' : '') +
+    '<div class="btn-row"><button class="btn btn-outline" style="color:var(--danger);" onclick="deletePiggyEntry(\''+entryId+'\')">删除</button>' +
+    '<button class="btn btn-primary" onclick="savePiggyEntryEdit(\''+entryId+'\')">保存</button></div></div>');
+}
+function savePiggyEntryEdit(entryId) {
+  var entries = getPiggyEntries();
+  var e = null;
+  for (var i=0;i<entries.length;i++) { if (entries[i].id===entryId) { e=entries[i]; break; } }
+  if (!e) return;
+  e.amount = parseFloat($('piggyEditAmount').value) || 0;
+  e.date = $('piggyEditDate').value || e.date;
+  if (e.type==='manual_in' && $('piggyEditNote')) e.note = ($('piggyEditNote').value||'').trim();
+  saveData();
+  document.querySelector('.modal-overlay').remove();
+  renderPiggyBank();
+  if ($('page-review') && $('page-review').classList.contains('active')) renderMonthlyReview();
+}
+function deletePiggyEntry(entryId) {
+  var entries = getPiggyEntries();
+  for (var i=0;i<entries.length;i++) {
+    if (entries[i].id===entryId) { entries.splice(i,1); break; }
+  }
+  saveData();
+  document.querySelector('.modal-overlay').remove();
+  renderPiggyBank();
+  if ($('page-review') && $('page-review').classList.contains('active')) renderMonthlyReview();
+}
+
+function showTransferToPiggyModal(specialName, year, defaultAmount) {
+  openModal('<div class="modal-sheet"><h3>转入储蓄罐·'+escHtml(specialName)+' '+year+'年结余</h3>' +
+    '<div class="form-row"><label>转入金额</label><input type="number" id="transferAmount" value="'+(defaultAmount||0).toFixed(2)+'" step="0.01"></div>' +
+    '<div class="form-row"><label>日期</label><input type="date" id="transferDate" value="'+todayStr()+'"></div>' +
+    '<div class="btn-row"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button>' +
+    '<button class="btn btn-primary" onclick="saveTransferToPiggy(\''+specialName+'\','+year+')">转入</button></div></div>');
+}
+function saveTransferToPiggy(specialName, year) {
+  var amount = parseFloat($('transferAmount').value) || 0;
+  var date = $('transferDate').value || todayStr();
+  getPiggyEntries().push({ id:genId(), type:'special_transfer', specialName:specialName, year:year, amount:amount, date:date });
+  saveData();
+  document.querySelector('.modal-overlay').remove();
+  renderMonthlyReview();
 }
 
 function showMonthlyReview() {
@@ -1366,15 +1560,17 @@ function renderMonthlyReview() {
   var spcData = getAnnualCatData(reviewYear, null, '特殊');
   var travData = getAnnualCatData(reviewYear, ['旅游']);
   var travGiftData = getAnnualCatData(reviewYear, ['旅游礼物']);
+  var piggyExpData = getAnnualCatData(reviewYear, null, '储蓄罐');
   var travelActual = travData.sum + travGiftData.sum;
   var b = getBudgetForYear(reviewYear);
   var specials = [
     {name:'保险', budget:b.insurance||0, actual:insData.sum, list:insData.list},
     {name:'特殊', budget:b.special||0, actual:spcData.sum, list:spcData.list},
-    {name:'旅游', budget:b.travel||0, actual:travelActual, travList:travData.list, giftList:travGiftData.list, isTravelCard:true}
+    {name:'旅游', budget:b.travel||0, actual:travelActual, travList:travData.list, giftList:travGiftData.list, isTravelCard:true},
+    {name:'储蓄罐', actual:piggyExpData.sum, list:piggyExpData.list, isNoBudget:true}
   ];
   var specialBalanceSum = 0;
-  for (var si=0; si<specials.length; si++) { specialBalanceSum += (specials[si].budget - specials[si].actual); }
+  for (var si=0; si<specials.length; si++) { if (specials[si].isNoBudget) continue; specialBalanceSum += (specials[si].budget - specials[si].actual); }
 
   // Year total balance
   var yearTotalBalance = (hasYtd ? (ytdBudget - ytdTotal) : 0) + specialBalanceSum;
@@ -1455,6 +1651,26 @@ function renderMonthlyReview() {
   var cardsHtml = '';
   for (var sci=0; sci<specials.length; sci++) {
     var sp = specials[sci];
+    if (sp.isNoBudget) {
+      cardsHtml += '<div class="mr-special-card">';
+      cardsHtml += '<div class="mr-special-top"><div style="flex:1;"><div class="mr-special-name">'+escHtml(sp.name)+'</div>' +
+        '<div class="mr-special-nums">今年支出 '+formatMoney(sp.actual)+'</div></div></div>';
+      if (sp.list.length === 0) {
+        cardsHtml += '<div class="mr-special-list"><div class="mr-special-empty">暂无记录</div></div>';
+      } else {
+        cardsHtml += '<div class="mr-special-list">';
+        for (var lpi=0; lpi<sp.list.length; lpi++) {
+          var recp = sp.list[lpi];
+          var dsp = fmtDateShort(recp.date);
+          var cpp = recp.catPath||[]; var lcp = cpp.length>0?cpp[cpp.length-1]:'';
+          var ctp = lcp?' '+escHtml(lcp):''; var ntp = recp.note?' '+escHtml(recp.note):'';
+          cardsHtml += '<div class="mr-special-row" onclick="showRecordAction(\''+recp.id+'\')"><span>'+dsp+ctp+ntp+'</span><span>'+formatMoney(getRmbAmt(recp))+'</span></div>';
+        }
+        cardsHtml += '</div>';
+      }
+      cardsHtml += '</div>';
+      continue;
+    }
     var pct = sp.budget>0 ? Math.min(sp.actual/sp.budget, 1) : (sp.actual>0?1:0);
     var over = sp.budget>0 && sp.actual > sp.budget;
     var circumference = 2*Math.PI*18;
@@ -1506,6 +1722,13 @@ function renderMonthlyReview() {
         cardsHtml += '</div>';
       }
     }
+    var transferEntry = getSpecialTransfer(reviewYear, sp.name);
+    var spBalance = sp.budget - sp.actual;
+    if (transferEntry) {
+      cardsHtml += '<div class="mr-special-transfer-tag mr-transferred" onclick="showPiggyEntryEditModal(\''+transferEntry.id+'\')">已转入储蓄罐 \u00A5'+formatMoney(transferEntry.amount)+' · '+fmtDateShort(transferEntry.date)+'</div>';
+    } else {
+      cardsHtml += '<div class="mr-special-transfer-tag" onclick="showTransferToPiggyModal(\''+sp.name+'\','+reviewYear+','+spBalance+')">转入储蓄罐（结余 \u00A5'+formatMoney(spBalance)+'）</div>';
+    }
     cardsHtml += '</div>';
   }
   $('reviewSpecialCards').innerHTML = cardsHtml;
@@ -1547,7 +1770,8 @@ var ANNUAL_SPECIAL_COLS = [
   { label:'保险',     getData: function(y) { return getAnnualCatData(y, ['保险']).sum; } },
   { label:'特殊',     getData: function(y) { return getAnnualCatData(y, null, '特殊').sum; } },
   { label:'旅游',     getData: function(y) { return getAnnualCatData(y, ['旅游']).sum; } },
-  { label:'旅游礼物', getData: function(y) { return getAnnualCatData(y, ['旅游礼物']).sum; } }
+  { label:'旅游礼物', getData: function(y) { return getAnnualCatData(y, ['旅游礼物']).sum; } },
+  { label:'储蓄罐支出', getData: function(y) { return getAnnualCatData(y, null, '储蓄罐').sum; } }
 ];
 
 function renderAnnualReview() {
@@ -2869,7 +3093,7 @@ function showRecordModal(editId, tpl) {
     '<div class="form-row-inline" id="recTypeRow" style="display:'+(defTripId==='daily'?'flex':'none')+'">' +
     '<div class="form-row"><label>类型</label><select id="recTypeSel" onchange="recRecordType=this.value">' +
     '<option value="expense"'+(defType==='expense'?' selected':'')+'>支出</option><option value="income"'+(defType==='income'?' selected':'')+'>收入</option></select></div>' +
-    '<div class="form-row"><label>专项</label><select id="recSpecialTag"><option value=""'+(defSpecialTag===''?' selected':'')+'>无</option><option value="特殊"'+(defSpecialTag==='特殊'?' selected':'')+'>特殊</option></select></div>' +
+    '<div class="form-row"><label>专项</label><select id="recSpecialTag"><option value=""'+(defSpecialTag===''?' selected':'')+'>无</option><option value="特殊"'+(defSpecialTag==='特殊'?' selected':'')+'>特殊</option><option value="储蓄罐"'+(defSpecialTag==='储蓄罐'?' selected':'')+'>储蓄罐</option></select></div>' +
     '</div>' +
     '<div class="form-row"><label>备注</label><input type="text" id="recNote" value="'+defNote+'" placeholder="选填" autocomplete="off"></div>' +
     '<div class="btn-row"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button>' +
