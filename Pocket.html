@@ -496,9 +496,8 @@ input[type="date"] { color-scheme:light; }
     <button class="btn btn-outline" style="width:100%;margin-bottom:8px;" onclick="showMonthlyReview()">📊 月度复盘</button>
     <button class="btn btn-outline" style="width:100%;margin-bottom:14px;" onclick="showAnnualReview()">📈 年度复盘</button>
     <div class="card piggy-card" id="piggy-card" onclick="showPiggyBank()"></div>
-    <div class="card" id="month-stats-card"></div>
     <div class="card"><div class="section-title">近6个月收支趋势</div><canvas id="barChart" class="chart-canvas" width="360" height="200"></canvas></div>
-    <div class="card"><div class="section-title">本月分类占比</div><canvas id="pieChart" class="chart-canvas" width="280" height="280"></canvas><div id="pie-list"></div></div>
+    <div class="card"><div class="section-title">本年分类占比</div><canvas id="pieChart" class="chart-canvas" width="280" height="280"></canvas><div id="pie-list"></div></div>
   </div>
 
   <!-- Travel Tab -->
@@ -1083,11 +1082,6 @@ function renderDaily() {
   var yearStart = year + '-01-01';
   var yearEnd = (year+1) + '-01-01';
   var yearSpent = 0;
-  var monthIncome = 0, monthExpense = 0;
-  var monthStart = year + '-' + (month<9?'0':'') + (month+1) + '-01';
-  var monthEnd;
-  if (month === 11) { monthEnd = (year+1) + '-01-01'; }
-  else { monthEnd = year + '-' + (month<8?'0':'') + (month+2) + '-01'; }
 
   for (var i=0;i<appData.records.length;i++) {
     var r = appData.records[i];
@@ -1096,14 +1090,9 @@ function renderDaily() {
     if (r.date >= yearStart && r.date < yearEnd) {
       if (r.recordType === 'expense') yearSpent += amt;
     }
-    if (r.date >= monthStart && r.date < monthEnd) {
-      if (r.recordType === 'expense') monthExpense += amt;
-      else monthIncome += amt;
-    }
   }
 
   var pct = budget > 0 ? Math.min(yearSpent / budget * 100, 150) : 0;
-  var monthBalance = monthIncome - monthExpense;
 
   $('budget-card').innerHTML =
     '<div class="section-title">' + year + '年预算 <button class="btn-link" onclick="showBudgetModal()">设置预算</button></div>' +
@@ -1115,14 +1104,6 @@ function renderDaily() {
     '<div class="ring-pct" style="color:' + (pct>100?'var(--danger)':'var(--text2)') + '">' + pct.toFixed(1) + '% / &yen;' + formatMoney(budget) + '</div>' +
     '</div></div>';
   deferDraw(function(){ drawRing('budgetRing', pct, pct > 100 ? '#E74C3C' : '#4A90D9', '#E8ECF1'); });
-
-  $('month-stats-card').innerHTML =
-    '<div class="section-title">当月收支</div>' +
-    '<div class="stats-row">' +
-    '<div class="stat-col green"><div class="stat-val">&yen;' + formatMoney(monthIncome) + '</div><div class="stat-label">月收入</div></div>' +
-    '<div class="stat-col red"><div class="stat-val">&yen;' + formatMoney(monthExpense) + '</div><div class="stat-label">月支出</div></div>' +
-    '<div class="stat-col ' + (monthBalance>=0?'green':'red') + '"><div class="stat-val">&yen;' + formatMoney(monthBalance) + '</div><div class="stat-label">月结余</div></div>' +
-    '</div>';
 
   renderPiggyCard();
 
@@ -1149,7 +1130,7 @@ function renderDaily() {
   var catMap = {};
   for (var pi=0;pi<appData.records.length;pi++) {
     var pr = appData.records[pi];
-    if (pr.type==='daily' && pr.recordType==='expense' && pr.date>=monthStart && pr.date<monthEnd) {
+    if (pr.type==='daily' && pr.recordType==='expense' && pr.date>=yearStart && pr.date<yearEnd) {
       var key = pr.catPath[0] || '其他';
       catMap[key] = (catMap[key]||0) + getRmbAmt(pr);
     }
@@ -2761,7 +2742,8 @@ function renderRecords() {
   if (rcCalYear === null) {
     var now = new Date();
     rcCalYear = now.getFullYear();
-    rcCalMonth = now.getMonth();
+    rcCalMonth = now.getMonth() - 1;
+    if (rcCalMonth < 0) { rcCalMonth = 11; rcCalYear--; }
   }
   renderRecordsCalendar();
 }
