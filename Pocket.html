@@ -848,11 +848,15 @@ function migrateData() {
   if (appData.lastBackupTime === undefined) appData.lastBackupTime = '';
   if (!appData.rateCompareState) appData.rateCompareState = { hold:'CNY', target:'', amount:100, directRate:null };
 }
+// 自动同步节流参数：停止操作 GIST_PUSH_DEBOUNCE_MS 毫秒后才真正上传一次（防抖），
+// 且两次自动上传之间至少间隔 GIST_PUSH_MIN_INTERVAL_MS 毫秒（节流），避免短时间内连续操作把请求次数刷爆
+var GIST_PUSH_DEBOUNCE_MS = 8000;
+var GIST_PUSH_MIN_INTERVAL_MS = 10000;
 function saveData() {
   localStorage.setItem('travelAssistantData', JSON.stringify(appData));
   if (localStorage.getItem(LS_GIST_TOKEN) && localStorage.getItem(LS_GIST_ID)) {
     clearTimeout(saveData._timer);
-    saveData._timer = setTimeout(function(){ pushToGist(false); }, 800);
+    saveData._timer = setTimeout(function(){ pushToGist(false); }, GIST_PUSH_DEBOUNCE_MS);
   }
 }
 
@@ -913,11 +917,20 @@ function createGist(token) {
   }).catch(function(e) { setGistStatus('创建失败：' + e.message, 'error'); });
 }
 
+var gistPushInFlight = false;
+var gistLastPushTime = 0;
 function pushToGist(manual) {
   var token = localStorage.getItem(LS_GIST_TOKEN);
   var gistId = localStorage.getItem(LS_GIST_ID);
   if (!token || !gistId) { if (manual) setGistStatus('请先配置 Token 和 Gist ID', 'error'); return; }
+  // 自动上传（非手动点击）时做节流保护：正有请求在途，或距上次上传太近，就跳过这一次，
+  // 等下一次 saveData 触发的防抖定时器再尝试，避免短时间内连续操作把请求次数刷爆
+  if (!manual) {
+    if (gistPushInFlight) return;
+    if (Date.now() - gistLastPushTime < GIST_PUSH_MIN_INTERVAL_MS) return;
+  }
   if (manual) setGistStatus('上传中…', '');
+  gistPushInFlight = true;
   var files = {};
   files[GIST_FILENAME] = { content: JSON.stringify(appData, null, 2) };
   fetch('https://api.github.com/gists/' + gistId, {
@@ -926,9 +939,11 @@ function pushToGist(manual) {
     body: JSON.stringify({ files: files })
   }).then(function(res) {
     if (!res.ok) throw new Error('HTTP ' + res.status);
+    gistLastPushTime = Date.now();
     markBackupDone();
     if (manual) { setGistStatus('上传成功 ✓ ' + new Date().toLocaleTimeString(), 'ok'); updateGistBtnLabel(); }
-  }).catch(function(e) { if (manual) setGistStatus('上传失败：' + e.message, 'error'); });
+  }).catch(function(e) { if (manual) setGistStatus('上传失败：' + e.message, 'error'); })
+    .finally(function() { gistPushInFlight = false; });
 }
 
 function pullFromGist(manual) {
