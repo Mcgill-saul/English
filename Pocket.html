@@ -213,6 +213,14 @@ select {
 .rate-value .rate-converted { font-size:16px; font-weight:700; color:var(--text); }
 .rate-swap-btn { flex-shrink:0; width:30px; height:30px; border-radius:50%; border:1.5px solid var(--border); background:#fff; color:var(--primary); font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; margin:0 8px; }
 .rate-swap-btn:active { background:var(--bg); }
+.rate-edit-icon { cursor:pointer; color:var(--primary); margin-left:2px; }
+
+/* Rate compare page */
+.rate-compare-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 0; border-bottom:1px solid var(--border); }
+.rate-compare-row:last-of-type { border-bottom:none; }
+.rc-cmp-label { font-size:14px; font-weight:600; }
+.rc-cmp-label span { display:block; font-size:11.5px; font-weight:400; color:var(--text2); margin-top:3px; }
+.rc-cmp-result { font-size:17px; font-weight:700; color:var(--primary); white-space:nowrap; flex-shrink:0; }
 
 /* Calendar */
 .cal-header { display:flex; align-items:center; justify-content:space-between; padding:8px 0; }
@@ -555,6 +563,7 @@ input[type="date"] { color-scheme:light; }
       <button class="btn btn-outline btn-sm" style="flex:1;" onclick="showCurrencyManage()">管理币种</button>
       <button class="btn btn-primary btn-sm" style="flex:1;" onclick="fetchRates()">更新汇率</button>
     </div>
+    <button class="btn btn-outline" style="width:100%;margin-bottom:10px;" onclick="showRateCompare()">🔁 汇率对比（直接 / 间接兑换）</button>
     <div style="font-size:11px;color:var(--text2);text-align:center;" id="rateUpdateTime"></div>
     <div class="card" id="dataBackupCard" style="margin-top:14px;">
       <div class="section-title">数据备份</div>
@@ -568,6 +577,28 @@ input[type="date"] { color-scheme:light; }
       </div>
       <input type="file" id="importFileInput" accept="application/json" style="display:none;" onchange="handleImportFile(event)">
     </div>
+  </div>
+
+  <!-- Rate Compare Page -->
+  <div class="page" id="page-rate-compare">
+    <div class="mr-header">
+      <span class="mr-back" onclick="closeRateCompare()">返回</span>
+      <div class="mr-year-search-group">
+        <span style="font-size:16px;font-weight:600;">汇率对比</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="form-row-inline">
+        <div class="form-row"><label>持有币种</label><select id="rcHoldCurrency" class="input-box" onchange="renderRateCompare()"></select></div>
+        <div class="form-row"><label>目标币种</label><select id="rcTargetCurrency" class="input-box" onchange="renderRateCompare()"></select></div>
+      </div>
+      <div class="form-row-inline">
+        <div class="form-row"><label>持有金额</label><input type="number" id="rcHoldAmount" class="input-box" value="100" step="any" oninput="renderRateCompare()"></div>
+        <div class="form-row"><label>直接报价（现场看到的）</label><input type="number" id="rcDirectRate" class="input-box" placeholder="1持有=?目标" step="any" oninput="renderRateCompare()"></div>
+      </div>
+      <div style="font-size:12px;color:var(--text2);">直接报价需手动输入你在换汇点看到的实际汇率；间接路径用App内已有汇率表自动计算两段换算结果。</div>
+    </div>
+    <div class="card" id="rcResultCard"></div>
   </div>
 
   <!-- Monthly Review Page -->
@@ -776,7 +807,8 @@ function getDefaultData() {
     paymentMethods: ['现金','微信','支付宝','银行卡','信用卡','公交卡'],
     rateUpdateTime: '',
     assets: { bankCards: [], debts: [], investments: [] },
-    lastBackupTime: ''
+    lastBackupTime: '',
+    rateCompareState: { hold:'CNY', target:'', amount:100, directRate:null }
   };
 }
 
@@ -814,6 +846,7 @@ function migrateData() {
   if (!Array.isArray(appData.assets.debts)) appData.assets.debts = [];
   if (!Array.isArray(appData.assets.investments)) appData.assets.investments = [];
   if (appData.lastBackupTime === undefined) appData.lastBackupTime = '';
+  if (!appData.rateCompareState) appData.rateCompareState = { hold:'CNY', target:'', amount:100, directRate:null };
 }
 function saveData() {
   localStorage.setItem('travelAssistantData', JSON.stringify(appData));
@@ -3973,11 +4006,34 @@ function renderRates() {
     cardsHtml += '<div class="rate-card"><div class="rate-info"><h4>'+c+'</h4><span>'+infoName+'</span></div>' +
       '<button class="rate-swap-btn" onclick="swapBaseCurrency(\''+c+'\')" title="以'+c+'为基准换算">⇄</button>' +
       '<div class="rate-value"><div class="rate-converted">'+amount+' '+base+' = ' + formatMoney(converted) + ' '+c+'</div>' +
-      '<div class="rate-amount">1 '+base+' = '+rate.toFixed(4)+' '+c+'</div></div></div>';
+      '<div class="rate-amount">1 '+base+' = '+rate.toFixed(4)+' '+c+' <span class="rate-edit-icon" onclick="showEditRateModal(\''+c+'\')" title="手动编辑汇率">✎</span></div></div></div>';
   }
   $('rateCards').innerHTML = cardsHtml || '<div style="text-align:center;color:var(--text2);padding:20px;">请选择币种</div>';
   $('rateUpdateTime').textContent = appData.rateUpdateTime ? '上次更新: '+appData.rateUpdateTime : '';
   updateGistBtnLabel();
+}
+
+function showEditRateModal(code) {
+  var cur = appData.rates[code] || 0;
+  var inv = cur>0 ? (1/cur) : 0;
+  openModal('<div class="modal-sheet"><h3>编辑汇率</h3>' +
+    '<div style="font-size:12px;color:var(--text2);margin-bottom:12px;">手动设置后将覆盖当前数值；下次点"更新汇率"会被最新数据重新覆盖。两个输入框互为倒数，改任意一个另一个自动同步。</div>' +
+    '<div class="form-row"><label>1 CNY = ? ' + code + '</label><input type="number" id="editRateInput" value="'+cur+'" step="any" autocomplete="off" oninput="syncRateInput(\'editRateInput\',\'editRateInputInv\')"></div>' +
+    '<div class="form-row"><label>1 ' + code + ' = ? CNY</label><input type="number" id="editRateInputInv" value="'+inv+'" step="any" autocomplete="off" oninput="syncRateInput(\'editRateInputInv\',\'editRateInput\')"></div>' +
+    '<div class="btn-row"><button class="btn btn-outline" onclick="this.closest(\'.modal-overlay\').remove()">取消</button>' +
+    '<button class="btn btn-primary" onclick="saveEditRate(\''+code+'\')">保存</button></div></div>');
+}
+function syncRateInput(fromId, toId) {
+  var v = parseFloat($(fromId).value);
+  if (v>0) $(toId).value = (1/v).toFixed(6).replace(/\.?0+$/,'');
+}
+function saveEditRate(code) {
+  var v = parseFloat($('editRateInput').value);
+  if (!v || v<=0) { alert('请输入有效汇率'); return; }
+  appData.rates[code] = v;
+  saveData();
+  document.querySelector('.modal-overlay').remove();
+  renderRates();
 }
 
 function swapBaseCurrency(code) {
@@ -4026,6 +4082,80 @@ function fetchRates() {
     })
     .catch(function(){ alert('网络错误，请稍后重试'); })
     .finally(function(){ btn.textContent='更新汇率'; btn.disabled=false; });
+}
+
+// ============ RATE COMPARE (直接/间接兑换) ============
+function showRateCompare() {
+  var pages = document.querySelectorAll('.page');
+  for (var i=0;i<pages.length;i++) { pages[i].classList.remove('active'); }
+  $('page-rate-compare').classList.add('active');
+  closeAllModals();
+
+  var active = appData.activeCurrencies.slice();
+  if (active.indexOf('CNY')<0) active.unshift('CNY');
+  var holdSel = $('rcHoldCurrency'), targetSel = $('rcTargetCurrency');
+  if (!holdSel.options.length) {
+    var opts = '';
+    for (var i2=0;i2<active.length;i2++) { var code=active[i2]; opts += '<option value="'+code+'">'+code+' - '+(CURRENCY_NAMES[code]||code)+'</option>'; }
+    holdSel.innerHTML = opts;
+    targetSel.innerHTML = opts;
+    var st = appData.rateCompareState || {};
+    holdSel.value = (st.hold && active.indexOf(st.hold)>=0) ? st.hold : 'CNY';
+    var firstOther = active.filter(function(c){ return c!==holdSel.value; })[0];
+    targetSel.value = (st.target && active.indexOf(st.target)>=0 && st.target!==holdSel.value) ? st.target : (firstOther||'');
+    $('rcHoldAmount').value = (st.amount!==undefined && st.amount!==null) ? st.amount : 100;
+    $('rcDirectRate').value = (st.directRate!==undefined && st.directRate!==null) ? st.directRate : '';
+  }
+  renderRateCompare();
+}
+function closeRateCompare() {
+  switchTab('rates');
+}
+function renderRateCompare() {
+  var hold = $('rcHoldCurrency').value;
+  var target = $('rcTargetCurrency').value;
+  var amount = parseFloat($('rcHoldAmount').value) || 0;
+  var directRate = parseFloat($('rcDirectRate').value);
+
+  appData.rateCompareState = {
+    hold: hold, target: target,
+    amount: $('rcHoldAmount').value,
+    directRate: $('rcDirectRate').value
+  };
+  saveData();
+
+  var rates = appData.rates;
+  var holdRate = rates[hold] || 0;
+  var targetRate = rates[target] || 0;
+
+  var html = '';
+
+  if (directRate && directRate>0) {
+    var directResult = amount * directRate;
+    html += '<div class="rate-compare-row"><div class="rc-cmp-label">直接兑换<span>1 '+hold+' = '+directRate+' '+target+'（你输入的报价）</span></div>' +
+      '<div class="rc-cmp-result">'+formatMoney(directResult)+' '+target+'</div></div>';
+  } else {
+    html += '<div class="rate-compare-row"><div class="rc-cmp-label">直接兑换<span>请输入上方"直接报价"查看对比</span></div><div class="rc-cmp-result">-</div></div>';
+  }
+
+  var mediators = [{code:'USD',label:'经美元'}, {code:'HKD',label:'经港币'}];
+  for (var mi=0; mi<mediators.length; mi++) {
+    var m = mediators[mi].code, mlabel = mediators[mi].label;
+    var mRate = rates[m] || 0;
+    if (!holdRate || !mRate || !targetRate) {
+      html += '<div class="rate-compare-row"><div class="rc-cmp-label">'+mlabel+'<span>缺少汇率数据，请先更新汇率</span></div><div class="rc-cmp-result">-</div></div>';
+      continue;
+    }
+    var cnyAmt = amount / holdRate;
+    var midAmt = cnyAmt * mRate;
+    var finalAmt = midAmt / mRate * targetRate;
+    html += '<div class="rate-compare-row"><div class="rc-cmp-label">间接兑换（'+mlabel+'）<span>'+amount+' '+hold+' → '+formatMoney(midAmt)+' '+m+' → '+formatMoney(finalAmt)+' '+target+'</span></div>' +
+      '<div class="rc-cmp-result">'+formatMoney(finalAmt)+' '+target+'</div></div>';
+  }
+
+  html += '<div style="font-size:11px;color:var(--text2);margin-top:10px;line-height:1.6;">说明：两条间接路径都基于App内同一张汇率表换算，理论上数值会相同，区别在于中转币种不同；它们的意义是和"直接兑换"的真实报价做对比，看绕道换是否更划算。</div>';
+
+  $('rcResultCard').innerHTML = html;
 }
 
 // ============ INIT ============
