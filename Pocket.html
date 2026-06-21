@@ -868,11 +868,15 @@ function migrateData() {
   if (appData.lastBackupTime === undefined) appData.lastBackupTime = '';
   if (!appData.rateCompareState) appData.rateCompareState = { hold:'CNY', target:'', amount:100, directRate:null, usdLeg1:null, usdLeg2:null, hkdLeg1:null, hkdLeg2:null };
 }
+// 自动同步节流参数：停止操作 GIST_PUSH_DEBOUNCE_MS 毫秒后才真正上传一次（防抖），
+// 且两次自动上传之间至少间隔 GIST_PUSH_MIN_INTERVAL_MS 毫秒（节流），避免短时间内连续操作把请求次数刷爆
+var GIST_PUSH_DEBOUNCE_MS = 8000;
+var GIST_PUSH_MIN_INTERVAL_MS = 10000;
 function saveData() {
   localStorage.setItem('travelAssistantData', JSON.stringify(appData));
   if (localStorage.getItem(LS_GIST_TOKEN) && localStorage.getItem(LS_GIST_ID)) {
     clearTimeout(saveData._timer);
-    saveData._timer = setTimeout(function(){ pushToGist(false); }, 3000);
+    saveData._timer = setTimeout(function(){ pushToGist(false); }, GIST_PUSH_DEBOUNCE_MS);
   }
 }
 
@@ -938,6 +942,9 @@ function pushToGist(manual) {
   var gistId = localStorage.getItem(LS_GIST_ID);
   if (!token || !gistId) { if (manual) setGistStatus('请先配置 Token 和 Gist ID', 'error'); return; }
   if (pushToGist._busy) { if (manual) setGistStatus('同步正在进行中，请稍候…', ''); return; }
+  // 自动上传（非手动点击）时做节流保护：距上次上传太近就跳过这一次，
+  // 等下一次 saveData 触发的防抖定时器再尝试，避免短时间内连续操作把请求次数刷爆
+  if (!manual && (Date.now() - (pushToGist._lastPush||0) < GIST_PUSH_MIN_INTERVAL_MS)) return;
   pushToGist._busy = true;
   if (manual) setGistStatus('上传中…', '');
   var files = {};
@@ -948,6 +955,7 @@ function pushToGist(manual) {
     body: JSON.stringify({ files: files })
   }).then(function(res) {
     if (!res.ok) throw new Error('HTTP ' + res.status);
+    pushToGist._lastPush = Date.now();
     markBackupDone();
     if (manual) { setGistStatus('上传成功 ✓ ' + new Date().toLocaleTimeString(), 'ok'); updateGistBtnLabel(); }
   }).catch(function(e) { if (manual) setGistStatus('上传失败：' + e.message, 'error'); })
