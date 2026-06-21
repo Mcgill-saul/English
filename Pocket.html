@@ -133,6 +133,7 @@ select {
 .form-row-inline { display:flex; gap:10px; margin-bottom:12px; }
 .form-row-inline .form-row { flex:1; margin-bottom:0; }
 .form-row-inline label { display:block; font-size:12px; color:var(--text2); margin-bottom:4px; font-weight:500; }
+.rc-ticker-label { display:block; font-size:12px; color:var(--text2); margin-bottom:4px; font-weight:500; }
 .modal-sheet textarea { resize:vertical; min-height:60px; }
 .modal-sheet .btn-row { display:flex; gap:10px; margin-top:18px; }
 .modal-sheet .btn-row .btn { flex:1; }
@@ -596,27 +597,30 @@ input[type="date"] { color-scheme:light; }
       <div style="font-size:12px;color:var(--text2);">以下所有汇率都需要你手动输入实际看到/查到的报价，App内置汇率表（汇率Tab里那张）仅作为首次填写时的参考起点，不会再自动参与这里的计算。</div>
     </div>
 
+    <div class="card" id="rcBaseRatesCard">
+      <div class="section-title">基准汇率（中转货币）</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">两条间接路径都要用到，建议先填这里，下面就不用重复输入了。</div>
+      <div class="form-row-inline">
+        <div class="form-row" id="rcUsdLeg1Row"><label id="rcUsdLeg1Label" class="rc-ticker-label">USD/CNH</label><input type="number" id="rcUsdLeg1" class="input-box" step="any" oninput="renderRateCompare()"></div>
+        <div class="form-row" id="rcHkdLeg1Row"><label id="rcHkdLeg1Label" class="rc-ticker-label">HKD/CNH</label><input type="number" id="rcHkdLeg1" class="input-box" step="any" oninput="renderRateCompare()"></div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="section-title">直接兑换</div>
-      <div class="form-row"><label id="rcDirectLabel">1 持有 = ? 目标</label><input type="number" id="rcDirectRate" class="input-box" placeholder="现场看到的直接报价" step="any" oninput="renderRateCompare()"></div>
+      <div class="form-row"><label id="rcDirectLabel" class="rc-ticker-label">1 持有 = ? 目标</label><input type="number" id="rcDirectRate" class="input-box" placeholder="现场看到的直接报价" step="any" oninput="renderRateCompare()"></div>
       <div class="rc-leg-result" id="rcDirectResult"></div>
     </div>
 
     <div class="card" id="rcUsdCard">
       <div class="section-title">间接兑换（经美元）</div>
-      <div class="form-row-inline">
-        <div class="form-row"><label id="rcUsdLeg1Label">1 持有 = ? USD</label><input type="number" id="rcUsdLeg1" class="input-box" step="any" oninput="renderRateCompare()"></div>
-        <div class="form-row"><label id="rcUsdLeg2Label">1 USD = ? 目标</label><input type="number" id="rcUsdLeg2" class="input-box" step="any" oninput="renderRateCompare()"></div>
-      </div>
+      <div class="form-row"><label id="rcUsdLeg2Label" class="rc-ticker-label">1 USD = ? 目标</label><input type="number" id="rcUsdLeg2" class="input-box" step="any" oninput="renderRateCompare()"></div>
       <div class="rc-leg-result" id="rcUsdResult"></div>
     </div>
 
     <div class="card" id="rcHkdCard">
       <div class="section-title">间接兑换（经港币）</div>
-      <div class="form-row-inline">
-        <div class="form-row"><label id="rcHkdLeg1Label">1 持有 = ? HKD</label><input type="number" id="rcHkdLeg1" class="input-box" step="any" oninput="renderRateCompare()"></div>
-        <div class="form-row"><label id="rcHkdLeg2Label">1 HKD = ? 目标</label><input type="number" id="rcHkdLeg2" class="input-box" step="any" oninput="renderRateCompare()"></div>
-      </div>
+      <div class="form-row"><label id="rcHkdLeg2Label" class="rc-ticker-label">1 HKD = ? 目标</label><input type="number" id="rcHkdLeg2" class="input-box" step="any" oninput="renderRateCompare()"></div>
       <div class="rc-leg-result" id="rcHkdResult"></div>
     </div>
   </div>
@@ -4116,6 +4120,14 @@ function fetchRates() {
 }
 
 // ============ RATE COMPARE (直接/间接兑换) ============
+// 货币"强弱"顺位表：排名越靠前越"值钱"，外汇报价里习惯当base（分子）。
+// 用数值大小做近似判断，跟现实主流货币对（USD/JPY、EUR/USD等）基本吻合，可按需增减/调整顺序
+var RC_STRENGTH_RANK = ['EUR','GBP','USD','CHF','AUD','NZD','CAD','SGD','HKD','CNY','MYR','THB','PHP','INR','IDR','JPY','KRW','VND','RUB','BRL','MXN','AED'];
+function rcRank(code) {
+  var idx = RC_STRENGTH_RANK.indexOf(code);
+  return idx >= 0 ? idx : RC_STRENGTH_RANK.length;
+}
+function rcDisp(code) { return code === 'CNY' ? 'CNH' : code; }
 function showRateCompare() {
   var pages = document.querySelectorAll('.page');
   for (var i=0;i<pages.length;i++) { pages[i].classList.remove('active'); }
@@ -4169,45 +4181,56 @@ function renderRateCompare() {
   }
 
   // 标签随持有/目标币种联动更新（不重建input，避免输入值被打回）
-  $('rcDirectLabel').textContent = '1 ' + hold + ' = ? ' + target;
-  $('rcUsdLeg1Label').textContent = '1 ' + hold + ' = ? USD';
-  $('rcUsdLeg2Label').textContent = '1 USD = ? ' + target;
-  $('rcHkdLeg1Label').textContent = '1 ' + hold + ' = ? HKD';
-  $('rcHkdLeg2Label').textContent = '1 HKD = ? ' + target;
+  var dirTargetIsBase = rcRank(target) < rcRank(hold); // 目标币种比持有"强"，目标当base（分子）
+  $('rcDirectLabel').textContent = dirTargetIsBase ? (rcDisp(target) + '/' + rcDisp(hold)) : (rcDisp(hold) + '/' + rcDisp(target));
+  var usdLeg1HoldIsBase = rcRank(hold) < rcRank('USD'); // 持有币种比USD"强"，持有当base
+  var hkdLeg1HoldIsBase = rcRank(hold) < rcRank('HKD');
+  $('rcUsdLeg1Label').textContent = usdLeg1HoldIsBase ? (rcDisp(hold) + '/USD') : ('USD/' + rcDisp(hold));
+  $('rcHkdLeg1Label').textContent = hkdLeg1HoldIsBase ? (rcDisp(hold) + '/HKD') : ('HKD/' + rcDisp(hold));
+  var usdLeg2TargetIsBase = rcRank(target) < rcRank('USD'); // 目标币种比USD"强"，目标当base
+  var hkdLeg2TargetIsBase = rcRank(target) < rcRank('HKD');
+  $('rcUsdLeg2Label').textContent = usdLeg2TargetIsBase ? (target + '/USD') : ('USD/' + target);
+  $('rcHkdLeg2Label').textContent = hkdLeg2TargetIsBase ? (target + '/HKD') : ('HKD/' + target);
 
-  // 直接兑换结果
+  // 直接兑换结果（目标当base时，输入的是"1目标=?持有"，需用除法换算）
   if (directRate>0 && amount>0) {
+    var directResult = dirTargetIsBase ? (amount/directRate) : (amount*directRate);
     $('rcDirectResult').className = 'rc-leg-result';
-    $('rcDirectResult').innerHTML = amount+' '+hold+' = <span class="rc-leg-amt">'+formatMoney(amount*directRate)+' '+target+'</span>';
+    $('rcDirectResult').innerHTML = amount+' '+hold+' = <span class="rc-leg-amt">'+formatMoney(directResult)+' '+target+'</span>';
   } else {
     $('rcDirectResult').className = 'rc-leg-result rc-leg-empty';
     $('rcDirectResult').textContent = '请输入上方直接报价';
   }
 
-  // 中转币种与持有/目标相同时，路径无意义，整张卡片隐藏
-  $('rcUsdCard').style.display = (hold==='USD' || target==='USD') ? 'none' : '';
-  $('rcHkdCard').style.display = (hold==='HKD' || target==='HKD') ? 'none' : '';
+  // 中转币种与持有/目标相同时，路径无意义，整张卡片（含置顶的基准汇率行）隐藏
+  var usdPathHidden = (hold==='USD' || target==='USD');
+  var hkdPathHidden = (hold==='HKD' || target==='HKD');
+  $('rcUsdCard').style.display = usdPathHidden ? 'none' : '';
+  $('rcHkdCard').style.display = hkdPathHidden ? 'none' : '';
+  $('rcUsdLeg1Row').style.display = usdPathHidden ? 'none' : '';
+  $('rcHkdLeg1Row').style.display = hkdPathHidden ? 'none' : '';
+  $('rcBaseRatesCard').style.display = (usdPathHidden && hkdPathHidden) ? 'none' : '';
 
-  // 经美元
+  // 经美元（按持有币种是否比USD"强"决定第一段乘除；第二段同理按target是否为base决定乘除）
   if (usdLeg1>0 && usdLeg2>0 && amount>0) {
-    var usdMid = amount * usdLeg1;
-    var usdFinal = usdMid * usdLeg2;
+    var usdMid = usdLeg1HoldIsBase ? (amount*usdLeg1) : (amount/usdLeg1);
+    var usdFinal = usdLeg2TargetIsBase ? (usdMid/usdLeg2) : (usdMid*usdLeg2);
     $('rcUsdResult').className = 'rc-leg-result';
     $('rcUsdResult').innerHTML = amount+' '+hold+' → '+formatMoney(usdMid)+' USD → <span class="rc-leg-amt">'+formatMoney(usdFinal)+' '+target+'</span>';
   } else {
     $('rcUsdResult').className = 'rc-leg-result rc-leg-empty';
-    $('rcUsdResult').textContent = '请输入上方两段汇率';
+    $('rcUsdResult').textContent = !(usdLeg1>0) ? '请先在上方填写基准汇率' : (!(usdLeg2>0) ? '请输入上方第二段汇率' : '请输入持有金额');
   }
 
-  // 经港币
+  // 经港币（按持有币种是否比HKD"强"决定第一段乘除）
   if (hkdLeg1>0 && hkdLeg2>0 && amount>0) {
-    var hkdMid = amount * hkdLeg1;
-    var hkdFinal = hkdMid * hkdLeg2;
+    var hkdMid = hkdLeg1HoldIsBase ? (amount*hkdLeg1) : (amount/hkdLeg1);
+    var hkdFinal = hkdLeg2TargetIsBase ? (hkdMid/hkdLeg2) : (hkdMid*hkdLeg2);
     $('rcHkdResult').className = 'rc-leg-result';
     $('rcHkdResult').innerHTML = amount+' '+hold+' → '+formatMoney(hkdMid)+' HKD → <span class="rc-leg-amt">'+formatMoney(hkdFinal)+' '+target+'</span>';
   } else {
     $('rcHkdResult').className = 'rc-leg-result rc-leg-empty';
-    $('rcHkdResult').textContent = '请输入上方两段汇率';
+    $('rcHkdResult').textContent = !(hkdLeg1>0) ? '请先在上方填写基准汇率' : (!(hkdLeg2>0) ? '请输入上方第二段汇率' : '请输入持有金额');
   }
 }
 
