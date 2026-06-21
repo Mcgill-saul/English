@@ -216,11 +216,9 @@ select {
 .rate-edit-icon { cursor:pointer; color:var(--primary); margin-left:2px; }
 
 /* Rate compare page */
-.rate-compare-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 0; border-bottom:1px solid var(--border); }
-.rate-compare-row:last-of-type { border-bottom:none; }
-.rc-cmp-label { font-size:14px; font-weight:600; }
-.rc-cmp-label span { display:block; font-size:11.5px; font-weight:400; color:var(--text2); margin-top:3px; }
-.rc-cmp-result { font-size:17px; font-weight:700; color:var(--primary); white-space:nowrap; flex-shrink:0; }
+.rc-leg-result { margin-top:10px; padding-top:10px; border-top:1px solid var(--border); font-size:13px; color:var(--text2); }
+.rc-leg-result .rc-leg-amt { font-size:19px; font-weight:700; color:var(--text); margin-top:3px; }
+.rc-leg-result.rc-leg-empty { color:var(--text2); font-style:italic; }
 
 /* Calendar */
 .cal-header { display:flex; align-items:center; justify-content:space-between; padding:8px 0; }
@@ -594,11 +592,33 @@ input[type="date"] { color-scheme:light; }
       </div>
       <div class="form-row-inline">
         <div class="form-row"><label>持有金额</label><input type="number" id="rcHoldAmount" class="input-box" value="100" step="any" oninput="renderRateCompare()"></div>
-        <div class="form-row"><label>直接报价（现场看到的）</label><input type="number" id="rcDirectRate" class="input-box" placeholder="1持有=?目标" step="any" oninput="renderRateCompare()"></div>
       </div>
-      <div style="font-size:12px;color:var(--text2);">直接报价需手动输入你在换汇点看到的实际汇率；间接路径用App内已有汇率表自动计算两段换算结果。</div>
+      <div style="font-size:12px;color:var(--text2);">以下所有汇率都需要你手动输入实际看到/查到的报价，App内置汇率表（汇率Tab里那张）仅作为首次填写时的参考起点，不会再自动参与这里的计算。</div>
     </div>
-    <div class="card" id="rcResultCard"></div>
+
+    <div class="card">
+      <div class="section-title">直接兑换</div>
+      <div class="form-row"><label id="rcDirectLabel">1 持有 = ? 目标</label><input type="number" id="rcDirectRate" class="input-box" placeholder="现场看到的直接报价" step="any" oninput="renderRateCompare()"></div>
+      <div class="rc-leg-result" id="rcDirectResult"></div>
+    </div>
+
+    <div class="card" id="rcUsdCard">
+      <div class="section-title">间接兑换（经美元）</div>
+      <div class="form-row-inline">
+        <div class="form-row"><label id="rcUsdLeg1Label">1 持有 = ? USD</label><input type="number" id="rcUsdLeg1" class="input-box" step="any" oninput="renderRateCompare()"></div>
+        <div class="form-row"><label id="rcUsdLeg2Label">1 USD = ? 目标</label><input type="number" id="rcUsdLeg2" class="input-box" step="any" oninput="renderRateCompare()"></div>
+      </div>
+      <div class="rc-leg-result" id="rcUsdResult"></div>
+    </div>
+
+    <div class="card" id="rcHkdCard">
+      <div class="section-title">间接兑换（经港币）</div>
+      <div class="form-row-inline">
+        <div class="form-row"><label id="rcHkdLeg1Label">1 持有 = ? HKD</label><input type="number" id="rcHkdLeg1" class="input-box" step="any" oninput="renderRateCompare()"></div>
+        <div class="form-row"><label id="rcHkdLeg2Label">1 HKD = ? 目标</label><input type="number" id="rcHkdLeg2" class="input-box" step="any" oninput="renderRateCompare()"></div>
+      </div>
+      <div class="rc-leg-result" id="rcHkdResult"></div>
+    </div>
   </div>
 
   <!-- Monthly Review Page -->
@@ -808,7 +828,7 @@ function getDefaultData() {
     rateUpdateTime: '',
     assets: { bankCards: [], debts: [], investments: [] },
     lastBackupTime: '',
-    rateCompareState: { hold:'CNY', target:'', amount:100, directRate:null }
+    rateCompareState: { hold:'CNY', target:'', amount:100, directRate:null, usdLeg1:null, usdLeg2:null, hkdLeg1:null, hkdLeg2:null }
   };
 }
 
@@ -846,17 +866,13 @@ function migrateData() {
   if (!Array.isArray(appData.assets.debts)) appData.assets.debts = [];
   if (!Array.isArray(appData.assets.investments)) appData.assets.investments = [];
   if (appData.lastBackupTime === undefined) appData.lastBackupTime = '';
-  if (!appData.rateCompareState) appData.rateCompareState = { hold:'CNY', target:'', amount:100, directRate:null };
+  if (!appData.rateCompareState) appData.rateCompareState = { hold:'CNY', target:'', amount:100, directRate:null, usdLeg1:null, usdLeg2:null, hkdLeg1:null, hkdLeg2:null };
 }
-// 自动同步节流参数：停止操作 GIST_PUSH_DEBOUNCE_MS 毫秒后才真正上传一次（防抖），
-// 且两次自动上传之间至少间隔 GIST_PUSH_MIN_INTERVAL_MS 毫秒（节流），避免短时间内连续操作把请求次数刷爆
-var GIST_PUSH_DEBOUNCE_MS = 8000;
-var GIST_PUSH_MIN_INTERVAL_MS = 10000;
 function saveData() {
   localStorage.setItem('travelAssistantData', JSON.stringify(appData));
   if (localStorage.getItem(LS_GIST_TOKEN) && localStorage.getItem(LS_GIST_ID)) {
     clearTimeout(saveData._timer);
-    saveData._timer = setTimeout(function(){ pushToGist(false); }, GIST_PUSH_DEBOUNCE_MS);
+    saveData._timer = setTimeout(function(){ pushToGist(false); }, 3000);
   }
 }
 
@@ -917,20 +933,13 @@ function createGist(token) {
   }).catch(function(e) { setGistStatus('创建失败：' + e.message, 'error'); });
 }
 
-var gistPushInFlight = false;
-var gistLastPushTime = 0;
 function pushToGist(manual) {
   var token = localStorage.getItem(LS_GIST_TOKEN);
   var gistId = localStorage.getItem(LS_GIST_ID);
   if (!token || !gistId) { if (manual) setGistStatus('请先配置 Token 和 Gist ID', 'error'); return; }
-  // 自动上传（非手动点击）时做节流保护：正有请求在途，或距上次上传太近，就跳过这一次，
-  // 等下一次 saveData 触发的防抖定时器再尝试，避免短时间内连续操作把请求次数刷爆
-  if (!manual) {
-    if (gistPushInFlight) return;
-    if (Date.now() - gistLastPushTime < GIST_PUSH_MIN_INTERVAL_MS) return;
-  }
+  if (pushToGist._busy) { if (manual) setGistStatus('同步正在进行中，请稍候…', ''); return; }
+  pushToGist._busy = true;
   if (manual) setGistStatus('上传中…', '');
-  gistPushInFlight = true;
   var files = {};
   files[GIST_FILENAME] = { content: JSON.stringify(appData, null, 2) };
   fetch('https://api.github.com/gists/' + gistId, {
@@ -939,11 +948,10 @@ function pushToGist(manual) {
     body: JSON.stringify({ files: files })
   }).then(function(res) {
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    gistLastPushTime = Date.now();
     markBackupDone();
     if (manual) { setGistStatus('上传成功 ✓ ' + new Date().toLocaleTimeString(), 'ok'); updateGistBtnLabel(); }
   }).catch(function(e) { if (manual) setGistStatus('上传失败：' + e.message, 'error'); })
-    .finally(function() { gistPushInFlight = false; });
+    .finally(function(){ pushToGist._busy = false; });
 }
 
 function pullFromGist(manual) {
@@ -4118,8 +4126,12 @@ function showRateCompare() {
     holdSel.value = (st.hold && active.indexOf(st.hold)>=0) ? st.hold : 'CNY';
     var firstOther = active.filter(function(c){ return c!==holdSel.value; })[0];
     targetSel.value = (st.target && active.indexOf(st.target)>=0 && st.target!==holdSel.value) ? st.target : (firstOther||'');
-    $('rcHoldAmount').value = (st.amount!==undefined && st.amount!==null) ? st.amount : 100;
+    $('rcHoldAmount').value = (st.amount!==undefined && st.amount!==null && st.amount!=='') ? st.amount : 100;
     $('rcDirectRate').value = (st.directRate!==undefined && st.directRate!==null) ? st.directRate : '';
+    $('rcUsdLeg1').value = (st.usdLeg1!==undefined && st.usdLeg1!==null) ? st.usdLeg1 : '';
+    $('rcUsdLeg2').value = (st.usdLeg2!==undefined && st.usdLeg2!==null) ? st.usdLeg2 : '';
+    $('rcHkdLeg1').value = (st.hkdLeg1!==undefined && st.hkdLeg1!==null) ? st.hkdLeg1 : '';
+    $('rcHkdLeg2').value = (st.hkdLeg2!==undefined && st.hkdLeg2!==null) ? st.hkdLeg2 : '';
   }
   renderRateCompare();
 }
@@ -4131,46 +4143,64 @@ function renderRateCompare() {
   var target = $('rcTargetCurrency').value;
   var amount = parseFloat($('rcHoldAmount').value) || 0;
   var directRate = parseFloat($('rcDirectRate').value);
+  var usdLeg1 = parseFloat($('rcUsdLeg1').value);
+  var usdLeg2 = parseFloat($('rcUsdLeg2').value);
+  var hkdLeg1 = parseFloat($('rcHkdLeg1').value);
+  var hkdLeg2 = parseFloat($('rcHkdLeg2').value);
 
-  appData.rateCompareState = {
+  var newState = {
     hold: hold, target: target,
     amount: $('rcHoldAmount').value,
-    directRate: $('rcDirectRate').value
+    directRate: $('rcDirectRate').value,
+    usdLeg1: $('rcUsdLeg1').value, usdLeg2: $('rcUsdLeg2').value,
+    hkdLeg1: $('rcHkdLeg1').value, hkdLeg2: $('rcHkdLeg2').value
   };
-  saveData();
+  if (JSON.stringify(newState) !== JSON.stringify(appData.rateCompareState||{})) {
+    appData.rateCompareState = newState;
+    saveData();
+  }
 
-  var rates = appData.rates;
-  var holdRate = rates[hold] || 0;
-  var targetRate = rates[target] || 0;
+  // 标签随持有/目标币种联动更新（不重建input，避免输入值被打回）
+  $('rcDirectLabel').textContent = '1 ' + hold + ' = ? ' + target;
+  $('rcUsdLeg1Label').textContent = '1 ' + hold + ' = ? USD';
+  $('rcUsdLeg2Label').textContent = '1 USD = ? ' + target;
+  $('rcHkdLeg1Label').textContent = '1 ' + hold + ' = ? HKD';
+  $('rcHkdLeg2Label').textContent = '1 HKD = ? ' + target;
 
-  var html = '';
-
-  if (directRate && directRate>0) {
-    var directResult = amount * directRate;
-    html += '<div class="rate-compare-row"><div class="rc-cmp-label">直接兑换<span>1 '+hold+' = '+directRate+' '+target+'（你输入的报价）</span></div>' +
-      '<div class="rc-cmp-result">'+formatMoney(directResult)+' '+target+'</div></div>';
+  // 直接兑换结果
+  if (directRate>0 && amount>0) {
+    $('rcDirectResult').className = 'rc-leg-result';
+    $('rcDirectResult').innerHTML = amount+' '+hold+' = <span class="rc-leg-amt">'+formatMoney(amount*directRate)+' '+target+'</span>';
   } else {
-    html += '<div class="rate-compare-row"><div class="rc-cmp-label">直接兑换<span>请输入上方"直接报价"查看对比</span></div><div class="rc-cmp-result">-</div></div>';
+    $('rcDirectResult').className = 'rc-leg-result rc-leg-empty';
+    $('rcDirectResult').textContent = '请输入上方直接报价';
   }
 
-  var mediators = [{code:'USD',label:'经美元'}, {code:'HKD',label:'经港币'}];
-  for (var mi=0; mi<mediators.length; mi++) {
-    var m = mediators[mi].code, mlabel = mediators[mi].label;
-    var mRate = rates[m] || 0;
-    if (!holdRate || !mRate || !targetRate) {
-      html += '<div class="rate-compare-row"><div class="rc-cmp-label">'+mlabel+'<span>缺少汇率数据，请先更新汇率</span></div><div class="rc-cmp-result">-</div></div>';
-      continue;
-    }
-    var cnyAmt = amount / holdRate;
-    var midAmt = cnyAmt * mRate;
-    var finalAmt = midAmt / mRate * targetRate;
-    html += '<div class="rate-compare-row"><div class="rc-cmp-label">间接兑换（'+mlabel+'）<span>'+amount+' '+hold+' → '+formatMoney(midAmt)+' '+m+' → '+formatMoney(finalAmt)+' '+target+'</span></div>' +
-      '<div class="rc-cmp-result">'+formatMoney(finalAmt)+' '+target+'</div></div>';
+  // 中转币种与持有/目标相同时，路径无意义，整张卡片隐藏
+  $('rcUsdCard').style.display = (hold==='USD' || target==='USD') ? 'none' : '';
+  $('rcHkdCard').style.display = (hold==='HKD' || target==='HKD') ? 'none' : '';
+
+  // 经美元
+  if (usdLeg1>0 && usdLeg2>0 && amount>0) {
+    var usdMid = amount * usdLeg1;
+    var usdFinal = usdMid * usdLeg2;
+    $('rcUsdResult').className = 'rc-leg-result';
+    $('rcUsdResult').innerHTML = amount+' '+hold+' → '+formatMoney(usdMid)+' USD → <span class="rc-leg-amt">'+formatMoney(usdFinal)+' '+target+'</span>';
+  } else {
+    $('rcUsdResult').className = 'rc-leg-result rc-leg-empty';
+    $('rcUsdResult').textContent = '请输入上方两段汇率';
   }
 
-  html += '<div style="font-size:11px;color:var(--text2);margin-top:10px;line-height:1.6;">说明：两条间接路径都基于App内同一张汇率表换算，理论上数值会相同，区别在于中转币种不同；它们的意义是和"直接兑换"的真实报价做对比，看绕道换是否更划算。</div>';
-
-  $('rcResultCard').innerHTML = html;
+  // 经港币
+  if (hkdLeg1>0 && hkdLeg2>0 && amount>0) {
+    var hkdMid = amount * hkdLeg1;
+    var hkdFinal = hkdMid * hkdLeg2;
+    $('rcHkdResult').className = 'rc-leg-result';
+    $('rcHkdResult').innerHTML = amount+' '+hold+' → '+formatMoney(hkdMid)+' HKD → <span class="rc-leg-amt">'+formatMoney(hkdFinal)+' '+target+'</span>';
+  } else {
+    $('rcHkdResult').className = 'rc-leg-result rc-leg-empty';
+    $('rcHkdResult').textContent = '请输入上方两段汇率';
+  }
 }
 
 // ============ INIT ============
