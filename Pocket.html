@@ -203,13 +203,16 @@ select {
 .cat-pill.active { background:var(--primary); color:#fff; border-color:var(--primary); }
 
 /* Rate card */
-.rate-card { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border); }
+.rate-card { display:flex; align-items:center; padding:12px 0; border-bottom:1px solid var(--border); }
 .rate-card:last-child { border-bottom:none; }
+.rate-info { width:72px; flex-shrink:0; }
 .rate-info h4 { font-size:15px; }
 .rate-info span { font-size:12px; color:var(--text2); }
-.rate-value { text-align:right; }
-.rate-value .rate-amount { font-size:14px; font-weight:600; }
-.rate-value .rate-converted { font-size:12px; color:var(--text2); }
+.rate-value { flex:1; min-width:0; text-align:right; }
+.rate-value .rate-amount { font-size:12px; color:var(--text2); margin-top:2px; }
+.rate-value .rate-converted { font-size:16px; font-weight:700; color:var(--text); }
+.rate-swap-btn { flex-shrink:0; width:30px; height:30px; border-radius:50%; border:1.5px solid var(--border); background:#fff; color:var(--primary); font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; margin:0 8px; }
+.rate-swap-btn:active { background:var(--bg); }
 
 /* Calendar */
 .cal-header { display:flex; align-items:center; justify-content:space-between; padding:8px 0; }
@@ -3945,13 +3948,15 @@ function renderRates() {
   var baseInfo = CURRENCY_NAMES;
 
   var baseSel = $('baseCurrency');
+  var prevBase = baseSel.value;
   if (active.indexOf('CNY')<0) active.unshift('CNY');
   var selOpts = '';
   for (var i=0;i<active.length;i++) {
     var code = active[i];
-    selOpts += '<option value="'+code+'">'+code+' - '+(baseInfo[code]||code)+'</option>';
+    selOpts += '<option value="'+code+'"'+(code===prevBase?' selected':'')+'>'+code+' - '+(baseInfo[code]||code)+'</option>';
   }
   baseSel.innerHTML = selOpts;
+  if (active.indexOf(prevBase) >= 0) baseSel.value = prevBase;
 
   var base = baseSel.value;
   var baseRate = rates[base] || 1;
@@ -3966,12 +3971,19 @@ function renderRates() {
     var rate = baseRate > 0 ? targetRate / baseRate : 0;
     var converted = amount * rate;
     cardsHtml += '<div class="rate-card"><div class="rate-info"><h4>'+c+'</h4><span>'+infoName+'</span></div>' +
-      '<div class="rate-value"><div class="rate-amount">1 '+base+' = '+rate.toFixed(4)+' '+c+'</div>' +
-      '<div class="rate-converted">'+amount+' '+base+' = ' + formatMoney(converted) + ' '+c+'</div></div></div>';
+      '<button class="rate-swap-btn" onclick="swapBaseCurrency(\''+c+'\')" title="以'+c+'为基准换算">⇄</button>' +
+      '<div class="rate-value"><div class="rate-converted">'+amount+' '+base+' = ' + formatMoney(converted) + ' '+c+'</div>' +
+      '<div class="rate-amount">1 '+base+' = '+rate.toFixed(4)+' '+c+'</div></div></div>';
   }
   $('rateCards').innerHTML = cardsHtml || '<div style="text-align:center;color:var(--text2);padding:20px;">请选择币种</div>';
   $('rateUpdateTime').textContent = appData.rateUpdateTime ? '上次更新: '+appData.rateUpdateTime : '';
   updateGistBtnLabel();
+}
+
+function swapBaseCurrency(code) {
+  var baseSel = $('baseCurrency');
+  baseSel.value = code;
+  renderRates();
 }
 
 function showCurrencyManage() {
