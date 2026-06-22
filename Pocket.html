@@ -781,6 +781,10 @@ input[type="date"] { color-scheme:light; }
 */
 
 // ============ UTILS ============
+// 依赖: appData.rates(DATA), appData.records/trips(DATA)
+// 暴露: $, genId, formatMoney, todayStr, fmtDateShort, getBudgetForYear, escHtml,
+//        CURRENCY_SYMBOLS, CURRENCY_NAMES, formatAmount, convertToCNY, getTripById,
+//        getTripSpent, getTripSettlementTotal
 var $ = function(id) { return document.getElementById(id); };
 var genId = function() { return Date.now().toString(36) + Math.random().toString(36).slice(2,8); };
 var formatMoney = function(n) { return Number(n||0).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2}); };
@@ -829,6 +833,9 @@ var getTripSettlementTotal = function(tripId) {
 };
 
 // ============ DATA ============
+// 依赖: (无外部依赖，是其他所有块的数据源)
+// 暴露: appData(全局数据对象), getDefaultData(), loadData(), migrateData(), saveData()
+// 注意: appData.rates 存储格式为"1 CNY = ?该币种"，所有汇率计算以此为基准
 function getDefaultData() {
   return {
     trips: [],
@@ -919,6 +926,10 @@ function saveData() {
 }
 
 // ============ GIST 云同步 ============
+// 依赖: appData(DATA), saveData(DATA), $, GIST_PUSH_DEBOUNCE_MS/MIN_INTERVAL_MS(DATA)
+// 暴露: showGistPanel(), saveGistConfig(), pushToGist(manual), pullFromGist(manual),
+//        setGistStatus(), updateGistBtnLabel(), markBackupDone()
+// 注意: pushToGist有防抖(8s)+节流(10s)保护，防止频繁触发GitHub API限流(403)
 var GIST_FILENAME = 'jizhang_data.json';
 var LS_GIST_TOKEN = 'jizhang_gist_token';
 var LS_GIST_ID = 'jizhang_gist_id';
@@ -1033,6 +1044,8 @@ function updateGistBtnLabel() {
 }
 
 // ============ BACKUP ============
+// 依赖: appData(DATA), saveData(DATA), markBackupDone(GIST云同步)
+// 暴露: exportAppData(), importAppData(), handleImportFile()
 function exportAppData() {
   var blob = new Blob([JSON.stringify(appData, null, 2)], {type:'application/json'});
   var url = URL.createObjectURL(blob);
@@ -1054,6 +1067,8 @@ function importAppData() {
 }
 
 // ============ BACKUP REMINDER ============
+// 依赖: appData.lastBackupTime(DATA), saveData(DATA), switchTab(TAB SWITCH)
+// 暴露: checkBackupReminder(), hideBackupReminder(), dismissBackupReminder(), goBackupFromReminder()
 var BACKUP_REMIND_DAYS = 30;
 function markBackupDone() {
   appData.lastBackupTime = new Date().toISOString();
@@ -1119,6 +1134,11 @@ function handleImportFile(e) {
 }
 
 // ============ STATE ============
+// 依赖: (无，纯运行时变量)
+// 暴露: currentTab, recordViewMode, recordMonth, rcCalYear/rcCalMonth,
+//        collapsedDates, recRecordType, todoCatFilter, calYear/calMonth/calSelectedDate,
+//        collapsedTripDates, longPressTimer
+// 注意: 这些变量不持久化，刷新页面后重置；持久化数据在 appData(DATA)
 var currentTab = 'daily';
 var recordViewMode = 'day';
 var recordMonth = '';
@@ -1131,6 +1151,8 @@ var collapsedTripDates = {};
 var longPressTimer = null;
 
 // ============ TAB SWITCH ============
+// 依赖: currentTab(STATE), renderDaily/renderTravel/renderRecords/renderTodos/renderRates(各Tab块)
+// 暴露: switchTab(tab), renderTab(tab)
 function switchTab(tab) {
   currentTab = tab;
   var tabs = document.querySelectorAll('.tab-item');
@@ -1157,6 +1179,9 @@ function renderTab(tab) {
 }
 
 // ============ MODAL ============
+// 依赖: (无外部依赖)
+// 暴露: openModal(html, id), closeAllModals(), hideModal(id)
+// 注意: openModal返回overlay元素，调用方可在其上挂自定义属性(如_editCatPath)
 function openModal(html, id) {
   var overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
@@ -1178,6 +1203,11 @@ function hideModal(id) {
 }
 
 // ============ DAILY TAB ============
+// 依赖: appData(DATA), saveData(DATA), formatMoney/convertToCNY/getBudgetForYear(UTILS),
+//        openModal/closeAllModals(MODAL), calYear/calMonth/calSelectedDate(STATE),
+//        renderPiggyCard(PIGGY BANK), showRecordModal(RECORDS TAB)
+// 暴露: renderDaily(), showBudgetModal(), saveBudget(), onBudgetYearChange()
+// UI入口: Tab切换时由renderTab()调用renderDaily()
 function renderDaily() {
   var now = new Date();
   var year = now.getFullYear();
@@ -1311,6 +1341,11 @@ function saveBudget() {
 }
 
 // ============ MONTHLY REVIEW ============
+// 依赖: appData.records/budgetByYear(DATA), formatMoney/getBudgetForYear/convertToCNY(UTILS),
+//        openModal/closeAllModals(MODAL)
+// 暴露: REVIEW_GROUPS, showMonthlyReview(), renderMonthlyReview(),
+//        catMatchesPath(), findCatPrefixByName(), getAnnualCatData()
+// 注意: catMatchesPath/findCatPrefixByName/getAnnualCatData虽定义在本块，但被ADVANCED SEARCH和ANNUAL REVIEW跨块调用
 var REVIEW_GROUPS = [
   {label:'居住', kind:'fixed', cols:[
     {label:'房租', path:['居住','房租']},
@@ -1440,6 +1475,11 @@ function fmtBudgetCell(v) {
 }
 
 // ============ PIGGY BANK 储蓄罐 ============
+// 依赖: appData.piggyBank/records/budgetByYear(DATA), saveData(DATA),
+//        formatMoney/getBudgetForYear/convertToCNY(UTILS), openModal/closeAllModals(MODAL),
+//        switchTab(TAB SWITCH)
+// 暴露: renderPiggyCard(), showPiggyBank(), closePiggyBank(), renderPiggyBank()
+// 注意: PIGGY_START_YEAR硬编码为2026，调整起始年需改此常量
 var PIGGY_START_YEAR = 2026;
 // 月结余累计：从2026年1月起，到当前月份的上个月为止，逐月"预算-实际"求和（超支倒扣，不存储，每次实时计算）
 function getPiggyMonthlyRollover() {
@@ -1877,6 +1917,10 @@ function saveSingleAdjust(m0) {
 }
 
 // ============ ANNUAL REVIEW ============
+// 依赖: appData.records/budgetByYear(DATA), formatMoney/getBudgetForYear/convertToCNY(UTILS),
+//        REVIEW_GROUPS(MONTHLY REVIEW), getAnnualCatData(MONTHLY REVIEW),
+//        drawBarChart/drawLineChart(CANVAS CHARTS), switchTab(TAB SWITCH)
+// 暴露: showAnnualReview(), closeAnnualReview(), renderAnnualReview()
 function showAnnualReview() {
   var pages = document.querySelectorAll('.page');
   for (var i=0;i<pages.length;i++) { pages[i].classList.remove('active'); }
@@ -2067,6 +2111,9 @@ function clearAnnualOverride(year) {
 }
 
 // ============ CANVAS CHARTS ============
+// 依赖: (无外部依赖，纯绘图工具)
+// 暴露: deferDraw(fn), drawBarChart(canvasId, data, opts), drawLineChart(canvasId, data, opts)
+// 注意: deferDraw用于解决手机端canvas尺寸读取时机问题，所有图表绘制必须包在deferDraw内
 function deferDraw(fn) {
   // 确保浏览器已完成本次DOM更新的布局计算后再读取canvas尺寸并绘图，
   // 避免手机端因渲染时机不同导致clientWidth读取过早、图表错位的问题
@@ -2156,6 +2203,10 @@ function drawPieChart(canvasId, items) {
 }
 
 // ============ TRAVEL TAB ============
+// 依赖: appData.trips/records(DATA), saveData(DATA), formatMoney/getTripSpent/convertToCNY(UTILS),
+//        openModal/closeAllModals(MODAL), showRecordModal(RECORDS TAB)
+// 暴露: selectTrip(), renderTravel(), showAddTripModal(), showTripActionMenu()
+// UI入口: Tab切换时由renderTab()调用renderTravel()
 function selectTrip(tripId) {
   var sel = $('tripSelect');
   if (sel) { sel.value = tripId; }
@@ -2554,6 +2605,9 @@ function doSettlement(tripId) {
 }
 
 // ============ TRIP REVIEW ============
+// 依赖: appData.trips/records(DATA), formatMoney/getTripSpent/convertToCNY(UTILS),
+//        drawBarChart(CANVAS CHARTS), switchTab(TAB SWITCH)
+// 暴露: showTripReview(), closeTripReview(), renderTripReview()
 function showTripReview() {
   var selTripId = $('tripSelect').value;
   if (!selTripId) return;
@@ -2741,6 +2795,9 @@ function showTripReview() {
 }
 
 // ============ TRIP ACTIONS ============
+// 依赖: appData.trips(DATA), saveData(DATA), openModal/closeAllModals(MODAL),
+//        renderTravel(TRAVEL TAB), switchTab(TAB SWITCH)
+// 暴露: showTripActionMenu(tripId), deleteTripConfirm(tripId)
 function showTripActionMenu(tripId) {
   closeAllModals();
   var wrap = document.createElement('div');
@@ -2790,6 +2847,8 @@ function deleteTrip(tripId) {
 }
 
 // ============ NODE ACTIONS ============
+// 依赖: appData.trips(DATA), saveData(DATA), openModal/closeAllModals(MODAL), renderTravel(TRAVEL TAB)
+// 暴露: showNodeActionMenu(tripId, nodeId), deleteNode(tripId, nodeId)
 function showNodeActionMenu(tripId, nodeId) {
   closeAllModals();
   var wrap = document.createElement('div');
@@ -2843,6 +2902,13 @@ function deleteNode(tripId, nodeId) {
 }
 
 // ============ RECORDS TAB ============
+// 依赖: appData.records/trips/rates(DATA), saveData(DATA),
+//        formatMoney/convertToCNY/getTripById/escHtml(UTILS),
+//        openModal/closeAllModals(MODAL), rcCalYear/rcCalMonth/recordViewMode/recordMonth(STATE),
+//        refreshTemplateFab(TEMPLATES)
+// 暴露: renderRecords(), showRecordModal(editId?, tpl?), saveRecord(), saveEditRecord(editId),
+//        fetchRealtimeRate(), autoCalcRmb(), onAmountInput(), onAmountBlur(), getRmbAmt(record)
+// 注意: getRmbAmt()虽定义在本块，但被UTILS/DAILY TAB/PIGGY BANK等多处跨块调用
 function renderRecords() {
   if (rcCalYear === null) {
     var now = new Date();
@@ -3345,6 +3411,9 @@ function saveEditRecord(editId) {
 }
 
 // ============ TEMPLATES ============
+// 依赖: appData.templates(DATA), saveData(DATA), openModal/closeAllModals(MODAL),
+//        showRecordModal(RECORDS TAB), currentTab(STATE)
+// 暴露: refreshTemplateFab(), saveAsTemplate(), showTemplateList(), applyTemplate(tpl)
 function refreshTemplateFab() {
   var fabT = $('fabTemplateBtn');
   if (fabT) fabT.style.display = (currentTab==='records' && appData.templates && appData.templates.length>0) ? 'flex' : 'none';
@@ -3417,6 +3486,9 @@ function deleteTemplate(tplId) {
 }
 
 // ============ RECORD ACTION ============
+// 依赖: appData.records(DATA), saveData(DATA), openModal/closeAllModals(MODAL),
+//        showRecordModal(RECORDS TAB), renderRecords(RECORDS TAB)
+// 暴露: showRecordAction(recordId), deleteRecord(recordId)
 function showRecordAction(recordId) {
   closeAllModals();
   var wrap = document.createElement('div');
@@ -3444,6 +3516,9 @@ function deleteRecord(recordId) {
 }
 
 // ============ ADVANCED SEARCH ============
+// 依赖: appData.records/trips(DATA), formatMoney/convertToCNY/getTripById/escHtml(UTILS),
+//        openModal/closeAllModals(MODAL), showRecordModal(RECORDS TAB)
+// 暴露: showAdvancedSearch(lockYear?)
 function showAdvancedSearch(lockYear) {
   var years = [];
   for (var i=0;i<appData.records.length;i++) {
@@ -3533,6 +3608,8 @@ function runAdvancedSearch() {
 }
 
 // ============ ASSETS PANEL ============
+// 依赖: appData.assets(DATA), saveData(DATA), formatMoney(UTILS), openModal/closeAllModals(MODAL)
+// 暴露: toggleAssetsPanel(), renderAssetsPanel(), showAddAssetModal(type)
 var assetsPanelOpen = false;
 function toggleAssetsPanel() {
   assetsPanelOpen = !assetsPanelOpen;
@@ -3651,6 +3728,9 @@ function deleteAssetItem(groupKey, itemId) {
 }
 
 // ============ CATEGORY MANAGE ============
+// 依赖: appData.dailyCats/travelCats/todoCats(DATA), saveData(DATA), openModal/closeAllModals(MODAL)
+// 暴露: showCatManageModal(), buildCurrencyDatalist(), buildPaymentDatalist(), buildPayeeDatalist()
+// 注意: buildXxxDatalist()被showRecordModal(RECORDS TAB)调用，改分类结构需同步确认记账Modal不受影响
 function showCatManageModal() {
   catManageTab = 'daily';
   catExpandState = {};
@@ -3925,6 +4005,10 @@ function deleteCatInner(type, path) {
 
 
 // ============ TODO TAB ============
+// 依赖: appData.todos/todoCats(DATA), saveData(DATA), openModal/closeAllModals(MODAL),
+//        todoCatFilter(STATE)
+// 暴露: renderTodos(), showAddTodoModal(), saveTodo(), toggleTodoDone(id), deleteTodo(id)
+// UI入口: Tab切换时由renderTab()调用renderTodos()
 function renderTodos() {
   var pillHtml = '<div class="cat-pill'+(todoCatFilter==='全部'?' active':'')+'" onclick="todoCatFilter=\'全部\';renderTodos();">全部</div>';
   for (var i=0;i<appData.todoCats.length;i++) {
@@ -4044,6 +4128,11 @@ function deleteTodoCat(i) {
 }
 
 // ============ RATES TAB ============
+// 依赖: appData.rates/activeCurrencies(DATA), saveData(DATA), formatMoney(UTILS),
+//        openModal/closeAllModals(MODAL), showGistPanel(GIST云同步)
+// 暴露: renderRates(), fetchRates(), showCurrencyManage(), showRateEditModal(code)
+// 注意: appData.rates格式固定为"1 CNY = ?该币种"，fetchRates()从open.er-api.com更新
+// UI入口: Tab切换时由renderTab()调用renderRates()
 function renderRates() {
   var rates = appData.rates;
   var active = appData.activeCurrencies;
@@ -4154,8 +4243,12 @@ function fetchRates() {
 }
 
 // ============ RATE COMPARE (直接/间接兑换) ============
-// 货币"强弱"顺位表：排名越靠前越"值钱"，外汇报价里习惯当base（分子）。
-// 用数值大小做近似判断，跟现实主流货币对（USD/JPY、EUR/USD等）基本吻合，可按需增减/调整顺序
+// 依赖: appData.rates/activeCurrencies/rateCompareState(DATA), saveData(DATA),
+//        formatMoney/CURRENCY_NAMES(UTILS), switchTab(TAB SWITCH)
+// 暴露: showRateCompare(), closeRateCompare(), renderRateCompare(), rcFetchLeg(key),
+//        onRcCurrencyChange(), RC_STRENGTH_RANK, rcRank(), rcDisp()
+// 注意: 汇率方向(乘/除)完全由rcOrientationFlags()的强弱排名决定，改标签前务必确认排名逻辑
+//        "获取"按钮(rcFetchLeg)从appData.rates取参考值，不自动填充，需用户手动点击
 var RC_STRENGTH_RANK = ['EUR','GBP','USD','CHF','AUD','NZD','CAD','SGD','HKD','CNY','MYR','THB','PHP','INR','IDR','JPY','KRW','VND','RUB','BRL','MXN','AED'];
 function rcRank(code) {
   var idx = RC_STRENGTH_RANK.indexOf(code);
@@ -4340,6 +4433,9 @@ function renderRateCompare() {
 }
 
 // ============ INIT ============
+// 依赖: loadData(DATA), renderTab(TAB SWITCH), checkBackupReminder(BACKUP REMINDER)
+// 暴露: init()
+// 注意: init()在脚本末尾直接调用（不是body onload），是整个App的唯一启动入口
 function init() {
   loadData();
   renderTab('daily');
