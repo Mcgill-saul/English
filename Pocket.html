@@ -562,7 +562,9 @@ input[type="date"] { color-scheme:light; }
       <button class="btn btn-outline btn-sm" style="flex:1;" onclick="showCurrencyManage()">管理币种</button>
       <button class="btn btn-primary btn-sm" style="flex:1;" onclick="fetchRates()">更新汇率</button>
     </div>
-    <button class="btn btn-outline" style="width:100%;margin-bottom:10px;" onclick="showRateCompare()">🔁 汇率对比（直接 / 间接兑换）</button>
+    <div style="display:flex;gap:10px;margin-bottom:10px;">
+      <button class="btn btn-outline btn-sm" style="flex:1;" onclick="showRateCompare()">🔁 汇率对比</button>
+    </div>
     <div style="font-size:11px;color:var(--text2);text-align:center;" id="rateUpdateTime"></div>
     <div class="card" id="dataBackupCard" style="margin-top:14px;">
       <div class="section-title">数据备份</div>
@@ -583,7 +585,7 @@ input[type="date"] { color-scheme:light; }
     <div class="mr-header">
       <span class="mr-back" onclick="closeRateCompare()">返回</span>
       <div class="mr-year-search-group">
-        <span style="font-size:16px;font-weight:600;">汇率对比</span>
+        <span style="font-size:16px;font-weight:600;"></span>
       </div>
     </div>
     <div class="card">
@@ -594,33 +596,63 @@ input[type="date"] { color-scheme:light; }
       <div class="form-row-inline">
         <div class="form-row"><label>持有金额</label><input type="number" id="rcHoldAmount" class="input-box" value="100" step="any" oninput="renderRateCompare()"></div>
       </div>
-      <div style="font-size:12px;color:var(--text2);">App内置汇率表（汇率Tab里那张）会作为下方汇率框的默认参考起点；改了的框不会再被自动覆盖，没改的会随币种切换刷新。</div>
+      <div style="font-size:12px;color:var(--text2);"></div>
     </div>
 
     <div class="card" id="rcBaseRatesCard">
       <div class="section-title">基准汇率（中转货币）</div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">两条间接路径都要用到，建议先填这里，下面就不用重复输入了。</div>
+
       <div class="form-row-inline">
-        <div class="form-row" id="rcUsdLeg1Row"><label id="rcUsdLeg1Label" class="rc-ticker-label">USD/CNH</label><input type="number" id="rcUsdLeg1" class="input-box" step="any" oninput="onRcLegInput('usdLeg1')"></div>
-        <div class="form-row" id="rcHkdLeg1Row"><label id="rcHkdLeg1Label" class="rc-ticker-label">HKD/CNH</label><input type="number" id="rcHkdLeg1" class="input-box" step="any" oninput="onRcLegInput('hkdLeg1')"></div>
+        <div class="form-row" id="rcUsdLeg1Row">
+          <label id="rcUsdLeg1Label" class="rc-ticker-label">USD/CNH</label>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input type="number" id="rcUsdLeg1" class="input-box" step="any" oninput="renderRateCompare()" style="flex:1;min-width:0;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="rcFetchLeg('usdLeg1')" style="padding:4px 6px;font-size:11px;white-space:nowrap;">获取</button>
+          </div>
+        </div>
+        <div class="form-row" id="rcHkdLeg1Row">
+          <label id="rcHkdLeg1Label" class="rc-ticker-label">HKD/CNH</label>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input type="number" id="rcHkdLeg1" class="input-box" step="any" oninput="renderRateCompare()" style="flex:1;min-width:0;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="rcFetchLeg('hkdLeg1')" style="padding:4px 6px;font-size:11px;white-space:nowrap;">获取</button>
+          </div>
+        </div>
       </div>
     </div>
 
     <div class="card">
       <div class="section-title">直接兑换</div>
-      <div class="form-row"><label id="rcDirectLabel" class="rc-ticker-label">1 持有 = ? 目标</label><input type="number" id="rcDirectRate" class="input-box" placeholder="现场看到的直接报价" step="any" oninput="onRcLegInput('direct')"></div>
+      <div class="form-row">
+        <label id="rcDirectLabel" class="rc-ticker-label">1 持有 = ? 目标</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="number" id="rcDirectRate" class="input-box" placeholder="" step="any" oninput="renderRateCompare()" style="flex:1;min-width:0;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="rcFetchLeg('direct')" style="padding:4px 6px;font-size:11px;white-space:nowrap;">获取</button>
+        </div>
+      </div>
       <div class="rc-leg-result" id="rcDirectResult"></div>
     </div>
 
     <div class="card" id="rcUsdCard">
       <div class="section-title">间接兑换（经美元）</div>
-      <div class="form-row"><label id="rcUsdLeg2Label" class="rc-ticker-label">1 USD = ? 目标</label><input type="number" id="rcUsdLeg2" class="input-box" step="any" oninput="onRcLegInput('usdLeg2')"></div>
+      <div class="form-row">
+        <label id="rcUsdLeg2Label" class="rc-ticker-label">1 USD = ? 目标</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="number" id="rcUsdLeg2" class="input-box" step="any" oninput="renderRateCompare()" style="flex:1;min-width:0;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="rcFetchLeg('usdLeg2')" style="padding:4px 6px;font-size:11px;white-space:nowrap;">获取</button>
+        </div>
+      </div>
       <div class="rc-leg-result" id="rcUsdResult"></div>
     </div>
 
     <div class="card" id="rcHkdCard">
       <div class="section-title">间接兑换（经港币）</div>
-      <div class="form-row"><label id="rcHkdLeg2Label" class="rc-ticker-label">1 HKD = ? 目标</label><input type="number" id="rcHkdLeg2" class="input-box" step="any" oninput="onRcLegInput('hkdLeg2')"></div>
+      <div class="form-row">
+        <label id="rcHkdLeg2Label" class="rc-ticker-label">1 HKD = ? 目标</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="number" id="rcHkdLeg2" class="input-box" step="any" oninput="renderRateCompare()" style="flex:1;min-width:0;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="rcFetchLeg('hkdLeg2')" style="padding:4px 6px;font-size:11px;white-space:nowrap;">获取</button>
+        </div>
+      </div>
       <div class="rc-leg-result" id="rcHkdResult"></div>
     </div>
   </div>
@@ -832,8 +864,7 @@ function getDefaultData() {
     rateUpdateTime: '',
     assets: { bankCards: [], debts: [], investments: [] },
     lastBackupTime: '',
-    rateCompareState: { hold:'CNY', target:'', amount:100, directRate:null, usdLeg1:null, usdLeg2:null, hkdLeg1:null, hkdLeg2:null,
-      touched: { direct:false, usdLeg1:false, usdLeg2:false, hkdLeg1:false, hkdLeg2:false } }
+    rateCompareState: { hold:'CNY', target:'', amount:100, directRate:null, usdLeg1:null, usdLeg2:null, hkdLeg1:null, hkdLeg2:null }
   };
 }
 
@@ -871,20 +902,9 @@ function migrateData() {
   if (!Array.isArray(appData.assets.debts)) appData.assets.debts = [];
   if (!Array.isArray(appData.assets.investments)) appData.assets.investments = [];
   if (appData.lastBackupTime === undefined) appData.lastBackupTime = '';
-  if (!appData.rateCompareState) appData.rateCompareState = { hold:'CNY', target:'', amount:100, directRate:null, usdLeg1:null, usdLeg2:null, hkdLeg1:null, hkdLeg2:null,
-    touched: { direct:false, usdLeg1:false, usdLeg2:false, hkdLeg1:false, hkdLeg2:false } };
-  // 旧数据没有 touched 字段：按"当前是否已有值"做一次性迁移判断（避免把之前手动填的真实报价当成可被覆盖的默认值）；
-  // 这只是迁移时的一次性兜底，之后全部由 onRcLegInput 实际触发的 touched 标记来管，不再用这个启发式
-  if (!appData.rateCompareState.touched) {
-    var rcs = appData.rateCompareState;
-    rcs.touched = {
-      direct: !!(rcs.directRate!==undefined && rcs.directRate!==null && rcs.directRate!==''),
-      usdLeg1: !!(rcs.usdLeg1!==undefined && rcs.usdLeg1!==null && rcs.usdLeg1!==''),
-      usdLeg2: !!(rcs.usdLeg2!==undefined && rcs.usdLeg2!==null && rcs.usdLeg2!==''),
-      hkdLeg1: !!(rcs.hkdLeg1!==undefined && rcs.hkdLeg1!==null && rcs.hkdLeg1!==''),
-      hkdLeg2: !!(rcs.hkdLeg2!==undefined && rcs.hkdLeg2!==null && rcs.hkdLeg2!=='')
-    };
-  }
+  if (!appData.rateCompareState) appData.rateCompareState = { hold:'CNY', target:'', amount:100, directRate:null, usdLeg1:null, usdLeg2:null, hkdLeg1:null, hkdLeg2:null };
+  // 旧数据可能带有touched字段，直接删掉（不再使用）
+  if (appData.rateCompareState.touched) delete appData.rateCompareState.touched;
 }
 // 自动同步节流参数：停止操作 GIST_PUSH_DEBOUNCE_MS 毫秒后才真正上传一次（防抖），
 // 且两次自动上传之间至少间隔 GIST_PUSH_MIN_INTERVAL_MS 毫秒（节流），避免短时间内连续操作把请求次数刷爆
@@ -4142,19 +4162,20 @@ function rcRank(code) {
   return idx >= 0 ? idx : RC_STRENGTH_RANK.length;
 }
 function rcDisp(code) { return code === 'CNY' ? 'CNH' : code; }
-// 5个汇率框是否已被用户手动改过（运行时状态，不持久化）；
-// 已改过的框，切换币种时不会被汇率表数据覆盖，只有还没动过的才会被自动填充/刷新。
-var rcTouched = { direct:false, usdLeg1:false, usdLeg2:false, hkdLeg1:false, hkdLeg2:false };
-// 从汇率表(appData.rates，以CNY为基准存"1CNY=?该币种")取某币种的相对汇率，CNY本身隐式按1处理；
-// 表里没有该币种数据时返回null
+// 从汇率表(appData.rates，以CNY为基准存"1CNY=?该币种")取某币种的相对汇率
 function rcTableRate(code) {
   if (code === 'CNY') return 1;
   var r = appData.rates[code];
   return (r && r > 0) ? r : null;
 }
 function rcFmtRate(v) { return v.toFixed(6).replace(/\.?0+$/,''); }
-// 根据持有/目标币种的强弱排序，决定5个框各自"1 X = ? Y"里谁是X（base）；
-// renderRateCompare(画label) 和 rcAutoFillDefaults(算默认值) 共用同一份判断，确保方向一致
+// 给"1 X = ? Y"方向的框，用汇率表算参考值；表里缺数据返回null
+function rcDefaultForPair(xCode, yCode) {
+  var rx = rcTableRate(xCode), ry = rcTableRate(yCode);
+  if (rx===null || ry===null) return null;
+  return rcFmtRate(ry / rx);
+}
+// 根据持有/目标币种的强弱排序，决定5个框各自谁是base（分子）
 function rcOrientationFlags(hold, target) {
   return {
     dirTargetIsBase: rcRank(target) < rcRank(hold),
@@ -4164,41 +4185,31 @@ function rcOrientationFlags(hold, target) {
     hkdLeg2TargetIsBase: rcRank(target) < rcRank('HKD')
   };
 }
-// 给"1 X = ? Y"方向的框，用汇率表算默认值；表里缺数据返回null，调用方负责留空+提示
-function rcDefaultForPair(xCode, yCode) {
-  var rx = rcTableRate(xCode), ry = rcTableRate(yCode);
-  if (rx===null || ry===null) return null;
-  return rcFmtRate(ry / rx);
-}
-// 把5个框里"还没被手动改过"的，按当前持有/目标币种用汇率表重新算一遍默认值填进去；
-// 已手动改过的（rcTouched标记）跳过，保留用户输入。算不出来的留空+placeholder提示。
-function rcAutoFillDefaults() {
+// 5个汇率框的映射表：key → { inputId, x/y 由持有/目标币种动态确定 }
+// 点"获取"时从 appData.rates（以CNY为基准）算出对应方向的参考值填入框里，
+// 用户看了再决定要不要用，不会自动覆盖——框里的内容完全由用户自己掌控
+function rcFetchLeg(key) {
   var hold = $('rcHoldCurrency').value, target = $('rcTargetCurrency').value;
   var o = rcOrientationFlags(hold, target);
-  var legs = [
-    { key:'direct', id:'rcDirectRate', x: o.dirTargetIsBase?target:hold, y: o.dirTargetIsBase?hold:target, ph:'现场看到的直接报价' },
-    { key:'usdLeg1', id:'rcUsdLeg1', x: o.usdLeg1HoldIsBase?hold:'USD', y: o.usdLeg1HoldIsBase?'USD':hold, ph:'' },
-    { key:'hkdLeg1', id:'rcHkdLeg1', x: o.hkdLeg1HoldIsBase?hold:'HKD', y: o.hkdLeg1HoldIsBase?'HKD':hold, ph:'' },
-    { key:'usdLeg2', id:'rcUsdLeg2', x: o.usdLeg2TargetIsBase?target:'USD', y: o.usdLeg2TargetIsBase?'USD':target, ph:'' },
-    { key:'hkdLeg2', id:'rcHkdLeg2', x: o.hkdLeg2TargetIsBase?target:'HKD', y: o.hkdLeg2TargetIsBase?'HKD':target, ph:'' }
-  ];
-  for (var i=0;i<legs.length;i++) {
-    var leg = legs[i];
-    if (rcTouched[leg.key]) continue;
-    var el = $(leg.id);
-    var def = rcDefaultForPair(leg.x, leg.y);
-    if (def !== null) { el.value = def; el.placeholder = leg.ph; }
-    else { el.value = ''; el.placeholder = '汇率表无此币种数据'; }
+  var map = {
+    direct:  { id:'rcDirectRate', x: o.dirTargetIsBase?target:hold,         y: o.dirTargetIsBase?hold:target },
+    usdLeg1: { id:'rcUsdLeg1',   x: o.usdLeg1HoldIsBase?hold:'USD',        y: o.usdLeg1HoldIsBase?'USD':hold },
+    hkdLeg1: { id:'rcHkdLeg1',   x: o.hkdLeg1HoldIsBase?hold:'HKD',        y: o.hkdLeg1HoldIsBase?'HKD':hold },
+    usdLeg2: { id:'rcUsdLeg2',   x: o.usdLeg2TargetIsBase?target:'USD',    y: o.usdLeg2TargetIsBase?'USD':target },
+    hkdLeg2: { id:'rcHkdLeg2',   x: o.hkdLeg2TargetIsBase?target:'HKD',   y: o.hkdLeg2TargetIsBase?'HKD':target }
+  };
+  var leg = map[key];
+  if (!leg) return;
+  var def = rcDefaultForPair(leg.x, leg.y);
+  if (def !== null) {
+    $(leg.id).value = def;
+    renderRateCompare();
+  } else {
+    alert('汇率表里没有 ' + leg.x + ' 或 ' + leg.y + ' 的数据，请先在汇率Tab里补充');
   }
 }
-// 持有/目标币种下拉框 onchange：先按新币种重新算未手动改过的默认值，再渲染
+// 持有/目标币种下拉框 onchange：直接重新渲染，不自动填充汇率框
 function onRcCurrencyChange() {
-  rcAutoFillDefaults();
-  renderRateCompare();
-}
-// 5个汇率框的 oninput：标记为"已手动改过"（之后切换币种不会再覆盖它），再渲染
-function onRcLegInput(field) {
-  rcTouched[field] = true;
   renderRateCompare();
 }
 function showRateCompare() {
@@ -4225,15 +4236,6 @@ function showRateCompare() {
     $('rcUsdLeg2').value = (st.usdLeg2!==undefined && st.usdLeg2!==null) ? st.usdLeg2 : '';
     $('rcHkdLeg1').value = (st.hkdLeg1!==undefined && st.hkdLeg1!==null) ? st.hkdLeg1 : '';
     $('rcHkdLeg2').value = (st.hkdLeg2!==undefined && st.hkdLeg2!==null) ? st.hkdLeg2 : '';
-    // touched状态是真正持久化的标记（见 appData.rateCompareState.touched），不是靠"框里是否有值"猜的——
-    // 这样系统自动填的值跨次打开App后依然能继续跟着汇率表刷新，只有真正手动改过的才会被保护
-    var t = st.touched || {};
-    rcTouched.direct = !!t.direct;
-    rcTouched.usdLeg1 = !!t.usdLeg1;
-    rcTouched.usdLeg2 = !!t.usdLeg2;
-    rcTouched.hkdLeg1 = !!t.hkdLeg1;
-    rcTouched.hkdLeg2 = !!t.hkdLeg2;
-    rcAutoFillDefaults();
   }
   renderRateCompare();
 }
@@ -4255,8 +4257,7 @@ function renderRateCompare() {
     amount: $('rcHoldAmount').value,
     directRate: $('rcDirectRate').value,
     usdLeg1: $('rcUsdLeg1').value, usdLeg2: $('rcUsdLeg2').value,
-    hkdLeg1: $('rcHkdLeg1').value, hkdLeg2: $('rcHkdLeg2').value,
-    touched: { direct:rcTouched.direct, usdLeg1:rcTouched.usdLeg1, usdLeg2:rcTouched.usdLeg2, hkdLeg1:rcTouched.hkdLeg1, hkdLeg2:rcTouched.hkdLeg2 }
+    hkdLeg1: $('rcHkdLeg1').value, hkdLeg2: $('rcHkdLeg2').value
   };
   if (JSON.stringify(newState) !== JSON.stringify(appData.rateCompareState||{})) {
     appData.rateCompareState = newState;
@@ -4264,7 +4265,6 @@ function renderRateCompare() {
   }
 
   // 标签随持有/目标币种联动更新（不重建input，避免输入值被打回）
-  // 方向判断与自动填充(rcAutoFillDefaults)共用 rcOrientationFlags，避免两处逻辑改一处忘一处
   var o = rcOrientationFlags(hold, target);
   var dirTargetIsBase = o.dirTargetIsBase; // 目标币种比持有"强"，目标当base（分子）
   $('rcDirectLabel').textContent = dirTargetIsBase ? (rcDisp(target) + '/' + rcDisp(hold)) : (rcDisp(hold) + '/' + rcDisp(target));
@@ -4278,13 +4278,14 @@ function renderRateCompare() {
   $('rcHkdLeg2Label').textContent = hkdLeg2TargetIsBase ? (target + '/HKD') : ('HKD/' + target);
 
   // 直接兑换结果（目标当base时，输入的是"1目标=?持有"，需用除法换算）
+  var directResult = null, usdFinal = null, hkdFinal = null;
   if (directRate>0 && amount>0) {
-    var directResult = dirTargetIsBase ? (amount/directRate) : (amount*directRate);
+    directResult = dirTargetIsBase ? (amount/directRate) : (amount*directRate);
     $('rcDirectResult').className = 'rc-leg-result';
     $('rcDirectResult').innerHTML = amount+' '+hold+' = <span class="rc-leg-amt">'+formatMoney(directResult)+' '+target+'</span>';
   } else {
     $('rcDirectResult').className = 'rc-leg-result rc-leg-empty';
-    $('rcDirectResult').textContent = '请输入上方直接报价';
+    $('rcDirectResult').textContent = '';
   }
 
   // 中转币种与持有/目标相同时，路径无意义，整张卡片（含置顶的基准汇率行）隐藏
@@ -4299,24 +4300,43 @@ function renderRateCompare() {
   // 经美元（按持有币种是否比USD"强"决定第一段乘除；第二段同理按target是否为base决定乘除）
   if (usdLeg1>0 && usdLeg2>0 && amount>0) {
     var usdMid = usdLeg1HoldIsBase ? (amount*usdLeg1) : (amount/usdLeg1);
-    var usdFinal = usdLeg2TargetIsBase ? (usdMid/usdLeg2) : (usdMid*usdLeg2);
+    usdFinal = usdLeg2TargetIsBase ? (usdMid/usdLeg2) : (usdMid*usdLeg2);
     $('rcUsdResult').className = 'rc-leg-result';
     $('rcUsdResult').innerHTML = amount+' '+hold+' → '+formatMoney(usdMid)+' USD → <span class="rc-leg-amt">'+formatMoney(usdFinal)+' '+target+'</span>';
   } else {
     $('rcUsdResult').className = 'rc-leg-result rc-leg-empty';
-    $('rcUsdResult').textContent = !(usdLeg1>0) ? '请先在上方填写基准汇率' : (!(usdLeg2>0) ? '请输入上方第二段汇率' : '请输入持有金额');
+    $('rcUsdResult').textContent = '';
   }
 
   // 经港币（按持有币种是否比HKD"强"决定第一段乘除）
   if (hkdLeg1>0 && hkdLeg2>0 && amount>0) {
     var hkdMid = hkdLeg1HoldIsBase ? (amount*hkdLeg1) : (amount/hkdLeg1);
-    var hkdFinal = hkdLeg2TargetIsBase ? (hkdMid/hkdLeg2) : (hkdMid*hkdLeg2);
+    hkdFinal = hkdLeg2TargetIsBase ? (hkdMid/hkdLeg2) : (hkdMid*hkdLeg2);
     $('rcHkdResult').className = 'rc-leg-result';
     $('rcHkdResult').innerHTML = amount+' '+hold+' → '+formatMoney(hkdMid)+' HKD → <span class="rc-leg-amt">'+formatMoney(hkdFinal)+' '+target+'</span>';
   } else {
     $('rcHkdResult').className = 'rc-leg-result rc-leg-empty';
-    $('rcHkdResult').textContent = !(hkdLeg1>0) ? '请先在上方填写基准汇率' : (!(hkdLeg2>0) ? '请输入上方第二段汇率' : '请输入持有金额');
+    $('rcHkdResult').textContent = '';
   }
+
+  // 有结果的路径中找最优（兑换到目标货币最多的那条），粗体绿色高亮
+  var results = [
+    { val: directResult, el: $('rcDirectResult') },
+    { val: usdPathHidden ? null : usdFinal, el: $('rcUsdResult') },
+    { val: hkdPathHidden ? null : hkdFinal, el: $('rcHkdResult') }
+  ].filter(function(r){ return r.val !== null && r.val > 0; });
+  var best = results.length > 1 ? Math.max.apply(null, results.map(function(r){ return r.val; })) : null;
+  results.forEach(function(r) {
+    var amtSpan = r.el.querySelector('.rc-leg-amt');
+    if (!amtSpan) return;
+    if (best !== null && r.val === best) {
+      amtSpan.style.color = 'var(--success, #22a861)';
+      amtSpan.style.fontWeight = '700';
+    } else {
+      amtSpan.style.color = '';
+      amtSpan.style.fontWeight = '';
+    }
+  });
 }
 
 // ============ INIT ============
