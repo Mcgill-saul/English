@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Overview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:          #f2f0ed;
+    --surface:     #ffffff;
+    --surface2:    #faf9f8;
+    --border:      #e5e2de;
+    --border-lt:   #eeebe8;
+    --text:        #1c1917;
+    --text-dim:    #78716c;
+    --text-muted:  #b0a9a3;
+    --expense:     #c2410c;
+    --expense-bg:  #fff4ee;
+    --expense-bd:  #fed7aa;
+    --fitness:     #047857;
+    --fitness-bg:  #edfaf4;
+    --fitness-bd:  #a7f3d0;
+    --note-c:      #6d28d9;
+    --note-bg:     #f5f3ff;
+    --note-bd:     #ddd6fe;
+    --today-bar:   #1c1917;
+    --sel-ring:    #6d28d9;
+    --radius:      12px;
+    --font-num:    'SF Mono', ui-monospace, monospace;
+    --shadow-sm:   0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.04);
+    --shadow-md:   0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, 'PingFang SC', sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ══ Topbar ═══════════════════════════════════════════ */
+  .topbar {
+    background: rgba(255,255,255,.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-lt);
+    padding: 0 40px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  .topbar-left { display: flex; align-items: center; gap: 20px; }
+
+  .site-name {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .site-name::before {
+    content: '';
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--today-bar);
+    flex-shrink: 0;
+  }
+
+  .topbar-sep { width: 1px; height: 16px; background: var(--border); }
+
+  .topbar-links { display: flex; gap: 2px; }
+  .topbar-link {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-dim);
+    text-decoration: none;
+    padding: 5px 10px;
+    border-radius: 7px;
+    transition: background .15s, color .15s;
+  }
+  .topbar-link:hover { background: var(--bg); color: var(--text); }
+
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+
+  /* Note toggle pill */
+  .note-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-dim);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 13px;
+    cursor: pointer;
+    transition: all .15s;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .note-toggle:hover { border-color: var(--text-muted); color: var(--text); }
+  .note-toggle.active {
+    background: var(--note-bg);
+    border-color: var(--note-bd);
+    color: var(--note-c);
+  }
+  .toggle-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: .6;
+    flex-shrink: 0;
+  }
+
+  /* Month nav */
+  .month-nav { display: flex; align-items: center; gap: 6px; }
+
+  .nav-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+    flex-shrink: 0;
+  }
+  .nav-btn:hover { border-color: var(--text-muted); color: var(--text); background: var(--surface2); }
+
+  .today-btn {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-dim);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: all .15s;
+    letter-spacing: .01em;
+  }
+  .today-btn:hover { color: var(--text); border-color: var(--text-muted); }
+
+  .month-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text);
+    min-width: 136px;
+    text-align: center;
+    letter-spacing: -.01em;
+  }
+
+  /* ══ Calendar ═════════════════════════════════════════ */
+  .cal-wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 40px 0;
+  }
+
+  .weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    margin-bottom: 8px;
+    padding: 0 1px;
+  }
+  .weekday {
+    text-align: center;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 4px 0;
+  }
+  .weekday.sun { color: #dc6a4a; }
+  .weekday.sat { color: #5b7ec8; }
+
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+
+  /* ── Day cell ─────────────────────────────────────── */
+  .day-cell {
+    background: var(--surface);
+    border: 1px solid var(--border-lt);
+    border-radius: var(--radius);
+    min-height: 118px;
+    padding: 11px 11px 9px;
+    cursor: pointer;
+    transition: border-color .15s, box-shadow .15s, transform .1s;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+  .day-cell::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: transparent;
+    transition: background .15s;
+  }
+  .day-cell:hover {
+    border-color: var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .day-cell.empty {
+    background: transparent;
+    border-color: transparent;
+    cursor: default;
+    box-shadow: none;
+  }
+  .day-cell.empty::before { display: none; }
+
+  .day-cell.today {
+    border-color: var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .day-cell.today::before { background: var(--today-bar); }
+
+  .day-cell.selected {
+    border-color: var(--sel-ring);
+    box-shadow: 0 0 0 1px var(--sel-ring), var(--shadow-sm);
+  }
+  .day-cell.selected::before { background: var(--sel-ring); }
+
+  /* Date number */
+  .day-num {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px;
+    flex-shrink: 0;
+    line-height: 1;
+    letter-spacing: -.01em;
+    font-family: 'Inter', sans-serif;
+  }
+  .day-cell.today .day-num {
+    background: var(--today-bar);
+    color: #fff;
+    font-weight: 700;
+  }
+  .day-cell.sunday  .day-num { color: #dc6a4a; }
+  .day-cell.saturday .day-num { color: #5b7ec8; }
+  .day-cell.today .day-num { color: #fff !important; }
+
+  /* Chips */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10.5px;
+    font-weight: 600;
+    border-radius: 20px;
+    padding: 2px 8px;
+    line-height: 1.5;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+    letter-spacing: .01em;
+    border: 1px solid transparent;
+  }
+  .chip-expense {
+    background: var(--expense-bg);
+    color: var(--expense);
+    border-color: var(--expense-bd);
+  }
+  .chip-fitness {
+    background: var(--fitness-bg);
+    color: var(--fitness);
+    border-color: var(--fitness-bd);
+  }
+
+  /* Cal note textarea */
+  .cell-note-wrap { flex: 1; display: flex; flex-direction: column; margin-top: 1px; }
+  .notes-hidden .cell-note-wrap { display: none; }
+
+  .cell-note {
+    font-size: 11px;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.55;
+    color: var(--text-dim);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 3px 5px;
+    width: 100%;
+    resize: none;
+    outline: none;
+    height: 22px;
+    min-height: 22px;
+    overflow: hidden;
+    cursor: text;
+    transition: border-color .13s, background .13s;
+  }
+  .cell-note:hover { border-color: var(--border-lt); background: var(--surface2); }
+  .cell-note:focus {
+    border-color: var(--note-bd);
+    background: var(--note-bg);
+    color: var(--text);
+    height: auto;
+    min-height: 38px;
+  }
+  .cell-note::placeholder { color: var(--text-muted); font-style: italic; }
+
+  /* ══ Detail panel ═════════════════════════════════════ */
+  .detail-outer {
+    max-width: 1100px;
+    margin: 14px auto 0;
+    padding: 0 40px;
+  }
+
+  .detail-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: none;
+    box-shadow: var(--shadow-md);
+    animation: slideDown .18s ease;
+  }
+  .detail-panel.open { display: block; }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .detail-top {
+    display: flex;
+    align-items: stretch;
+  }
+
+  /* Left col */
+  .detail-left {
+    padding: 22px 24px;
+    border-right: 1px solid var(--border-lt);
+    width: 260px;
+    flex-shrink: 0;
+  }
+  .detail-date-big {
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -.02em;
+    line-height: 1.2;
+  }
+  .detail-date-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 3px 0 18px;
+    font-weight: 500;
+  }
+
+  .stat-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border-lt);
+    border-radius: 9px;
+    margin-bottom: 6px;
+  }
+  .stat-icon { font-size: 15px; flex-shrink: 0; line-height: 1; }
+  .stat-body { min-width: 0; }
+  .stat-val {
+    font-size: 14.5px;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -.01em;
+  }
+  .stat-val.expense { color: var(--expense); }
+  .stat-val.fitness { color: var(--fitness); }
+  .stat-sub { font-size: 10.5px; color: var(--text-muted); margin-top: 1px; font-weight: 500; }
+  .no-data-row {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 4px 2px;
+    font-weight: 400;
+  }
+
+  /* Right col */
+  .detail-right {
+    flex: 1;
+    padding: 22px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+  .detail-note-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .note-area {
+    flex: 1;
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border-lt);
+    border-radius: 9px;
+    color: var(--text);
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 13.5px;
+    line-height: 1.75;
+    padding: 12px 14px;
+    resize: none;
+    min-height: 110px;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .note-area:focus { border-color: var(--note-bd); background: var(--note-bg); }
+  .note-area::placeholder { color: var(--text-muted); }
+
+  /* Action bar */
+  .detail-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 24px;
+    background: var(--surface2);
+    border-top: 1px solid var(--border-lt);
+  }
+  .detail-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .detail-actions { display: flex; gap: 8px; }
+
+  .btn-ghost {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 8px;
+    padding: 6px 16px;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all .15s;
+  }
+  .btn-ghost:hover { border-color: var(--text-muted); color: var(--text); }
+
+  .btn-primary {
+    background: var(--text);
+    border: none;
+    color: #fff;
+    border-radius: 8px;
+    padding: 6px 18px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: opacity .15s, background .2s;
+    letter-spacing: .01em;
+  }
+  .btn-primary:hover { opacity: .85; }
+  .btn-primary.saved { background: var(--fitness); opacity: 1; }
+
+  /* ══ Bottom bar ═══════════════════════════════════════ */
+  .bottom-bar {
+    max-width: 1100px;
+    margin: 18px auto 0;
+    padding: 0 40px 36px;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+  .legend-pip {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="site-name">Overview</div>
+    <div class="topbar-sep"></div>
+    <nav class="topbar-links">
+      <a class="topbar-link" href="https://mcgill-saul.github.io/English/Pocket.html" target="_blank">Pocket</a>
+      <a class="topbar-link" href="https://mcgill-saul.github.io/English/Fitness.html" target="_blank">Fitness</a>
+    </nav>
+  </div>
+  <div class="topbar-right">
+    <div class="note-toggle" id="noteToggle" onclick="toggleNotes()">
+      <span class="toggle-dot"></span>
+      <span id="toggleLabel">显示笔记</span>
+    </div>
+    <div class="month-nav">
+      <button class="today-btn" id="btnToday">Today</button>
+      <button class="nav-btn" id="btnPrev">&#8249;</button>
+      <div class="month-label" id="monthLabel"></div>
+      <button class="nav-btn" id="btnNext">&#8250;</button>
+    </div>
+  </div>
+</div>
+
+<!-- Calendar -->
+<div class="cal-wrap" id="calWrap">
+  <div class="weekdays">
+    <div class="weekday sun">Sun</div>
+    <div class="weekday">Mon</div>
+    <div class="weekday">Tue</div>
+    <div class="weekday">Wed</div>
+    <div class="weekday">Thu</div>
+    <div class="weekday">Fri</div>
+    <div class="weekday sat">Sat</div>
+  </div>
+  <div class="cal-grid" id="calGrid"></div>
+</div>
+
+<!-- Detail panel -->
+<div class="detail-outer">
+  <div class="detail-panel" id="detailPanel">
+    <div class="detail-top">
+      <div class="detail-left" id="detailLeft"></div>
+      <div class="detail-right">
+        <div class="detail-note-label">完整笔记</div>
+        <textarea class="note-area" id="noteArea" placeholder="记录今天的想法、计划或感受…"></textarea>
+      </div>
+    </div>
+    <div class="detail-bar">
+      <div class="detail-hint" id="detailHint">完整笔记 · 与日历格子里的显示文字相互独立</div>
+      <div class="detail-actions">
+        <button class="btn-ghost" onclick="closeDetail()">关闭</button>
+        <button class="btn-primary" id="btnSave" onclick="doSave()">保存笔记</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Legend -->
+<div class="bottom-bar">
+  <div class="legend-item">
+    <div class="legend-pip" style="background:var(--expense)"></div>
+    当日开销
+  </div>
+  <div class="legend-item">
+    <div class="legend-pip" style="background:var(--fitness)"></div>
+    运动记录
+  </div>
+  <div class="legend-item">
+    <div class="legend-pip" style="background:var(--note-c)"></div>
+    日历笔记（独立于完整笔记）
+  </div>
+</div>
+
+<script>
+var LS_POCKET     = 'travelAssistantData';
+var LS_FITNESS    = 'fitness_v5';
+var LS_NOTES      = 'overview_notes_v1';
+var LS_CAL_NOTES  = 'overview_cal_notes_v1';
+var LS_SHOW_NOTES = 'overview_show_notes';
+
+var SPORT_LABEL = {
+  'Run':       '🏃 Run',
+  'Strength':  '💪 Strength',
+  'Jump Rope': '⚡ Jump Rope',
+  'Badminton': '🏸 Badminton',
+  'Hike':      '🥾 Hike',
+  'Walk':      '🚶 Walk',
+};
+
+var today     = new Date();
+var todayStr  = fmtDate(today);
+var curYear   = today.getFullYear();
+var curMonth  = today.getMonth();
+var selDate   = null;
+var showNotes = localStorage.getItem(LS_SHOW_NOTES) !== 'false';
+
+function loadPocket() {
+  try {
+    var app = JSON.parse(localStorage.getItem(LS_POCKET) || '{}');
+    var out = {};
+    (app.records || []).forEach(function(r) {
+      if (r.type !== 'daily' || r.recordType !== 'expense' || !r.date) return;
+      out[r.date] = (out[r.date] || 0) + (r.amount || 0);
+    });
+    return out;
+  } catch(e) { return {}; }
+}
+
+function loadFitness() {
+  try {
+    var arr = JSON.parse(localStorage.getItem(LS_FITNESS) || '[]');
+    var out = {};
+    (Array.isArray(arr) ? arr : []).forEach(function(r) {
+      if (!r.date) return;
+      (out[r.date] = out[r.date] || []).push(r.sport || '');
+    });
+    return out;
+  } catch(e) { return {}; }
+}
+
+function loadNotes() {
+  try { return JSON.parse(localStorage.getItem(LS_NOTES) || '{}'); }
+  catch(e) { return {}; }
+}
+
+function loadCalNotes() {
+  try { return JSON.parse(localStorage.getItem(LS_CAL_NOTES) || '{}'); }
+  catch(e) { return {}; }
+}
+
+function getCalDisplay(ds, notes, calNotes) {
+  if (calNotes[ds] !== undefined) return calNotes[ds];
+  if (notes[ds]) {
+    var first = notes[ds].split(/\n/)[0].trim();
+    return first.length > 60 ? first.slice(0, 60) + '…' : first;
+  }
+  return '';
+}
+
+function fmtDate(d) {
+  return d.getFullYear() + '-' +
+    String(d.getMonth()+1).padStart(2,'0') + '-' +
+    String(d.getDate()).padStart(2,'0');
+}
+function fmtMoney(n) {
+  return '¥' + Math.round(n).toLocaleString('zh-CN');
+}
+function dedupe(arr) {
+  var s = {}, o = [];
+  arr.forEach(function(x){ if(!s[x]){ s[x]=1; o.push(x); } });
+  return o;
+}
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function toggleNotes() {
+  showNotes = !showNotes;
+  localStorage.setItem(LS_SHOW_NOTES, showNotes);
+  applyNotesToggle();
+}
+function applyNotesToggle() {
+  document.getElementById('calWrap').classList.toggle('notes-hidden', !showNotes);
+  var tog = document.getElementById('noteToggle');
+  tog.classList.toggle('active', showNotes);
+  document.getElementById('toggleLabel').textContent = showNotes ? '隐藏笔记' : '显示笔记';
+}
+
+function render() {
+  var pocket   = loadPocket();
+  var fitness  = loadFitness();
+  var notes    = loadNotes();
+  var calNotes = loadCalNotes();
+
+  var MONTHS = ['January','February','March','April','May','June',
+                'July','August','September','October','November','December'];
+  document.getElementById('monthLabel').textContent = MONTHS[curMonth] + ' ' + curYear;
+
+  var grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+
+  var firstDow    = new Date(curYear, curMonth, 1).getDay();
+  var daysInMonth = new Date(curYear, curMonth+1, 0).getDate();
+
+  for (var i = 0; i < firstDow; i++) {
+    var emp = document.createElement('div');
+    emp.className = 'day-cell empty';
+    grid.appendChild(emp);
+  }
+
+  for (var d = 1; d <= daysInMonth; d++) {
+    var ds  = curYear + '-' + String(curMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    var dow = new Date(curYear, curMonth, d).getDay();
+
+    var cell = document.createElement('div');
+    var cls  = 'day-cell';
+    if (ds === todayStr) cls += ' today';
+    if (ds === selDate)  cls += ' selected';
+    if (dow === 0) cls += ' sunday';
+    if (dow === 6) cls += ' saturday';
+    cell.className = cls;
+    cell.dataset.date = ds;
+
+    var num = document.createElement('div');
+    num.className = 'day-num';
+    num.textContent = d;
+    cell.appendChild(num);
+
+    if (pocket[ds]) {
+      var ec = document.createElement('div');
+      ec.className = 'chip chip-expense';
+      ec.textContent = fmtMoney(pocket[ds]);
+      cell.appendChild(ec);
+    }
+
+    if (fitness[ds] && fitness[ds].length) {
+      dedupe(fitness[ds]).slice(0, 2).forEach(function(sp) {
+        var fc = document.createElement('div');
+        fc.className = 'chip chip-fitness';
+        fc.textContent = SPORT_LABEL[sp] || sp;
+        cell.appendChild(fc);
+      });
+    }
+
+    var noteWrap = document.createElement('div');
+    noteWrap.className = 'cell-note-wrap';
+
+    var ta = document.createElement('textarea');
+    ta.className = 'cell-note';
+    ta.placeholder = '…';
+    ta.value = getCalDisplay(ds, notes, calNotes);
+    ta.rows = 1;
+    ta.dataset.date = ds;
+
+    ta.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+    ta.addEventListener('click',     function(e) { e.stopPropagation(); });
+    ta.addEventListener('focus', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.max(38, this.scrollHeight) + 'px';
+    });
+    ta.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.max(38, this.scrollHeight) + 'px';
+    });
+    ta.addEventListener('blur', (function(dateStr, textarea) {
+      return function() {
+        var val = textarea.value;
+        var calN = loadCalNotes();
+        if (val.trim()) calN[dateStr] = val;
+        else delete calN[dateStr];
+        localStorage.setItem(LS_CAL_NOTES, JSON.stringify(calN));
+        textarea.style.height = '';
+      };
+    })(ds, ta));
+
+    noteWrap.appendChild(ta);
+    cell.appendChild(noteWrap);
+
+    cell.addEventListener('click', (function(dateStr) {
+      return function() { openDetail(dateStr); };
+    })(ds));
+
+    grid.appendChild(cell);
+  }
+
+  applyNotesToggle();
+}
+
+function openDetail(ds) {
+  selDate = ds;
+  document.querySelectorAll('.day-cell').forEach(function(c) {
+    c.classList.toggle('selected', c.dataset.date === ds);
+  });
+
+  var pocket  = loadPocket();
+  var fitness = loadFitness();
+  var notes   = loadNotes();
+
+  var d = new Date(ds + 'T00:00:00');
+  var DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  var leftHtml = '';
+  leftHtml += '<div class="detail-date-big">' + MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear() + '</div>';
+  leftHtml += '<div class="detail-date-sub">' + DAYS[d.getDay()] + '</div>';
+
+  if (pocket[ds]) {
+    leftHtml += '<div class="stat-row"><div class="stat-icon">💰</div><div class="stat-body">' +
+      '<div class="stat-val expense">' + fmtMoney(pocket[ds]) + '</div>' +
+      '<div class="stat-sub">当日支出合计</div></div></div>';
+  } else {
+    leftHtml += '<div class="no-data-row">无支出记录</div>';
+  }
+
+  if (fitness[ds] && fitness[ds].length) {
+    dedupe(fitness[ds]).forEach(function(sp) {
+      var label = SPORT_LABEL[sp] || ('🏅 ' + sp);
+      leftHtml += '<div class="stat-row"><div class="stat-icon">' + label.split(' ')[0] + '</div>' +
+        '<div class="stat-body"><div class="stat-val fitness">' + escHtml(sp) + '</div></div></div>';
+    });
+  } else {
+    leftHtml += '<div class="no-data-row">无运动记录</div>';
+  }
+
+  document.getElementById('detailLeft').innerHTML = leftHtml;
+  document.getElementById('noteArea').value = notes[ds] || '';
+
+  var panel = document.getElementById('detailPanel');
+  panel.classList.add('open');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function closeDetail() {
+  selDate = null;
+  document.getElementById('detailPanel').classList.remove('open');
+  document.querySelectorAll('.day-cell').forEach(function(c) {
+    c.classList.remove('selected');
+  });
+}
+
+function doSave() {
+  if (!selDate) return;
+  var text = document.getElementById('noteArea').value;
+  var notes = loadNotes();
+  if (text.trim()) notes[selDate] = text;
+  else delete notes[selDate];
+  localStorage.setItem(LS_NOTES, JSON.stringify(notes));
+
+  var calNotes = loadCalNotes();
+  if (calNotes[selDate] === undefined) {
+    var cell = document.querySelector('.day-cell[data-date="' + selDate + '"]');
+    if (cell) {
+      var ta = cell.querySelector('.cell-note');
+      if (ta) {
+        var first = text.split(/\n/)[0].trim();
+        ta.value = first.length > 60 ? first.slice(0, 60) + '…' : first;
+      }
+    }
+  }
+
+  var btn = document.getElementById('btnSave');
+  btn.textContent = '已保存 ✓';
+  btn.classList.add('saved');
+  setTimeout(function() {
+    btn.textContent = '保存笔记';
+    btn.classList.remove('saved');
+  }, 1400);
+}
+
+document.getElementById('btnPrev').addEventListener('click', function() {
+  if (--curMonth < 0) { curMonth = 11; curYear--; }
+  closeDetail(); render();
+});
+document.getElementById('btnNext').addEventListener('click', function() {
+  if (++curMonth > 11) { curMonth = 0; curYear++; }
+  closeDetail(); render();
+});
+document.getElementById('btnToday').addEventListener('click', function() {
+  curYear = today.getFullYear();
+  curMonth = today.getMonth();
+  render();
+  openDetail(todayStr);
+});
+
+render();
+</script>
+</body>
+</html>
