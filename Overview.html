@@ -69,6 +69,10 @@
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+  html {
+    scrollbar-gutter: stable;
+  }
+
   body {
     background: var(--bg);
     color: var(--text);
@@ -203,7 +207,7 @@
     background: var(--surface);
     border: 1px solid var(--border);
     color: var(--text-dim);
-    width: 30px; height: 30px;
+    width: 32px; height: 32px;
     border-radius: var(--radius-xs);
     cursor: pointer;
     font-size: 16px;
@@ -232,7 +236,7 @@
   }
 
   .cal-picker-btn {
-    width: 34px; height: 34px;
+    width: 32px; height: 32px;
     display: flex; align-items: center; justify-content: center;
     background: var(--surface);
     border: 1px solid var(--border);
@@ -247,17 +251,20 @@
   .cal-picker-btn.open { background: var(--blue-bg); border-color: var(--blue-bd); transform: scale(.95); }
 
   .today-btn {
+    height: 32px;
+    display: flex; align-items: center; justify-content: center;
     font-size: 11.5px;
     font-weight: 600;
     color: var(--text-dim);
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-xs);
-    padding: 5px 13px;
+    padding: 0 14px;
     cursor: pointer;
     transition: all .13s;
     letter-spacing: .01em;
     box-shadow: var(--shadow-xs);
+    flex-shrink: 0;
   }
   .today-btn:hover { color: var(--blue); border-color: var(--blue-bd); background: var(--blue-bg); }
 
@@ -428,7 +435,7 @@
   .detail-outer {
     max-width: 1440px;
     margin: 12px auto 0;
-    padding: 0 40px;
+    padding: 0 40px 32px;
   }
 
   .detail-panel {
@@ -583,29 +590,6 @@
   }
   .btn-primary:hover { opacity: .88; }
   .btn-primary.saved { background: var(--emerald); box-shadow: 0 1px 3px rgba(5,150,105,.3); }
-
-  /* ── Bottom legend bar ───────────────────────────────── */
-  .bottom-bar {
-    max-width: 1440px;
-    margin: 16px auto 0;
-    padding: 0 40px 32px;
-    display: flex;
-    gap: 18px;
-    flex-wrap: wrap;
-  }
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 10.5px;
-    font-weight: 500;
-    color: var(--text-muted);
-  }
-  .legend-pip {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
 
   /* ── Settings drawer ─────────────────────────────────── */
   .drawer-overlay {
@@ -948,6 +932,145 @@
   }
   .tag-btn-clear:hover { color: var(--text); border-color: var(--text-muted); }
 
+  /* ── Quick-capture FAB ───────────────────────────────── */
+  .fab-btn {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    box-shadow: var(--shadow-lg);
+    font-size: 25px;
+    line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    z-index: 60;
+    transition: transform .15s, box-shadow .15s;
+    font-family: inherit;
+  }
+  .fab-btn:hover { transform: scale(1.06); }
+  .fab-btn:active { transform: scale(.93); }
+
+  .fab-badge {
+    position: absolute;
+    top: -3px; right: -3px;
+    min-width: 19px; height: 19px;
+    border-radius: 10px;
+    background: #e05a3a;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    display: none;
+    align-items: center; justify-content: center;
+    padding: 0 5px;
+    border: 2px solid var(--bg);
+    pointer-events: none;
+  }
+  .fab-badge.show { display: flex; }
+
+  /* ── Todo panel (built inside .modal-sheet) ──────────── */
+  .todo-input-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .todo-input-row .input-box { flex: 1; }
+
+  .todo-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 48vh;
+    overflow-y: auto;
+    margin-bottom: 10px;
+  }
+  .todo-section-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 8px 0 2px;
+  }
+  .todo-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 9px;
+    background: var(--surface2);
+    border: 1px solid var(--border-lt);
+    border-radius: var(--radius-sm);
+  }
+  .todo-check {
+    width: 19px; height: 19px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    color: #fff;
+    transition: all .13s;
+    padding: 0;
+  }
+  .todo-check.done { background: var(--emerald); border-color: var(--emerald); }
+  .todo-text {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    color: var(--text);
+    word-break: break-word;
+    line-height: 1.4;
+  }
+  .todo-item.done .todo-text { color: var(--text-muted); text-decoration: line-through; }
+  .todo-date-input {
+    font-size: 11px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px 4px;
+    flex-shrink: 0;
+    font-family: inherit;
+    color: var(--text-dim);
+    background: var(--surface);
+    width: 118px;
+  }
+  .todo-date-clear {
+    width: 20px; height: 20px;
+    border-radius: 6px;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 11px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .13s;
+    padding: 0;
+  }
+  .todo-date-clear:hover { background: var(--surface3); color: var(--text); }
+  .todo-del {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 13px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .13s;
+    padding: 0;
+  }
+  .todo-del:hover { background: var(--surface3); color: #dc2626; }
+  .todo-empty {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 16px 0;
+    font-style: italic;
+  }
+
   /* ════════════════════════════════════════════════════════
      Mobile responsive (≤768px)
      ════════════════════════════════════════════════════════ */
@@ -979,10 +1102,10 @@
 
     .cal-header { margin-bottom: 12px; }
     .month-nav { gap: 4px; }
-    .nav-btn { width: 26px; height: 26px; font-size: 14px; }
-    .month-label { font-size: 14px; min-width: 0; padding: 0 2px; }
+    .nav-btn { width: 28px; height: 28px; font-size: 14px; }
+    .month-label { font-size: 14px; min-width: 122px; padding: 0 2px; }
     .cal-picker-btn { width: 28px; height: 28px; font-size: 13px; }
-    .today-btn { padding: 4px 9px; font-size: 10px; }
+    .today-btn { height: 28px; padding: 0 10px; font-size: 10px; }
 
     /* Weekday headers */
     .weekdays { gap: 3px; margin-bottom: 4px; }
@@ -1010,7 +1133,7 @@
     .picker-item { font-size: 11px; padding: 5px 3px; }
 
     /* Detail panel: stack columns */
-    .detail-outer { padding: 0 10px; margin-top: 8px; }
+    .detail-outer { padding: 0 10px 20px; margin-top: 8px; }
     .detail-top { flex-direction: column; }
     .detail-left {
       width: 100%;
@@ -1028,22 +1151,22 @@
     /* Tag picker row */
     .tag-btn { font-size: 10.5px; padding: 3px 8px; }
 
-    /* Bottom legend */
-    .bottom-bar { padding: 0 10px 20px; gap: 12px; margin-top: 12px; }
-    .legend-item { font-size: 9.5px; }
-
     /* Settings drawer: full width on mobile */
     .drawer { width: 88%; max-width: 340px; }
 
     /* Modal sheet */
     .modal-sheet { padding: 18px 16px 28px; }
+
+    /* Quick-capture FAB */
+    .fab-btn { right: 16px; bottom: 16px; width: 48px; height: 48px; font-size: 22px; }
+    .todo-date-input { width: 100px; font-size: 10.5px; }
   }
 
   /* Extra-narrow phones */
   @media (max-width: 380px) {
     .day-cell { min-height: 58px; }
     .topbar-link span:last-child { display: none; }
-    .month-label { font-size: 13px; }
+    .month-label { font-size: 13px; min-width: 110px; }
     .chip { display: none; }
   }
 </style>
@@ -1212,22 +1335,11 @@
   </div>
 </div>
 
-<!-- Legend -->
-<div class="bottom-bar">
-  <div class="legend-item">
-    <div class="legend-pip" style="background:var(--amber)"></div>
-    当日开销
-  </div>
-  <div class="legend-item">
-    <div class="legend-pip" style="background:var(--emerald)"></div>
-    运动记录
-  </div>
-  <div class="legend-item">
-    <div class="legend-pip" style="background:var(--violet)"></div>
-    日历笔记
-  </div>
-  <div id="tagLegend" style="display:contents"></div>
-</div>
+<!-- Quick-capture FAB -->
+<button class="fab-btn" id="fabBtn" onclick="showTodoPanel()" title="速记待办">
+  <span>+</span>
+  <span class="fab-badge" id="fabBadge"></span>
+</button>
 
 <script>
 // ── Storage ─────────────────────────────────────────────
@@ -1269,6 +1381,7 @@ function getDefaultData() {
     calNotes:  {},    // { 'YYYY-MM-DD': '日历格显示文字（独立）' }
     tags:      {},    // { 'YYYY-MM-DD': 'tagId' }
     tagDefs:   [],    // [{ id, label, color }] — user-defined
+    todos:     [],    // [{ id, text, done, date(可空), createdAt }] — 速记待办
     showNotes: true,  // 日历格笔记总开关
     version:   1
   };
@@ -1296,6 +1409,7 @@ function migrateData() {
   }
   if (!appData.tags) appData.tags = {};
   if (!appData.tagDefs) appData.tagDefs = [];
+  if (!appData.todos) appData.todos = [];
   if (appData.showNotes === undefined) {
     appData.showNotes = localStorage.getItem('overview_show_notes') !== 'false';
   }
@@ -1362,6 +1476,117 @@ function dedupe(arr) {
 }
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Quick-capture Todos ───────────────────────────────────
+function genId() {
+  return 't' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+}
+
+function updateFabBadge() {
+  var badge = document.getElementById('fabBadge');
+  if (!badge) return;
+  var n = (appData.todos || []).filter(function(t){ return !t.done; }).length;
+  if (n > 0) {
+    badge.textContent = n > 99 ? '99+' : n;
+    badge.classList.add('show');
+  } else {
+    badge.classList.remove('show');
+  }
+}
+
+function addTodoFromInput() {
+  var input = document.getElementById('todoInput');
+  if (!input) return;
+  var text = input.value.trim();
+  if (!text) return;
+  appData.todos.unshift({ id: genId(), text: text, done: false, date: null, createdAt: Date.now() });
+  saveData();
+  input.value = '';
+  refreshTodoList();
+  updateFabBadge();
+  input.focus();
+}
+
+function toggleTodoDone(id) {
+  var t = appData.todos.find(function(x){ return x.id === id; });
+  if (!t) return;
+  t.done = !t.done;
+  saveData();
+  refreshTodoList();
+  updateFabBadge();
+}
+
+function deleteTodo(id) {
+  appData.todos = appData.todos.filter(function(x){ return x.id !== id; });
+  saveData();
+  refreshTodoList();
+  updateFabBadge();
+}
+
+function setTodoDate(id, val) {
+  var t = appData.todos.find(function(x){ return x.id === id; });
+  if (!t) return;
+  t.date = val || null;
+  saveData();
+  refreshTodoList();
+}
+
+function renderTodoItem(t) {
+  return '<div class="todo-item' + (t.done ? ' done' : '') + '">' +
+    '<button class="todo-check' + (t.done ? ' done' : '') + '" onclick="toggleTodoDone(\'' + t.id + '\')">' + (t.done ? '✓' : '') + '</button>' +
+    '<div class="todo-text">' + escHtml(t.text) + '</div>' +
+    '<input type="date" class="todo-date-input" value="' + (t.date || '') + '" onchange="setTodoDate(\'' + t.id + '\', this.value)">' +
+    (t.date ? '<button class="todo-date-clear" title="清除日期" onclick="setTodoDate(\'' + t.id + '\', \'\')">✕</button>' : '') +
+    '<button class="todo-del" title="删除" onclick="deleteTodo(\'' + t.id + '\')">🗑</button>' +
+  '</div>';
+}
+
+function renderTodoListHTML() {
+  var todos = appData.todos || [];
+  if (!todos.length) {
+    return '<div class="todo-empty">还没有待办，在上面输入框速记一个想法吧</div>';
+  }
+  var pending = todos.filter(function(t){ return !t.done; });
+  var done    = todos.filter(function(t){ return t.done; });
+  var html = '';
+  if (pending.length) {
+    html += pending.map(renderTodoItem).join('');
+  } else {
+    html += '<div class="todo-empty">待办已全部完成 🎉</div>';
+  }
+  if (done.length) {
+    html += '<div class="todo-section-label">已完成 · ' + done.length + '</div>';
+    html += done.map(renderTodoItem).join('');
+  }
+  return html;
+}
+
+function refreshTodoList() {
+  var list = document.getElementById('todoList');
+  if (list) list.innerHTML = renderTodoListHTML();
+}
+
+function showTodoPanel() {
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML =
+    '<div class="modal-sheet">' +
+      '<h3>📝 速记待办</h3>' +
+      '<div class="todo-input-row">' +
+        '<input type="text" id="todoInput" class="input-box" placeholder="记下一个想法或待办，回车保存…" autofocus>' +
+        '<button class="mbtn mbtn-primary" style="flex:0 0 auto;padding:9px 16px;" onclick="addTodoFromInput()">添加</button>' +
+      '</div>' +
+      '<div class="todo-list" id="todoList">' + renderTodoListHTML() + '</div>' +
+      '<button class="mbtn mbtn-close" onclick="this.closest(\'.modal-overlay\').remove()">关闭</button>' +
+    '</div>';
+  overlay.addEventListener('click', function(e){ if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+  var input = document.getElementById('todoInput');
+  input.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') { e.preventDefault(); addTodoFromInput(); }
+  });
+  input.focus();
 }
 
 function toggleNotes() {
@@ -1914,6 +2139,7 @@ function exportJSON() {
     calNotes:  appData.calNotes,
     tags:      appData.tags,
     tagDefs:   appData.tagDefs,
+    todos:     appData.todos,
   };
   var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   var a = document.createElement('a');
@@ -1966,8 +2192,10 @@ function importJSON(evt) {
       if (data.calNotes) appData.calNotes = data.calNotes;
       if (data.tags)     appData.tags     = data.tags;
       if (data.tagDefs)  appData.tagDefs  = data.tagDefs;
+      if (data.todos)    appData.todos    = data.todos;
       saveData();
       render();
+      updateFabBadge();
       alert('✅ 导入成功！数据已恢复。');
     } catch(err) {
       alert('❌ 导入失败：文件格式不正确，请使用本应用导出的 JSON 文件。');
@@ -2210,6 +2438,7 @@ loadData();
 updateGistBtnLabel();
 render();
 renderTagLegend();
+updateFabBadge();
 </script>
 </body>
 </html>
