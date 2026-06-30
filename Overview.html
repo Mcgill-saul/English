@@ -947,6 +947,105 @@
     transition: all .13s;
   }
   .tag-btn-clear:hover { color: var(--text); border-color: var(--text-muted); }
+
+  /* ════════════════════════════════════════════════════════
+     Mobile responsive (≤768px)
+     ════════════════════════════════════════════════════════ */
+  @media (max-width: 768px) {
+    body { font-size: 13px; }
+
+    /* Topbar */
+    .topbar {
+      padding: 0 12px;
+      height: auto;
+      min-height: 46px;
+      flex-wrap: wrap;
+      row-gap: 6px;
+      padding-top: 6px;
+      padding-bottom: 6px;
+    }
+    .topbar-left { gap: 10px; flex-wrap: wrap; row-gap: 6px; }
+    .site-name { font-size: 12px; gap: 6px; }
+    .topbar-sep { display: none; }
+    .topbar-links { gap: 2px; }
+    .topbar-link { font-size: 11px; padding: 3px 7px; }
+    .topbar-right { gap: 6px; }
+    .note-toggle { font-size: 10.5px; padding: 3px 9px 3px 7px; }
+    .toggle-dot { width: 5px; height: 5px; }
+    .icon-btn { width: 28px; height: 28px; }
+
+    /* Calendar wrap */
+    .cal-wrap { padding: 14px 10px 0; }
+
+    .cal-header { margin-bottom: 12px; }
+    .month-nav { gap: 4px; }
+    .nav-btn { width: 26px; height: 26px; font-size: 14px; }
+    .month-label { font-size: 14px; min-width: 0; padding: 0 2px; }
+    .cal-picker-btn { width: 28px; height: 28px; font-size: 13px; }
+    .today-btn { padding: 4px 9px; font-size: 10px; }
+
+    /* Weekday headers */
+    .weekdays { gap: 3px; margin-bottom: 4px; }
+    .weekday { font-size: 8.5px; padding: 2px 0; letter-spacing: .05em; }
+
+    /* Day grid */
+    .cal-grid { gap: 3px; }
+    .day-cell {
+      min-height: 68px;
+      padding: 4px 4px 3px;
+      border-radius: 8px;
+      gap: 2px;
+    }
+    .day-num { width: 17px; height: 17px; font-size: 10px; border-radius: 5px; }
+
+    .chip { font-size: 7.5px; padding: 1px 4px; gap: 2px; }
+    .cell-note { font-size: 8px; line-height: 1.4; height: 14px; min-height: 14px; padding: 1px 3px; }
+    .cell-note:focus { height: auto; min-height: 26px; }
+
+    .tag-bar { top: 4px; left: 4px; right: 4px; height: 17px; }
+    .tag-bar::after { font-size: 9px; padding: 2px 5px; }
+
+    /* Month picker popup */
+    .cal-picker { width: 220px; padding: 11px; }
+    .picker-item { font-size: 11px; padding: 5px 3px; }
+
+    /* Detail panel: stack columns */
+    .detail-outer { padding: 0 10px; margin-top: 8px; }
+    .detail-top { flex-direction: column; }
+    .detail-left {
+      width: 100%;
+      border-right: none;
+      border-bottom: 1px solid var(--border-lt);
+      padding: 14px 16px;
+    }
+    .detail-right { padding: 14px 16px; }
+    .detail-date-big { font-size: 15px; }
+    .note-area { min-height: 80px; font-size: 12.5px; }
+    .detail-bar { padding: 9px 16px; flex-wrap: wrap; gap: 8px; }
+    .detail-hint { font-size: 10px; flex-basis: 100%; }
+    .detail-actions { width: 100%; justify-content: flex-end; }
+
+    /* Tag picker row */
+    .tag-btn { font-size: 10.5px; padding: 3px 8px; }
+
+    /* Bottom legend */
+    .bottom-bar { padding: 0 10px 20px; gap: 12px; margin-top: 12px; }
+    .legend-item { font-size: 9.5px; }
+
+    /* Settings drawer: full width on mobile */
+    .drawer { width: 88%; max-width: 340px; }
+
+    /* Modal sheet */
+    .modal-sheet { padding: 18px 16px 28px; }
+  }
+
+  /* Extra-narrow phones */
+  @media (max-width: 380px) {
+    .day-cell { min-height: 58px; }
+    .topbar-link span:last-child { display: none; }
+    .month-label { font-size: 13px; }
+    .chip { display: none; }
+  }
 </style>
 </head>
 <body>
