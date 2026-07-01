@@ -9,6 +9,7 @@ const CORE_ASSETS = [
   "/English/Handful O'clock.html",
   "/English/handful-oclock-manifest.json",
   '/English/Pocket.html',
+  '/English/pocket-manifest.json',
   '/English/Role-play.html',
   '/English/Words.html'
 ];
