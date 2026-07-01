@@ -1483,6 +1483,7 @@ function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
   // Gist 自动同步：停止操作 8 秒后防抖上传，两次上传间隔至少 10 秒
   if (localStorage.getItem(LS_GIST_TOKEN) && localStorage.getItem(LS_GIST_ID)) {
+    saveData._dirty = true;
     clearTimeout(saveData._timer);
     saveData._timer = setTimeout(function(){ pushToGist(false); }, GIST_PUSH_DEBOUNCE_MS);
   }
@@ -2579,6 +2580,7 @@ function pushToGist(manual) {
   }).then(function(res){ if(!res.ok) throw new Error('HTTP ' + res.status); })
     .then(function(){
       pushToGist._lastPush = Date.now();
+      saveData._dirty = false;
       if (manual) { setGistStatus('上传成功 ✓ ' + new Date().toLocaleTimeString(), 'ok'); updateGistBtnLabel(); }
     }).catch(function(e){ if(manual) setGistStatus('上传失败：' + e.message, 'error'); })
     .finally(function(){ pushToGist._busy = false; });
@@ -2628,16 +2630,19 @@ updateFabBadge();
 renderTodosOnGrid();
 
 // ── 离开页面/切后台前强制立即同步一次，防止 8 秒防抖窗口内的修改丢失 ──
+// 只有存在未同步的修改（saveData._dirty）才触发，避免空手关闭也发一次无意义请求
 document.addEventListener('visibilitychange', function() {
-  if (document.hidden) {
+  if (document.hidden && saveData._dirty) {
     clearTimeout(saveData._timer);
     pushToGist(false);
   }
 });
 // iOS Safari 有时不触发 visibilitychange，pagehide 作为兜底
 window.addEventListener('pagehide', function() {
-  clearTimeout(saveData._timer);
-  pushToGist(false);
+  if (saveData._dirty) {
+    clearTimeout(saveData._timer);
+    pushToGist(false);
+  }
 });
 </script>
 
