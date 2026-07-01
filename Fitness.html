@@ -1341,7 +1341,6 @@ function save(d){
   localStorage.setItem(LS, JSON.stringify(d));
   // 配置了 Gist 则 8 秒后自动推送
   if(localStorage.getItem(LS_GIST_TOKEN) && localStorage.getItem(LS_GIST_ID)){
-    save._dirty = true;
     clearTimeout(save._timer);
     save._timer = setTimeout(()=>pushToGist(false), GIST_PUSH_DEBOUNCE_MS);
   }
@@ -1400,7 +1399,6 @@ async function pushToGist(manual){
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
     pushToGist._lastPush = Date.now();
-    save._dirty = false;
     if(manual){ setGistStatus('上传成功 ✓ '+new Date().toLocaleTimeString(),'ok'); updateGistBtn(true); }
   }catch(e){ if(manual) setGistStatus('上传失败：'+e.message,'error'); }
   finally{ pushToGist._busy = false; }
@@ -3530,21 +3528,7 @@ refreshHistoryLists();
 initGistBtn();
 renderDashboard();
 
-// ── 离开页面/切后台前强制立即同步一次，防止防抖窗口内的修改丢失 ──
-// 只有存在未同步的修改（save._dirty）才触发，避免空手关闭也发一次无意义请求
-document.addEventListener('visibilitychange', function() {
-  if (document.hidden && save._dirty) {
-    clearTimeout(save._timer);
-    pushToGist(false);
-  }
-});
-// iOS Safari 有时不触发 visibilitychange，pagehide 作为兜底
-window.addEventListener('pagehide', function() {
-  if (save._dirty) {
-    clearTimeout(save._timer);
-    pushToGist(false);
-  }
-});
+
 </script>
 
 <script>
