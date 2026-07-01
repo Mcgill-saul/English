@@ -50,6 +50,7 @@
   --status-bg-2: #e2f3e9;   /* 「已掌握」标签背景 */
   --status-txt-2: #1b5334;  /* 「已掌握」标签文字 */
 }
+html { scrollbar-gutter: stable; }
 body { font-family: 'Noto Sans SC', sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
 /* ── TOPBAR ── */
@@ -13758,4 +13759,14 @@ if (localStorage.getItem('gist_token') && localStorage.getItem('gist_id')) updat
 </div>
 
 
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('./sw.js')
+      .catch(function(err) {
+        console.warn('Service Worker 注册失败:', err);
+      });
+  });
+}
+</script>
 </body></html>
