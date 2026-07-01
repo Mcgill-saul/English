@@ -1334,13 +1334,15 @@ function getSportColor(s){
 const GIST_FILENAME = 'fitness_records.json';
 const LS_GIST_TOKEN = 'fitness_gist_token';
 const LS_GIST_ID    = 'fitness_gist_id';
+const LS_GIST_KNOWN_VERSION = 'fitness_gist_known_version';
 const GIST_PUSH_DEBOUNCE_MS = 8000;
 const GIST_PUSH_MIN_INTERVAL_MS = 10000;
 
 function save(d){
   localStorage.setItem(LS, JSON.stringify(d));
-  // 配置了 Gist 则 8 秒后自动推送
+  // 配置了 Gist 则 8 秒后自动推送；推送前会先与云端版本比对，若检测到云端已被其他设备更新，会弹出冲突提示而不是直接覆盖
   if(localStorage.getItem(LS_GIST_TOKEN) && localStorage.getItem(LS_GIST_ID)){
+    save._dirty = true;
     clearTimeout(save._timer);
     save._timer = setTimeout(()=>pushToGist(false), GIST_PUSH_DEBOUNCE_MS);
   }
@@ -1377,6 +1379,7 @@ async function createGist(token){
     if(!res.ok) throw new Error('HTTP '+res.status);
     const data = await res.json();
     localStorage.setItem(LS_GIST_ID, data.id);
+    if(data.updated_at) localStorage.setItem(LS_GIST_KNOWN_VERSION, data.updated_at);
     document.getElementById('gistId').value = data.id;
     setGistStatus('Gist 创建成功，ID 已自动填入 ✓','ok');
     updateGistBtn(true);
@@ -1390,7 +1393,27 @@ async function pushToGist(manual){
   if(pushToGist._busy){ if(manual) setGistStatus('同步正在进行中，请稍候…',''); return; }
   if(!manual && (Date.now() - (pushToGist._lastPush||0) < GIST_PUSH_MIN_INTERVAL_MS)) return;
   pushToGist._busy = true;
-  if(manual) setGistStatus('上传中…','');
+  if(manual) setGistStatus('检查云端状态…','');
+  // 上传前先确认云端版本没有被其他设备改过，避免静默覆盖
+  try{
+    const res = await fetch('https://api.github.com/gists/'+gistId,{headers:{Authorization:'token '+token}});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const remote = await res.json();
+    const known = localStorage.getItem(LS_GIST_KNOWN_VERSION);
+    if(known && remote.updated_at && known !== remote.updated_at){
+      pushToGist._busy = false;
+      if(manual) setGistStatus('检测到云端有更新，请先处理冲突','error');
+      showGistConflictBanner();
+      return;
+    }
+    doPushGist(token, gistId, manual);
+  }catch(e){
+    pushToGist._busy = false;
+    if(manual) setGistStatus('检查失败：'+e.message,'error');
+  }
+}
+
+async function doPushGist(token, gistId, manual){
   try{
     const res = await fetch('https://api.github.com/gists/'+gistId,{
       method:'PATCH',
@@ -1398,10 +1421,42 @@ async function pushToGist(manual){
       body: JSON.stringify({files:{[GIST_FILENAME]:{content:JSON.stringify({records, runCycles, anaCycles},null,2)}}})
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
     pushToGist._lastPush = Date.now();
+    save._dirty = false;
+    if(data.updated_at) localStorage.setItem(LS_GIST_KNOWN_VERSION, data.updated_at);
     if(manual){ setGistStatus('上传成功 ✓ '+new Date().toLocaleTimeString(),'ok'); updateGistBtn(true); }
   }catch(e){ if(manual) setGistStatus('上传失败：'+e.message,'error'); }
   finally{ pushToGist._busy = false; }
+}
+
+// ── 冲突提示条：云端被其他设备改过时，暂停自动上传，等待用户决定 ──
+function showGistConflictBanner(){
+  if(document.getElementById('gistConflictBanner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'gistConflictBanner';
+  banner.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:1200;background:#fff;border:1px solid #f59e0b;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.2);padding:14px 16px;max-width:340px;width:calc(100% - 32px);font-size:13px;line-height:1.6;color:#1f2937;';
+  banner.innerHTML =
+    '<div style="margin-bottom:10px;">⚠️ 检测到云端有更新（可能来自其他设备），是否用本地数据覆盖云端？</div>' +
+    '<div style="display:flex;gap:8px;">' +
+      '<button onclick="resolveGistConflict(\'overwrite\')" style="flex:1;padding:8px 4px;background:#f59e0b;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">覆盖云端</button>' +
+      '<button onclick="resolveGistConflict(\'pull\')" style="flex:1;padding:8px 4px;background:#eef2ff;color:var(--green);border:1px solid var(--green);border-radius:6px;font-size:12px;cursor:pointer;">改用云端数据</button>' +
+      '<button onclick="resolveGistConflict(\'dismiss\')" style="flex:1;padding:8px 4px;background:#f3f4f6;color:#6b7280;border:none;border-radius:6px;font-size:12px;cursor:pointer;">稍后再说</button>' +
+    '</div>';
+  document.body.appendChild(banner);
+}
+
+function resolveGistConflict(action){
+  const banner = document.getElementById('gistConflictBanner');
+  if(banner) banner.remove();
+  if(action === 'overwrite'){
+    const token = localStorage.getItem(LS_GIST_TOKEN), gistId = localStorage.getItem(LS_GIST_ID);
+    pushToGist._busy = true;
+    doPushGist(token, gistId, true);
+  } else if(action === 'pull'){
+    pullFromGist(true);
+  }
+  // dismiss：不做任何事，本地修改仍保留在 localStorage，下次操作触发自动同步时会重新检测
 }
 
 async function pullFromGist(manual){
@@ -1441,6 +1496,7 @@ async function pullFromGist(manual){
       renderAnaerobic();
       renderCalendar();
     }
+    if(data.updated_at) localStorage.setItem(LS_GIST_KNOWN_VERSION, data.updated_at);
     if(manual){ setGistStatus('从云端刷新成功 ✓ '+new Date().toLocaleTimeString(),'ok'); updateGistBtn(true); }
   }catch(e){ if(manual) setGistStatus('失败：'+e.message,'error'); }
 }
