@@ -398,6 +398,67 @@
     color: var(--emerald);
     border-color: var(--emerald-bd);
   }
+  .chip-todo {
+    background: var(--blue-bg);
+    color: var(--blue);
+    border-color: var(--blue-bd);
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .chip-todo.done-chip {
+    background: var(--surface2);
+    color: var(--text-muted);
+    border-color: var(--border);
+    text-decoration: line-through;
+  }
+
+  /* three-dot dropdown menu */
+  .todo-menu-btn {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 16px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .13s;
+    padding: 0;
+    line-height: 1;
+    letter-spacing: -.05em;
+  }
+  .todo-menu-btn:hover { background: var(--surface3); color: var(--text); }
+
+  .todo-dropdown {
+    position: absolute;
+    right: 0; top: calc(100% + 4px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+    z-index: 200;
+    min-width: 108px;
+    overflow: hidden;
+    animation: fadeUp .12s ease;
+  }
+  .todo-dropdown-item {
+    display: flex; align-items: center; gap: 7px;
+    padding: 9px 12px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: background .1s;
+    font-family: 'Inter', sans-serif;
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+  }
+  .todo-dropdown-item:hover { background: var(--surface2); color: var(--text); }
+  .todo-dropdown-item.danger:hover { background: #fef2f2; color: #dc2626; }
+  .todo-item { position: relative; }
 
   /* ── Cal note textarea ───────────────────────────────── */
   .cell-note-wrap { flex: 1; display: flex; flex-direction: column; margin-top: 2px; }
@@ -1505,6 +1566,7 @@ function addTodoFromInput() {
   input.value = '';
   refreshTodoList();
   updateFabBadge();
+  renderTodosOnGrid();
   input.focus();
 }
 
@@ -1515,6 +1577,7 @@ function toggleTodoDone(id) {
   saveData();
   refreshTodoList();
   updateFabBadge();
+  renderTodosOnGrid();
 }
 
 function deleteTodo(id) {
@@ -1522,6 +1585,8 @@ function deleteTodo(id) {
   saveData();
   refreshTodoList();
   updateFabBadge();
+  renderTodosOnGrid();
+  closeTodoMenu();
 }
 
 function setTodoDate(id, val) {
@@ -1530,15 +1595,108 @@ function setTodoDate(id, val) {
   t.date = val || null;
   saveData();
   refreshTodoList();
+  renderTodosOnGrid();
+}
+
+function editTodo(id) {
+  closeTodoMenu();
+  var t = appData.todos.find(function(x){ return x.id === id; });
+  if (!t) return;
+  var newText = prompt('编辑待办', t.text);
+  if (newText === null) return;
+  newText = newText.trim();
+  if (!newText) return;
+  t.text = newText;
+  saveData();
+  refreshTodoList();
+  renderTodosOnGrid();
+}
+
+// ── Three-dot menu ────────────────────────────────────────
+var _openMenuId = null;
+
+function openTodoMenu(id, btn) {
+  closeTodoMenu();
+  _openMenuId = id;
+  var t = appData.todos.find(function(x){ return x.id === id; });
+  if (!t) return;
+
+  var menu = document.createElement('div');
+  menu.className = 'todo-dropdown';
+  menu.id = 'todoDropdown';
+
+  // Date row inside menu
+  var dateRow = document.createElement('div');
+  dateRow.style.cssText = 'padding:8px 12px 6px;border-bottom:1px solid var(--border-lt);';
+  dateRow.innerHTML =
+    '<div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:.08em;">关联日期</div>' +
+    '<input type="date" class="todo-date-input" style="width:100%;" value="' + (t.date || '') + '" id="menuDateInput">';
+  menu.appendChild(dateRow);
+
+  var editBtn = document.createElement('button');
+  editBtn.className = 'todo-dropdown-item';
+  editBtn.innerHTML = '✏️ &nbsp;编辑';
+  editBtn.onclick = function(e){ e.stopPropagation(); editTodo(id); };
+  menu.appendChild(editBtn);
+
+  var delBtn = document.createElement('button');
+  delBtn.className = 'todo-dropdown-item danger';
+  delBtn.innerHTML = '🗑 &nbsp;删除';
+  delBtn.onclick = function(e){ e.stopPropagation(); deleteTodo(id); };
+  menu.appendChild(delBtn);
+
+  btn.parentNode.appendChild(menu);
+
+  var dateInput = menu.querySelector('#menuDateInput');
+  dateInput.addEventListener('change', function(){
+    setTodoDate(id, this.value);
+    // update displayed date label in the menu itself
+  });
+
+  // Close on outside click
+  setTimeout(function(){
+    document.addEventListener('click', closeTodoMenu, { once: true });
+  }, 0);
+}
+
+function closeTodoMenu() {
+  var m = document.getElementById('todoDropdown');
+  if (m) m.remove();
+  _openMenuId = null;
+}
+
+// ── Render todos on calendar grid ─────────────────────────
+function renderTodosOnGrid() {
+  // Remove all existing todo chips from the grid first
+  document.querySelectorAll('.chip-todo').forEach(function(el){ el.remove(); });
+
+  var todos = appData.todos || [];
+  todos.forEach(function(t) {
+    if (!t.date) return;
+    var cell = document.querySelector('.day-cell[data-date="' + t.date + '"]');
+    if (!cell) return;
+    var chip = document.createElement('div');
+    chip.className = 'chip chip-todo' + (t.done ? ' done-chip' : '');
+    chip.title = t.text;
+    // show checkbox symbol + truncated text
+    chip.textContent = (t.done ? '✓ ' : '○ ') + t.text;
+    chip.addEventListener('click', function(e){
+      e.stopPropagation();
+      showTodoPanel();
+    });
+    // Insert before noteWrap (last child)
+    var noteWrap = cell.querySelector('.cell-note-wrap');
+    if (noteWrap) cell.insertBefore(chip, noteWrap);
+    else cell.appendChild(chip);
+  });
 }
 
 function renderTodoItem(t) {
-  return '<div class="todo-item' + (t.done ? ' done' : '') + '">' +
+  return '<div class="todo-item' + (t.done ? ' done' : '') + '" data-tid="' + t.id + '">' +
     '<button class="todo-check' + (t.done ? ' done' : '') + '" onclick="toggleTodoDone(\'' + t.id + '\')">' + (t.done ? '✓' : '') + '</button>' +
     '<div class="todo-text">' + escHtml(t.text) + '</div>' +
-    '<input type="date" class="todo-date-input" value="' + (t.date || '') + '" onchange="setTodoDate(\'' + t.id + '\', this.value)">' +
-    (t.date ? '<button class="todo-date-clear" title="清除日期" onclick="setTodoDate(\'' + t.id + '\', \'\')">✕</button>' : '') +
-    '<button class="todo-del" title="删除" onclick="deleteTodo(\'' + t.id + '\')">🗑</button>' +
+    (t.date ? '<span style="font-size:10.5px;color:var(--text-muted);flex-shrink:0;">' + t.date + '</span>' : '') +
+    '<button class="todo-menu-btn" onclick="openTodoMenu(\'' + t.id + '\', this)">⋮</button>' +
   '</div>';
 }
 
@@ -1568,13 +1726,17 @@ function refreshTodoList() {
 }
 
 function showTodoPanel() {
+  // Close any existing panel first
+  var existing = document.querySelector('.modal-overlay.todo-overlay');
+  if (existing) { existing.remove(); return; }
+
   var overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
+  overlay.className = 'modal-overlay todo-overlay';
   overlay.innerHTML =
     '<div class="modal-sheet">' +
       '<h3>📝 速记待办</h3>' +
       '<div class="todo-input-row">' +
-        '<input type="text" id="todoInput" class="input-box" placeholder="记下一个想法或待办，回车保存…" autofocus>' +
+        '<input type="text" id="todoInput" class="input-box" placeholder="记下一个想法或待办，回车保存…">' +
         '<button class="mbtn mbtn-primary" style="flex:0 0 auto;padding:9px 16px;" onclick="addTodoFromInput()">添加</button>' +
       '</div>' +
       '<div class="todo-list" id="todoList">' + renderTodoListHTML() + '</div>' +
@@ -1714,6 +1876,7 @@ function render() {
   }
 
   applyNotesToggle();
+  renderTodosOnGrid();
 }
 
 function openDetail(ds) {
@@ -2439,6 +2602,22 @@ updateGistBtnLabel();
 render();
 renderTagLegend();
 updateFabBadge();
+renderTodosOnGrid();
+</script>
+
+<!-- Service Worker 注册 -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/English/sw.js', { scope: '/English/' })
+      .then(function(reg) {
+        console.log('SW registered:', reg.scope);
+      })
+      .catch(function(err) {
+        console.error('SW failed:', err);
+      });
+  });
+}
 </script>
 </body>
 </html>
