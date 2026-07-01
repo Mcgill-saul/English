@@ -1,6 +1,6 @@
 {
-  "name": "账簿",
-  "short_name": "账簿",
+  "name": "Pocket",
+  "short_name": "Pocket",
   "description": "个人记账与预算管理",
   "start_url": "/English/Pocket.html",
   "scope": "/English/",
