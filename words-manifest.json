@@ -1,13 +1,13 @@
 {
   "name": "Words",
   "short_name": "Words",
-  "description": "单词学习管理",
+  "description": "单词学习本",
   "start_url": "/English/Words.html",
   "scope": "/English/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#faf9f6",
-  "theme_color": "#faf9f6",
+  "theme_color": "#b38f43",
   "icons": [
     {
       "src": "words-icon-192.png",
