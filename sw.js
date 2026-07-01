@@ -11,7 +11,8 @@ const CORE_ASSETS = [
   '/English/Pocket.html',
   '/English/pocket-manifest.json',
   '/English/Role-play.html',
-  '/English/Words.html'
+  '/English/Words.html',
+  '/English/words-manifest.json'
 ];
 
 self.addEventListener('install', function(event) {
