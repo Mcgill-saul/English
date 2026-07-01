@@ -2626,6 +2626,19 @@ render();
 renderTagLegend();
 updateFabBadge();
 renderTodosOnGrid();
+
+// ── 离开页面/切后台前强制立即同步一次，防止 8 秒防抖窗口内的修改丢失 ──
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden) {
+    clearTimeout(saveData._timer);
+    pushToGist(false);
+  }
+});
+// iOS Safari 有时不触发 visibilitychange，pagehide 作为兜底
+window.addEventListener('pagehide', function() {
+  clearTimeout(saveData._timer);
+  pushToGist(false);
+});
 </script>
 
 <script>
