@@ -431,14 +431,13 @@
   .todo-menu-btn:hover { background: var(--surface3); color: var(--text); }
 
   .todo-dropdown {
-    position: absolute;
-    right: 0; top: calc(100% + 4px);
+    position: fixed;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     box-shadow: var(--shadow-md);
-    z-index: 200;
-    min-width: 108px;
+    z-index: 500;
+    min-width: 160px;
     overflow: hidden;
     animation: fadeUp .12s ease;
   }
@@ -1645,17 +1644,41 @@ function openTodoMenu(id, btn) {
   delBtn.onclick = function(e){ e.stopPropagation(); deleteTodo(id); };
   menu.appendChild(delBtn);
 
-  btn.parentNode.appendChild(menu);
+  // Append to <body> with fixed positioning so it escapes the
+  // scrollable .todo-list container and never gets clipped.
+  menu.style.position = 'fixed';
+  menu.style.visibility = 'hidden';
+  document.body.appendChild(menu);
+
+  var btnRect  = btn.getBoundingClientRect();
+  var menuRect = menu.getBoundingClientRect();
+  var margin   = 6;
+
+  var top = btnRect.bottom + margin;
+  if (top + menuRect.height > window.innerHeight - margin) {
+    top = btnRect.top - menuRect.height - margin; // flip above if not enough room below
+  }
+  var left = btnRect.right - menuRect.width;
+  if (left < margin) left = margin;
+  if (left + menuRect.width > window.innerWidth - margin) {
+    left = window.innerWidth - menuRect.width - margin;
+  }
+
+  menu.style.top = Math.max(margin, top) + 'px';
+  menu.style.left = left + 'px';
+  menu.style.right = 'auto';
+  menu.style.visibility = 'visible';
 
   var dateInput = menu.querySelector('#menuDateInput');
   dateInput.addEventListener('change', function(){
     setTodoDate(id, this.value);
-    // update displayed date label in the menu itself
   });
 
-  // Close on outside click
+  // Close on outside click / on scroll of the todo list
   setTimeout(function(){
     document.addEventListener('click', closeTodoMenu, { once: true });
+    var list = document.getElementById('todoList');
+    if (list) list.addEventListener('scroll', closeTodoMenu, { once: true });
   }, 0);
 }
 
@@ -2605,16 +2628,13 @@ updateFabBadge();
 renderTodosOnGrid();
 </script>
 
-<!-- Service Worker 注册 -->
 <script>
+// ── 注册 Service Worker（让 Chrome 识别为可安装 PWA）──────
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
-    navigator.serviceWorker.register('/English/sw.js', { scope: '/English/' })
-      .then(function(reg) {
-        console.log('SW registered:', reg.scope);
-      })
+    navigator.serviceWorker.register('./sw.js')
       .catch(function(err) {
-        console.error('SW failed:', err);
+        console.warn('Service Worker 注册失败:', err);
       });
   });
 }
