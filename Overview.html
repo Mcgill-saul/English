@@ -1481,12 +1481,6 @@ function migrateData() {
 
 function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-  // Gist 自动同步：停止操作 8 秒后防抖上传，两次上传间隔至少 10 秒
-  if (localStorage.getItem(LS_GIST_TOKEN) && localStorage.getItem(LS_GIST_ID)) {
-    saveData._dirty = true;
-    clearTimeout(saveData._timer);
-    saveData._timer = setTimeout(function(){ pushToGist(false); }, GIST_PUSH_DEBOUNCE_MS);
-  }
 }
 
 function loadPocket() {
@@ -2619,7 +2613,7 @@ function updateGistBtnLabel() {
   var connected = !!(localStorage.getItem(LS_GIST_TOKEN) && localStorage.getItem(LS_GIST_ID));
   var label = btn.querySelector('.drawer-btn-label');
   if (label) label.textContent = connected ? '☁ 已连接云同步' : '配置 GitHub Gist 同步';
-  if (sub)   sub.textContent   = connected ? '已配置，修改数据后自动上传' : '多设备实时同步，数据不丢失';
+  if (sub)   sub.textContent   = connected ? '已配置，点击"立即上传/拉取"手动同步' : '多设备手动同步，数据不丢失';
 }
 
 loadData();
@@ -2629,21 +2623,6 @@ renderTagLegend();
 updateFabBadge();
 renderTodosOnGrid();
 
-// ── 离开页面/切后台前强制立即同步一次，防止 8 秒防抖窗口内的修改丢失 ──
-// 只有存在未同步的修改（saveData._dirty）才触发，避免空手关闭也发一次无意义请求
-document.addEventListener('visibilitychange', function() {
-  if (document.hidden && saveData._dirty) {
-    clearTimeout(saveData._timer);
-    pushToGist(false);
-  }
-});
-// iOS Safari 有时不触发 visibilitychange，pagehide 作为兜底
-window.addEventListener('pagehide', function() {
-  if (saveData._dirty) {
-    clearTimeout(saveData._timer);
-    pushToGist(false);
-  }
-});
 </script>
 
 <script>
