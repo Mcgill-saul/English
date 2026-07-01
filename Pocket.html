@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="账簿">
 <meta name="theme-color" content="#4A90D9">
+<link rel="manifest" href="pocket-manifest.json">
 
 <!--
 ============================================================
@@ -948,6 +949,7 @@ var GIST_PUSH_MIN_INTERVAL_MS = 10000;
 function saveData() {
   localStorage.setItem('travelAssistantData', JSON.stringify(appData));
   if (localStorage.getItem(LS_GIST_TOKEN) && localStorage.getItem(LS_GIST_ID)) {
+    saveData._dirty = true;
     clearTimeout(saveData._timer);
     saveData._timer = setTimeout(function(){ pushToGist(false); }, GIST_PUSH_DEBOUNCE_MS);
   }
@@ -1035,6 +1037,7 @@ function pushToGist(manual) {
     if (res.status === 401) throw new Error('Token 无效或已过期，请重新生成（需勾选 gist 权限）');
     if (!res.ok) throw new Error('HTTP ' + res.status);
     pushToGist._lastPush = Date.now();
+    saveData._dirty = false;
     markBackupDone();
     if (manual) { setGistStatus('上传成功 ✓ ' + new Date().toLocaleTimeString(), 'ok'); updateGistBtnLabel(); }
   }).catch(function(e) { if (manual) setGistStatus('上传失败：' + e.message, 'error'); })
@@ -4938,6 +4941,34 @@ function init() {
 }
 
 init();
+
+// ── 离开页面/切后台前强制立即同步一次，防止 8 秒防抖窗口内的修改丢失 ──
+// 只有存在未同步的修改（saveData._dirty）才触发，避免空手关闭也发一次无意义请求
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden && saveData._dirty) {
+    clearTimeout(saveData._timer);
+    pushToGist(false);
+  }
+});
+// iOS Safari 有时不触发 visibilitychange，pagehide 作为兜底
+window.addEventListener('pagehide', function() {
+  if (saveData._dirty) {
+    clearTimeout(saveData._timer);
+    pushToGist(false);
+  }
+});
+</script>
+
+<script>
+// ── 注册 Service Worker（让 Chrome 识别为可安装 PWA）──────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('./sw.js')
+      .catch(function(err) {
+        console.warn('Service Worker 注册失败:', err);
+      });
+  });
+}
 </script>
 </body>
 </html>
