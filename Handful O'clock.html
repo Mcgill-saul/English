@@ -993,12 +993,6 @@ function addFoodType(type) {
 }
 
 // ==================== 食谱数据管理 ====================
-function loadPlans() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY_PLANS)) || {}; } catch(e) { return {}; } }
-function savePlans(plans) { localStorage.setItem(STORAGE_KEY_PLANS, JSON.stringify(plans)); }
-function loadActivePlan() { return localStorage.getItem(STORAGE_KEY_ACTIVE_PLAN) || ''; }
-function saveActivePlan(name) { localStorage.setItem(STORAGE_KEY_ACTIVE_PLAN, name); }
-function loadUnsavedFlag() { return localStorage.getItem(STORAGE_KEY_UNSAVED) === 'true'; }
-function saveUnsavedFlag(flag) { localStorage.setItem(STORAGE_KEY_UNSAVED, flag ? 'true' : 'false'); }
 
 function getActivePlanName() { return loadActivePlan(); }
 function getActivePlan() {
@@ -2522,6 +2516,7 @@ document.addEventListener('click', function(e) {
 const GIST_FILENAME   = 'diet_calc_data.json';
 const LS_GIST_TOKEN   = 'diet_gist_token';
 const LS_GIST_ID      = 'diet_gist_id';
+const LS_GIST_KNOWN_VERSION = 'diet_gist_known_version';
 
 // 收集所有本地数据
 function collectAllData() {
@@ -2542,12 +2537,14 @@ function applyAllData(data) {
   if (data.foodTypes  !== undefined) lsSet(STORAGE_KEY_FOOD_TYPES, data.foodTypes);
 }
 
-// 防抖自动推送（每次保存数据后 800ms 触发）
+// 防抖自动推送（每次保存数据后 8 秒触发；实际推送前会先比对云端版本，冲突时会弹出提示而不是直接覆盖）
 let _gistTimer = null;
+const GIST_PUSH_DEBOUNCE_MS = 8000;
+const GIST_PUSH_MIN_INTERVAL_MS = 10000;
 function gistAutoPush() {
   if (!localStorage.getItem(LS_GIST_TOKEN) || !localStorage.getItem(LS_GIST_ID)) return;
   clearTimeout(_gistTimer);
-  _gistTimer = setTimeout(() => pushToGist(false), 800);
+  _gistTimer = setTimeout(() => pushToGist(false), GIST_PUSH_DEBOUNCE_MS);
 }
 
 function openGistPanel() {
@@ -2586,6 +2583,7 @@ async function createGist(token) {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     localStorage.setItem(LS_GIST_ID, data.id);
+    if (data.updated_at) localStorage.setItem(LS_GIST_KNOWN_VERSION, data.updated_at);
     document.getElementById('gistId').value = data.id;
     setGistStatus('Gist 创建成功，ID 已自动填入 ✓', 'ok');
     updateGistBtn();
@@ -2596,7 +2594,33 @@ async function pushToGist(manual = true) {
   const token  = localStorage.getItem(LS_GIST_TOKEN);
   const gistId = localStorage.getItem(LS_GIST_ID);
   if (!token || !gistId) { if (manual) setGistStatus('请先配置 Token 和 Gist ID', 'error'); return; }
-  if (manual) setGistStatus('上传中…', '');
+  if (pushToGist._busy) { if (manual) setGistStatus('同步正在进行中，请稍候…', ''); return; }
+  if (!manual && (Date.now() - (pushToGist._lastPush||0) < GIST_PUSH_MIN_INTERVAL_MS)) return;
+  pushToGist._busy = true;
+  if (manual) setGistStatus('检查云端状态…', '');
+  try {
+    // 上传前先确认云端版本没有被其他设备改过，避免静默覆盖
+    const checkRes = await fetch('https://api.github.com/gists/' + gistId, {
+      headers: { Authorization: 'token ' + token }
+    });
+    if (!checkRes.ok) throw new Error('HTTP ' + checkRes.status);
+    const remote = await checkRes.json();
+    const known = localStorage.getItem(LS_GIST_KNOWN_VERSION);
+    if (known && remote.updated_at && known !== remote.updated_at) {
+      pushToGist._busy = false;
+      if (manual) setGistStatus('检测到云端有更新，请先处理冲突', 'error');
+      showGistConflictBanner();
+      return;
+    }
+    await doPushGist(token, gistId, manual);
+  } catch(e) {
+    if (manual) setGistStatus('检查失败：' + e.message, 'error');
+  } finally {
+    pushToGist._busy = false;
+  }
+}
+
+async function doPushGist(token, gistId, manual) {
   try {
     const res = await fetch('https://api.github.com/gists/' + gistId, {
       method: 'PATCH',
@@ -2604,9 +2628,41 @@ async function pushToGist(manual = true) {
       body: JSON.stringify({ files: { [GIST_FILENAME]: { content: JSON.stringify(collectAllData(), null, 2) } } })
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    pushToGist._lastPush = Date.now();
+    if (data.updated_at) localStorage.setItem(LS_GIST_KNOWN_VERSION, data.updated_at);
     if (manual) setGistStatus('上传成功 ✓ ' + new Date().toLocaleTimeString(), 'ok');
     updateGistBtn();
   } catch(e) { if (manual) setGistStatus('上传失败：' + e.message, 'error'); }
+}
+
+// ── 冲突提示条：云端被其他设备改过时，暂停自动上传，等待用户决定 ──
+function showGistConflictBanner() {
+  if (document.getElementById('gistConflictBanner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'gistConflictBanner';
+  banner.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:1200;background:#fff;border:1px solid #f59e0b;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.2);padding:14px 16px;max-width:340px;width:calc(100% - 32px);font-size:13px;line-height:1.6;color:#2c3e50;';
+  banner.innerHTML =
+    '<div style="margin-bottom:10px;">⚠️ 检测到云端有更新（可能来自其他设备），是否用本地数据覆盖云端？</div>' +
+    '<div style="display:flex;gap:8px;">' +
+      '<button onclick="resolveGistConflict(\'overwrite\')" style="flex:1;padding:8px 4px;background:#f59e0b;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">覆盖云端</button>' +
+      '<button onclick="resolveGistConflict(\'pull\')" style="flex:1;padding:8px 4px;background:#f0f2ff;color:#4a6cf7;border:1px solid #4a6cf7;border-radius:6px;font-size:12px;cursor:pointer;">改用云端数据</button>' +
+      '<button onclick="resolveGistConflict(\'dismiss\')" style="flex:1;padding:8px 4px;background:#f3f4f6;color:#6b7280;border:none;border-radius:6px;font-size:12px;cursor:pointer;">稍后再说</button>' +
+    '</div>';
+  document.body.appendChild(banner);
+}
+
+function resolveGistConflict(action) {
+  const banner = document.getElementById('gistConflictBanner');
+  if (banner) banner.remove();
+  if (action === 'overwrite') {
+    const token = localStorage.getItem(LS_GIST_TOKEN), gistId = localStorage.getItem(LS_GIST_ID);
+    pushToGist._busy = true;
+    doPushGist(token, gistId, true).finally(() => { pushToGist._busy = false; });
+  } else if (action === 'pull') {
+    pullFromGist();
+  }
+  // dismiss：不做任何事，本地修改仍保留，下次触发自动同步时会重新检测
 }
 
 async function pullFromGist() {
@@ -2624,6 +2680,7 @@ async function pullFromGist() {
     if (!file) throw new Error('Gist 中没有找到数据文件');
     const content = JSON.parse(file.content);
     applyAllData(content);
+    if (data.updated_at) localStorage.setItem(LS_GIST_KNOWN_VERSION, data.updated_at);
     setGistStatus('从云端刷新成功 ✓ ' + new Date().toLocaleTimeString(), 'ok');
     updateGistBtn();
     init(); // 刷新所有页面数据
@@ -2640,7 +2697,7 @@ function updateGistBtn() {
   const card = document.getElementById('bodySyncCard'); if (!card) return;
   card.classList.toggle('connected', connected);
   const sub = document.getElementById('bodySyncSub');
-  if (sub) sub.textContent = connected ? '已连接 Gist，数据可在多设备间同步' : '将数据同步到 GitHub Gist，换设备也能访问同一份数据';
+  if (sub) sub.textContent = connected ? '已连接 Gist，修改后自动同步（有冲突会提示）' : '将数据同步到 GitHub Gist，换设备也能访问同一份数据';
 }
 
 </script>
