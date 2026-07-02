@@ -473,7 +473,18 @@
 
   /* ── Cal note textarea ───────────────────────────────── */
   .cell-note-wrap { flex: 1; display: flex; flex-direction: column; margin-top: 2px; }
-  .notes-hidden .cell-note-wrap { display: none; }
+  .notes-hidden .cell-note { display: none; }
+  .cell-note-dots {
+    display: none;
+    font-size: 10.5px;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+    color: var(--text-muted);
+    padding: 2px 5px;
+    letter-spacing: 1px;
+    cursor: text;
+  }
+  .notes-hidden .cell-note-dots.has-content { display: block; }
 
   .cell-note {
     font-size: 10.5px;
@@ -2115,7 +2126,7 @@ function render() {
 
     var ta = document.createElement('textarea');
     ta.className = 'cell-note';
-    ta.placeholder = '…';
+    ta.placeholder = '';
     ta.value = getCalDisplay(ds, notes, calNotes);
     ta.rows = 1;
     ta.dataset.date = ds;
@@ -2130,17 +2141,25 @@ function render() {
       this.style.height = 'auto';
       this.style.height = Math.max(38, this.scrollHeight) + 'px';
     });
-    ta.addEventListener('blur', (function(dateStr, textarea) {
+    var dots = document.createElement('div');
+    dots.className = 'cell-note-dots' + (ta.value.trim() ? ' has-content' : '');
+    dots.textContent = '···';
+    dots.dataset.date = ds;
+    dots.addEventListener('click', function(e) { e.stopPropagation(); });
+
+    ta.addEventListener('blur', (function(dateStr, textarea, dotsEl) {
       return function() {
         var val = textarea.value;
         if (val.trim()) appData.calNotes[dateStr] = val;
         else delete appData.calNotes[dateStr];
         saveData();
         textarea.style.height = '';
+        dotsEl.classList.toggle('has-content', !!val.trim());
       };
-    })(ds, ta));
+    })(ds, ta, dots));
 
     noteWrap.appendChild(ta);
+    noteWrap.appendChild(dots);
     cell.appendChild(noteWrap);
 
     cell.addEventListener('click', (function(dateStr) {
@@ -2539,6 +2558,8 @@ function doSave() {
       if (ta) {
         var first = text.split(/\n/)[0].trim();
         ta.value = first.length > 60 ? first.slice(0, 60) + '…' : first;
+        var dotsEl = cell.querySelector('.cell-note-dots');
+        if (dotsEl) dotsEl.classList.toggle('has-content', !!first.trim());
       }
     }
   }
