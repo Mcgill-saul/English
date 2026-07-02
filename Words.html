@@ -413,14 +413,19 @@ th.col-check { cursor: pointer; }
   .mobile .expand-edit-btn,
   .mobile #tableTopbarActions { display: none !important; }
 
-  /* ── 顶栏适配 ── */
-  .mobile .topbar { flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding: 0.5rem 0.8rem; }
+  /* ── 顶栏适配（吸顶） ── */
+  .mobile .topbar {
+    flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding: 0.5rem 0.8rem;
+    position: sticky; top: 0; z-index: 90;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+  }
   .mobile .search-wrap { flex: 1; min-width: 120px; max-width: none; }
-  /* 移动端筛选面板默认展开，由 grid 布局控制（见下方），无需 show/hide */
 
   /* 移动端 filtersBar：topbar 允许换行，filtersBar 独占新行 */
   .mobile .topbar { flex-wrap: wrap !important; overflow-x: visible; }
+  /* 筛选面板默认收起，点击筛选按钮后展开 */
   .mobile #filtersBar {
+    display: none !important;
     order: 99;
     flex-basis: 100%;
     flex-shrink: 0;
@@ -437,6 +442,9 @@ th.col-check { cursor: pointer; }
     cursor: pointer; white-space: nowrap;
     font-family: 'Noto Sans SC', sans-serif;
   }
+  .mobile #filterToggleBtn.active {
+    background: var(--gold); border-color: var(--gold); color: #fff;
+  }
   .filter-toggle-btn { display: none; }
 
   /* ── 表格→卡片 ── */
@@ -444,36 +452,76 @@ th.col-check { cursor: pointer; }
   .mobile table { display: flex; flex-direction: column; gap: 8px; }
   .mobile thead { display: none; }
   .mobile tr.word-row {
-    display: flex; flex-direction: column !important;
+    display: grid !important;
+    grid-template-columns: auto 1fr auto;
+    column-gap: 8px; row-gap: 4px;
     background: var(--surface); border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    padding: 12px 14px; cursor: pointer;
+    padding: 12px 34px 12px 14px; cursor: pointer;
     border: 1px solid var(--border);
     margin-bottom: 4px;
+    position: relative;
   }
   .mobile tr.word-row:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-  .mobile tr.word-row td {
-    display: block; padding: 3px 0; border: none;
-    width: 100% !important; flex: none !important;
-    white-space: normal; overflow: visible; text-overflow: clip;
-    min-height: auto;
+  /* 展开/收起指示箭头 */
+  .mobile tr.word-row::after {
+    content: '';
+    position: absolute; right: 12px; top: 50%;
+    width: 7px; height: 7px;
+    border-right: 1.6px solid var(--text3); border-bottom: 1.6px solid var(--text3);
+    transform: translateY(-70%) rotate(45deg);
+    transition: transform 0.15s;
   }
-  .mobile .col-status { order: 0; }
-  .mobile .col-word { order: 1; }
-  .mobile .col-pos { order: 2; }
-  .mobile .col-meaning { order: 3; }
-  .mobile .col-example { order: 4; }
-  .mobile .col-exampleZh { order: 5; }
-  .mobile .col-related { order: 6; }
-  .mobile .col-tag { order: 7; }
-  .mobile .col-date { order: 8; }
+  .mobile tr.word-row.expanded::after { transform: translateY(-30%) rotate(-135deg); }
+  .mobile tr.word-row td {
+    display: block; padding: 0; border: none;
+    white-space: normal; overflow: visible; text-overflow: clip;
+    min-height: auto; min-width: 0;
+  }
+  /* 首行：状态点 + 单词(2/3) + 词性(1/3) */
+  .mobile tr.word-row td.col-status { grid-column: 1; grid-row: 1; display: flex; align-items: center; justify-content: center; }
+  .mobile .col-word    { grid-column: 2; grid-row: 1; align-self: center; }
+  .mobile .col-pos     { grid-column: 3; grid-row: 1; align-self: center; text-align: right; }
+  /* 释义及以下字段：自动依次排列在新的一行，隐藏的字段不占位 */
+  .mobile .col-meaning,
+  .mobile .col-example,
+  .mobile .col-exampleZh,
+  .mobile .col-related,
+  .mobile .col-tag,
+  .mobile .col-date {
+    grid-column: 2 / -1;
+  }
 
   .mobile .word-en { font-size: 18px; }
   .mobile .col-meaning { font-size: 14px; color: var(--text2); }
   .mobile .col-example { font-size: 13px; }
   .mobile .col-exampleZh { font-size: 13px; }
-  .mobile .status-badge { font-size: 11px; padding: 4px 10px; width: auto; display: inline-flex; }
   .mobile .tag { font-size: 11px; }
+
+  /* 状态：由文字徽章改为实心小圆点 */
+  .mobile .status-badge {
+    width: 9px; height: 9px; min-width: 9px; min-height: 9px;
+    padding: 0; border-radius: 50%; font-size: 0; line-height: 0;
+    overflow: hidden; display: block;
+  }
+  .mobile .status-1 { background: var(--blue); }
+  .mobile .status-2 { background: var(--green); }
+
+  /* 次要信息默认折叠，展开卡片后才显示 */
+  .mobile tr.word-row .col-example,
+  .mobile tr.word-row .col-exampleZh,
+  .mobile tr.word-row .col-related,
+  .mobile tr.word-row .col-tag,
+  .mobile tr.word-row .col-date {
+    display: none;
+  }
+  .mobile tr.word-row.expanded .col-example,
+  .mobile tr.word-row.expanded .col-exampleZh,
+  .mobile tr.word-row.expanded .col-related,
+  .mobile tr.word-row.expanded .col-tag,
+  .mobile tr.word-row.expanded .col-date {
+    display: block;
+  }
 
   .mobile tr.expand-row.hidden { display: none; }
   .mobile tr.expand-row td { padding: 0 14px 12px; background: transparent; border: none; }
@@ -481,8 +529,9 @@ th.col-check { cursor: pointer; }
   .mobile .expand-cell { background: var(--bg2); border-radius: 6px; padding: 6px 10px; }
 
   /* ── 触摸目标 ── */
-  .mobile button, .mobile .action-item, .mobile .status-badge,
+  .mobile button, .mobile .action-item,
   .mobile .filter-toggle-btn, .mobile .fc-btn { min-height: 44px; min-width: 44px; }
+  .mobile tr.word-row td.col-status { min-width: 32px; min-height: 32px; }
 
   /* ── 底部导航 ── */
   .bottom-nav {
@@ -529,7 +578,7 @@ th.col-check { cursor: pointer; }
   .mobile .fc-meaning { font-size: 20px; }
   .mobile .fc-btn { min-height: 48px; font-size: 14px; padding: 12px 24px; }
 
-  /* ── 移动端筛选面板（文档流中，随页面滚动，默认展开） ── */
+  /* ── 移动端筛选面板（文档流中，随页面滚动，默认收起，点击后展开） ── */
   .mobile .filter-panel {
     display: grid !important;
     grid-template-columns: 1fr 1fr;
@@ -537,6 +586,11 @@ th.col-check { cursor: pointer; }
     padding: 10px 12px;
     /* 无 position:fixed/sticky，在文档流中随内容滚动 */
   }
+  .mobile #filtersBar.show {
+    display: grid !important;
+    animation: qaFadeIn 0.15s ease;
+  }
+  @keyframes qaFadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
   /* 行1：领域+场景；行2：标签+属性；行3：状态+时间；行4：重置独占 */
   .mobile .filter-panel #fDomain    { grid-column: 1; grid-row: 1; }
   .mobile .filter-panel #fScene     { grid-column: 2; grid-row: 1; }
@@ -12076,9 +12130,7 @@ function setBodyClass() {
     // Force topbar-actions hidden on mobile
     const tableActions = document.getElementById('tableTopbarActions');
     if (tableActions) tableActions.style.display = 'none';
-    // 移动端筛选面板默认展开（随页面滚动，不置顶）
-    const filtersBar = document.getElementById('filtersBar');
-    if (filtersBar) filtersBar.classList.add('show');
+    // 移动端筛选面板默认收起，点击筛选按钮后展开
   } else {
     document.body.className = 'desktop';
     document.getElementById('bottomNav').style.display = 'none';
@@ -13753,17 +13805,21 @@ function jumpToMissed(id) {
 function toggleMobileFilter() {
   if (!isMobile) return;
   var panel = document.getElementById('filtersBar');
-  panel.classList.toggle('show');
+  var btn = document.getElementById('filterToggleBtn');
+  var isShown = panel.classList.toggle('show');
+  if (btn) btn.classList.toggle('active', isShown);
 }
 
 function closeMobileFilter() {
   var panel = document.getElementById('filtersBar');
+  var btn = document.getElementById('filterToggleBtn');
   if (panel) panel.classList.remove('show');
+  if (btn) btn.classList.remove('active');
 }
 
 // ── END MOBILE JS ──
 
-// 移动端筛选面板默认展开，点击外部不关闭（面板随页面滚动，非浮层）
+// 移动端筛选面板默认收起，点击筛选按钮展开/收起（面板随页面滚动，非浮层）
 
 load();
 restoreFilterState();
