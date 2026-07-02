@@ -1298,6 +1298,30 @@
     .day-num { width: 17px; height: 17px; font-size: 10px; border-radius: 5px; }
 
     .chip { font-size: 7.5px; padding: 1px 4px; gap: 2px; }
+
+    /* Expense + fitness collapse into stacked color bars on mobile —
+       month grid stays, per-cell detail moves into the bar's color/opacity
+       instead of text; tap the day to see the full breakdown below. */
+    .expense-bar {
+      position: static;
+      height: 4px;
+      border-radius: 3px;
+      margin: 0;
+    }
+    .chip-fitness {
+      display: block;
+      width: 100%;
+      height: 4px;
+      padding: 0;
+      margin: 0;
+      border-radius: 3px;
+      font-size: 0;
+      line-height: 0;
+      gap: 0;
+      background: var(--emerald);
+      border: none;
+    }
+
     .cell-note { font-size: 8px; line-height: 1.4; height: 14px; min-height: 14px; padding: 1px 3px; }
     .cell-note:focus { height: auto; min-height: 26px; }
 
@@ -1344,6 +1368,17 @@
     .topbar-link span:last-child { display: none; }
     .month-label { font-size: 13px; min-width: 110px; }
     .chip { display: none; }
+    .chip-fitness {
+      display: block;
+      width: 100%;
+      height: 3px;
+      padding: 0;
+      margin: 0;
+      border-radius: 2px;
+      background: var(--emerald);
+      border: none;
+    }
+    .expense-bar { height: 3px; }
   }
 </style>
 </head>
