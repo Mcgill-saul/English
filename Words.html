@@ -467,9 +467,15 @@ th.col-check { cursor: pointer; }
   }
   .mobile tr.word-row.swipe-ready {
     border-color: var(--green);
-    background: var(--status-bg-2);
+    background: rgba(46,125,82,0.16);
     box-shadow: 0 0 0 2px var(--green) inset;
     transition: background 0.1s, box-shadow 0.1s, border-color 0.1s;
+  }
+  /* 已掌握的词条再次左滑 → 提示将恢复为学习中，用红色明显区分 */
+  .mobile tr.word-row.swipe-ready[data-status="2"] {
+    border-color: var(--red);
+    background: rgba(192,72,72,0.14);
+    box-shadow: 0 0 0 2px var(--red) inset;
   }
   .mobile tr.word-row:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
   .mobile tr.word-row td {
@@ -478,7 +484,7 @@ th.col-check { cursor: pointer; }
     min-height: auto; min-width: 0;
   }
   /* 首行：状态点（贴左、上下居中）+ 单词(2/3) + 词性(1/3) */
-  .mobile tr.word-row td.col-status { grid-column: 1; grid-row: 1; display: flex; align-items: center; justify-content: flex-start; padding-right: 6px; }
+  .mobile tr.word-row td.col-status { grid-column: 1; grid-row: 1 / span 12; display: flex; align-items: center; justify-content: flex-start; padding-right: 6px; }
   .mobile .col-word    { grid-column: 2; grid-row: 1; align-self: center; }
   .mobile .col-pos     { grid-column: 3; grid-row: 1; align-self: center; text-align: right; }
   /* 释义及以下字段：自动依次排列在新的一行，隐藏的字段不占位 */
@@ -13872,8 +13878,8 @@ let justSwiped = false;
 
 function markMasteredBySwipe(id) {
   const w = words.find(x => x.id === id);
-  if (!w || w.status === 2) return;
-  w.status = 2;
+  if (!w) return;
+  w.status = (w.status === 2) ? 1 : 2;
   save();
   applyFilters();
 }
