@@ -11,6 +11,7 @@ const CORE_ASSETS = [
   '/English/Pocket.html',
   '/English/pocket-manifest.json',
   '/English/Role-play.html',
+  '/English/roleplay-manifest.json',
   '/English/Words.html',
   '/English/words-manifest.json'
 ];
