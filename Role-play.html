@@ -2824,6 +2824,9 @@ window.INITIAL_SCENES_DATA = [
 // ── APP CORE LOGIC ──
 const STORAGE_KEY = 'dialogue_scenes_v1';
 const GIST_FILENAME_RP = 'roleplay_data.json';
+const LS_GIST_KNOWN_VERSION_RP = 'rp_gist_known_version';
+const GIST_PUSH_DEBOUNCE_MS = 8000;
+const GIST_PUSH_MIN_INTERVAL_MS = 10000;
 // 旧版本独立存储的排序状态（用于一次性迁移）
 const LEGACY_SORT_MODE_KEY = 'dialogue_scene_sort_mode';
 const LEGACY_SORT_ORDER_KEY = 'dialogue_scene_sort_order';
@@ -2869,12 +2872,19 @@ function migrateLegacyOrder(scenesArray) {
   return { scenes: scenesArray, sortMode };
 }
 
-// 保存数据到浏览器缓存，并自动推送 Gist。场景顺序与排序模式一起保存，保证多端一致。
-function saveData(scenesArray) {
+// 只负责把数据写入本地缓存，不触发 Gist 自动同步。
+// 专门给"从云端拉取"这类场景用：数据本来就来自云端，没必要存完again立刻排队推送回去。
+function persistData(scenesArray) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ scenes: scenesArray, sortMode }));
+}
+
+// 保存数据到浏览器缓存，并自动推送 Gist。场景顺序与排序模式一起保存，保证多端一致。
+// 推送前会先与云端版本比对，若检测到云端已被其他设备更新，会弹出冲突提示而不是直接覆盖
+function saveData(scenesArray) {
+  persistData(scenesArray);
   if (localStorage.getItem('rp_gist_token') && localStorage.getItem('rp_gist_id')) {
     clearTimeout(saveData._gistTimer);
-    saveData._gistTimer = setTimeout(() => pushToGist(false), 500);
+    saveData._gistTimer = setTimeout(() => pushToGist(false), GIST_PUSH_DEBOUNCE_MS);
   }
 }
 
@@ -2910,6 +2920,7 @@ async function createGist(token) {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     localStorage.setItem('rp_gist_id', data.id);
+    if (data.updated_at) localStorage.setItem(LS_GIST_KNOWN_VERSION_RP, data.updated_at);
     document.getElementById('gistId').value = data.id;
     setGistStatus('Gist 创建成功，ID 已自动填入 ✓', 'ok');
     updateGistBtn(true);
@@ -2920,7 +2931,33 @@ async function pushToGist(manual) {
   const token  = localStorage.getItem('rp_gist_token');
   const gistId = localStorage.getItem('rp_gist_id');
   if (!token || !gistId) { if (manual) setGistStatus('请先配置 Token 和 Gist ID', 'error'); return; }
-  if (manual) setGistStatus('上传中…', '');
+  if (pushToGist._busy) { if (manual) setGistStatus('同步正在进行中，请稍候…', ''); return; }
+  if (!manual && (Date.now() - (pushToGist._lastPush||0) < GIST_PUSH_MIN_INTERVAL_MS)) return;
+  pushToGist._busy = true;
+  if (manual) setGistStatus('检查云端状态…', '');
+  // 上传前先确认云端版本没有被其他设备改过，避免静默覆盖
+  try {
+    const checkRes = await fetch('https://api.github.com/gists/' + gistId, {
+      headers: { Authorization: 'token ' + token }
+    });
+    if (!checkRes.ok) throw new Error('HTTP ' + checkRes.status);
+    const remote = await checkRes.json();
+    const known = localStorage.getItem(LS_GIST_KNOWN_VERSION_RP);
+    if (known && remote.updated_at && known !== remote.updated_at) {
+      pushToGist._busy = false;
+      if (manual) setGistStatus('检测到云端有更新，请先处理冲突', 'error');
+      showGistConflictBanner();
+      return;
+    }
+    await doPushGist(token, gistId, manual);
+  } catch(e) {
+    if (manual) setGistStatus('检查失败：' + e.message, 'error');
+  } finally {
+    pushToGist._busy = false;
+  }
+}
+
+async function doPushGist(token, gistId, manual) {
   try {
     const res = await fetch('https://api.github.com/gists/' + gistId, {
       method: 'PATCH',
@@ -2928,8 +2965,40 @@ async function pushToGist(manual) {
       body: JSON.stringify({ files: { [GIST_FILENAME_RP]: { content: JSON.stringify({ scenes, sortMode }, null, 2) } } })
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    pushToGist._lastPush = Date.now();
+    if (data.updated_at) localStorage.setItem(LS_GIST_KNOWN_VERSION_RP, data.updated_at);
     if (manual) { setGistStatus('上传成功 ✓ ' + new Date().toLocaleTimeString(), 'ok'); updateGistBtn(true); }
   } catch(e) { if (manual) setGistStatus('上传失败：' + e.message, 'error'); }
+}
+
+// ── 冲突提示条：云端被其他设备改过时，暂停自动上传，等待用户决定 ──
+function showGistConflictBanner() {
+  if (document.getElementById('gistConflictBanner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'gistConflictBanner';
+  banner.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:1200;background:var(--surface);border:1px solid #f59e0b;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.2);padding:14px 16px;max-width:340px;width:calc(100% - 32px);font-size:13px;line-height:1.6;color:var(--text);';
+  banner.innerHTML =
+    '<div style="margin-bottom:10px;">⚠️ 检测到云端有更新（可能来自其他设备），是否用本地数据覆盖云端？</div>' +
+    '<div style="display:flex;gap:8px;">' +
+      '<button onclick="resolveGistConflict(\'overwrite\')" style="flex:1;padding:8px 4px;background:#f59e0b;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">覆盖云端</button>' +
+      '<button onclick="resolveGistConflict(\'pull\')" style="flex:1;padding:8px 4px;background:var(--bg2);color:var(--gold);border:1px solid var(--gold);border-radius:6px;font-size:12px;cursor:pointer;">改用云端数据</button>' +
+      '<button onclick="resolveGistConflict(\'dismiss\')" style="flex:1;padding:8px 4px;background:var(--bg2);color:var(--text2);border:none;border-radius:6px;font-size:12px;cursor:pointer;">稍后再说</button>' +
+    '</div>';
+  document.body.appendChild(banner);
+}
+
+function resolveGistConflict(action) {
+  const banner = document.getElementById('gistConflictBanner');
+  if (banner) banner.remove();
+  if (action === 'overwrite') {
+    const token = localStorage.getItem('rp_gist_token'), gistId = localStorage.getItem('rp_gist_id');
+    pushToGist._busy = true;
+    doPushGist(token, gistId, true).finally(() => { pushToGist._busy = false; });
+  } else if (action === 'pull') {
+    pullFromGist(true);
+  }
+  // dismiss：不做任何事，本地修改仍保留，下次触发自动同步时会重新检测
 }
 
 async function pullFromGist(manual) {
@@ -2951,7 +3020,8 @@ async function pullFromGist(manual) {
       scenes = content.scenes;
       sortMode = content.sortMode === 'alpha' ? 'alpha' : 'manual';
     }
-    saveData(scenes);
+    persistData(scenes);
+    if (data.updated_at) localStorage.setItem(LS_GIST_KNOWN_VERSION_RP, data.updated_at);
     renderAll();
     if (manual) setGistStatus('从云端刷新成功 ✓ ' + new Date().toLocaleTimeString(), 'ok');
     updateGistBtn(true);
