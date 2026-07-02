@@ -439,7 +439,11 @@
     z-index: 500;
     min-width: 160px;
     overflow: hidden;
-    animation: fadeUp .12s ease;
+    animation: fadeUpMenu .12s ease;
+  }
+  @keyframes fadeUpMenu {
+    from { opacity: 0; transform: translateY(5px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
   .todo-dropdown-item {
     display: flex; align-items: center; gap: 7px;
@@ -457,6 +461,14 @@
   }
   .todo-dropdown-item:hover { background: var(--surface2); color: var(--text); }
   .todo-dropdown-item.danger:hover { background: #fef2f2; color: #dc2626; }
+  .todo-dropdown-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    flex-shrink: 0;
+    font-size: 12px;
+  }
   .todo-item { position: relative; }
 
   /* ── Cal note textarea ───────────────────────────────── */
@@ -1084,31 +1096,112 @@
     line-height: 1.4;
   }
   .todo-item.done .todo-text { color: var(--text-muted); text-decoration: line-through; }
-  .todo-date-input {
-    font-size: 11px;
+
+  /* Custom date field + calendar (replaces native <input type=date>,
+     whose picker is rendered by the browser itself and can't be
+     restyled — hence a fully custom, pixel-controlled calendar here). */
+  .todo-date-field {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11.5px;
+    font-family: inherit;
     border: 1px solid var(--border);
     border-radius: 6px;
-    padding: 3px 4px;
-    flex-shrink: 0;
-    font-family: inherit;
+    padding: 5px 8px;
     color: var(--text-dim);
     background: var(--surface);
-    width: 118px;
+    cursor: pointer;
+    transition: all .13s;
   }
-  .todo-date-clear {
+  .todo-date-field:hover { border-color: var(--text-muted); color: var(--text); }
+  .todo-date-field.placeholder { color: var(--text-muted); }
+  .todo-date-field .todo-date-caret { font-size: 9px; opacity: .5; margin-left: 6px; }
+
+  .todo-cal { display: none; margin-top: 8px; }
+  .todo-cal.open { display: block; }
+  .todo-cal-head {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .todo-cal-title {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+  }
+  .todo-cal-nav-btn {
     width: 20px; height: 20px;
-    border-radius: 6px;
+    border-radius: 5px;
     border: none;
     background: none;
     color: var(--text-muted);
     cursor: pointer;
     font-size: 11px;
-    flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
-    transition: all .13s;
+    flex-shrink: 0;
     padding: 0;
+    transition: all .13s;
   }
-  .todo-date-clear:hover { background: var(--surface3); color: var(--text); }
+  .todo-cal-nav-btn:hover { background: var(--surface3); color: var(--text); }
+  .todo-cal-weekdays, .todo-cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+  }
+  .todo-cal-weekdays {
+    margin-bottom: 2px;
+  }
+  .todo-cal-weekdays span {
+    font-size: 9.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 2px 0;
+  }
+  .todo-cal-day {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    color: var(--text-dim);
+    background: none;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all .13s;
+  }
+  .todo-cal-day:hover { background: var(--surface3); color: var(--text); }
+  .todo-cal-day.muted { color: var(--text-muted); opacity: .45; }
+  .todo-cal-day.today { color: var(--blue); font-weight: 700; box-shadow: inset 0 0 0 1px var(--blue-bd); }
+  .todo-cal-day.selected { background: var(--blue); color: #fff; font-weight: 600; }
+  .todo-cal-day.selected.today { box-shadow: none; }
+  .todo-cal-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border-lt);
+  }
+  .todo-cal-foot button {
+    font-size: 11px;
+    font-weight: 500;
+    font-family: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 3px 6px;
+    border-radius: 5px;
+    transition: all .13s;
+  }
+  .todo-cal-clear { color: var(--text-muted); }
+  .todo-cal-clear:hover { background: var(--surface3); color: var(--text); }
+  .todo-cal-today-btn { color: var(--blue); }
+  .todo-cal-today-btn:hover { background: var(--blue-bg); }
   .todo-del {
     width: 22px; height: 22px;
     border-radius: 6px;
@@ -1219,7 +1312,7 @@
 
     /* Quick-capture FAB */
     .fab-btn { right: 16px; bottom: 16px; width: 48px; height: 48px; font-size: 22px; }
-    .todo-date-input { width: 100px; font-size: 10.5px; }
+    .todo-date-field { font-size: 10.5px; }
   }
 
   /* Extra-narrow phones */
@@ -1331,10 +1424,17 @@
     </nav>
   </div>
   <div class="topbar-right">
-    <div class="note-toggle" id="noteToggle" onclick="toggleNotes()">
-      <span class="toggle-dot"></span>
-      <span id="toggleLabel">显示笔记</span>
-    </div>
+    <button class="icon-btn" id="noteToggle" onclick="toggleNotes()" title="显示笔记">
+      <svg id="eyeOpenIcon" width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;flex-shrink:0;">
+        <path d="M1.5 10S4.5 4 10 4s8.5 6 8.5 6-3 6-8.5 6-8.5-6-8.5-6Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+      <svg id="eyeClosedIcon" width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none;flex-shrink:0;">
+        <path d="M2.5 10.5S5.2 5.3 10 5.3s7.5 5.2 7.5 5.2-1.2 2.5-3.4 4M6.9 15.2C5 14.3 3.6 12.7 2.5 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M7.7 12.3a2.5 2.5 0 0 0 3.5 3M8.6 7.7c.44-.13.9-.2 1.4-.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M3 3l14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
     <button class="icon-btn" id="settingsBtn" onclick="openDrawer()" title="设置">
       <svg width="15" height="15" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;flex-shrink:0;">
         <path fill-rule="evenodd" clip-rule="evenodd" d="M10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0-1.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z" fill="currentColor"/>
@@ -1615,8 +1715,22 @@ function editTodo(id) {
 
 // ── Three-dot menu ────────────────────────────────────────
 var _openMenuId = null;
+var _menuCloseHandler = null;
+var _menuScrollHandler = null;
 
-function openTodoMenu(id, btn) {
+function openTodoMenu(id, btn, evt) {
+  // Stop this click from bubbling to document — otherwise it can hit a
+  // stale "outside click" listener left over from a previous open and
+  // instantly close the menu we're about to show.
+  if (evt) evt.stopPropagation();
+
+  // Toggle: clicking the button for a menu that's already open should
+  // just close it, not close-then-reopen it.
+  if (_openMenuId === id) {
+    closeTodoMenu();
+    return;
+  }
+
   closeTodoMenu();
   _openMenuId = id;
   var t = appData.todos.find(function(x){ return x.id === id; });
@@ -1625,26 +1739,9 @@ function openTodoMenu(id, btn) {
   var menu = document.createElement('div');
   menu.className = 'todo-dropdown';
   menu.id = 'todoDropdown';
-
-  // Date row inside menu
-  var dateRow = document.createElement('div');
-  dateRow.style.cssText = 'padding:8px 12px 6px;border-bottom:1px solid var(--border-lt);';
-  dateRow.innerHTML =
-    '<div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:.08em;">关联日期</div>' +
-    '<input type="date" class="todo-date-input" style="width:100%;" value="' + (t.date || '') + '" id="menuDateInput">';
-  menu.appendChild(dateRow);
-
-  var editBtn = document.createElement('button');
-  editBtn.className = 'todo-dropdown-item';
-  editBtn.innerHTML = '✏️ &nbsp;编辑';
-  editBtn.onclick = function(e){ e.stopPropagation(); editTodo(id); };
-  menu.appendChild(editBtn);
-
-  var delBtn = document.createElement('button');
-  delBtn.className = 'todo-dropdown-item danger';
-  delBtn.innerHTML = '🗑 &nbsp;删除';
-  delBtn.onclick = function(e){ e.stopPropagation(); deleteTodo(id); };
-  menu.appendChild(delBtn);
+  // Clicks inside the menu (e.g. the date field) must not bubble to
+  // document, or the outside-click close handler fires immediately.
+  menu.addEventListener('click', function(e){ e.stopPropagation(); });
 
   // Append to <body> with fixed positioning so it escapes the
   // scrollable .todo-list container and never gets clipped.
@@ -1652,35 +1749,172 @@ function openTodoMenu(id, btn) {
   menu.style.visibility = 'hidden';
   document.body.appendChild(menu);
 
-  var btnRect  = btn.getBoundingClientRect();
-  var menuRect = menu.getBoundingClientRect();
-  var margin   = 6;
+  var btnRect = btn.getBoundingClientRect();
+  var margin  = 6;
 
-  var top = btnRect.bottom + margin;
-  if (top + menuRect.height > window.innerHeight - margin) {
-    top = btnRect.top - menuRect.height - margin; // flip above if not enough room below
-  }
-  var left = btnRect.right - menuRect.width;
-  if (left < margin) left = margin;
-  if (left + menuRect.width > window.innerWidth - margin) {
-    left = window.innerWidth - menuRect.width - margin;
+  function positionMenu() {
+    var menuRect = menu.getBoundingClientRect();
+    var top = btnRect.bottom + margin;
+    if (top + menuRect.height > window.innerHeight - margin) {
+      top = btnRect.top - menuRect.height - margin; // flip above if not enough room below
+    }
+    var left = btnRect.right - menuRect.width;
+    if (left < margin) left = margin;
+    if (left + menuRect.width > window.innerWidth - margin) {
+      left = window.innerWidth - menuRect.width - margin;
+    }
+    menu.style.top = Math.max(margin, top) + 'px';
+    menu.style.left = left + 'px';
+    menu.style.right = 'auto';
   }
 
-  menu.style.top = Math.max(margin, top) + 'px';
-  menu.style.left = left + 'px';
-  menu.style.right = 'auto';
+  // ── Date field + custom calendar ──────────────────────────
+  // Native <input type="date"> pickers are drawn by the browser itself
+  // and can't be restyled (mis-centered "today" highlight, cramped
+  // "Clear" button, etc.), so this is a small fully custom calendar
+  // we control end to end.
+  var todayISO   = fmtDate(new Date());
+  var initSource = t.date ? new Date(t.date + 'T00:00:00') : new Date();
+  var viewYear   = initSource.getFullYear();
+  var viewMonth  = initSource.getMonth(); // 0-11
+
+  var dateRow = document.createElement('div');
+  dateRow.style.cssText = 'padding:8px 12px 8px;border-bottom:1px solid var(--border-lt);';
+  dateRow.innerHTML =
+    '<div id="todoDateHeader">' +
+      '<div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:.08em;">关联日期</div>' +
+      '<button type="button" class="todo-date-field' + (t.date ? '' : ' placeholder') + '" id="todoDateField">' +
+        '<span id="todoDateFieldLabel">' + (t.date || '选择日期') + '</span>' +
+        '<span class="todo-date-caret">▾</span>' +
+      '</button>' +
+    '</div>' +
+    '<div class="todo-cal" id="todoCal"></div>';
+  menu.appendChild(dateRow);
+
+  var WEEKDAY_LABELS = ['一','二','三','四','五','六','日'];
+
+  function paintCal() {
+    var cal = dateRow.querySelector('#todoCal');
+    var daysInMonth  = new Date(viewYear, viewMonth + 1, 0).getDate();
+    var leadBlanks   = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7; // Monday-first
+    var prevMonthLen = new Date(viewYear, viewMonth, 0).getDate();
+    var cellsHtml = '';
+
+    for (var i = leadBlanks - 1; i >= 0; i--) {
+      cellsHtml += '<button type="button" class="todo-cal-day muted" tabindex="-1">' + (prevMonthLen - i) + '</button>';
+    }
+    for (var d = 1; d <= daysInMonth; d++) {
+      var iso = viewYear + '-' + String(viewMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+      var cls = 'todo-cal-day';
+      if (iso === todayISO) cls += ' today';
+      if (t.date && iso === t.date) cls += ' selected';
+      cellsHtml += '<button type="button" class="' + cls + '" data-date="' + iso + '">' + d + '</button>';
+    }
+    var trailing = (7 - ((leadBlanks + daysInMonth) % 7)) % 7;
+    for (var n = 1; n <= trailing; n++) {
+      cellsHtml += '<button type="button" class="todo-cal-day muted" tabindex="-1">' + n + '</button>';
+    }
+
+    cal.innerHTML =
+      '<div class="todo-cal-head">' +
+        '<button type="button" class="todo-cal-nav-btn todo-cal-prev">‹</button>' +
+        '<span class="todo-cal-title" id="todoCalCollapse" title="收起">' + viewYear + '年' + String(viewMonth+1).padStart(2,'0') + '月</span>' +
+        '<button type="button" class="todo-cal-nav-btn todo-cal-next">›</button>' +
+      '</div>' +
+      '<div class="todo-cal-weekdays">' + WEEKDAY_LABELS.map(function(w){ return '<span>' + w + '</span>'; }).join('') + '</div>' +
+      '<div class="todo-cal-grid">' + cellsHtml + '</div>' +
+      '<div class="todo-cal-foot">' +
+        '<button type="button" class="todo-cal-clear">清除</button>' +
+        '<button type="button" class="todo-cal-today-btn">今天</button>' +
+      '</div>';
+
+    cal.querySelector('#todoCalCollapse').onclick = function(e){
+      e.stopPropagation();
+      collapseCal();
+    };
+    cal.querySelector('.todo-cal-prev').onclick = function(e){
+      e.stopPropagation();
+      viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+      paintCal(); positionMenu();
+    };
+    cal.querySelector('.todo-cal-next').onclick = function(e){
+      e.stopPropagation();
+      viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+      paintCal(); positionMenu();
+    };
+    cal.querySelectorAll('.todo-cal-day[data-date]').forEach(function(el){
+      el.onclick = function(e){
+        e.stopPropagation();
+        applyDate(el.getAttribute('data-date'));
+      };
+    });
+    cal.querySelector('.todo-cal-clear').onclick = function(e){
+      e.stopPropagation();
+      applyDate('');
+    };
+    cal.querySelector('.todo-cal-today-btn').onclick = function(e){
+      e.stopPropagation();
+      var now = new Date();
+      viewYear = now.getFullYear(); viewMonth = now.getMonth();
+      applyDate(todayISO);
+    };
+  }
+
+  function collapseCal() {
+    dateRow.querySelector('#todoCal').classList.remove('open');
+    dateRow.querySelector('#todoDateHeader').style.display = '';
+    positionMenu();
+  }
+
+  function applyDate(iso) {
+    t.date = iso || null;
+    setTodoDate(id, iso);
+    var label = dateRow.querySelector('#todoDateFieldLabel');
+    var field = dateRow.querySelector('#todoDateField');
+    label.textContent = iso || '选择日期';
+    field.classList.toggle('placeholder', !iso);
+    collapseCal();
+  }
+
+  dateRow.querySelector('#todoDateField').onclick = function(e){
+    e.stopPropagation();
+    var cal = dateRow.querySelector('#todoCal');
+    var header = dateRow.querySelector('#todoDateHeader');
+    var willOpen = !cal.classList.contains('open');
+    if (willOpen) {
+      paintCal();
+      header.style.display = 'none';
+    } else {
+      header.style.display = '';
+    }
+    cal.classList.toggle('open', willOpen);
+    positionMenu();
+  };
+
+  var editBtn = document.createElement('button');
+  editBtn.className = 'todo-dropdown-item';
+  editBtn.innerHTML = '<span class="todo-dropdown-icon">✏️</span>编辑';
+  editBtn.onclick = function(e){ e.stopPropagation(); editTodo(id); };
+  menu.appendChild(editBtn);
+
+  var delBtn = document.createElement('button');
+  delBtn.className = 'todo-dropdown-item danger';
+  delBtn.innerHTML = '<span class="todo-dropdown-icon">🗑</span>删除';
+  delBtn.onclick = function(e){ e.stopPropagation(); deleteTodo(id); };
+  menu.appendChild(delBtn);
+
+  positionMenu();
   menu.style.visibility = 'visible';
-
-  var dateInput = menu.querySelector('#menuDateInput');
-  dateInput.addEventListener('change', function(){
-    setTodoDate(id, this.value);
-  });
 
   // Close on outside click / on scroll of the todo list
   setTimeout(function(){
-    document.addEventListener('click', closeTodoMenu, { once: true });
+    _menuCloseHandler = closeTodoMenu;
+    document.addEventListener('click', _menuCloseHandler, { once: true });
     var list = document.getElementById('todoList');
-    if (list) list.addEventListener('scroll', closeTodoMenu, { once: true });
+    if (list) {
+      _menuScrollHandler = closeTodoMenu;
+      list.addEventListener('scroll', _menuScrollHandler, { once: true });
+    }
   }, 0);
 }
 
@@ -1688,6 +1922,20 @@ function closeTodoMenu() {
   var m = document.getElementById('todoDropdown');
   if (m) m.remove();
   _openMenuId = null;
+  // Explicitly tear down any pending listeners from a previous open —
+  // relying solely on {once:true} leaves a stale listener around when
+  // the menu is closed some other way (e.g. re-opened before it fires),
+  // and that stale listener would otherwise fire on a later click and
+  // close a menu it has nothing to do with.
+  if (_menuCloseHandler) {
+    document.removeEventListener('click', _menuCloseHandler);
+    _menuCloseHandler = null;
+  }
+  if (_menuScrollHandler) {
+    var list = document.getElementById('todoList');
+    if (list) list.removeEventListener('scroll', _menuScrollHandler);
+    _menuScrollHandler = null;
+  }
 }
 
 // ── Render todos on calendar grid ─────────────────────────
@@ -1721,7 +1969,7 @@ function renderTodoItem(t) {
     '<button class="todo-check' + (t.done ? ' done' : '') + '" onclick="toggleTodoDone(\'' + t.id + '\')">' + (t.done ? '✓' : '') + '</button>' +
     '<div class="todo-text">' + escHtml(t.text) + '</div>' +
     (t.date ? '<span style="font-size:10.5px;color:var(--text-muted);flex-shrink:0;">' + t.date + '</span>' : '') +
-    '<button class="todo-menu-btn" onclick="openTodoMenu(\'' + t.id + '\', this)">⋮</button>' +
+    '<button class="todo-menu-btn" onclick="openTodoMenu(\'' + t.id + '\', this, event)">⋮</button>' +
   '</div>';
 }
 
@@ -1785,7 +2033,9 @@ function applyNotesToggle() {
   document.getElementById('calWrap').classList.toggle('notes-hidden', !appData.showNotes);
   var tog = document.getElementById('noteToggle');
   tog.classList.toggle('active', appData.showNotes);
-  document.getElementById('toggleLabel').textContent = appData.showNotes ? '隐藏笔记' : '显示笔记';
+  tog.title = appData.showNotes ? '隐藏笔记' : '显示笔记';
+  document.getElementById('eyeOpenIcon').style.display   = appData.showNotes ? 'block' : 'none';
+  document.getElementById('eyeClosedIcon').style.display = appData.showNotes ? 'none'  : 'block';
   updateDrawerNoteLabel();
 }
 
