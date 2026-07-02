@@ -564,27 +564,36 @@
     font-weight: 500;
   }
 
-  .stat-row {
+  .stat-chip-row {
     display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 14px;
+  }
+  .stat-chip {
+    display: inline-flex;
     align-items: center;
-    gap: 10px;
-    padding: 9px 11px;
-    background: var(--surface2);
-    border: 1px solid var(--border-lt);
-    border-radius: var(--radius-sm);
-    margin-bottom: 6px;
-  }
-  .stat-icon { font-size: 14px; flex-shrink: 0; line-height: 1; }
-  .stat-body { min-width: 0; }
-  .stat-val {
-    font-size: 13.5px;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12.5px;
     font-weight: 700;
-    line-height: 1.2;
     letter-spacing: -.01em;
+    line-height: 1.3;
+    border: 1px solid transparent;
+    white-space: nowrap;
   }
-  .stat-val.expense { color: var(--amber); }
-  .stat-val.fitness { color: var(--emerald); }
-  .stat-sub { font-size: 10px; color: var(--text-muted); margin-top: 1px; font-weight: 500; }
+  .stat-chip-icon { font-size: 13px; line-height: 1; flex-shrink: 0; }
+  .stat-chip.expense {
+    background: var(--amber-bg);
+    color: var(--amber);
+    border-color: var(--amber-bd);
+  }
+  .stat-chip.fitness {
+    background: var(--emerald-bg);
+    color: var(--emerald);
+    border-color: var(--emerald-bd);
+  }
 
   .no-data-row {
     font-size: 11.5px;
@@ -1405,6 +1414,17 @@
     <div class="drawer-divider"></div>
 
     <div>
+      <div class="drawer-section-title">支出显示</div>
+      <div class="drawer-row">
+        <div class="drawer-btn-sub" style="margin-bottom:6px;">单日支出达到此金额时，日历格底部色条显示为满格；超过则封顶，不再加深</div>
+        <input type="number" id="expenseThresholdInput" class="input-box" min="1" step="1" placeholder="例如 300"
+          onchange="saveExpenseThreshold(this.value)">
+      </div>
+    </div>
+
+    <div class="drawer-divider"></div>
+
+    <div>
       <div class="drawer-section-title">云同步</div>
       <div class="drawer-row">
         <button class="drawer-btn" id="gistSyncBtn" onclick="showGistPanel()">
@@ -1557,6 +1577,7 @@ function getDefaultData() {
     tagDefs:   [],    // [{ id, label, color }] — user-defined
     todos:     [],    // [{ id, text, done, date(可空), createdAt }] — 速记待办
     showNotes: true,  // 日历格笔记总开关
+    expenseThreshold: null, // 支出色条"满格"对应的单日金额，跨月固定
     version:   1
   };
 }
@@ -1586,6 +1607,16 @@ function migrateData() {
   if (!appData.todos) appData.todos = [];
   if (appData.showNotes === undefined) {
     appData.showNotes = localStorage.getItem('overview_show_notes') !== 'false';
+  }
+  if (!appData.expenseThreshold) {
+    var pk   = loadPocket();
+    var vals = Object.keys(pk).map(function(k){ return pk[k]; }).filter(function(v){ return v > 0; });
+    var defaultThreshold = 300;
+    if (vals.length) {
+      var avg = vals.reduce(function(a,b){ return a + b; }, 0) / vals.length;
+      defaultThreshold = Math.max(50, Math.round(avg * 1.5 / 50) * 50);
+    }
+    appData.expenseThreshold = defaultThreshold;
   }
   if (!appData.version) appData.version = 1;
   localStorage.removeItem('overview_notes_v1');
@@ -2069,12 +2100,6 @@ function render() {
   var firstDow    = (new Date(curYear, curMonth, 1).getDay() + 6) % 7;
   var daysInMonth = new Date(curYear, curMonth+1, 0).getDate();
 
-  var monthMaxExpense = 0;
-  for (var mm = 1; mm <= daysInMonth; mm++) {
-    var mds = curYear + '-' + String(curMonth+1).padStart(2,'0') + '-' + String(mm).padStart(2,'0');
-    if (pocket[mds] && pocket[mds] > monthMaxExpense) monthMaxExpense = pocket[mds];
-  }
-
   for (var i = 0; i < firstDow; i++) {
     var emp = document.createElement('div');
     emp.className = 'day-cell empty';
@@ -2115,7 +2140,8 @@ function render() {
     }
 
     if (pocket[ds]) {
-      var ratio = monthMaxExpense > 0 ? pocket[ds] / monthMaxExpense : 0;
+      var threshold = appData.expenseThreshold || 300;
+      var ratio = Math.min(1, pocket[ds] / threshold);
       var expBar = document.createElement('div');
       expBar.className = 'expense-bar';
       expBar.style.opacity = (0.22 + ratio * 0.68).toFixed(2);
@@ -2202,22 +2228,20 @@ function openDetail(ds) {
   leftHtml += '<div class="detail-date-big">' + MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear() + '</div>';
   leftHtml += '<div class="detail-date-sub">' + DAYS[d.getDay()] + '</div>';
 
+  var chips = '';
   if (pocket[ds]) {
-    leftHtml += '<div class="stat-row"><div class="stat-icon">💰</div><div class="stat-body">' +
-      '<div class="stat-val expense">' + fmtMoney(pocket[ds]) + '</div>' +
-      '<div class="stat-sub">当日支出合计</div></div></div>';
-  } else {
-    leftHtml += '<div class="no-data-row">无支出记录</div>';
+    chips += '<div class="stat-chip expense"><span class="stat-chip-icon">💰</span>' + fmtMoney(pocket[ds]) + '</div>';
   }
-
   if (fitness[ds] && fitness[ds].length) {
     dedupe(fitness[ds]).forEach(function(sp) {
       var label = SPORT_LABEL[sp] || ('🏅 ' + sp);
-      leftHtml += '<div class="stat-row"><div class="stat-icon">' + label.split(' ')[0] + '</div>' +
-        '<div class="stat-body"><div class="stat-val fitness">' + escHtml(sp) + '</div></div></div>';
+      chips += '<div class="stat-chip fitness"><span class="stat-chip-icon">' + label.split(' ')[0] + '</span>' + escHtml(sp) + '</div>';
     });
+  }
+  if (chips) {
+    leftHtml += '<div class="stat-chip-row">' + chips + '</div>';
   } else {
-    leftHtml += '<div class="no-data-row">无运动记录</div>';
+    leftHtml += '<div class="no-data-row">无支出与运动记录</div>';
   }
 
   // Tag picker
@@ -2681,6 +2705,7 @@ function openDrawer() {
   document.getElementById('drawerOverlay').classList.add('open');
   document.getElementById('settingsBtn').classList.add('active');
   updateDrawerNoteLabel();
+  document.getElementById('expenseThresholdInput').value = appData.expenseThreshold || '';
   var sub = document.getElementById('tagDrawerSub');
   if (sub) {
     var n = getTagDefs().length;
@@ -2695,6 +2720,16 @@ function closeDrawer() {
 function updateDrawerNoteLabel() {
   var el = document.getElementById('drawerNoteLabel');
   if (el) el.textContent = appData.showNotes ? '隐藏日历笔记' : '显示日历笔记';
+}
+function saveExpenseThreshold(val) {
+  var n = parseFloat(val);
+  if (!n || n <= 0) {
+    document.getElementById('expenseThresholdInput').value = appData.expenseThreshold || '';
+    return;
+  }
+  appData.expenseThreshold = n;
+  saveData();
+  render();
 }
 
 // ── Calendar picker ──────────────────────────────────────
