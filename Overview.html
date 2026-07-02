@@ -347,6 +347,14 @@
   }
   .day-cell.selected::before { background: var(--blue); }
 
+  /* Expense intensity bar — bottom strip, opacity scales with amount */
+  .expense-bar {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 4px;
+    background: var(--amber);
+  }
+
   /* Date number */
   .day-num {
     font-size: 12px;
@@ -387,11 +395,6 @@
     flex-shrink: 0;
     letter-spacing: .01em;
     border: 1px solid transparent;
-  }
-  .chip-expense {
-    background: var(--amber-bg);
-    color: var(--amber);
-    border-color: var(--amber-bd);
   }
   .chip-fitness {
     background: var(--emerald-bg);
@@ -2066,6 +2069,12 @@ function render() {
   var firstDow    = (new Date(curYear, curMonth, 1).getDay() + 6) % 7;
   var daysInMonth = new Date(curYear, curMonth+1, 0).getDate();
 
+  var monthMaxExpense = 0;
+  for (var mm = 1; mm <= daysInMonth; mm++) {
+    var mds = curYear + '-' + String(curMonth+1).padStart(2,'0') + '-' + String(mm).padStart(2,'0');
+    if (pocket[mds] && pocket[mds] > monthMaxExpense) monthMaxExpense = pocket[mds];
+  }
+
   for (var i = 0; i < firstDow; i++) {
     var emp = document.createElement('div');
     emp.className = 'day-cell empty';
@@ -2106,10 +2115,12 @@ function render() {
     }
 
     if (pocket[ds]) {
-      var ec = document.createElement('div');
-      ec.className = 'chip chip-expense';
-      ec.textContent = fmtMoney(pocket[ds]);
-      cell.appendChild(ec);
+      var ratio = monthMaxExpense > 0 ? pocket[ds] / monthMaxExpense : 0;
+      var expBar = document.createElement('div');
+      expBar.className = 'expense-bar';
+      expBar.style.opacity = (0.22 + ratio * 0.68).toFixed(2);
+      expBar.title = '支出 ' + fmtMoney(pocket[ds]);
+      cell.appendChild(expBar);
     }
 
     if (fitness[ds] && fitness[ds].length) {
