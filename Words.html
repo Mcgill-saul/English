@@ -688,7 +688,11 @@ th.col-check { cursor: pointer; }
     <input class="search-input" id="searchInput" placeholder="搜索单词、释义、例句…" oninput="applyFilters()">
   </div>
   <button class="filter-toggle-btn" id="filterToggleBtn" onclick="toggleMobileFilter()" style="display:none;">☰</button>
-  <button class="filter-toggle-btn" id="gistBtn" onclick="openGistPanel()" title="Gist 已连接 — 点击管理" style="display: none; color: var(--green);">☁✓</button>
+  <button class="filter-toggle-btn" id="gistBtn" onclick="openGistPanel()" title="Gist 已连接 — 点击管理" style="display: none; color: var(--green); align-items: center; justify-content: center;">
+    <svg id="gistCloudIcon" width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M7 18.5a4.5 4.5 0 01-.5-8.97 5.5 5.5 0 0110.79-1.7A4.5 4.5 0 0117.5 18.5H7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+    </svg>
+  </button>
 
   <!-- 词库筛选（桌面端内联在 topbar；移动端独立展开面板） -->
   <div class="filter-panel" id="filtersBar" style="display: flex;">
@@ -12320,7 +12324,8 @@ function updateGistBtn(connected) {
   if (!btn) return;
   btn.title = connected ? 'Gist 已连接 — 点击管理' : 'Gist 云同步（未配置）';
   btn.style.color = connected ? 'var(--green)' : '';
-  btn.textContent = connected ? '☁✓' : '☁';
+  const path = document.getElementById('gistCloudIcon') ? document.getElementById('gistCloudIcon').querySelector('path') : null;
+  if (path) path.setAttribute('fill', connected ? 'currentColor' : 'none');
 }
 
 function resetFilters() {
