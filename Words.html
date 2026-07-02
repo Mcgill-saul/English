@@ -631,12 +631,15 @@ th.col-check { cursor: pointer; }
   background: none; border: none; font-size: 22px; color: var(--text3);
   cursor: pointer; padding: 0 4px; line-height: 1;
 }
-.qa-body { padding: 4px 18px 10px; display: flex; flex-direction: column; gap: 10px; }
-.qa-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.qa-field { display: flex; flex-direction: column; gap: 4px; }
+.qa-body { padding: 4px 18px 10px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.qa-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; min-width: 0; }
+/* 首行：单词占三分之二，词性占三分之一 */
+.qa-row-word { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; min-width: 0; }
+.qa-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .qa-label { font-size: 12px; color: var(--text2); font-weight: 500; }
 .qa-hint { font-size: 11px; color: var(--text3); font-weight: 400; }
 .qa-input {
+  width: 100%; min-width: 0; box-sizing: border-box;
   height: 44px; border: 1px solid var(--border); border-radius: var(--radius);
   padding: 0 10px; font-size: 15px; color: var(--text);
   background: var(--bg); font-family: inherit;
@@ -648,16 +651,17 @@ th.col-check { cursor: pointer; }
   border-top: 1px solid var(--border);
 }
 .qa-btn-save {
-  flex: 1; height: 48px; background: var(--gold); color: #fff;
+  flex: 1 1 50%; width: 50%; height: 48px; background: var(--gold); color: #fff;
   border: none; border-radius: var(--radius); font-size: 15px;
   font-weight: 600; cursor: pointer; font-family: inherit;
 }
 .qa-btn-save:active { background: var(--gold2); }
 .qa-btn-more {
-  height: 48px; padding: 0 14px; background: var(--bg2);
+  flex: 1 1 50%; width: 50%; height: 48px; padding: 0 10px; background: var(--bg2);
   color: var(--text2); border: 1px solid var(--border);
   border-radius: var(--radius); font-size: 13px;
   cursor: pointer; white-space: nowrap; font-family: inherit;
+  overflow: hidden; text-overflow: ellipsis;
 }
 .qa-btn-more:active { background: var(--bg3); }
 
@@ -668,7 +672,7 @@ th.col-check { cursor: pointer; }
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; flex-shrink: 0;
   box-shadow: 0 2px 10px rgba(179,143,67,0.45);
-  margin-bottom: 6px;
+  margin: 0;
   transition: background 0.15s, transform 0.15s;
 }
 .bn-add-btn:active { background: var(--gold2); transform: scale(0.94); }
@@ -11036,24 +11040,24 @@ I did three sets of pull-ups yesterday.</td>
       <button class="form-close" onclick="closeAllPanels()" data-eusoft-scrollable-element="1">×</button>
     </div>
     <div class="form-body">
-      <div class="form-row"><div class="form-field full"><div class="f-label">单词 *</div>  <!-- ← 表单字段标签，* 表示必填，文字可改 --><input class="f-input" id="fWord" placeholder="e.g. ephemeral"></div></div>
+      <div class="form-row"><div class="form-field full"><div class="f-label">单词 *</div>  <!-- ← 表单字段标签，* 表示必填，文字可改 --><input class="f-input" id="fWord"></div></div>
       <div class="form-row">
-        <div class="form-field"><div class="f-label">音标</div><input class="f-input" id="fPhonetic" placeholder="/ɪˈfem.ər.əl/"></div>
-        <div class="form-field"><div class="f-label">词性</div><input class="f-input" id="fPos" placeholder="adj. / n. / v."></div>
+        <div class="form-field"><div class="f-label">音标</div><input class="f-input" id="fPhonetic"></div>
+        <div class="form-field"><div class="f-label">词性</div><input class="f-input" id="fPos"></div>
       </div>
-      <div class="form-field"><div class="f-label">释义 *</div><input class="f-input" id="fMeaning" placeholder="中文释义"></div>
-      <div class="form-field"><div class="f-label">例句</div><textarea class="f-textarea" id="fExample" placeholder="English example sentence"></textarea></div>
-      <div class="form-field"><div class="f-label">例句释义</div><textarea class="f-textarea" id="fExampleZh" placeholder="例句中文翻译"></textarea></div>
+      <div class="form-field"><div class="f-label">释义 *</div><input class="f-input" id="fMeaning"></div>
+      <div class="form-field"><div class="f-label">例句</div><textarea class="f-textarea" id="fExample"></textarea></div>
+      <div class="form-field"><div class="f-label">例句释义</div><textarea class="f-textarea" id="fExampleZh"></textarea></div>
       
-      <div class="form-field"><div class="f-label">标签 (从小填起，触发联动)</div>  <!-- ← 括号内是提示文字，可改 --><input class="f-input" id="fTagI" placeholder="逗号分隔，输入后自动反填上级" oninput="handleTagInput()" list="dl-tags"></div>
+      <div class="form-field"><div class="f-label">标签 (从小填起，触发联动)</div>  <!-- ← 括号内是提示文字，可改 --><input class="f-input" id="fTagI" oninput="handleTagInput()" list="dl-tags"></div>
       <div class="form-row">
-        <div class="form-field"><div class="f-label">场景</div><input class="f-input" id="fSceneI" placeholder="e.g. 机场" list="dl-scenes" oninput="handleSceneInput()"></div>
-        <div class="form-field"><div class="f-label">领域</div><input class="f-input" id="fDomainI" placeholder="e.g. Travel" list="dl-domains"></div>
+        <div class="form-field"><div class="f-label">场景</div><input class="f-input" id="fSceneI" list="dl-scenes" oninput="handleSceneInput()"></div>
+        <div class="form-field"><div class="f-label">领域</div><input class="f-input" id="fDomainI" list="dl-domains"></div>
       </div>
       
       <div class="form-row">
-        <div class="form-field"><div class="f-label">属性</div><input class="f-input" id="fAttrI" placeholder="e.g. 正式 / 口语"></div>
-        <div class="form-field"><div class="f-label">关联词</div><input class="f-input" id="fRelated" placeholder="e.g. transient, fleeting"></div>
+        <div class="form-field"><div class="f-label">属性</div><input class="f-input" id="fAttrI"></div>
+        <div class="form-field"><div class="f-label">关联词</div><input class="f-input" id="fRelated"></div>
       </div>
       <div class="form-row">
         <div class="form-field">
@@ -12018,38 +12022,38 @@ I did three sets of pull-ups yesterday.</td>
     <button class="qa-close" onclick="closeQuickAdd()">×</button>
   </div>
   <div class="qa-body">
-    <div class="qa-field">
-      <div class="qa-label">单词 *</div>
-      <input class="qa-input" id="qaWord" placeholder="e.g. ephemeral" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
-    </div>
-    <div class="qa-row">
+    <div class="qa-row-word">
+      <div class="qa-field">
+        <div class="qa-label">单词 *</div>
+        <input class="qa-input" id="qaWord" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+      </div>
       <div class="qa-field">
         <div class="qa-label">词性</div>
-        <input class="qa-input" id="qaPos" placeholder="adj. / n. / v." autocomplete="off">
+        <input class="qa-input" id="qaPos" autocomplete="off">
       </div>
-      <div class="qa-field">
-        <div class="qa-label">释义 *</div>
-        <input class="qa-input" id="qaMeaning" placeholder="中文释义" autocomplete="off">
-      </div>
+    </div>
+    <div class="qa-field">
+      <div class="qa-label">释义 *</div>
+      <input class="qa-input" id="qaMeaning" autocomplete="off">
     </div>
     <div class="qa-field">
       <div class="qa-label">标签 <span class="qa-hint">（填后自动反填场景/领域）</span></div>
-      <input class="qa-input" id="qaTag" placeholder="逗号分隔" list="dl-tags" autocomplete="off" oninput="handleQaTagInput()">
+      <input class="qa-input" id="qaTag" list="dl-tags" autocomplete="off" oninput="handleQaTagInput()">
     </div>
     <div class="qa-row">
       <div class="qa-field">
         <div class="qa-label">场景</div>
-        <input class="qa-input" id="qaScene" placeholder="e.g. 机场" list="dl-scenes" autocomplete="off">
+        <input class="qa-input" id="qaScene" list="dl-scenes" autocomplete="off">
       </div>
       <div class="qa-field">
         <div class="qa-label">领域</div>
-        <input class="qa-input" id="qaDomain" placeholder="e.g. Travel" list="dl-domains" autocomplete="off">
+        <input class="qa-input" id="qaDomain" list="dl-domains" autocomplete="off">
       </div>
     </div>
   </div>
   <div class="qa-foot">
-    <button class="qa-btn-save" onclick="saveQuickAdd()">保存</button>
     <button class="qa-btn-more" onclick="saveQuickAddAndEdit()">保存并补充</button>
+    <button class="qa-btn-save" onclick="saveQuickAdd()">保存</button>
   </div>
 </div>
 
