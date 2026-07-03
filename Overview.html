@@ -550,6 +550,13 @@
     flex-shrink: 0;
   }
 
+  .detail-date-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
   .detail-date-big {
     font-size: 17px;
     font-weight: 700;
@@ -560,7 +567,7 @@
   .detail-date-sub {
     font-size: 11.5px;
     color: var(--text-muted);
-    margin: 2px 0 16px;
+    margin: 2px 0 0;
     font-weight: 500;
   }
 
@@ -972,20 +979,55 @@
   .tag-bar:hover::after { opacity: 1; }
 
   /* ── Tag picker in detail panel ──────────────────────── */
-  .tag-picker-label {
-    font-size: 9.5px;
-    font-weight: 700;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 7px;
-    margin-top: 12px;
+  .tag-compact { position: relative; flex-shrink: 0; }
+  .tag-compact-trigger {
+    height: 24px;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all .13s;
   }
-  .tag-picker-row {
-    display: flex;
-    flex-wrap: wrap;
+  .tag-compact-trigger.tag-pill {
     gap: 5px;
+    padding: 0 11px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 600;
+    border: 1.5px solid transparent;
   }
+  .tag-compact-trigger.tag-pill:hover { opacity: .82; }
+  .tag-compact-trigger.tag-plus {
+    width: 24px;
+    padding: 0;
+    border-radius: 50%;
+    background: var(--violet);
+    border: none;
+    color: #fff;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .tag-compact-trigger.tag-plus:hover { background: #6d28d9; }
+  .tag-compact-chevron { font-size: 9px; margin-left: 1px; opacity: .7; }
+
+  .tag-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+    padding: 8px;
+    min-width: 170px;
+    max-width: 240px;
+    z-index: 30;
+  }
+  .tag-compact.open .tag-dropdown { display: flex; flex-wrap: wrap; gap: 5px; }
   .tag-btn {
     display: inline-flex;
     align-items: center;
@@ -1299,15 +1341,11 @@
 
     .chip { font-size: 7.5px; padding: 1px 4px; gap: 2px; }
 
-    /* Expense + fitness collapse into stacked color bars on mobile —
-       month grid stays, per-cell detail moves into the bar's color/opacity
-       instead of text; tap the day to see the full breakdown below. */
-    .expense-bar {
-      position: static;
-      height: 4px;
-      border-radius: 3px;
-      margin: 0;
-    }
+    /* Fitness collapses into a stacked full-width color bar on mobile —
+       month grid stays, per-cell detail moves into the bar's color
+       instead of text; tap the day to see the full breakdown below.
+       Expense bar keeps the desktop's absolute bottom-strip positioning
+       for visual consistency across breakpoints. */
     .chip-fitness {
       display: block;
       width: 100%;
@@ -1343,6 +1381,11 @@
     }
     .detail-right { padding: 14px 16px; }
     .detail-date-big { font-size: 15px; }
+    .stat-chip.fitness {
+      flex: 0 0 calc((100% - 21px) / 4);
+      justify-content: center;
+      box-sizing: border-box;
+    }
     .note-area { min-height: 80px; font-size: 12.5px; }
     .detail-bar { padding: 9px 16px; flex-wrap: wrap; gap: 8px; }
     .detail-hint { font-size: 10px; flex-basis: 100%; }
@@ -1485,10 +1528,10 @@
     <div class="topbar-sep"></div>
     <nav class="topbar-links">
       <a class="topbar-link" href="https://mcgill-saul.github.io/English/Pocket.html" target="_blank">
-        Pocket <span class="topbar-link-icon">↗</span>
+        Pocket
       </a>
       <a class="topbar-link" href="https://mcgill-saul.github.io/English/Fitness.html" target="_blank">
-        Fitness <span class="topbar-link-icon">↗</span>
+        Fitness
       </a>
     </nav>
   </div>
@@ -2260,8 +2303,12 @@ function openDetail(ds) {
   var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
   var leftHtml = '';
-  leftHtml += '<div class="detail-date-big">' + MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear() + '</div>';
-  leftHtml += '<div class="detail-date-sub">' + DAYS[d.getDay()] + '</div>';
+  var currentTag = appData.tags[ds] || '';
+  leftHtml += '<div class="detail-date-row">' +
+    '<div><div class="detail-date-big">' + MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear() + '</div>' +
+    '<div class="detail-date-sub">' + DAYS[d.getDay()] + '</div></div>' +
+    '<div id="tagCompactWrap">' + buildTagCompactHtml(ds, currentTag) + '</div>' +
+    '</div>';
 
   var chips = '';
   if (pocket[ds]) {
@@ -2279,11 +2326,6 @@ function openDetail(ds) {
     leftHtml += '<div class="no-data-row">无支出与运动记录</div>';
   }
 
-  // Tag picker
-  var currentTag = appData.tags[ds] || '';
-  leftHtml += '<div class="tag-picker-label">日期标签</div>';
-  leftHtml += '<div class="tag-picker-row" id="tagPickerRow">' + buildTagPickerHtml(ds, currentTag) + '</div>';
-
   document.getElementById('detailLeft').innerHTML = leftHtml;
   document.getElementById('noteArea').value = notes[ds] || '';
 
@@ -2295,9 +2337,51 @@ function openDetail(ds) {
 function closeDetail() {
   selDate = null;
   document.getElementById('detailPanel').classList.remove('open');
+  document.removeEventListener('click', closeTagDropdownOutside);
   document.querySelectorAll('.day-cell').forEach(function(c) {
     c.classList.remove('selected');
   });
+}
+
+function buildTagCompactHtml(ds, currentTag) {
+  var triggerHtml = '';
+  if (currentTag) {
+    var def = getTagDef(currentTag);
+    if (def) {
+      triggerHtml = '<button type="button" class="tag-compact-trigger tag-pill" ' +
+        'style="background:' + def.color + '18;border-color:' + def.color + ';color:' + def.color + ';" ' +
+        'onclick="toggleTagDropdown(event)">' +
+        '<span class="tag-btn-dot" style="background:' + def.color + ';"></span>' +
+        escHtml(def.label) +
+        '<span class="tag-compact-chevron">▾</span>' +
+        '</button>';
+    }
+  }
+  if (!triggerHtml) {
+    triggerHtml = '<button type="button" class="tag-compact-trigger tag-plus" ' +
+      'onclick="toggleTagDropdown(event)" aria-label="添加日期标签">+</button>';
+  }
+  return '<div class="tag-compact" id="tagCompact">' +
+    triggerHtml +
+    '<div class="tag-dropdown" id="tagDropdown">' + buildTagPickerHtml(ds, currentTag) + '</div>' +
+    '</div>';
+}
+
+function toggleTagDropdown(e) {
+  e.stopPropagation();
+  var el = document.getElementById('tagCompact');
+  if (!el) return;
+  var willOpen = !el.classList.contains('open');
+  el.classList.toggle('open', willOpen);
+  if (willOpen) document.addEventListener('click', closeTagDropdownOutside);
+  else document.removeEventListener('click', closeTagDropdownOutside);
+}
+function closeTagDropdownOutside(e) {
+  var el = document.getElementById('tagCompact');
+  if (el && !el.contains(e.target)) {
+    el.classList.remove('open');
+  }
+  document.removeEventListener('click', closeTagDropdownOutside);
 }
 
 function buildTagPickerHtml(ds, currentTag) {
@@ -2567,8 +2651,8 @@ function deleteTagDef(id) {
 }
 
 function refreshTagUI() {
-  var row = document.getElementById('tagPickerRow');
-  if (row) row.innerHTML = buildTagPickerHtml(selDate, appData.tags[selDate] || '');
+  var wrap = document.getElementById('tagCompactWrap');
+  if (wrap) wrap.innerHTML = buildTagCompactHtml(selDate, appData.tags[selDate] || '');
   renderTagLegend();
 }
 
@@ -2595,10 +2679,11 @@ function setTag(ds, tagId) {
       }
     }
   }
-  // Refresh picker in-place
+  // Refresh picker in-place (rebuild closes the dropdown automatically)
   if (selDate === ds) {
-    var row = document.getElementById('tagPickerRow');
-    if (row) row.innerHTML = buildTagPickerHtml(ds, tagId);
+    var wrap = document.getElementById('tagCompactWrap');
+    if (wrap) wrap.innerHTML = buildTagCompactHtml(ds, tagId);
+    document.removeEventListener('click', closeTagDropdownOutside);
   }
 }
 
