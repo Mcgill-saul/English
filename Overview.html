@@ -999,19 +999,29 @@
   }
   .tag-compact-trigger.tag-pill:hover { opacity: .82; }
   .tag-compact-trigger.tag-plus {
+    position: relative;
     width: 24px;
     padding: 0;
     border-radius: 50%;
     background: var(--violet);
     border: none;
-    color: #fff;
-    justify-content: center;
-    font-size: 15px;
-    font-weight: 600;
-    line-height: 1;
+    color: transparent;
+    font-size: 0;
+    -webkit-appearance: none;
+    appearance: none;
   }
+  .tag-compact-trigger.tag-plus::before,
+  .tag-compact-trigger.tag-plus::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    background: #fff;
+    border-radius: 1px;
+  }
+  .tag-compact-trigger.tag-plus::before { width: 10px; height: 2px; transform: translate(-50%, -50%); }
+  .tag-compact-trigger.tag-plus::after  { width: 2px; height: 10px; transform: translate(-50%, -50%); }
   .tag-compact-trigger.tag-plus:hover { background: #6d28d9; }
-  .tag-compact-chevron { font-size: 9px; margin-left: 1px; opacity: .7; }
 
   .tag-dropdown {
     display: none;
@@ -1023,11 +1033,16 @@
     border-radius: var(--radius-sm);
     box-shadow: var(--shadow-md);
     padding: 8px;
-    min-width: 170px;
-    max-width: 240px;
+    min-width: 150px;
+    max-width: 220px;
     z-index: 30;
   }
-  .tag-compact.open .tag-dropdown { display: flex; flex-wrap: wrap; gap: 5px; }
+  .tag-compact.open .tag-dropdown {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .tag-dropdown .tag-btn { width: 100%; box-sizing: border-box; justify-content: flex-start; }
   .tag-btn {
     display: inline-flex;
     align-items: center;
@@ -2353,13 +2368,12 @@ function buildTagCompactHtml(ds, currentTag) {
         'onclick="toggleTagDropdown(event)">' +
         '<span class="tag-btn-dot" style="background:' + def.color + ';"></span>' +
         escHtml(def.label) +
-        '<span class="tag-compact-chevron">▾</span>' +
         '</button>';
     }
   }
   if (!triggerHtml) {
     triggerHtml = '<button type="button" class="tag-compact-trigger tag-plus" ' +
-      'onclick="toggleTagDropdown(event)" aria-label="添加日期标签">+</button>';
+      'onclick="toggleTagDropdown(event)" aria-label="添加日期标签"></button>';
   }
   return '<div class="tag-compact" id="tagCompact">' +
     triggerHtml +
