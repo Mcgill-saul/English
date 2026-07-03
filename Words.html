@@ -480,13 +480,14 @@ th.col-check { cursor: pointer; }
   .mobile tr.word-row td {
     display: block; padding: 0; border: none;
     white-space: normal; overflow: visible; text-overflow: clip;
-    min-height: auto; min-width: 0;
+    min-height: auto; min-width: 0; width: auto; max-width: none; flex: none;
   }
   /* 状态点：与单词同一行，贴左、在该行内垂直居中 */
   .mobile tr.word-row td.col-status {
     grid-column: 1; grid-row: 1;
     display: flex; align-items: center; justify-content: center;
     padding: 0; margin: 0;
+    width: 9px !important; max-width: 9px;
   }
   /* 首行：状态点 + 单词(2/3) + 词性(1/3) */
   .mobile .col-word    { grid-column: 2; grid-row: 1; align-self: center; }
