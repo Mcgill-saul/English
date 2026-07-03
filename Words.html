@@ -517,7 +517,7 @@ th.col-check { cursor: pointer; }
   .mobile .status-1 { background: var(--red); }
   .mobile .status-2 { background: var(--green); }
 
-  /* 次要信息默认折叠，展开卡片后才显示 */
+  /* 次要信息默认折叠，展开卡片后才显示；日期在移动端不重复展示（已在展开面板统一显示） */
   .mobile tr.word-row .col-example,
   .mobile tr.word-row .col-exampleZh,
   .mobile tr.word-row .col-related,
@@ -528,18 +528,21 @@ th.col-check { cursor: pointer; }
   .mobile tr.word-row.expanded .col-example,
   .mobile tr.word-row.expanded .col-exampleZh,
   .mobile tr.word-row.expanded .col-related,
-  .mobile tr.word-row.expanded .col-tag,
-  .mobile tr.word-row.expanded .col-date {
+  .mobile tr.word-row.expanded .col-tag {
     display: block;
   }
 
   .mobile tr.expand-row.hidden { display: none; }
   .mobile tr.expand-row td { padding: 0 14px 12px; background: transparent; border: none; }
-  .mobile .expand-panel { display: flex; flex-direction: column; gap: 4px; background: transparent; }
-  .mobile .expand-cell { background: var(--bg2); border-radius: 6px; padding: 6px 10px; }
+  .mobile .expand-panel { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; background: transparent; }
+  .mobile .expand-cell { background: var(--bg2); border-radius: 6px; padding: 6px 8px; min-width: 0; }
+  .mobile .expand-label { font-size: 10px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mobile .expand-val { font-size: 12px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* 日期格：不带标题，纵向居中对齐其余三格 */
+  .mobile .expand-cell[data-field="date"] { display: flex; align-items: center; justify-content: center; }
 
   /* ── 移动端：卡片展开后的编辑/删除入口 ── */
-  .mobile .mobile-row-actions { display: flex; gap: 8px; margin-top: 4px; }
+  .mobile .mobile-row-actions { grid-column: 1 / -1; display: flex; gap: 8px; margin-top: 4px; }
   .mobile .mra-btn {
     flex: 1; height: 40px; border-radius: var(--radius);
     font-size: 13px; font-weight: 500; cursor: pointer;
@@ -13259,10 +13262,6 @@ function renderExpandPanel(w) {
   return `
     <div class="expand-panel" id="expand-panel-${w.id}">
       <button class="expand-edit-btn" onclick="toggleInlineEdit('${w.id}')">编辑</button>
-      <div class="expand-cell" data-field="date" data-id="${w.id}">
-        <div class="expand-label">录入日期</div>
-        <div class="expand-val">${esc(w.date||'—')}</div>
-      </div>
       <div class="expand-cell" data-field="scene" data-id="${w.id}">
         <div class="expand-label">场景</div>
         <div class="expand-val">${esc(w.scene||'—')}</div>
@@ -13274,6 +13273,9 @@ function renderExpandPanel(w) {
       <div class="expand-cell" data-field="attr" data-id="${w.id}">
         <div class="expand-label">属性</div>
         <div class="expand-val">${esc(w.attr||'—')}</div>
+      </div>
+      <div class="expand-cell" data-field="date" data-id="${w.id}">
+        <div class="expand-val">${esc(w.date||'—')}</div>
       </div>
       <div class="mobile-row-actions">
         <button class="mra-btn mra-edit" onclick="event.stopPropagation(); openForm('${w.id}')">✎ 编辑</button>
