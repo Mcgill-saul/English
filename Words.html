@@ -195,7 +195,8 @@ tr[data-status="2"] .cell-meaning::before {
 .action-item.del:hover { background: rgba(192,72,72,0.08); }
 
 .expand-panel { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); }
-.mobile-row-actions { display: none; }
+.expand-row-top, .expand-row-bottom { display: contents; }
+.mra-btn { display: none; }
 .expand-cell { background: var(--bg3); padding: 10px 14px; text-align: left; }
 .expand-label { font-size: 12px; color: var(--text3); font-family: 'DM Mono', monospace; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
 .expand-val { font-size: 13px; color: var(--text2); line-height: 1.5; }
@@ -524,7 +525,7 @@ th.col-check { cursor: pointer; }
   .mobile .status-1 { background: var(--red); }
   .mobile .status-2 { background: var(--green); }
 
-  /* 次要信息默认折叠，展开卡片后才显示；日期在移动端不重复展示（已在展开面板统一显示） */
+  /* 次要信息默认折叠，展开卡片后才显示；日期、标签在移动端不重复展示（已在展开面板统一显示） */
   .mobile tr.word-row .col-example,
   .mobile tr.word-row .col-exampleZh,
   .mobile tr.word-row .col-related,
@@ -534,8 +535,7 @@ th.col-check { cursor: pointer; }
   }
   .mobile tr.word-row.expanded .col-example,
   .mobile tr.word-row.expanded .col-exampleZh,
-  .mobile tr.word-row.expanded .col-related,
-  .mobile tr.word-row.expanded .col-tag {
+  .mobile tr.word-row.expanded .col-related {
     display: block;
   }
 
@@ -543,23 +543,32 @@ th.col-check { cursor: pointer; }
   .mobile tr.expand-row { margin-bottom: 8px; }
   .mobile tr.expand-row td { padding: 0; background: transparent; border: none; }
   .mobile .expand-panel {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+    display: flex; flex-direction: column; gap: 8px;
     background: var(--surface);
     border: 1px solid var(--border); border-top: none;
     border-radius: 0 0 12px 12px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     padding: 8px 14px 12px;
   }
-  .mobile .expand-cell { background: var(--bg2); border-radius: 6px; padding: 6px 8px; min-width: 0; }
+  /* 第一行：标签 + 场景 + 领域 + 属性，四等分 */
+  .mobile .expand-row-top { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  /* 第二行：日期 + 编辑 + 删除，三等分 */
+  .mobile .expand-row-bottom { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  /* 数据展示格：去掉背景色长条，纯文字展示 */
+  .mobile .expand-cell { background: none; border-radius: 0; padding: 0; min-width: 0; }
   .mobile .expand-label { font-size: 10px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .mobile .expand-val { font-size: 12px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  /* 日期格：不带标题，纵向居中对齐其余三格 */
-  .mobile .expand-cell[data-field="date"] { display: flex; align-items: center; justify-content: center; }
+  /* 日期格：不带标题，纵向居中，与编辑/删除按钮同高对齐 */
+  .mobile .expand-cell.expand-date {
+    display: flex; align-items: center; justify-content: center;
+    height: 40px; font-size: 13px; color: var(--text2);
+  }
+  .mobile .expand-cell.expand-date .expand-val { font-size: 13px; white-space: nowrap; }
 
-  /* ── 移动端：卡片展开后的编辑/删除入口 ── */
-  .mobile .mobile-row-actions { grid-column: 1 / -1; display: flex; gap: 8px; margin-top: 4px; }
+  /* ── 移动端：卡片展开后的编辑/删除按钮 ── */
   .mobile .mra-btn {
-    flex: 1; height: 40px; border-radius: var(--radius);
+    display: block;
+    height: 40px; border-radius: var(--radius);
     font-size: 13px; font-weight: 500; cursor: pointer;
     font-family: 'Noto Sans SC', sans-serif; border: 1px solid var(--border);
   }
@@ -13278,22 +13287,28 @@ function renderExpandPanel(w) {
   return `
     <div class="expand-panel" id="expand-panel-${w.id}">
       <button class="expand-edit-btn" onclick="toggleInlineEdit('${w.id}')">编辑</button>
-      <div class="expand-cell" data-field="scene" data-id="${w.id}">
-        <div class="expand-label">场景</div>
-        <div class="expand-val">${esc(ph(w.scene))}</div>
+      <div class="expand-row-top">
+        <div class="expand-cell" data-field="tag" data-id="${w.id}">
+          <div class="expand-label">标签</div>
+          <div class="expand-val">${esc(ph(w.tag))}</div>
+        </div>
+        <div class="expand-cell" data-field="scene" data-id="${w.id}">
+          <div class="expand-label">场景</div>
+          <div class="expand-val">${esc(ph(w.scene))}</div>
+        </div>
+        <div class="expand-cell" data-field="domain" data-id="${w.id}">
+          <div class="expand-label">领域</div>
+          <div class="expand-val">${esc(ph(w.domain))}</div>
+        </div>
+        <div class="expand-cell" data-field="attr" data-id="${w.id}">
+          <div class="expand-label">属性</div>
+          <div class="expand-val">${esc(ph(w.attr))}</div>
+        </div>
       </div>
-      <div class="expand-cell" data-field="domain" data-id="${w.id}">
-        <div class="expand-label">领域</div>
-        <div class="expand-val">${esc(ph(w.domain))}</div>
-      </div>
-      <div class="expand-cell" data-field="attr" data-id="${w.id}">
-        <div class="expand-label">属性</div>
-        <div class="expand-val">${esc(ph(w.attr))}</div>
-      </div>
-      <div class="expand-cell" data-field="date" data-id="${w.id}">
-        <div class="expand-val">${esc(ph(w.date))}</div>
-      </div>
-      <div class="mobile-row-actions">
+      <div class="expand-row-bottom">
+        <div class="expand-cell expand-date" data-field="date" data-id="${w.id}">
+          <div class="expand-val">${esc(ph(w.date))}</div>
+        </div>
         <button class="mra-btn mra-edit" onclick="event.stopPropagation(); openForm('${w.id}')">✎ 编辑</button>
         <button class="mra-btn mra-del" onclick="event.stopPropagation(); deleteWord('${w.id}')">🗑 删除</button>
       </div>
