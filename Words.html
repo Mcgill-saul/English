@@ -455,11 +455,11 @@ th.col-check { cursor: pointer; }
   .mobile thead { display: none; }
   .mobile tr.word-row {
     display: grid !important;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: auto 1fr auto;
     column-gap: 8px; row-gap: 4px;
     background: var(--surface); border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    padding: 12px 14px 12px 32px; cursor: pointer;
+    padding: 12px 14px; cursor: pointer;
     border: 1px solid var(--border);
     margin-bottom: 4px;
     position: relative;
@@ -483,15 +483,15 @@ th.col-check { cursor: pointer; }
     white-space: normal; overflow: visible; text-overflow: clip;
     min-height: auto; min-width: 0;
   }
-  /* 状态点：脱离网格流，绝对定位于卡片左侧垂直居中，不受行数影响 */
+  /* 状态点：与单词同一行，贴左、在该行内垂直居中 */
   .mobile tr.word-row td.col-status {
-    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    grid-column: 1; grid-row: 1;
     display: flex; align-items: center; justify-content: center;
-    padding: 0; margin: 0; width: auto; height: auto;
+    padding: 0 6px 0 0; margin: 0;
   }
-  /* 首行：单词(2/3) + 词性(1/3) */
-  .mobile .col-word    { grid-column: 1; grid-row: 1; align-self: center; }
-  .mobile .col-pos     { grid-column: 2; grid-row: 1; align-self: center; text-align: right; }
+  /* 首行：状态点 + 单词(2/3) + 词性(1/3) */
+  .mobile .col-word    { grid-column: 2; grid-row: 1; align-self: center; }
+  .mobile .col-pos     { grid-column: 3; grid-row: 1; align-self: center; text-align: right; }
   /* 释义及以下字段：自动依次排列在新的一行，隐藏的字段不占位 */
   .mobile .col-meaning,
   .mobile .col-example,
@@ -499,7 +499,7 @@ th.col-check { cursor: pointer; }
   .mobile .col-related,
   .mobile .col-tag,
   .mobile .col-date {
-    grid-column: 1 / -1;
+    grid-column: 2 / -1;
   }
 
   .mobile .word-en { font-size: 18px; }
@@ -514,8 +514,8 @@ th.col-check { cursor: pointer; }
     padding: 0; border-radius: 50%; font-size: 0; line-height: 0;
     overflow: hidden; display: block;
   }
-  .mobile .status-1 { background: #2f6feb; }
-  .mobile .status-2 { background: #22c55e; }
+  .mobile .status-1 { background: var(--red); }
+  .mobile .status-2 { background: var(--green); }
 
   /* 次要信息默认折叠，展开卡片后才显示 */
   .mobile tr.word-row .col-example,
