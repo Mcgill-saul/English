@@ -249,6 +249,7 @@
 
   /* Month nav */
   .month-nav { display: flex; align-items: center; gap: 6px; }
+  .cal-nav-spacer { width: 12px; flex-shrink: 0; }
 
   .nav-btn {
     background: var(--surface);
@@ -1427,19 +1428,27 @@
 
     /* Calendar wrap */
     .cal-wrap { padding: 14px 10px 0; }
+    html, body { overflow-x: hidden; }
 
     .cal-header { margin-bottom: 12px; }
     .month-nav { gap: 4px; }
     .nav-btn { width: 28px; height: 28px; font-size: 14px; }
-    .month-label { font-size: 14px; min-width: 122px; padding: 0 2px; }
+    .month-label { font-size: 14px; min-width: 62px; padding: 0 2px; }
+    .cal-nav-spacer { width: 4px; }
     .cal-picker-btn { width: 28px; height: 28px; font-size: 13px; }
     .today-btn { height: 28px; padding: 0 10px; font-size: 10px; }
-    .cal-header-right { gap: 8px; }
-    .cal-month-stats { font-size: 10px; }
+    .cal-header-right { gap: 8px; min-width: 0; }
+    .cal-month-stats { font-size: 10px; min-width: 0; overflow: hidden; }
     .cal-month-stats-full,
-    .cal-month-stats-compact { gap: 8px; }
+    .cal-month-stats-compact { gap: 8px; flex-wrap: nowrap; }
     .cal-month-stats-full { display: none; }
-    .cal-month-stats-compact { display: flex; }
+    .cal-month-stats-compact {
+      display: flex;
+      max-width: 120px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
     .cal-month-stat-dot { width: 6px; height: 6px; }
 
     /* Weekday headers */
@@ -1458,8 +1467,9 @@
 
     .chip { font-size: 7.5px; padding: 1px 4px; gap: 2px; }
 
-    /* Fitness collapses into a full-width bar on mobile — same color as
-       desktop (set inline from appData.fitnessColor), only height/text differ. */
+    /* Fitness collapses into a plain full-width color bar on mobile —
+       icon/label are fully hidden (not just font-size:0, since they
+       have their own explicit sizing that doesn't inherit). */
     .chip-fitness {
       display: block;
       width: 100%;
@@ -1467,11 +1477,10 @@
       padding: 0;
       margin: 0;
       border-radius: 3px;
-      font-size: 0;
-      line-height: 0;
-      gap: 0;
       border: none;
     }
+    .chip-fitness-icon,
+    .chip-fitness-label { display: none; }
 
     .cell-note { font-size: 8px; line-height: 1.4; height: 14px; min-height: 14px; padding: 1px 3px; }
     .cell-note:focus { height: auto; min-height: 26px; }
@@ -1522,7 +1531,8 @@
   @media (max-width: 380px) {
     .day-cell { min-height: 58px; }
     .topbar-link span:last-child { display: none; }
-    .month-label { font-size: 13px; min-width: 110px; }
+    .month-label { font-size: 13px; min-width: 54px; }
+    .cal-nav-spacer { width: 2px; }
     .cal-month-stats { display: none; }
     .chip { display: none; }
     .chip-fitness {
@@ -1711,7 +1721,7 @@
         </div>
       </div>
       <button class="nav-btn" id="btnNext">&#8250;</button>
-      <div style="width:12px"></div>
+      <div class="cal-nav-spacer"></div>
       <button class="cal-picker-btn" id="calPickerBtn" onclick="togglePicker()" title="跳转到指定年月">📅</button>
     </div>
     <div class="cal-header-right">
@@ -1773,6 +1783,8 @@ var SPORT_LABEL = {
   'Walk':      '🚶 Walk',
 };
 var EXPENSE_ICON = '💰';
+var MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function isNarrowViewport() { return window.innerWidth <= 768; }
 
 // ── Tag definitions (loaded from appData.tagDefs) ────────
 // TAG_DEFS is a live reference; always read appData.tagDefs
@@ -2461,7 +2473,8 @@ function render() {
 
   var MONTHS = ['January','February','March','April','May','June',
                 'July','August','September','October','November','December'];
-  document.getElementById('monthLabel').textContent = MONTHS[curMonth] + ' ' + curYear;
+  document.getElementById('monthLabel').textContent =
+    (isNarrowViewport() ? MONTHS_SHORT[curMonth] : MONTHS[curMonth]) + ' ' + curYear;
 
   var grid = document.getElementById('calGrid');
   grid.innerHTML = '';
@@ -3450,6 +3463,20 @@ if (sidebarTodoInput) {
     if (e.key === 'Enter') { e.preventDefault(); addTodoFromSidebar(); }
   });
 }
+
+var _lastNarrowState = isNarrowViewport();
+window.addEventListener('resize', function() {
+  var nowNarrow = isNarrowViewport();
+  if (nowNarrow !== _lastNarrowState) {
+    _lastNarrowState = nowNarrow;
+    var el = document.getElementById('monthLabel');
+    if (el) {
+      var MONTHS_FULL = ['January','February','March','April','May','June',
+                          'July','August','September','October','November','December'];
+      el.textContent = (nowNarrow ? MONTHS_SHORT[curMonth] : MONTHS_FULL[curMonth]) + ' ' + curYear;
+    }
+  }
+});
 
 </script>
 
