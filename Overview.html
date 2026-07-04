@@ -298,8 +298,17 @@
   .cal-picker-btn.open { background: var(--blue-bg); border-color: var(--blue-bd); transform: scale(.95); }
 
   .cal-header-right { display: flex; align-items: center; gap: 16px; }
-  .cal-month-stats { display: flex; align-items: center; gap: 14px; font-size: 12px; font-weight: 600; color: var(--text-dim); }
-  .cal-month-stat { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .cal-month-stats { max-width: 620px; font-size: 12px; font-weight: 600; color: var(--text-dim); }
+  .cal-month-stats-full,
+  .cal-month-stats-compact {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 14px;
+  }
+  .cal-month-stats-compact { display: none; }
+  .cal-month-stat { display: inline-flex; align-items: center; gap: 5px; }
   .cal-month-stat-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
   .today-btn {
@@ -1426,7 +1435,11 @@
     .cal-picker-btn { width: 28px; height: 28px; font-size: 13px; }
     .today-btn { height: 28px; padding: 0 10px; font-size: 10px; }
     .cal-header-right { gap: 8px; }
-    .cal-month-stats { gap: 8px; font-size: 10px; }
+    .cal-month-stats { font-size: 10px; }
+    .cal-month-stats-full,
+    .cal-month-stats-compact { gap: 8px; }
+    .cal-month-stats-full { display: none; }
+    .cal-month-stats-compact { display: flex; }
     .cal-month-stat-dot { width: 6px; height: 6px; }
 
     /* Weekday headers */
@@ -2347,25 +2360,97 @@ function applyNotesToggle() {
   updateDrawerNoteLabel();
 }
 
+// Display labels used only in the month-summary strip (next to Today).
+// Best-guess for sports not yet confirmed against the Fitness app's own
+// wording — safe to overwrite the moment the real label is known.
+var SPORT_MONTH_LABEL = {
+  'Run':       'Runs',
+  'Strength':  'Lifts',
+  'Jump Rope': 'Jumps',
+  'Badminton': 'Badm.',
+  'Hike':      'Hikes',
+  'Walk':      'Walks',
+};
+
+function loadFitnessRecords() {
+  try {
+    var arr = JSON.parse(localStorage.getItem(LS_FITNESS) || '[]');
+    return Array.isArray(arr) ? arr : [];
+  } catch (e) { return []; }
+}
+
+function buildMonthFitnessSummary() {
+  var prefix  = curYear + '-' + String(curMonth+1).padStart(2,'0');
+  var records = loadFitnessRecords();
+  var bySport = {}; // sport -> { count, dist }
+
+  records.forEach(function(r) {
+    if (!r.date || r.date.indexOf(prefix) !== 0) return;
+    var sp = r.sport || '未知';
+    if (!bySport[sp]) bySport[sp] = { count: 0, dist: 0 };
+    bySport[sp].count++;
+    if (sp === 'Run' && typeof r.dist === 'number') bySport[sp].dist += r.dist;
+  });
+
+  var sportKeys = Object.keys(bySport);
+  if (!sportKeys.length) return '';
+
+  // Known sports first (in SPORT_LABEL's declared order), then any
+  // custom/new sport types the Fitness app might add later, appended
+  // alphabetically — so new types "just work" without code changes.
+  var known = Object.keys(SPORT_LABEL).filter(function(k){ return bySport[k]; });
+  var extra = sportKeys.filter(function(k){ return !SPORT_LABEL[k]; }).sort();
+  var ordered = known.concat(extra);
+
+  return ordered.map(function(sp) {
+    var label = SPORT_MONTH_LABEL[sp] || sp;
+    var info  = bySport[sp];
+    if (sp === 'Run' && info.dist > 0) {
+      return label + ': ' + info.dist.toFixed(1) + 'km (' + info.count + 'x)';
+    }
+    return label + ': ' + info.count + 'x';
+  }).join(' · ');
+}
+
+function buildMonthFitnessCount() {
+  var prefix = curYear + '-' + String(curMonth+1).padStart(2,'0');
+  var count = 0;
+  loadFitnessRecords().forEach(function(r) {
+    if (r.date && r.date.indexOf(prefix) === 0) count++;
+  });
+  return count;
+}
+
 function renderMonthStats(pocket, fitness, daysInMonth) {
   var el = document.getElementById('calMonthStats');
   if (!el) return;
-  var totalExpense = 0, fitnessCount = 0;
+  var totalExpense = 0;
   for (var d = 1; d <= daysInMonth; d++) {
     var ds = curYear + '-' + String(curMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
     if (pocket[ds]) totalExpense += pocket[ds];
-    if (fitness[ds] && fitness[ds].length) fitnessCount += fitness[ds].length;
   }
   var expColor = appData.expenseColor || '#d97706';
   var fitColor = appData.fitnessColor || '#059669';
-  var html = '';
-  if (totalExpense > 0) {
-    html += '<span class="cal-month-stat"><span class="cal-month-stat-dot" style="background:' + expColor + ';"></span>' + fmtMoney(totalExpense) + '</span>';
+  var fitnessSummary = buildMonthFitnessSummary();
+  var fitnessCount   = buildMonthFitnessCount();
+
+  var expenseChip = totalExpense > 0
+    ? '<span class="cal-month-stat"><span class="cal-month-stat-dot" style="background:' + expColor + ';"></span>' + fmtMoney(totalExpense) + '</span>'
+    : '';
+
+  var fullHtml = expenseChip;
+  if (fitnessSummary) {
+    fullHtml += '<span class="cal-month-stat"><span class="cal-month-stat-dot" style="background:' + fitColor + ';"></span>' + fitnessSummary + '</span>';
   }
+
+  var compactHtml = expenseChip;
   if (fitnessCount > 0) {
-    html += '<span class="cal-month-stat"><span class="cal-month-stat-dot" style="background:' + fitColor + ';"></span>' + fitnessCount + ' 次运动</span>';
+    compactHtml += '<span class="cal-month-stat"><span class="cal-month-stat-dot" style="background:' + fitColor + ';"></span>' + fitnessCount + ' 次</span>';
   }
-  el.innerHTML = html;
+
+  el.innerHTML =
+    '<div class="cal-month-stats-full">' + fullHtml + '</div>' +
+    '<div class="cal-month-stats-compact">' + compactHtml + '</div>';
 }
 
 function render() {
