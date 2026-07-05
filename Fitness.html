@@ -200,10 +200,6 @@ body{min-height:100vh;padding-bottom:4rem;}
   .cal-day-icon{ font-size: 11px; }
   .cal-day-part{ font-size: 8.5px; }
   .cal-day-label{ font-size: 8px; }
-  /* 日历页整体撑满屏幕宽度，和底部导航栏一样贴边（抵消 .main 的左右内边距） */
-  #page-calendar{ margin-left: -0.75rem; margin-right: -0.75rem; }
-  #page-calendar .cal-header{ padding-left: 0.75rem; padding-right: 0.75rem; }
-  #page-calendar .cal-grid{ padding-left: 0.5rem; padding-right: 0.5rem; }
 
   /* ── 跑步/无氧周期卡片：手机端改为竖排布局 ── */
   .cycle-card{
@@ -246,6 +242,13 @@ body{min-height:100vh;padding-bottom:4rem;}
   .data-section{ padding: 14px; }
   .mobile-record-meta{ display:flex; flex-wrap:wrap; gap:8px; font-size:12.5px; color:var(--text2); }
   .mobile-record-chip{ display:inline-flex; align-items:center; gap:3px; }
+  /* 结构化数据行（时段/距离/心率等）：单行横向滚动，绝不换行撑成第二行 */
+  .mobile-record-meta.meta-scroll{
+    flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch;
+    scrollbar-width:none; -ms-overflow-style:none;
+  }
+  .mobile-record-meta.meta-scroll::-webkit-scrollbar{ display:none; height:0; }
+  .mobile-record-meta.meta-scroll .mobile-record-chip{ flex-shrink:0; white-space:nowrap; }
   .mobile-record-chip .k{ color:var(--text3); font-size:11.5px; }
 }
 
@@ -2068,8 +2071,8 @@ function renderRecordPage(){
             <span style="font-size:12px;color:var(--text3)">${r.date}</span>
             <span class="record-badge ${badgeClass(r.sport)}">${badgeTxt}</span>
           </div>
-          ${row1.length?`<div class="mobile-record-meta">${row1.join('')}</div>`:''}
-          ${row2.length?`<div class="mobile-record-meta">${row2.join('')}</div>`:''}
+          ${row1.length?`<div class="mobile-record-meta meta-scroll">${row1.join('')}</div>`:''}
+          ${row2.length?`<div class="mobile-record-meta meta-scroll">${row2.join('')}</div>`:''}
           ${row3.length?`<div class="mobile-record-meta">${row3.join('')}</div>`:''}
         </div>`;
       }
