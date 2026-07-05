@@ -508,19 +508,30 @@ body{min-height:100vh;padding-bottom:4rem;}
   background:var(--bg); padding:10px 0; margin:0 0 14px;
 }
 @media(max-width:768px){ .cal-header{ top:0; } }
-.cal-year-label{font-size:20px;font-weight:700;color:var(--text);min-width:60px;text-align:center;}
-.cal-year-btn{background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--radius);color:var(--text2);font-size:16px;padding:6px 14px;cursor:pointer;transition:all .15s;}
-.cal-year-btn:hover{color:var(--text);border-color:var(--green);}
+.cal-year-label{font-size:19px;font-weight:700;color:var(--text);min-width:56px;text-align:center;letter-spacing:.2px;}
+.cal-year-btn{
+  width:30px;height:30px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:transparent;border:none;border-radius:50%;
+  color:var(--text3);cursor:pointer;
+  transition:background .15s,color .15s;
+}
+.cal-year-btn svg{width:16px;height:16px;}
+.cal-year-btn:hover{background:var(--bg3);color:var(--green);}
+.cal-year-btn:active{background:var(--border);}
 .cal-header-spacer{flex:1;}
 
 /* Legend moved into a vertical ⋮ filter menu */
 .cal-filter-wrap{position:relative;flex-shrink:0;}
 .cal-filter-btn{
-  width:34px;height:34px;
-  background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--radius);
-  color:var(--text2);font-size:18px;line-height:1;cursor:pointer;transition:all .15s;
+  width:30px;height:30px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:transparent;border:none;border-radius:50%;
+  color:var(--text3);font-size:19px;line-height:1;cursor:pointer;
+  transition:background .15s,color .15s;
 }
-.cal-filter-btn:hover{color:var(--text);border-color:var(--green);}
+.cal-filter-btn:hover{background:var(--bg3);color:var(--text);}
+.cal-filter-btn.active{background:var(--bg3);color:var(--green);}
 .cal-filter-panel{
   position:absolute; top:calc(100% + 6px); right:0;
   background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-lg);
@@ -1066,9 +1077,13 @@ body{min-height:100vh;padding-bottom:4rem;}
   <!-- ══════════ CALENDAR ══════════ -->
   <div id="page-calendar" style="display:none">
     <div class="cal-header">
-      <button class="cal-year-btn" onclick="calYear--;renderCalendar()">&#8592;</button>
+      <button class="cal-year-btn" onclick="calYear--;renderCalendar()" aria-label="上一年">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </button>
       <span class="cal-year-label" id="cal-year-label">2026</span>
-      <button class="cal-year-btn" onclick="calYear++;renderCalendar()">&#8594;</button>
+      <button class="cal-year-btn" onclick="calYear++;renderCalendar()" aria-label="下一年">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      </button>
       <div class="cal-header-spacer"></div>
       <div class="cal-filter-wrap">
         <button class="cal-filter-btn" id="cal-filter-btn" onclick="toggleCalFilter(event)" title="图例 / 筛选">&#8942;</button>
@@ -2021,16 +2036,42 @@ function renderRecordPage(){
       if(r.sport==='Run'&&r.sub) badgeTxt+=' · '+r.sub;
       if(r.sport==='Strength') badgeTxt+=' · '+(r.muscles||r.sub||'').split(',').join(' · ');
       if(r.sport==='Hike'&&r.sub) badgeTxt+=' · '+r.sub;
-      const chips=[];
+
       if(r.sport==='Run'){
-        if(r.dist)   chips.push(`<span class="mobile-record-chip"><span class="k">距离</span> ${r.dist}km</span>`);
-        if(r.pace)   chips.push(`<span class="mobile-record-chip"><span class="k">配速</span> ${fmtPace(r.pace)}</span>`);
-        if(r.hr)     chips.push(`<span class="mobile-record-chip"><span class="k">心率</span> ${r.hr}</span>`);
-        if(r.cadence)chips.push(`<span class="mobile-record-chip"><span class="k">步频</span> ${r.cadence}</span>`);
-        if(r.route)  chips.push(`<span class="mobile-record-chip"><span class="k">路线</span> ${r.route}</span>`);
-        if(r.shoe)   chips.push(`<span class="mobile-record-chip"><span class="k">跑鞋</span> ${r.shoe}</span>`);
-        if(r.feel)   chips.push(`<span class="feel-badge">${r.feel}</span>`);
-      } else if(r.sport==='Strength'){
+        // 跑步记录：手机端固定 3 行字段顺序
+        // 第1行：时段 距离 配速 平均心率 最大心率 步频
+        // 第2行：天气 路线 跑鞋 设备
+        // 第3行：体感 身体感受 备注
+        const row1=[], row2=[], row3=[];
+        if(r.period)  row1.push(`<span class="mobile-record-chip"><span class="k">时段</span> ${r.period}</span>`);
+        if(r.dist)    row1.push(`<span class="mobile-record-chip"><span class="k">距离</span> ${r.dist}km</span>`);
+        if(r.pace)    row1.push(`<span class="mobile-record-chip"><span class="k">配速</span> ${fmtPace(r.pace)}</span>`);
+        if(r.hr)      row1.push(`<span class="mobile-record-chip"><span class="k">平均心率</span> ${r.hr}</span>`);
+        if(r.maxhr)   row1.push(`<span class="mobile-record-chip"><span class="k">最大心率</span> ${r.maxhr}</span>`);
+        if(r.cadence) row1.push(`<span class="mobile-record-chip"><span class="k">步频</span> ${r.cadence}</span>`);
+
+        if(r.weather) row2.push(`<span class="mobile-record-chip"><span class="k">天气</span> ${r.weather}</span>`);
+        if(r.route)   row2.push(`<span class="mobile-record-chip"><span class="k">路线</span> ${r.route}</span>`);
+        if(r.shoe)    row2.push(`<span class="mobile-record-chip"><span class="k">跑鞋</span> ${r.shoe}</span>`);
+        if(r.devices?.length) row2.push(`<span class="mobile-record-chip"><span class="k">设备</span> ${r.devices.join('/')}</span>`);
+
+        if(r.feel) row3.push(`<span class="feel-badge">${r.feel}</span>`);
+        if(r.body) row3.push(`<span class="mobile-record-chip"><span class="k">身体感受</span> ${r.body}</span>`);
+        if(r.note) row3.push(`<span class="mobile-record-chip"><span class="k">备注</span> ${r.note}</span>`);
+
+        return `<div class="record-item" onclick="editRecord('${r.id}')">
+          <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+            <span style="font-size:12px;color:var(--text3)">${r.date}</span>
+            <span class="record-badge ${badgeClass(r.sport)}">${badgeTxt}</span>
+          </div>
+          ${row1.length?`<div class="mobile-record-meta">${row1.join('')}</div>`:''}
+          ${row2.length?`<div class="mobile-record-meta">${row2.join('')}</div>`:''}
+          ${row3.length?`<div class="mobile-record-meta">${row3.join('')}</div>`:''}
+        </div>`;
+      }
+
+      const chips=[];
+      if(r.sport==='Strength'){
         if(r.feel)   chips.push(`<span class="feel-badge">${r.feel}</span>`);
       } else if(r.sport==='Jump Rope'){
         if(r.jump_count) chips.push(`<span class="mobile-record-chip"><span class="k">个数</span> ${r.jump_count}</span>`);
@@ -3497,8 +3538,11 @@ function isSportActive(sport){
 function toggleCalFilter(e){
   e && e.stopPropagation();
   const panel = document.getElementById('cal-filter-panel');
+  const btn = document.getElementById('cal-filter-btn');
   if(!panel) return;
-  panel.style.display = (panel.style.display === 'none') ? 'block' : 'none';
+  const open = panel.style.display === 'none';
+  panel.style.display = open ? 'block' : 'none';
+  btn && btn.classList.toggle('active', open);
 }
 document.addEventListener('click', function(e){
   const panel = document.getElementById('cal-filter-panel');
@@ -3506,6 +3550,7 @@ document.addEventListener('click', function(e){
   if(!panel || panel.style.display === 'none') return;
   if(panel.contains(e.target) || e.target === btn) return;
   panel.style.display = 'none';
+  btn && btn.classList.remove('active');
 });
 function onCalFilterChange(cb){
   const key = cb.getAttribute('data-key');
