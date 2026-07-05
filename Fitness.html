@@ -194,9 +194,12 @@ body{min-height:100vh;padding-bottom:4rem;}
   #dash-total{ font-size: 32px !important; }
   #dash-date-range{ font-size: 11px !important; }
   .cal-grid{ grid-template-columns: 1fr !important; }
-  .cal-day{ min-height: 42px; }
-  .cal-day-num{ font-size: 11px; }
-  .cal-day-part{ font-size: 9px; }
+  .cal-day{ height: 46px; }
+  .cal-day-r1{ flex-basis: 14px; }
+  .cal-day-num{ font-size: 10px; }
+  .cal-day-icon{ font-size: 11px; }
+  .cal-day-part{ font-size: 8.5px; }
+  .cal-day-label{ font-size: 8px; }
 
   /* ── 跑步/无氧周期卡片：手机端改为竖排布局 ── */
   .cycle-card{
@@ -499,13 +502,37 @@ body{min-height:100vh;padding-bottom:4rem;}
 
 
 /* ── Calendar ── */
-.cal-header{display:flex;align-items:center;gap:16px;margin-bottom:14px;}
+.cal-header{
+  display:flex;align-items:center;gap:16px;
+  position:sticky; top:54px; z-index:60;
+  background:var(--bg); padding:10px 0; margin:0 0 14px;
+}
+@media(max-width:768px){ .cal-header{ top:0; } }
 .cal-year-label{font-size:20px;font-weight:700;color:var(--text);min-width:60px;text-align:center;}
 .cal-year-btn{background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--radius);color:var(--text2);font-size:16px;padding:6px 14px;cursor:pointer;transition:all .15s;}
 .cal-year-btn:hover{color:var(--text);border-color:var(--green);}
-.cal-legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
-.cal-leg-item{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text2);}
-.cal-leg-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0;}
+.cal-header-spacer{flex:1;}
+
+/* Legend moved into a vertical ⋮ filter menu */
+.cal-filter-wrap{position:relative;flex-shrink:0;}
+.cal-filter-btn{
+  width:34px;height:34px;
+  background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--radius);
+  color:var(--text2);font-size:18px;line-height:1;cursor:pointer;transition:all .15s;
+}
+.cal-filter-btn:hover{color:var(--text);border-color:var(--green);}
+.cal-filter-panel{
+  position:absolute; top:calc(100% + 6px); right:0;
+  background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-lg);
+  box-shadow:var(--shadow); padding:10px 12px; min-width:150px; z-index:70;
+}
+.cal-filter-title{font-size:11.5px;font-weight:700;color:var(--text3);margin-bottom:8px;}
+.cal-filter-item{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text2);padding:5px 0;cursor:pointer;white-space:nowrap;}
+.cal-filter-item input{margin:0;cursor:pointer;}
+.cal-leg-dot{width:11px;height:11px;border-radius:3px;flex-shrink:0;}
+.cal-filter-actions{display:flex;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+.cal-filter-actions button{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11.5px;padding:5px 0;cursor:pointer;}
+.cal-filter-actions button:hover{color:var(--text);border-color:var(--green);}
 
 /* 12-month grid: 4 cols × 3 rows */
 .cal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
@@ -519,48 +546,36 @@ body{min-height:100vh;padding-bottom:4rem;}
 .cal-wd{font-size:11px;color:var(--text3);text-align:center;padding:3px 0;font-weight:600;}
 .cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
 
-/* Day cell */
+/* Day cell — fixed height, 3 fixed rows: date / sport1 / sport2 */
 .cal-day{
   position:relative;
   border-radius:6px;
   overflow:hidden;
-  min-height:52px;
+  height:58px;
   display:flex;
   flex-direction:column;
   cursor:default;
 }
-.cal-day.empty{background:transparent;}
+.cal-day.empty{background:transparent;visibility:hidden;}
 .cal-day.today{outline:2px solid var(--coral);outline-offset:-2px;z-index:2;}
 
-/* Single-sport cell */
-.cal-day-single{
-  width:100%;height:100%;min-height:52px;
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  gap:2px;padding:3px;
-}
-/* Split cell: two halves stacked */
-.cal-day-top{
-  width:100%;flex:1;min-height:26px;
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  gap:2px;padding:3px 2px 2px;
-}
-.cal-day-bottom{
-  width:100%;flex:1;min-height:26px;
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  gap:2px;padding:2px 2px 3px;
-}
-/* No-sport cell */
-.cal-day-empty{
-  width:100%;height:100%;min-height:52px;
+.cal-day-r1{
+  flex:0 0 17px;
   display:flex;align-items:center;justify-content:center;
-  color:var(--text3);font-size:12px;
 }
-.cal-day-num{font-size:12px;font-weight:700;color:#fff;line-height:1;}
-.cal-day-icon{font-size:13px;line-height:1;}
-.cal-day-part{font-size:10px;color:rgba(255,255,255,0.92);line-height:1.2;text-align:center;word-break:break-all;max-width:100%;padding:0 2px;}
+.cal-day-r2, .cal-day-r3{
+  flex:1;
+  min-height:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:1px;padding:1px 2px;
+  overflow:hidden;
+}
+.cal-day-num{font-size:11px;font-weight:700;color:#fff;line-height:1;}
+.cal-day-num.is-empty{color:var(--text3);}
+.cal-day-icon{font-size:12px;line-height:1;}
+.cal-day-label{font-size:8.5px;color:rgba(255,255,255,0.85);line-height:1;white-space:nowrap;}
+.cal-day-part{font-size:9px;color:rgba(255,255,255,0.92);line-height:1.15;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
 
 
   .chart-card.full{grid-column:1;}
@@ -1052,13 +1067,22 @@ body{min-height:100vh;padding-bottom:4rem;}
       <button class="cal-year-btn" onclick="calYear--;renderCalendar()">&#8592;</button>
       <span class="cal-year-label" id="cal-year-label">2026</span>
       <button class="cal-year-btn" onclick="calYear++;renderCalendar()">&#8594;</button>
-    </div>
-    <div class="cal-legend">
-      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#16a06a"></span>Run</span>
-      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#3b7ef8"></span>Strength</span>
-      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#d97706"></span>Jump Rope</span>
-      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#7c5cf6"></span>Badminton</span>
-      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#059669"></span>Hike / Walk</span>
+      <div class="cal-header-spacer"></div>
+      <div class="cal-filter-wrap">
+        <button class="cal-filter-btn" id="cal-filter-btn" onclick="toggleCalFilter(event)" title="图例 / 筛选">&#8942;</button>
+        <div class="cal-filter-panel" id="cal-filter-panel" style="display:none">
+          <div class="cal-filter-title">显示类型</div>
+          <label class="cal-filter-item"><input type="checkbox" checked data-key="Run" onchange="onCalFilterChange(this)"><span class="cal-leg-dot" style="background:#16a06a"></span>Run</label>
+          <label class="cal-filter-item"><input type="checkbox" checked data-key="Strength" onchange="onCalFilterChange(this)"><span class="cal-leg-dot" style="background:#3b7ef8"></span>Strength</label>
+          <label class="cal-filter-item"><input type="checkbox" checked data-key="JumpRope" onchange="onCalFilterChange(this)"><span class="cal-leg-dot" style="background:#d97706"></span>Jump Rope</label>
+          <label class="cal-filter-item"><input type="checkbox" checked data-key="Badminton" onchange="onCalFilterChange(this)"><span class="cal-leg-dot" style="background:#7c5cf6"></span>Badminton</label>
+          <label class="cal-filter-item"><input type="checkbox" checked data-key="HikeWalk" onchange="onCalFilterChange(this)"><span class="cal-leg-dot" style="background:#059669"></span>Hike / Walk</label>
+          <div class="cal-filter-actions">
+            <button type="button" onclick="calFilterSelectAll()">全选</button>
+            <button type="button" onclick="calFilterClearAll()">清空</button>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="cal-grid" id="cal-grid"></div>
   </div>
@@ -1556,9 +1580,34 @@ function showTab(n){
   if(n==='anaerobic') renderAnaerobic();
   if(n==='hike') renderHikeAnalysis();
   if(n==='records') renderRecords();
-  if(n==='calendar') renderCalendar();
+  if(n==='calendar'){
+    calYear = new Date().getFullYear();
+    renderCalendar();
+    scrollCalendarToDefault();
+  }
   if(n==='data') renderDataStats();
   if(n==='add') refreshHistoryLists();
+}
+
+// ══════════════════════════════════════
+//  日历默认滚动位置：置顶年份行，
+//  下方默认展示「当前月-1」，其后紧跟当前月
+// ══════════════════════════════════════
+function scrollCalendarToDefault(){
+  requestAnimationFrame(()=>{
+    const header = document.querySelector('#page-calendar .cal-header');
+    if(!header) return;
+    const now = new Date();
+    let targetMonth = now.getMonth() - 1; // 当前月-1
+    if(targetMonth < 0) targetMonth = 0;  // 1月时没有更早的月份，退到当前月
+    const monthEl = document.getElementById('cal-month-' + targetMonth);
+    if(!monthEl) return;
+    const headerRect = header.getBoundingClientRect();
+    const monthRect = monthEl.getBoundingClientRect();
+    const stickyTop = parseFloat(getComputedStyle(header).top) || 0;
+    const delta = monthRect.top - (stickyTop + headerRect.height);
+    window.scrollTo({ top: window.scrollY + delta, behavior: 'auto' });
+  });
 }
 
 // ══════════════════════════════════════
@@ -3424,11 +3473,59 @@ const SPORT_PRIORITY = ['Run','Strength','Jump Rope','Badminton','Hike','Walk'];
 
 function sportPriority(s){ const i=SPORT_PRIORITY.indexOf(s); return i===-1?99:i; }
 
+// =====================================================
+// 🗓️ 训练日历 —— 图例 / 筛选（原图例已收进右上角竖排三个点菜单）
+// 每组对应一个筛选开关；Hike 和 Walk 共用同一个开关（对应图例 "Hike / Walk"）
+// =====================================================
+const CAL_FILTER_GROUPS = [
+  {key:'Run',        sports:['Run']},
+  {key:'Strength',   sports:['Strength']},
+  {key:'JumpRope',   sports:['Jump Rope']},
+  {key:'Badminton',  sports:['Badminton']},
+  {key:'HikeWalk',   sports:['Hike','Walk']},
+];
+let calActiveGroups = new Set(CAL_FILTER_GROUPS.map(g=>g.key)); // 默认全部显示
+
+function isSportActive(sport){
+  const grp = CAL_FILTER_GROUPS.find(g=>g.sports.includes(sport));
+  if(!grp) return true; // 自定义运动类型不受筛选影响，始终显示
+  return calActiveGroups.has(grp.key);
+}
+
+function toggleCalFilter(e){
+  e && e.stopPropagation();
+  const panel = document.getElementById('cal-filter-panel');
+  if(!panel) return;
+  panel.style.display = (panel.style.display === 'none') ? 'block' : 'none';
+}
+document.addEventListener('click', function(e){
+  const panel = document.getElementById('cal-filter-panel');
+  const btn = document.getElementById('cal-filter-btn');
+  if(!panel || panel.style.display === 'none') return;
+  if(panel.contains(e.target) || e.target === btn) return;
+  panel.style.display = 'none';
+});
+function onCalFilterChange(cb){
+  const key = cb.getAttribute('data-key');
+  if(cb.checked) calActiveGroups.add(key); else calActiveGroups.delete(key);
+  renderCalendar();
+}
+function calFilterSelectAll(){
+  calActiveGroups = new Set(CAL_FILTER_GROUPS.map(g=>g.key));
+  document.querySelectorAll('#cal-filter-panel input[type=checkbox]').forEach(cb=>cb.checked=true);
+  renderCalendar();
+}
+function calFilterClearAll(){
+  calActiveGroups = new Set();
+  document.querySelectorAll('#cal-filter-panel input[type=checkbox]').forEach(cb=>cb.checked=false);
+  renderCalendar();
+}
+
 function dayLabel(rec){
   if(rec.sport==='Run') return {icon:'🏃', sub:null};
   if(rec.sport==='Strength'){
     const parts=(rec.muscles||rec.sub||'').split(',').filter(Boolean);
-    const sub = parts.length<=1 ? (parts[0]||'') : `${parts[0]}<br>·${parts[1]}`;
+    const sub = parts.join('·');
     return {icon:null, sub};
   }
   if(rec.sport==='Jump Rope') return {icon:'🪢', sub:null};
@@ -3438,53 +3535,56 @@ function dayLabel(rec){
   return {icon:null, sub:null};
 }
 
+// 固定高度日期格子，固定 3 行布局：
+// 第1行：日期数字（背景色与第2行一致）
+// 第2行：第一项运动
+// 第3行：第二项运动；只有一项运动时留空，背景色与第2行一致
+const EMPTY_CELL_BG = 'var(--bg3)';
+
 function renderDayCell(recs, dateNum, isToday){
-  // Sort by priority: main sport first
-  const sorted=[...recs].sort((a,b)=>sportPriority(a.sport)-sportPriority(b.sport));
-  const todayClass=isToday?' today':'';
+  const todayClass = isToday ? ' today' : '';
 
-  if(recs.length===0){
+  // 按筛选开关过滤，再按优先级排序
+  const visible = recs.filter(r=>isSportActive(r.sport));
+  const sorted = [...visible].sort((a,b)=>sportPriority(a.sport)-sportPriority(b.sport));
+
+  // 去重：同一运动多条记录只算一项
+  const uniqueSports = [...new Set(sorted.map(r=>r.sport))];
+
+  if(uniqueSports.length===0){
     return `<div class="cal-day${todayClass}">
-      <div class="cal-day-empty">${dateNum}</div>
+      <div class="cal-day-r1" style="background:${EMPTY_CELL_BG}"><span class="cal-day-num is-empty">${dateNum}</span></div>
+      <div class="cal-day-r2" style="background:${EMPTY_CELL_BG}"></div>
+      <div class="cal-day-r3" style="background:${EMPTY_CELL_BG}"></div>
     </div>`;
   }
 
-  if(recs.length===1 || sorted[0].sport===sorted[1]?.sport){
-    // Single sport (or duplicates same sport)
-    const rec=sorted[0];
-    const color=SPORT_COLOR[rec.sport]||'#9ba3b5';
-    const {icon,sub}=dayLabel(rec);
-    return `<div class="cal-day${todayClass}">
-      <div class="cal-day-single" style="background:${color}">
-        <div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap;justify-content:center">
-          <span class="cal-day-num">${dateNum}</span>
-          ${icon?`<span class="cal-day-icon">${icon}</span>`:''}
-        </div>
-        ${sub?`<span class="cal-day-part">${sub}</span>`:''}
+  const first = sorted.find(r=>r.sport===uniqueSports[0]);
+  const firstColor = SPORT_COLOR[first.sport] || '#9ba3b5';
+  const firstLbl = dayLabel(first);
+  const firstBody = `
+    <div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap;justify-content:center">
+      ${firstLbl.icon ? `<span class="cal-day-icon">${firstLbl.icon}</span>` : `<span class="cal-day-label">${first.sport}</span>`}
+    </div>
+    ${firstLbl.sub ? `<span class="cal-day-part">${firstLbl.sub}</span>` : ''}`;
+
+  let secondColor = firstColor; // 只有一项运动时，第3行背景与第2行一致
+  let secondBody = '';
+  if(uniqueSports.length>1){
+    const second = sorted.find(r=>r.sport===uniqueSports[1]);
+    secondColor = SPORT_COLOR[second.sport] || '#9ba3b5';
+    const secondLbl = dayLabel(second);
+    secondBody = `
+      <div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap;justify-content:center">
+        ${secondLbl.icon ? `<span class="cal-day-icon">${secondLbl.icon}</span>` : `<span class="cal-day-label">${second.sport}</span>`}
       </div>
-    </div>`;
+      ${secondLbl.sub ? `<span class="cal-day-part">${secondLbl.sub}</span>` : ''}`;
   }
 
-  // Two different sports: split top/bottom
-  const top=sorted[0], bot=sorted[1];
-  const topColor=SPORT_COLOR[top.sport]||'#9ba3b5';
-  const botColor=SPORT_COLOR[bot.sport]||'#9ba3b5';
-  const topLbl=dayLabel(top), botLbl=dayLabel(bot);
   return `<div class="cal-day${todayClass}">
-    <div class="cal-day-top" style="background:${topColor}">
-      <div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap;justify-content:center">
-        <span class="cal-day-num">${dateNum}</span>
-        ${topLbl.icon?`<span class="cal-day-icon">${topLbl.icon}</span>`:''}
-      </div>
-      ${topLbl.sub?`<span class="cal-day-part">${topLbl.sub}</span>`:''}
-    </div>
-    <div class="cal-day-bottom" style="background:${botColor}">
-      <div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap;justify-content:center">
-        ${botLbl.icon?`<span class="cal-day-icon">${botLbl.icon}</span>`:''}
-        ${!botLbl.icon&&!botLbl.sub?`<span style="font-size:9px;color:rgba(255,255,255,0.8)">${bot.sport}</span>`:''}
-      </div>
-      ${botLbl.sub?`<span class="cal-day-part">${botLbl.sub}</span>`:''}
-    </div>
+    <div class="cal-day-r1" style="background:${firstColor}"><span class="cal-day-num">${dateNum}</span></div>
+    <div class="cal-day-r2" style="background:${firstColor}">${firstBody}</div>
+    <div class="cal-day-r3" style="background:${secondColor}">${secondBody}</div>
   </div>`;
 }
 
@@ -3547,7 +3647,7 @@ function renderCalendar(){
     const daysInMonth=new Date(calYear,m+1,0).getDate();
     const summary=buildMonthlySummary(calYear,m);
 
-    html+=`<div class="cal-month">
+    html+=`<div class="cal-month" id="cal-month-${m}">
       <div class="cal-month-title">
         <span>${MONTHS[m]}</span>
         ${summary?`<span style="font-size:11px;color:var(--text3);font-weight:400;display:flex;align-items:center;gap:0;flex-wrap:wrap;justify-content:flex-end;min-width:0">${summary}</span>`:''}
