@@ -1052,10 +1052,13 @@ body{min-height:100vh;padding-bottom:4rem;}
       <button class="cal-year-btn" onclick="calYear--;renderCalendar()">&#8592;</button>
       <span class="cal-year-label" id="cal-year-label">2026</span>
       <button class="cal-year-btn" onclick="calYear++;renderCalendar()">&#8594;</button>
-      <div class="cal-menu-wrap">
-        <button class="cal-menu-btn" onclick="toggleCalMenu(event)" title="图例筛选">⋮</button>
-        <div class="cal-menu-dropdown" id="calMenuDropdown"></div>
-      </div>
+    </div>
+    <div class="cal-legend">
+      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#16a06a"></span>Run</span>
+      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#3b7ef8"></span>Strength</span>
+      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#d97706"></span>Jump Rope</span>
+      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#7c5cf6"></span>Badminton</span>
+      <span class="cal-leg-item"><span class="cal-leg-dot" style="background:#059669"></span>Hike / Walk</span>
     </div>
     <div class="cal-grid" id="cal-grid"></div>
   </div>
@@ -3436,6 +3439,7 @@ function dayLabel(rec){
 }
 
 function renderDayCell(recs, dateNum, isToday){
+  // Sort by priority: main sport first
   const sorted=[...recs].sort((a,b)=>sportPriority(a.sport)-sportPriority(b.sport));
   const todayClass=isToday?' today':'';
 
@@ -3446,67 +3450,45 @@ function renderDayCell(recs, dateNum, isToday){
   }
 
   if(recs.length===1 || sorted[0].sport===sorted[1]?.sport){
+    // Single sport (or duplicates same sport)
     const rec=sorted[0];
     const color=SPORT_COLOR[rec.sport]||'#9ba3b5';
     const {icon,sub}=dayLabel(rec);
-    const subText=sub?sub.replace(/<br>/g,' '):'';
     return `<div class="cal-day${todayClass}">
-      <div class="cal-row1" style="background:${color}">${dateNum}</div>
-      <div class="cal-row2" style="background:${color}">
-        ${icon?`<span class="cal-r-icon">${icon}</span>`:''}
-        <span class="cal-r2-txt">${subText||rec.sport}</span>
+      <div class="cal-day-single" style="background:${color}">
+        <div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap;justify-content:center">
+          <span class="cal-day-num">${dateNum}</span>
+          ${icon?`<span class="cal-day-icon">${icon}</span>`:''}
+        </div>
+        ${sub?`<span class="cal-day-part">${sub}</span>`:''}
       </div>
-      <div class="cal-row3" style="background:${color}"></div>
     </div>`;
   }
 
+  // Two different sports: split top/bottom
   const top=sorted[0], bot=sorted[1];
   const topColor=SPORT_COLOR[top.sport]||'#9ba3b5';
   const botColor=SPORT_COLOR[bot.sport]||'#9ba3b5';
   const topLbl=dayLabel(top), botLbl=dayLabel(bot);
-  const topSub=topLbl.sub?topLbl.sub.replace(/<br>/g,' '):'';
-  const botSub=botLbl.sub?botLbl.sub.replace(/<br>/g,' '):'';
   return `<div class="cal-day${todayClass}">
-    <div class="cal-row1" style="background:${topColor}">${dateNum}</div>
-    <div class="cal-row2" style="background:${topColor}">
-      ${topLbl.icon?`<span class="cal-r-icon">${topLbl.icon}</span>`:''}
-      <span class="cal-r2-txt">${topSub||top.sport}</span>
+    <div class="cal-day-top" style="background:${topColor}">
+      <div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap;justify-content:center">
+        <span class="cal-day-num">${dateNum}</span>
+        ${topLbl.icon?`<span class="cal-day-icon">${topLbl.icon}</span>`:''}
+      </div>
+      ${topLbl.sub?`<span class="cal-day-part">${topLbl.sub}</span>`:''}
     </div>
-    <div class="cal-row3" style="background:${botColor}">
-      ${botLbl.icon?`<span class="cal-r-icon">${botLbl.icon}</span>`:''}
-      <span class="cal-r3-txt">${botSub||bot.sport}</span>
+    <div class="cal-day-bottom" style="background:${botColor}">
+      <div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap;justify-content:center">
+        ${botLbl.icon?`<span class="cal-day-icon">${botLbl.icon}</span>`:''}
+        ${!botLbl.icon&&!botLbl.sub?`<span style="font-size:9px;color:rgba(255,255,255,0.8)">${bot.sport}</span>`:''}
+      </div>
+      ${botLbl.sub?`<span class="cal-day-part">${botLbl.sub}</span>`:''}
     </div>
   </div>`;
 }
 
-// Calendar legend filter state
-let calFilter={Run:true,Strength:true,'Jump Rope':true,Badminton:true,Hike:true,Walk:true};
-
-function toggleCalMenu(e){
-  e.stopPropagation();
-  document.getElementById('calMenuDropdown').classList.toggle('show');
-}
-
-function toggleCalFilter(sport){
-  calFilter[sport]=!calFilter[sport];
-  renderCalendar();
-  document.getElementById('calMenuDropdown').classList.add('show');
-}
-
-function buildCalMenu(){
-  const sports=['Run','Strength','Jump Rope','Badminton','Hike','Walk'];
-  const colors={'Run':'#16a06a','Strength':'#3b7ef8','Jump Rope':'#d97706','Badminton':'#7c5cf6','Hike':'#059669','Walk':'#6b9e8a'};
-  document.getElementById('calMenuDropdown').innerHTML=sports.map(s=>`
-    <label class="cal-menu-item" onclick="event.stopPropagation()">
-      <input type="checkbox" ${calFilter[s]?'checked':''} onchange="toggleCalFilter('${s}')">
-      <span class="cal-menu-dot" style="background:${colors[s]}"></span>
-      ${s==='Hike'?'Hike / Walk':s}
-    </label>
-  `).join('');
-}
-
 function renderCalendar(){
-  buildCalMenu();
   document.getElementById('cal-year-label').textContent=calYear;
   const today=new Date(); today.setHours(0,0,0,0);
   const todayStr=localDateStr(today);
@@ -3515,7 +3497,6 @@ function renderCalendar(){
   const dateMap={};
   records.forEach(r=>{
     if(!r.date) return;
-    if(!calFilter[r.sport]) return;
     if(!dateMap[r.date]) dateMap[r.date]=[];
     dateMap[r.date].push(r);
   });
@@ -3531,7 +3512,6 @@ function renderCalendar(){
   const monthMap={};
   records.forEach(r=>{
     if(!r.date) return;
-    if(!calFilter[r.sport]) return;
     const mk=r.date.slice(0,7);
     if(!monthMap[mk]) monthMap[mk]=[];
     monthMap[mk].push(r);
@@ -3562,11 +3542,12 @@ function renderCalendar(){
   let html='';
   for(let m=0;m<12;m++){
     const firstDay=new Date(calYear,m,1);
-    const startWd=(firstDay.getDay()+6)%7;
+    // getDay(): 0=Sun,1=Mon...6=Sat → convert to Mon-first: Mon=0..Sun=6
+    const startWd=(firstDay.getDay()+6)%7; // offset Mon=0
     const daysInMonth=new Date(calYear,m+1,0).getDate();
     const summary=buildMonthlySummary(calYear,m);
 
-    html+=`<div class="cal-month" id="cal-month-${m}">
+    html+=`<div class="cal-month">
       <div class="cal-month-title">
         <span>${MONTHS[m]}</span>
         ${summary?`<span style="font-size:11px;color:var(--text3);font-weight:400;display:flex;align-items:center;gap:0;flex-wrap:wrap;justify-content:flex-end;min-width:0">${summary}</span>`:''}
@@ -3574,8 +3555,10 @@ function renderCalendar(){
       <div class="cal-weekdays">${WDS.map(d=>`<div class="cal-wd">${d}</div>`).join('')}</div>
       <div class="cal-days">`;
 
+    // Empty cells before 1st
     for(let i=0;i<startWd;i++) html+=`<div class="cal-day empty"></div>`;
 
+    // Day cells
     for(let d=1;d<=daysInMonth;d++){
       const mm=String(m+1).padStart(2,'0');
       const dd=String(d).padStart(2,'0');
@@ -3589,14 +3572,6 @@ function renderCalendar(){
   }
 
   document.getElementById('cal-grid').innerHTML=html;
-  // Auto-scroll to (current month - 1) when viewing current year
-  if(calYear===new Date().getFullYear()){
-    setTimeout(()=>{
-      const prevMonth=(new Date().getMonth()-1+12)%12;
-      const el=document.getElementById('cal-month-'+prevMonth);
-      if(el) el.scrollIntoView({behavior:'instant',block:'start'});
-    },0);
-  }
 }
 
 // ══════════════════════════════════════
@@ -3608,12 +3583,6 @@ setSport('Run');
 refreshHistoryLists();
 initGistBtn();
 renderDashboard();
-
-// Close calendar menu on outside click
-document.addEventListener('click',function(e){
-  const menu=document.getElementById('calMenuDropdown');
-  if(menu&&!e.target.closest('.cal-menu-wrap')) menu.classList.remove('show');
-});
 
 
 </script>
