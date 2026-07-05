@@ -200,6 +200,10 @@ body{min-height:100vh;padding-bottom:4rem;}
   .cal-day-icon{ font-size: 11px; }
   .cal-day-part{ font-size: 8.5px; }
   .cal-day-label{ font-size: 8px; }
+  /* 日历页整体撑满屏幕宽度，和底部导航栏一样贴边（抵消 .main 的左右内边距） */
+  #page-calendar{ margin-left: -0.75rem; margin-right: -0.75rem; }
+  #page-calendar .cal-header{ padding-left: 0.75rem; padding-right: 0.75rem; }
+  #page-calendar .cal-grid{ padding-left: 0.5rem; padding-right: 0.5rem; }
 
   /* ── 跑步/无氧周期卡片：手机端改为竖排布局 ── */
   .cycle-card{
@@ -2039,8 +2043,8 @@ function renderRecordPage(){
 
       if(r.sport==='Run'){
         // 跑步记录：手机端固定 3 行字段顺序
-        // 第1行：时段 距离 配速 平均心率 最大心率 步频
-        // 第2行：天气 路线 跑鞋 设备
+        // 第1行：时段 距离 配速 平均心率 最大心率
+        // 第2行：步频 天气 路线 跑鞋 设备
         // 第3行：体感 身体感受 备注
         const row1=[], row2=[], row3=[];
         if(r.period)  row1.push(`<span class="mobile-record-chip"><span class="k">时段</span> ${r.period}</span>`);
@@ -2048,8 +2052,8 @@ function renderRecordPage(){
         if(r.pace)    row1.push(`<span class="mobile-record-chip"><span class="k">配速</span> ${fmtPace(r.pace)}</span>`);
         if(r.hr)      row1.push(`<span class="mobile-record-chip"><span class="k">平均心率</span> ${r.hr}</span>`);
         if(r.maxhr)   row1.push(`<span class="mobile-record-chip"><span class="k">最大心率</span> ${r.maxhr}</span>`);
-        if(r.cadence) row1.push(`<span class="mobile-record-chip"><span class="k">步频</span> ${r.cadence}</span>`);
 
+        if(r.cadence) row2.push(`<span class="mobile-record-chip"><span class="k">步频</span> ${r.cadence}</span>`);
         if(r.weather) row2.push(`<span class="mobile-record-chip"><span class="k">天气</span> ${r.weather}</span>`);
         if(r.route)   row2.push(`<span class="mobile-record-chip"><span class="k">路线</span> ${r.route}</span>`);
         if(r.shoe)    row2.push(`<span class="mobile-record-chip"><span class="k">跑鞋</span> ${r.shoe}</span>`);
