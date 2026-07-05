@@ -511,10 +511,8 @@ body{min-height:100vh;padding-bottom:4rem;}
 /* ── Calendar ── */
 .cal-header{
   display:flex;align-items:center;gap:16px;
-  position:sticky; top:54px; z-index:60;
-  background:var(--bg); padding:10px 0; margin:0 0 14px;
+  padding:10px 0; margin:0 0 14px;
 }
-@media(max-width:768px){ .cal-header{ top:0; } }
 .cal-year-label{font-size:19px;font-weight:700;color:var(--text);min-width:56px;text-align:center;letter-spacing:.2px;}
 .cal-year-btn{
   width:30px;height:30px;flex-shrink:0;
@@ -1608,29 +1606,27 @@ function showTab(n){
     calYear = new Date().getFullYear();
     renderCalendar();
     scrollCalendarToDefault();
+  } else {
+    // 非日历页：每次切换都从顶部开始，不继承日历页滑动下去的位置
+    window.scrollTo({ top: 0, behavior: 'auto' });
   }
   if(n==='data') renderDataStats();
   if(n==='add') refreshHistoryLists();
 }
 
 // ══════════════════════════════════════
-//  日历默认滚动位置：置顶年份行，
+//  日历默认滚动位置：
 //  下方默认展示「当前月-1」，其后紧跟当前月
 // ══════════════════════════════════════
 function scrollCalendarToDefault(){
   requestAnimationFrame(()=>{
-    const header = document.querySelector('#page-calendar .cal-header');
-    if(!header) return;
     const now = new Date();
     let targetMonth = now.getMonth() - 1; // 当前月-1
     if(targetMonth < 0) targetMonth = 0;  // 1月时没有更早的月份，退到当前月
     const monthEl = document.getElementById('cal-month-' + targetMonth);
     if(!monthEl) return;
-    const headerRect = header.getBoundingClientRect();
-    const monthRect = monthEl.getBoundingClientRect();
-    const stickyTop = parseFloat(getComputedStyle(header).top) || 0;
-    const delta = monthRect.top - (stickyTop + headerRect.height);
-    window.scrollTo({ top: window.scrollY + delta, behavior: 'auto' });
+    const rect = monthEl.getBoundingClientRect();
+    window.scrollTo({ top: window.scrollY + rect.top, behavior: 'auto' });
   });
 }
 
