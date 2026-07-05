@@ -194,8 +194,8 @@ body{min-height:100vh;padding-bottom:4rem;}
   #dash-total{ font-size: 32px !important; }
   #dash-date-range{ font-size: 11px !important; }
   .cal-grid{ grid-template-columns: 1fr !important; }
-  .cal-day{ height: 46px; }
-  .cal-day-r1{ flex-basis: 14px; }
+  .cal-day{ height: 48px; }
+  .cal-day-r1{ flex-basis: 16px; padding: 2px 0 0 4px; }
   .cal-day-num{ font-size: 10px; }
   .cal-day-icon{ font-size: 11px; }
   .cal-day-part{ font-size: 8.5px; }
@@ -551,7 +551,7 @@ body{min-height:100vh;padding-bottom:4rem;}
   position:relative;
   border-radius:6px;
   overflow:hidden;
-  height:58px;
+  height:60px;
   display:flex;
   flex-direction:column;
   cursor:default;
@@ -560,8 +560,10 @@ body{min-height:100vh;padding-bottom:4rem;}
 .cal-day.today{outline:2px solid var(--coral);outline-offset:-2px;z-index:2;}
 
 .cal-day-r1{
-  flex:0 0 17px;
-  display:flex;align-items:center;justify-content:center;
+  flex:0 0 19px;
+  display:flex;align-items:flex-start;justify-content:flex-start;
+  padding:3px 0 0 5px;
+  box-sizing:border-box;
 }
 .cal-day-r2, .cal-day-r3{
   flex:1;
@@ -3521,24 +3523,44 @@ function calFilterClearAll(){
   renderCalendar();
 }
 
-function dayLabel(rec){
-  if(rec.sport==='Run') return {icon:'🏃', sub:null};
-  if(rec.sport==='Strength'){
-    const parts=(rec.muscles||rec.sub||'').split(',').filter(Boolean);
-    const sub = parts.join('·');
-    return {icon:null, sub};
-  }
-  if(rec.sport==='Jump Rope') return {icon:'🪢', sub:null};
-  if(rec.sport==='Badminton') return {icon:'🏸', sub:null};
-  if(rec.sport==='Hike') return {icon:'⛰', sub:null};
-  if(rec.sport==='Walk') return {icon:'🚶', sub:null};
+function slotLabel(slot){
+  if(slot.sport==='Strength') return {icon:null, sub: slot.part || ''};
+  if(slot.sport==='Run') return {icon:'🏃', sub:null};
+  if(slot.sport==='Jump Rope') return {icon:'🪢', sub:null};
+  if(slot.sport==='Badminton') return {icon:'🏸', sub:null};
+  if(slot.sport==='Hike') return {icon:'⛰', sub:null};
+  if(slot.sport==='Walk') return {icon:'🚶', sub:null};
   return {icon:null, sub:null};
+}
+
+// 把一天的记录拆成显示"槽位"：
+// - 普通运动：每种运动类型只占一个槽位（去重）
+// - 无氧（Strength）：把每个训练部位拆成独立槽位，
+//   这样第二个训练部位就相当于「第三种运动」，可以单独占据一行
+function buildDaySlots(sortedRecs){
+  const slots = [];
+  const usedSports = new Set();
+  sortedRecs.forEach(r=>{
+    if(r.sport==='Strength'){
+      const parts=(r.muscles||r.sub||'').split(',').filter(Boolean);
+      if(parts.length===0){
+        if(!usedSports.has('Strength')){ usedSports.add('Strength'); slots.push({sport:'Strength', part:null}); }
+      } else {
+        parts.forEach(p=>{
+          if(!slots.some(s=>s.sport==='Strength' && s.part===p)) slots.push({sport:'Strength', part:p});
+        });
+      }
+    } else {
+      if(!usedSports.has(r.sport)){ usedSports.add(r.sport); slots.push({sport:r.sport, part:null}); }
+    }
+  });
+  return slots;
 }
 
 // 固定高度日期格子，固定 3 行布局：
 // 第1行：日期数字（背景色与第2行一致）
-// 第2行：第一项运动
-// 第3行：第二项运动；只有一项运动时留空，背景色与第2行一致
+// 第2行：第一个槽位（第一项运动，或无氧的第一个部位）
+// 第3行：第二个槽位；只有一个槽位时留空，背景色与第2行一致
 const EMPTY_CELL_BG = 'var(--bg3)';
 
 function renderDayCell(recs, dateNum, isToday){
@@ -3548,10 +3570,9 @@ function renderDayCell(recs, dateNum, isToday){
   const visible = recs.filter(r=>isSportActive(r.sport));
   const sorted = [...visible].sort((a,b)=>sportPriority(a.sport)-sportPriority(b.sport));
 
-  // 去重：同一运动多条记录只算一项
-  const uniqueSports = [...new Set(sorted.map(r=>r.sport))];
+  const slots = buildDaySlots(sorted);
 
-  if(uniqueSports.length===0){
+  if(slots.length===0){
     return `<div class="cal-day${todayClass}">
       <div class="cal-day-r1" style="background:${EMPTY_CELL_BG}"><span class="cal-day-num is-empty">${dateNum}</span></div>
       <div class="cal-day-r2" style="background:${EMPTY_CELL_BG}"></div>
@@ -3559,24 +3580,24 @@ function renderDayCell(recs, dateNum, isToday){
     </div>`;
   }
 
-  const first = sorted.find(r=>r.sport===uniqueSports[0]);
+  const first = slots[0];
   const firstColor = SPORT_COLOR[first.sport] || '#9ba3b5';
-  const firstLbl = dayLabel(first);
+  const firstLbl = slotLabel(first);
   const firstBody = `
     <div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap;justify-content:center">
-      ${firstLbl.icon ? `<span class="cal-day-icon">${firstLbl.icon}</span>` : `<span class="cal-day-label">${first.sport}</span>`}
+      ${firstLbl.icon ? `<span class="cal-day-icon">${firstLbl.icon}</span>` : (firstLbl.sub ? '' : `<span class="cal-day-label">${first.sport}</span>`)}
     </div>
     ${firstLbl.sub ? `<span class="cal-day-part">${firstLbl.sub}</span>` : ''}`;
 
-  let secondColor = firstColor; // 只有一项运动时，第3行背景与第2行一致
+  let secondColor = firstColor; // 只有一个槽位时，第3行背景与第2行一致
   let secondBody = '';
-  if(uniqueSports.length>1){
-    const second = sorted.find(r=>r.sport===uniqueSports[1]);
+  if(slots.length>1){
+    const second = slots[1];
     secondColor = SPORT_COLOR[second.sport] || '#9ba3b5';
-    const secondLbl = dayLabel(second);
+    const secondLbl = slotLabel(second);
     secondBody = `
       <div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap;justify-content:center">
-        ${secondLbl.icon ? `<span class="cal-day-icon">${secondLbl.icon}</span>` : `<span class="cal-day-label">${second.sport}</span>`}
+        ${secondLbl.icon ? `<span class="cal-day-icon">${secondLbl.icon}</span>` : (secondLbl.sub ? '' : `<span class="cal-day-label">${second.sport}</span>`)}
       </div>
       ${secondLbl.sub ? `<span class="cal-day-part">${secondLbl.sub}</span>` : ''}`;
   }
