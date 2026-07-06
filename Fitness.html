@@ -65,8 +65,8 @@
   --font: "PingFang SC","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-html{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;}
-body{min-height:100vh;padding-bottom:4rem;}
+html{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;overflow-x:hidden;}
+body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
 /* topbar */
 .topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,0,0,0.06);}
@@ -563,7 +563,7 @@ body{min-height:100vh;padding-bottom:4rem;}
 @media(max-width:800px){.cal-grid{grid-template-columns:repeat(2,1fr);}}
 
 /* Each month card */
-.cal-month{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;box-shadow:var(--shadow);}
+.cal-month{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;box-shadow:var(--shadow);min-width:0;overflow:hidden;}
 .cal-month-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;}
 .cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px;}
 .cal-wd{font-size:11px;color:var(--text3);text-align:center;padding:3px 0;font-weight:600;}
@@ -573,8 +573,9 @@ body{min-height:100vh;padding-bottom:4rem;}
 .cal-day{
   position:relative;
   border-radius:6px;
-  overflow:visible;
+  overflow:hidden;
   height:94px;
+  min-width:0; /* 防止日历格子里的不可换行文字把整个7列网格撑宽，导致手机端页面横向可滑动 */
   display:flex;
   flex-direction:column;
   cursor:default;
@@ -594,6 +595,7 @@ body{min-height:100vh;padding-bottom:4rem;}
 
 .cal-day-bars{
   flex:1;
+  min-width:0;
   display:flex;flex-direction:column;
   gap:2px;
   padding:0 3px 3px;
@@ -602,6 +604,7 @@ body{min-height:100vh;padding-bottom:4rem;}
 .cal-bar{
   flex:0 0 13px;
   height:13px;
+  min-width:0;
   border-radius:3px;
   display:flex;align-items:center;justify-content:center;
   font-size:8px;font-weight:600;color:rgba(255,255,255,0.95);
