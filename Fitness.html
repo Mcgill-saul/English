@@ -3722,7 +3722,6 @@ function renderCalendar(){
 
   const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const WDS=['Mo','Tu','We','Th','Fr','Sa','Su'];
-  const SPORT_ORDER=['Run','Strength','Jump Rope','Badminton','Hike','Walk'];
 
   // Summary label map
   const SUMMARY_LABEL={'Run':'Runs','Strength':'Lifts','Jump Rope':'Jumps','Badminton':'Badm.','Hike':'Hikes','Walk':'Walks'};
@@ -3740,8 +3739,8 @@ function renderCalendar(){
     const mk=`${yr}-${String(mo+1).padStart(2,'0')}`;
     const recs=monthMap[mk]||[];
     if(!recs.length) return '';
-    const customInMonth=[...new Set(recs.map(r=>r.sport).filter(s=>!SPORT_ORDER.includes(s)))];
-    const orderedSports=[...SPORT_ORDER,...customInMonth];
+    const customInMonth=[...new Set(recs.map(r=>r.sport).filter(s=>!SPORT_PRIORITY.includes(s)))];
+    const orderedSports=[...SPORT_PRIORITY,...customInMonth];
     const parts=[];
     orderedSports.forEach(sport=>{
       const sr=recs.filter(r=>r.sport===sport);
