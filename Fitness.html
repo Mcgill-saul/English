@@ -1603,13 +1603,12 @@ function showTab(n){
 
 // ══════════════════════════════════════
 //  日历默认滚动位置：
-//  下方默认展示「当前月-1」，其后紧跟当前月
+//  下方默认展示「当前月」
 // ══════════════════════════════════════
 function scrollCalendarToDefault(){
   requestAnimationFrame(()=>{
     const now = new Date();
-    let targetMonth = now.getMonth() - 1; // 当前月-1
-    if(targetMonth < 0) targetMonth = 0;  // 1月时没有更早的月份，退到当前月
+    const targetMonth = now.getMonth();
     const monthEl = document.getElementById('cal-month-' + targetMonth);
     if(!monthEl) return;
     const rect = monthEl.getBoundingClientRect();
