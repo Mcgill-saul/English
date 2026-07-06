@@ -3630,11 +3630,24 @@ function calFilterClearAll(){
   renderCalendar();
 }
 
+// "其他运动"色条空间很窄，用缩写代替英文全称——直接复用日历月小计里已有的
+// 缩写惯例（Jumps / Badm / Hikes / Walks），保持全app一致；自定义运动类型
+// 没有现成缩写，就跟月小计一样直接显示原名（超长会被省略号截断）
+const SPORT_SHORT_MAP = {
+  'Jump Rope': 'Jumps',
+  'Badminton': 'Badm',
+  'Hike':      'Hikes',
+  'Walk':      'Walks',
+};
+function shortSportLabel(sport){
+  return SPORT_SHORT_MAP[sport] || sport;
+}
+
 // 每天的日期格子固定展示（格子高度固定，按5层色条的高度计算）：
 //   第1条：无氧第一个训练部位（色条+部位名文字）
 //   第2条：无氧第二个训练部位（同上；当天只有一个动作时完全透明留空，但仍占位）
 //   第3条：跑步（色条+"公里数·平均心率"文字；没跑步时透明留空）
-// 从第4条起是"其他运动"（羽毛球/跳绳/徒步/自定义等），色条+运动类型文字，
+// 从第4条起是"其他运动"（羽毛球/跳绳/徒步/自定义等），色条+运动类型缩写，
 // 固定占用 OTHER_SLOT_CAP 条位置（没有的补透明占位，保证格子高度始终一致），
 // 超出 OTHER_SLOT_CAP 的部分不再往下加行，用一行"+N"收尾提示还有几项
 const OTHER_SLOT_CAP = 2;
@@ -3667,7 +3680,7 @@ function renderDayCell(recs, dateNum, isToday){
   let bar3;
   if(runRec){
     const bits=[];
-    if(runRec.dist) bits.push(runRec.dist+'km');
+    if(runRec.dist) bits.push(runRec.dist+'k');
     if(runRec.hr) bits.push(runRec.hr);
     bar3 = `<div class="cal-bar" style="background:${runColor}">${bits.join('·')}</div>`;
   } else {
@@ -3688,7 +3701,7 @@ function renderDayCell(recs, dateNum, isToday){
     const sport = shownOther[i];
     if(!sport) return `<div class="cal-bar is-empty"></div>`;
     const c = SPORT_COLOR[sport] || '#9ba3b5';
-    return `<div class="cal-bar" style="background:${c}">${sport}</div>`;
+    return `<div class="cal-bar" style="background:${c}">${shortSportLabel(sport)}</div>`;
   }).join('');
   const overflow = otherSports.length - OTHER_SLOT_CAP;
   const plusLine = overflow>0 ? `<div class="cal-bar-plus">+${overflow}</div>` : '';
