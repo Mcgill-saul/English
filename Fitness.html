@@ -194,12 +194,11 @@ body{min-height:100vh;padding-bottom:4rem;}
   #dash-total{ font-size: 32px !important; }
   #dash-date-range{ font-size: 11px !important; }
   .cal-grid{ grid-template-columns: 1fr !important; }
-  .cal-day{ height: 48px; }
-  .cal-day-r1{ flex-basis: 16px; padding: 2px 0 0 4px; }
+  .cal-day{ height: 80px; }
+  .cal-day-num-row{ padding: 2px 0 1px 4px; }
   .cal-day-num{ font-size: 10px; }
-  .cal-day-icon{ font-size: 11px; }
-  .cal-day-part{ font-size: 8.5px; }
-  .cal-day-label{ font-size: 8px; }
+  .cal-bar{ flex-basis: 11px; height: 11px; font-size: 7px; }
+  .cal-bar-plus{ flex-basis: 10px; height: 10px; font-size: 7px; }
 
   /* ── 跑步/无氧周期卡片：手机端改为竖排布局 ── */
   .cycle-card{
@@ -540,14 +539,22 @@ body{min-height:100vh;padding-bottom:4rem;}
 .cal-filter-panel{
   position:absolute; top:calc(100% + 6px); right:0;
   background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-lg);
-  box-shadow:var(--shadow); padding:10px 12px; min-width:150px; z-index:70;
+  box-shadow:var(--shadow); padding:10px 12px; min-width:172px; z-index:70;
 }
 .cal-filter-title{font-size:11.5px;font-weight:700;color:var(--text3);margin-bottom:8px;}
 .cal-filter-item{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text2);padding:5px 0;cursor:pointer;white-space:nowrap;}
 .cal-filter-item input{margin:0;cursor:pointer;}
-.cal-leg-dot{width:11px;height:11px;border-radius:3px;flex-shrink:0;}
+.cal-leg-color{
+  -webkit-appearance:none;appearance:none;
+  width:14px;height:14px;flex-shrink:0;
+  border:none;border-radius:3px;padding:0;
+  cursor:pointer;background:none;
+}
+.cal-leg-color::-webkit-color-swatch-wrapper{padding:0;}
+.cal-leg-color::-webkit-color-swatch{border:none;border-radius:3px;}
+.cal-leg-color::-moz-color-swatch{border:none;border-radius:3px;}
 .cal-filter-actions{display:flex;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
-.cal-filter-actions button{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11.5px;padding:5px 0;cursor:pointer;}
+.cal-filter-actions button{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;padding:5px 2px;cursor:pointer;}
 .cal-filter-actions button:hover{color:var(--text);border-color:var(--green);}
 
 /* 12-month grid: 4 cols × 3 rows */
@@ -562,38 +569,52 @@ body{min-height:100vh;padding-bottom:4rem;}
 .cal-wd{font-size:11px;color:var(--text3);text-align:center;padding:3px 0;font-weight:600;}
 .cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
 
-/* Day cell — fixed height, 3 fixed rows: date / sport1 / sport2 */
+/* Day cell — 日期数字 + 固定色条槽位（无氧①/无氧②/跑步/其他①/其他②），格子高度固定按5条色条计算 */
 .cal-day{
   position:relative;
   border-radius:6px;
-  overflow:hidden;
-  height:60px;
+  overflow:visible;
+  height:94px;
   display:flex;
   flex-direction:column;
   cursor:default;
+  background:var(--bg3);
 }
 .cal-day.empty{background:transparent;visibility:hidden;}
 .cal-day.today{outline:2px solid var(--coral);outline-offset:-2px;z-index:2;}
 
-.cal-day-r1{
-  flex:0 0 19px;
+.cal-day-num-row{
+  flex:0 0 auto;
   display:flex;align-items:flex-start;justify-content:flex-start;
-  padding:3px 0 0 5px;
+  padding:3px 0 2px 5px;
   box-sizing:border-box;
 }
-.cal-day-r2, .cal-day-r3{
-  flex:1;
-  min-height:0;
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  gap:1px;padding:1px 2px;
-  overflow:hidden;
-}
-.cal-day-num{font-size:11px;font-weight:700;color:#fff;line-height:1;}
+.cal-day-num{font-size:11px;font-weight:700;color:var(--text2);line-height:1;}
 .cal-day-num.is-empty{color:var(--text3);}
-.cal-day-icon{font-size:12px;line-height:1;}
-.cal-day-label{font-size:8.5px;color:rgba(255,255,255,0.85);line-height:1;white-space:nowrap;}
-.cal-day-part{font-size:9px;color:rgba(255,255,255,0.92);line-height:1.15;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
+
+.cal-day-bars{
+  flex:1;
+  display:flex;flex-direction:column;
+  gap:2px;
+  padding:0 3px 3px;
+  box-sizing:border-box;
+}
+.cal-bar{
+  flex:0 0 13px;
+  height:13px;
+  border-radius:3px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:8px;font-weight:600;color:rgba(255,255,255,0.95);
+  line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  padding:0 3px;box-sizing:border-box;
+}
+.cal-bar.is-empty{background:transparent!important;}
+.cal-bar-plus{
+  flex:0 0 12px;height:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:8px;font-weight:700;color:var(--text3);
+  line-height:1;
+}
 
 
   .chart-card.full{grid-column:1;}
@@ -1093,15 +1114,16 @@ body{min-height:100vh;padding-bottom:4rem;}
       <div class="cal-filter-wrap">
         <button class="cal-filter-btn" id="cal-filter-btn" onclick="toggleCalFilter(event)" title="图例 / 筛选">&#8942;</button>
         <div class="cal-filter-panel" id="cal-filter-panel" style="display:none">
-          <div class="cal-filter-title">显示类型</div>
-          <label class="cal-filter-item"><input type="checkbox" checked data-key="Run" onchange="onCalFilterChange(this)"><span class="cal-leg-dot" style="background:#16a06a"></span>Run</label>
-          <label class="cal-filter-item"><input type="checkbox" checked data-key="Strength" onchange="onCalFilterChange(this)"><span class="cal-leg-dot" style="background:#3b7ef8"></span>Strength</label>
-          <label class="cal-filter-item"><input type="checkbox" checked data-key="JumpRope" onchange="onCalFilterChange(this)"><span class="cal-leg-dot" style="background:#d97706"></span>Jump Rope</label>
-          <label class="cal-filter-item"><input type="checkbox" checked data-key="Badminton" onchange="onCalFilterChange(this)"><span class="cal-leg-dot" style="background:#7c5cf6"></span>Badminton</label>
-          <label class="cal-filter-item"><input type="checkbox" checked data-key="HikeWalk" onchange="onCalFilterChange(this)"><span class="cal-leg-dot" style="background:#059669"></span>Hike / Walk</label>
+          <div class="cal-filter-title">显示类型 / 颜色</div>
+          <label class="cal-filter-item"><input type="checkbox" checked data-key="Run" onchange="onCalFilterChange(this)"><input type="color" class="cal-leg-color" data-key="Run" value="#16a06a" onclick="event.stopPropagation()" onchange="onCalColorChange(this)">Run</label>
+          <label class="cal-filter-item"><input type="checkbox" checked data-key="Strength" onchange="onCalFilterChange(this)"><input type="color" class="cal-leg-color" data-key="Strength" value="#3b7ef8" onclick="event.stopPropagation()" onchange="onCalColorChange(this)">Strength</label>
+          <label class="cal-filter-item"><input type="checkbox" checked data-key="JumpRope" onchange="onCalFilterChange(this)"><input type="color" class="cal-leg-color" data-key="JumpRope" value="#d97706" onclick="event.stopPropagation()" onchange="onCalColorChange(this)">Jump Rope</label>
+          <label class="cal-filter-item"><input type="checkbox" checked data-key="Badminton" onchange="onCalFilterChange(this)"><input type="color" class="cal-leg-color" data-key="Badminton" value="#7c5cf6" onclick="event.stopPropagation()" onchange="onCalColorChange(this)">Badminton</label>
+          <label class="cal-filter-item"><input type="checkbox" checked data-key="HikeWalk" onchange="onCalFilterChange(this)"><input type="color" class="cal-leg-color" data-key="HikeWalk" value="#059669" onclick="event.stopPropagation()" onchange="onCalColorChange(this)">Hike / Walk</label>
           <div class="cal-filter-actions">
             <button type="button" onclick="calFilterSelectAll()">全选</button>
             <button type="button" onclick="calFilterClearAll()">清空</button>
+            <button type="button" onclick="calResetColors()">默认色</button>
           </div>
         </div>
       </div>
@@ -3524,11 +3546,11 @@ function sportPriority(s){ const i=SPORT_PRIORITY.indexOf(s); return i===-1?99:i
 // 每组对应一个筛选开关；Hike 和 Walk 共用同一个开关（对应图例 "Hike / Walk"）
 // =====================================================
 const CAL_FILTER_GROUPS = [
-  {key:'Run',        sports:['Run']},
-  {key:'Strength',   sports:['Strength']},
-  {key:'JumpRope',   sports:['Jump Rope']},
-  {key:'Badminton',  sports:['Badminton']},
-  {key:'HikeWalk',   sports:['Hike','Walk']},
+  {key:'Run',        sports:['Run'],        defaultColor:'#16a06a'},
+  {key:'Strength',   sports:['Strength'],   defaultColor:'#3b7ef8'},
+  {key:'JumpRope',   sports:['Jump Rope'],  defaultColor:'#d97706'},
+  {key:'Badminton',  sports:['Badminton'],  defaultColor:'#7c5cf6'},
+  {key:'HikeWalk',   sports:['Hike','Walk'],defaultColor:'#059669'},
 ];
 let calActiveGroups = new Set(CAL_FILTER_GROUPS.map(g=>g.key)); // 默认全部显示
 
@@ -3536,6 +3558,40 @@ function isSportActive(sport){
   const grp = CAL_FILTER_GROUPS.find(g=>g.sports.includes(sport));
   if(!grp) return true; // 自定义运动类型不受筛选影响，始终显示
   return calActiveGroups.has(grp.key);
+}
+
+// =====================================================
+// 🎨 运动类型颜色自定义（放在右上角三个点菜单里，跟图例/筛选放一起）
+// 颜色保存到 localStorage，覆盖 SPORT_COLOR，日历色条会立刻用新颜色渲染
+// =====================================================
+const CAL_COLOR_LS_KEY = 'cal_sport_colors_v1';
+
+function loadCalColors(){
+  let saved = {};
+  try{ saved = JSON.parse(localStorage.getItem(CAL_COLOR_LS_KEY)||'{}'); }catch(e){ saved={}; }
+  CAL_FILTER_GROUPS.forEach(g=>{
+    const color = saved[g.key] || g.defaultColor;
+    g.sports.forEach(sp=>{ SPORT_COLOR[sp]=color; });
+    const input = document.querySelector(`.cal-leg-color[data-key="${g.key}"]`);
+    if(input) input.value = color;
+  });
+}
+function onCalColorChange(el){
+  const key = el.getAttribute('data-key');
+  const color = el.value;
+  const grp = CAL_FILTER_GROUPS.find(g=>g.key===key);
+  if(!grp) return;
+  grp.sports.forEach(sp=>{ SPORT_COLOR[sp]=color; });
+  let saved = {};
+  try{ saved = JSON.parse(localStorage.getItem(CAL_COLOR_LS_KEY)||'{}'); }catch(e){ saved={}; }
+  saved[key]=color;
+  localStorage.setItem(CAL_COLOR_LS_KEY, JSON.stringify(saved));
+  renderCalendar();
+}
+function calResetColors(){
+  localStorage.removeItem(CAL_COLOR_LS_KEY);
+  loadCalColors();
+  renderCalendar();
 }
 
 function toggleCalFilter(e){
@@ -3571,89 +3627,81 @@ function calFilterClearAll(){
   renderCalendar();
 }
 
-function slotLabel(slot){
-  if(slot.sport==='Strength') return {icon:null, sub: slot.part || ''};
-  if(slot.sport==='Run') return {icon:'🏃', sub:null};
-  if(slot.sport==='Jump Rope') return {icon:'🪢', sub:null};
-  if(slot.sport==='Badminton') return {icon:'🏸', sub:null};
-  if(slot.sport==='Hike') return {icon:'⛰', sub:null};
-  if(slot.sport==='Walk') return {icon:'🚶', sub:null};
-  return {icon:null, sub:null};
-}
-
-// 把一天的记录拆成显示"槽位"：
-// - 普通运动：每种运动类型只占一个槽位（去重）
-// - 无氧（Strength）：把每个训练部位拆成独立槽位，
-//   这样第二个训练部位就相当于「第三种运动」，可以单独占据一行
-function buildDaySlots(sortedRecs){
-  const slots = [];
-  const usedSports = new Set();
-  sortedRecs.forEach(r=>{
-    if(r.sport==='Strength'){
-      const parts=(r.muscles||r.sub||'').split(',').filter(Boolean);
-      if(parts.length===0){
-        if(!usedSports.has('Strength')){ usedSports.add('Strength'); slots.push({sport:'Strength', part:null}); }
-      } else {
-        parts.forEach(p=>{
-          if(!slots.some(s=>s.sport==='Strength' && s.part===p)) slots.push({sport:'Strength', part:p});
-        });
-      }
-    } else {
-      if(!usedSports.has(r.sport)){ usedSports.add(r.sport); slots.push({sport:r.sport, part:null}); }
-    }
-  });
-  return slots;
-}
-
-// 固定高度日期格子，固定 3 行布局：
-// 第1行：日期数字（背景色与第2行一致）
-// 第2行：第一个槽位（第一项运动，或无氧的第一个部位）
-// 第3行：第二个槽位；只有一个槽位时留空，背景色与第2行一致
-const EMPTY_CELL_BG = 'var(--bg3)';
+// 每天的日期格子固定展示（格子高度固定，按5层色条的高度计算）：
+//   第1条：无氧第一个训练部位（色条+部位名文字）
+//   第2条：无氧第二个训练部位（同上；当天只有一个动作时完全透明留空，但仍占位）
+//   第3条：跑步（色条+"公里数·平均心率"文字；没跑步时透明留空）
+// 从第4条起是"其他运动"（羽毛球/跳绳/徒步/自定义等），色条+运动类型文字，
+// 固定占用 OTHER_SLOT_CAP 条位置（没有的补透明占位，保证格子高度始终一致），
+// 超出 OTHER_SLOT_CAP 的部分不再往下加行，用一行"+N"收尾提示还有几项
+const OTHER_SLOT_CAP = 2;
 
 function renderDayCell(recs, dateNum, isToday){
   const todayClass = isToday ? ' today' : '';
 
-  // 按筛选开关过滤，再按优先级排序
+  // 按图例筛选开关过滤
   const visible = recs.filter(r=>isSportActive(r.sport));
-  const sorted = [...visible].sort((a,b)=>sportPriority(a.sport)-sportPriority(b.sport));
 
-  const slots = buildDaySlots(sorted);
+  // —— 无氧：把每条记录的训练部位摊平、去重，取前两个 ——
+  const stRecs = visible.filter(r=>r.sport==='Strength');
+  const strengthLabels = [];
+  stRecs.forEach(r=>{
+    const parts=(r.muscles||r.sub||'').split(',').filter(Boolean);
+    if(parts.length===0){ strengthLabels.push(''); }
+    else parts.forEach(p=>{ if(!strengthLabels.includes(p)) strengthLabels.push(p); });
+  });
+  const strengthColor = SPORT_COLOR['Strength'] || '#9ba3b5';
+  const bar1 = strengthLabels.length>=1
+    ? `<div class="cal-bar" style="background:${strengthColor}">${strengthLabels[0]}</div>`
+    : `<div class="cal-bar is-empty"></div>`;
+  const bar2 = strengthLabels.length>=2
+    ? `<div class="cal-bar" style="background:${strengthColor}">${strengthLabels[1]}</div>`
+    : `<div class="cal-bar is-empty"></div>`;
 
-  if(slots.length===0){
-    return `<div class="cal-day${todayClass}">
-      <div class="cal-day-r1" style="background:${EMPTY_CELL_BG}"><span class="cal-day-num is-empty">${dateNum}</span></div>
-      <div class="cal-day-r2" style="background:${EMPTY_CELL_BG}"></div>
-      <div class="cal-day-r3" style="background:${EMPTY_CELL_BG}"></div>
-    </div>`;
+  // —— 跑步：显示"公里数·平均心率" ——
+  const runRec = visible.find(r=>r.sport==='Run');
+  const runColor = SPORT_COLOR['Run'] || '#9ba3b5';
+  let bar3;
+  if(runRec){
+    const bits=[];
+    if(runRec.dist) bits.push(runRec.dist+'km');
+    if(runRec.hr) bits.push(runRec.hr);
+    bar3 = `<div class="cal-bar" style="background:${runColor}">${bits.join('·')}</div>`;
+  } else {
+    bar3 = `<div class="cal-bar is-empty"></div>`;
   }
 
-  const first = slots[0];
-  const firstColor = SPORT_COLOR[first.sport] || '#9ba3b5';
-  const firstLbl = slotLabel(first);
-  const firstBody = `
-    <div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap;justify-content:center">
-      ${firstLbl.icon ? `<span class="cal-day-icon">${firstLbl.icon}</span>` : (firstLbl.sub ? '' : `<span class="cal-day-label">${first.sport}</span>`)}
-    </div>
-    ${firstLbl.sub ? `<span class="cal-day-part">${firstLbl.sub}</span>` : ''}`;
+  // —— 其他运动：色条+运动类型文字，去重、按优先级排序 ——
+  // 固定渲染 OTHER_SLOT_CAP 条（没有的补透明占位），保证格子高度始终一致
+  const otherSports = [];
+  const usedOther = new Set();
+  visible.forEach(r=>{
+    if(r.sport==='Strength'||r.sport==='Run') return;
+    if(!usedOther.has(r.sport)){ usedOther.add(r.sport); otherSports.push(r.sport); }
+  });
+  otherSports.sort((a,b)=>sportPriority(a)-sportPriority(b));
+  const shownOther = otherSports.slice(0, OTHER_SLOT_CAP);
+  const otherBars = Array.from({length:OTHER_SLOT_CAP}, (_,i)=>{
+    const sport = shownOther[i];
+    if(!sport) return `<div class="cal-bar is-empty"></div>`;
+    const c = SPORT_COLOR[sport] || '#9ba3b5';
+    return `<div class="cal-bar" style="background:${c}">${sport}</div>`;
+  }).join('');
+  const overflow = otherSports.length - OTHER_SLOT_CAP;
+  const plusLine = overflow>0 ? `<div class="cal-bar-plus">+${overflow}</div>` : '';
 
-  let secondColor = firstColor; // 只有一个槽位时，第3行背景与第2行一致
-  let secondBody = '';
-  if(slots.length>1){
-    const second = slots[1];
-    secondColor = SPORT_COLOR[second.sport] || '#9ba3b5';
-    const secondLbl = slotLabel(second);
-    secondBody = `
-      <div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap;justify-content:center">
-        ${secondLbl.icon ? `<span class="cal-day-icon">${secondLbl.icon}</span>` : (secondLbl.sub ? '' : `<span class="cal-day-label">${second.sport}</span>`)}
-      </div>
-      ${secondLbl.sub ? `<span class="cal-day-part">${secondLbl.sub}</span>` : ''}`;
-  }
+  const isEmptyDay = strengthLabels.length===0 && !runRec && otherSports.length===0;
+  const numClass = isEmptyDay ? ' is-empty' : '';
 
   return `<div class="cal-day${todayClass}">
-    <div class="cal-day-r1" style="background:${firstColor}"><span class="cal-day-num">${dateNum}</span></div>
-    <div class="cal-day-r2" style="background:${firstColor}">${firstBody}</div>
-    <div class="cal-day-r3" style="background:${secondColor}">${secondBody}</div>
+    <div class="cal-day-num-row"><span class="cal-day-num${numClass}">${dateNum}</span></div>
+    <div class="cal-day-bars">
+      ${bar1}
+      ${bar2}
+      ${bar3}
+      ${otherBars}
+      ${plusLine}
+    </div>
   </div>`;
 }
 
@@ -3752,6 +3800,7 @@ setSport('Run');
 refreshHistoryLists();
 initGistBtn();
 renderDashboard();
+loadCalColors();
 
 
 </script>
