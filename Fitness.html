@@ -697,10 +697,10 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
       <div class="chart-title">月度运动构成</div>
       <div class="chart-sub">每月各运动类型次数</div>
       <div class="legend">
-        <div class="legend-item"><div class="legend-dot" style="background:#3b7ef8"></div>无氧</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#16a06a"></div>跑步</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#d97706"></div>跳绳</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#7c5cf6"></div>羽毛球</div>
+        <div class="legend-item"><div class="legend-dot" id="legend-dot-Strength" style="background:#3b7ef8"></div>无氧</div>
+        <div class="legend-item"><div class="legend-dot" id="legend-dot-Run" style="background:#16a06a"></div>跑步</div>
+        <div class="legend-item"><div class="legend-dot" id="legend-dot-JumpRope" style="background:#d97706"></div>跳绳</div>
+        <div class="legend-item"><div class="legend-dot" id="legend-dot-Badminton" style="background:#7c5cf6"></div>羽毛球</div>
       </div>
       <div style="position:relative;height:220px"><canvas id="monthlyChart"></canvas></div>
     </div>
@@ -771,8 +771,8 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
         <!-- 颜色图例开关 -->
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           <span style="font-size:11px;color:var(--text3)">显示：</span>
-          <label class="line-toggle" style="--c:#059669"><input type="checkbox" id="hlt-hike" checked onchange="renderHikeAnalysis()"><span>⛰ Hike</span></label>
-          <label class="line-toggle" style="--c:#6b9e8a"><input type="checkbox" id="hlt-walk" checked onchange="renderHikeAnalysis()"><span>🚶 Walk</span></label>
+          <label class="line-toggle" id="hlt-hike-label" style="--c:#059669"><input type="checkbox" id="hlt-hike" checked onchange="renderHikeAnalysis()"><span>⛰ Hike</span></label>
+          <label class="line-toggle" id="hlt-walk-label" style="--c:#6b9e8a"><input type="checkbox" id="hlt-walk" checked onchange="renderHikeAnalysis()"><span>🚶 Walk</span></label>
         </div>
       </div>
       <div style="position:relative;height:320px"><canvas id="hikeDistChart"></canvas></div>
@@ -1136,16 +1136,11 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
   <div id="page-data" style="display:none">
     <!-- Gist 云同步 -->
-    <div class="data-section" style="margin-bottom:14px;border-color:var(--green);background:var(--green-lt)">
+    <div class="data-section" style="margin-bottom:14px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <h3 style="color:var(--green-dk)">☁ Gist 云同步</h3>
+        <h3>☁ Gist 云同步</h3>
         <span id="gist-connected-badge" style="display:none;font-size:11px;background:var(--green);color:#fff;padding:2px 8px;border-radius:10px;font-weight:600">已连接</span>
       </div>
-      <p style="font-size:13px;color:var(--green-dk);margin-bottom:12px;opacity:.8">数据自动同步到 GitHub Gist，手机电脑共用同一份数据</p>
-      <button class="btn btn-primary btn-sm" onclick="openGistPanel()" id="gistSyncBtn">☁ 配置 Gist 同步</button>
-    </div>
-    <div class="data-section" style="margin-bottom:14px">
-      <h3>☁ Gist 云同步</h3>
       <p style="font-size:13px;color:var(--text3);margin-bottom:10px;line-height:1.7">
         数据同步到 GitHub Gist，手机和电脑打开同一个文件都能读取最新数据。<br>
         <a href="https://github.com/settings/tokens/new?scopes=gist&description=Fitness+Sync" target="_blank" style="color:var(--green)">点这里生成 Token</a>（只勾选 gist 权限即可）
@@ -1209,35 +1204,6 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
 <div class="toast" id="toast"></div>
 
-<!-- Gist 云同步面板 -->
-<div id="gistPanel" onclick="if(event.target===this)closeGistPanel()" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.45);align-items:center;justify-content:center;">
-  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:28px;width:400px;max-width:95vw;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <span style="font-weight:700;font-size:15px;color:var(--text)">☁ Gist 云同步配置</span>
-      <button onclick="closeGistPanel()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);line-height:1">×</button>
-    </div>
-    <p style="font-size:12px;color:var(--text3);margin-bottom:16px;line-height:1.7">
-      数据自动同步到 GitHub Gist，任何设备打开都能读取最新数据。<br>
-      <a href="https://github.com/settings/tokens/new?scopes=gist&description=Fitness+Sync" target="_blank" style="color:var(--green)">点这里生成 Token</a>（只勾选 gist 权限即可）
-    </p>
-    <div style="display:flex;flex-direction:column;gap:12px">
-      <div class="ff">
-        <label>GitHub Token</label>
-        <input id="gistToken" type="password" placeholder="ghp_xxxxxxxxxxxx" style="font-family:monospace">
-      </div>
-      <div class="ff">
-        <label>Gist ID <span style="color:var(--text3);font-weight:400;text-transform:none">（第一次留空，保存后自动生成）</span></label>
-        <input id="gistId" placeholder="留空则自动创建新 Gist" style="font-family:monospace">
-      </div>
-      <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="saveGistConfig()" style="flex:1">保存配置</button>
-        <button class="btn btn-secondary" onclick="pushToGist(true)">立即上传</button>
-        <button class="btn btn-secondary" onclick="pullFromGist(true)">从云端拉取</button>
-      </div>
-      <div id="gistStatus" style="font-size:12px;color:var(--text3);min-height:18px;text-align:center"></div>
-    </div>
-  </div>
-</div>
 
 <!-- 📱 手机底部导航 -->
 <nav class="mobile-nav" id="mobileNav">
@@ -1396,7 +1362,13 @@ function badgeClass(sport){
   return {'Run':'badge-run','Strength':'badge-ana','Jump Rope':'badge-jump','Badminton':'badge-badminton','Hike':'badge-hike','Walk':'badge-walk'}[sport]||'badge-walk';
 }
 function getSportColor(s){
-  return {'Run':'#16a06a','Strength':'#3b7ef8','Jump Rope':'#d97706','Badminton':'#7c5cf6','Hike':'#059669','Walk':'#9ba3b5'}[s]||'#9ba3b5';
+  return SPORT_COLOR[s] || '#9ba3b5';
+}
+function hexToRgba(hex, alpha){
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex||'');
+  if(!m) return `rgba(155,163,181,${alpha})`;
+  const r=parseInt(m[1],16), g=parseInt(m[2],16), b=parseInt(m[3],16);
+  return `rgba(${r},${g},${b},${alpha})`;
 }
 
 // ══════════════════════════════════════
@@ -1417,16 +1389,6 @@ function save(d){
     clearTimeout(save._timer);
     save._timer = setTimeout(()=>pushToGist(false), GIST_PUSH_DEBOUNCE_MS);
   }
-}
-
-function openGistPanel(){
-  document.getElementById('gistToken').value = localStorage.getItem(LS_GIST_TOKEN)||'';
-  document.getElementById('gistId').value    = localStorage.getItem(LS_GIST_ID)||'';
-  document.getElementById('gistStatus').textContent = '';
-  document.getElementById('gistPanel').style.display = 'flex';
-}
-function closeGistPanel(){
-  document.getElementById('gistPanel').style.display = 'none';
 }
 
 function saveGistConfig(){
@@ -2260,14 +2222,13 @@ function renderDashboard(){
   // 月度堆叠柱状图 + 白色数字标签
   const months=getMonthRange();
   const types=['Strength','Run','Jump Rope','Badminton','Hike','Walk'];
-  const colors={'Strength':'#3b7ef8','Run':'#16a06a','Jump Rope':'#d97706','Badminton':'#7c5cf6','Hike':'#059669','Walk':'#9ba3b5'};
   dc('monthlyChart');
   CI.monthlyChart=new Chart(document.getElementById('monthlyChart'),{type:'bar',
     data:{labels:months.map(m=>m.slice(2).replace('-','/')),
       datasets:types.map(t=>({
         label:t,
         data:months.map(m=>recs.filter(r=>r.date?.startsWith(m)&&r.sport===t).length),
-        backgroundColor:colors[t],
+        backgroundColor:getSportColor(t),
         borderRadius:2,
       }))
     },
@@ -2791,20 +2752,20 @@ function renderHikeAnalysis(){
   if(showHike) datasets.push({
     label:'⛰ Hike',
     data: hikeData,
-    borderColor:'#059669',
-    backgroundColor:'rgba(5,150,105,0.10)',
+    borderColor:getSportColor('Hike'),
+    backgroundColor:hexToRgba(getSportColor('Hike'),0.10),
     borderWidth:2,
-    pointBackgroundColor:'#059669',
+    pointBackgroundColor:getSportColor('Hike'),
     pointRadius:5, pointHoverRadius:7,
     fill:false, tension:0.3, spanGaps:false,
   });
   if(showWalk) datasets.push({
     label:'🚶 Walk',
     data: walkData,
-    borderColor:'#6b9e8a',
-    backgroundColor:'rgba(107,158,138,0.10)',
+    borderColor:getSportColor('Walk'),
+    backgroundColor:hexToRgba(getSportColor('Walk'),0.10),
     borderWidth:2,
-    pointBackgroundColor:'#6b9e8a',
+    pointBackgroundColor:getSportColor('Walk'),
     pointRadius:5, pointHoverRadius:7,
     fill:false, tension:0.3, spanGaps:false,
   });
@@ -3578,6 +3539,21 @@ function loadCalColors(){
     const input = document.querySelector(`.cal-leg-color[data-key="${g.key}"]`);
     if(input) input.value = color;
   });
+  syncSportColorUI();
+}
+// 运动类型颜色是全 app 共用同一份 SPORT_COLOR（日历色条、仪表盘图表、
+// 月度构成图例、Hike/Walk 趋势图都读同一个来源），这里统一刷新那些
+// 写死在静态 HTML 里、没法用 getSportColor() 动态取色的小圆点/开关配色
+function syncSportColorUI(){
+  const dotMap = {Strength:'legend-dot-Strength', Run:'legend-dot-Run', 'Jump Rope':'legend-dot-JumpRope', Badminton:'legend-dot-Badminton'};
+  Object.entries(dotMap).forEach(([sport,id])=>{
+    const el = document.getElementById(id);
+    if(el) el.style.background = getSportColor(sport);
+  });
+  const hikeLabel = document.getElementById('hlt-hike-label');
+  if(hikeLabel) hikeLabel.style.setProperty('--c', getSportColor('Hike'));
+  const walkLabel = document.getElementById('hlt-walk-label');
+  if(walkLabel) walkLabel.style.setProperty('--c', getSportColor('Walk'));
 }
 function onCalColorChange(el){
   const key = el.getAttribute('data-key');
@@ -3589,12 +3565,22 @@ function onCalColorChange(el){
   try{ saved = JSON.parse(localStorage.getItem(CAL_COLOR_LS_KEY)||'{}'); }catch(e){ saved={}; }
   saved[key]=color;
   localStorage.setItem(CAL_COLOR_LS_KEY, JSON.stringify(saved));
+  syncSportColorUI();
   renderCalendar();
+  refreshVisibleColorDependentCharts();
 }
 function calResetColors(){
   localStorage.removeItem(CAL_COLOR_LS_KEY);
   loadCalColors();
   renderCalendar();
+  refreshVisibleColorDependentCharts();
+}
+// 只重绘当前实际可见的图表页，避免对隐藏中、尺寸为0的 canvas 做无谓的重建
+function refreshVisibleColorDependentCharts(){
+  const dashEl = document.getElementById('page-dashboard');
+  if(dashEl && dashEl.style.display !== 'none') renderDashboard();
+  const hikeEl = document.getElementById('page-hike');
+  if(hikeEl && hikeEl.style.display !== 'none') renderHikeAnalysis();
 }
 
 function toggleCalFilter(e){
@@ -3815,8 +3801,8 @@ renderCustomSportBtns();
 setSport('Run');
 refreshHistoryLists();
 initGistBtn();
-renderDashboard();
 loadCalColors();
+renderDashboard();
 
 
 </script>
