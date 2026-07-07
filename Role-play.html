@@ -2819,6 +2819,7 @@ window.INITIAL_SCENES_DATA = [
     "notes": ""
   }
 ];
+window.INITIAL_DATA_TS = 0;
 </script>
 <script>
 // ── APP CORE LOGIC ──
@@ -2831,19 +2832,24 @@ const GIST_PUSH_MIN_INTERVAL_MS = 10000;
 const LEGACY_SORT_MODE_KEY = 'dialogue_scene_sort_mode';
 const LEGACY_SORT_ORDER_KEY = 'dialogue_scene_sort_order';
 
-// 读取数据：优先从浏览器缓存读，没有就用文件里嵌入的初始数据
+// 读取数据：比较"文件里嵌入的数据"和"浏览器缓存"谁的时间更新，用新的那份
 // 返回 { scenes: [...], sortMode: 'manual'|'alpha' }
 function loadData() {
+  const fileTs = window.INITIAL_DATA_TS || 0;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      // 新格式：{ scenes, sortMode }
+      // 新格式：{ scenes, sortMode, _ts }
       if (parsed && !Array.isArray(parsed) && Array.isArray(parsed.scenes)) {
-        return { scenes: parsed.scenes, sortMode: parsed.sortMode === 'alpha' ? 'alpha' : 'manual' };
+        const lsTs = parsed._ts || 0;
+        if (lsTs >= fileTs) {
+          return { scenes: parsed.scenes, sortMode: parsed.sortMode === 'alpha' ? 'alpha' : 'manual' };
+        }
+        // 缓存比文件旧：优先用文件里嵌入的最新数据，缓存留给下面兜底
       }
-      // 旧格式：纯场景数组，尝试用旧的排序状态迁移顺序
-      if (Array.isArray(parsed)) {
+      // 旧格式：纯场景数组，尝试用旧的排序状态迁移顺序（没有时间戳可比较，视为比文件旧，仅在文件没有嵌入数据时使用）
+      if (Array.isArray(parsed) && !(window.INITIAL_SCENES_DATA && window.INITIAL_SCENES_DATA.length)) {
         return migrateLegacyOrder(parsed);
       }
     }
@@ -2875,7 +2881,7 @@ function migrateLegacyOrder(scenesArray) {
 // 只负责把数据写入本地缓存，不触发 Gist 自动同步。
 // 专门给"从云端拉取"这类场景用：数据本来就来自云端，没必要存完again立刻排队推送回去。
 function persistData(scenesArray) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ scenes: scenesArray, sortMode }));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ scenes: scenesArray, sortMode, _ts: Date.now() }));
 }
 
 // 保存数据到浏览器缓存，并自动推送 Gist。场景顺序与排序模式一起保存，保证多端一致。
@@ -3846,6 +3852,7 @@ ${headAssets}
 
 <script id="injected-data">
 window.INITIAL_SCENES_DATA = ${JSON.stringify(scenes, null, 2)};
+window.INITIAL_DATA_TS = ${Date.now()};
 <\/script>
 ${document.querySelector('script:not(#injected-data)').outerHTML}
 
