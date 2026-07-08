@@ -281,6 +281,7 @@
     text-align: center;
     letter-spacing: -.03em;
     font-family: 'Inter', sans-serif;
+    white-space: nowrap;
   }
 
   .cal-picker-btn {
@@ -1534,7 +1535,7 @@
     .cal-header { margin-bottom: 12px; }
     .month-nav { gap: 4px; }
     .nav-btn { width: 28px; height: 28px; font-size: 14px; flex-shrink: 0; }
-    .month-label { font-size: 14px; width: 62px; flex-shrink: 0; padding: 0 2px; }
+    .month-label { font-size: 14px; width: 50px; min-width: 0; flex-shrink: 0; padding: 0 2px; }
     .cal-nav-spacer { width: 4px; }
     .cal-picker-btn { width: 28px; height: 28px; font-size: 13px; flex-shrink: 0; }
     .today-btn { height: 28px; padding: 0 10px; font-size: 10px; }
@@ -1647,7 +1648,7 @@
   @media (max-width: 380px) {
     .day-cell { min-height: 58px; }
     .topbar-link span:last-child { display: none; }
-    .month-label { font-size: 13px; width: 54px; flex-shrink: 0; }
+    .month-label { font-size: 13px; width: 44px; min-width: 0; flex-shrink: 0; }
     .cal-nav-spacer { width: 2px; }
     .cal-month-stats { display: none; }
     .chip { display: none; }
