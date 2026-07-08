@@ -1105,12 +1105,26 @@
     border-left: 1px solid var(--border-lt); padding-left: 5px;
   }
 
-  .timeline-row-group { margin-bottom: 22px; }
+  .timeline-row-group {
+    margin-bottom: 22px;
+    border-radius: 8px;
+    transition: opacity .15s, outline .1s;
+  }
+  .timeline-row-group.dragging { opacity: .4; }
+  .timeline-row-group.drag-over { outline: 2px dashed var(--blue); outline-offset: 4px; }
   .timeline-row-label {
     display: flex; align-items: center; gap: 6px;
     font-size: 12.5px; font-weight: 700; color: var(--text-dim);
     margin-bottom: 8px;
   }
+  .timeline-drag-handle {
+    cursor: grab;
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-right: 1px;
+    user-select: none;
+  }
+  .timeline-drag-handle:active { cursor: grabbing; }
   .timeline-track {
     position: relative; min-height: 40px;
     background: var(--surface); border: 1px solid var(--border-lt);
@@ -1949,7 +1963,9 @@ function getDefaultData() {
     expenseColor: null, // 支出色条颜色
     fitnessColor: null, // 运动色条颜色，桌面/手机端统一
     pinnedTags: [],   // 常用内容标签（#标签），手动排序，用于快捷插入按钮
-    spanEvents: [],   // 跨度事件：{ id, category, title, start, end(null=进行中), note }
+    spanEvents: [],   // 跨度事件：{ id, category, title, start, end(null=进行中), note, displayMode }
+    customCategories: [], // 自定义跨度事件类别：[{ id, label, color }]
+    categoryOrder: ['travel', 'game', 'tv'], // 时间线页面里类别行的显示顺序，可拖拽调整
     version:   1
   };
 }
@@ -1992,6 +2008,8 @@ function migrateData() {
   if (!appData.expenseColor) appData.expenseColor = '#d97706';
   if (!appData.pinnedTags) appData.pinnedTags = [];
   if (!appData.spanEvents) appData.spanEvents = [];
+  if (!appData.customCategories) appData.customCategories = [];
+  if (!appData.categoryOrder) appData.categoryOrder = ['travel', 'game', 'tv'];
   if (!appData.version) appData.version = 1;
   localStorage.removeItem('overview_notes_v1');
   localStorage.removeItem('overview_cal_notes_v1');
@@ -2080,6 +2098,36 @@ var SPAN_CATEGORIES = {
   tv:     { label: '电视剧', icon: '📺', color: '#e11d48' }
 };
 var SPAN_CATEGORY_ORDER = ['travel', 'game', 'tv'];
+var CUSTOM_CATEGORY_ICON = '📌';
+
+function getCategoryMeta(catId) {
+  if (SPAN_CATEGORIES[catId]) return SPAN_CATEGORIES[catId];
+  var custom = (appData.customCategories || []).find(function (c) { return c.id === catId; });
+  if (custom) return { label: custom.label, icon: CUSTOM_CATEGORY_ICON, color: custom.color };
+  return { label: catId, icon: CUSTOM_CATEGORY_ICON, color: '#7c3aed' };
+}
+
+function getCategoryOrder() {
+  if (!appData.categoryOrder) appData.categoryOrder = SPAN_CATEGORY_ORDER.slice();
+  var known = SPAN_CATEGORY_ORDER.concat((appData.customCategories || []).map(function (c) { return c.id; }));
+  known.forEach(function (id) {
+    if (appData.categoryOrder.indexOf(id) === -1) appData.categoryOrder.push(id);
+  });
+  // 去重保护，防止历史数据或重复调用产生的重复项
+  appData.categoryOrder = appData.categoryOrder.filter(function (id, i, arr) {
+    return arr.indexOf(id) === i;
+  });
+  return appData.categoryOrder;
+}
+
+function addCustomCategory(label, color) {
+  var id = 'cat_' + Date.now();
+  if (!appData.customCategories) appData.customCategories = [];
+  appData.customCategories.push({ id: id, label: label, color: color });
+  getCategoryOrder(); // 顺带把新类别追加进 categoryOrder，不需要再手动 push
+  saveData();
+  return id;
+}
 
 function genSpanId() { return 'ev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
 
@@ -2118,7 +2166,7 @@ function buildContentIndex() {
     }
   });
   (appData.spanEvents || []).forEach(function (ev) {
-    var meta = SPAN_CATEGORIES[ev.category] || { label: ev.category };
+    var meta = getCategoryMeta(ev.category);
     var text = ev.title + (ev.note ? '  ' + ev.note : '');
     idx.push({ type: 'span', date: ev.start, start: ev.start, end: ev.end, category: ev.category, text: text, tags: [meta.label] });
   });
@@ -2267,7 +2315,7 @@ function renderSearchResults() {
   results.slice(0, 150).forEach(function(item) {
     var icon, srcLabel, metaText;
     if (item.type === 'span') {
-      var meta = SPAN_CATEGORIES[item.category] || { icon: '📌', label: item.category };
+      var meta = getCategoryMeta(item.category);
       icon = meta.icon;
       srcLabel = meta.label;
       metaText = item.start + ' ~ ' + (item.end || '进行中');
@@ -2368,13 +2416,13 @@ function renderTimeline() {
   var html = '<div class="timeline-axis">' + buildTimelineAxisHtml(s, e) + '</div>';
 
   var events = appData.spanEvents || [];
-  SPAN_CATEGORY_ORDER.forEach(function (cat) {
-    var meta = SPAN_CATEGORIES[cat];
+  getCategoryOrder().forEach(function (cat) {
+    var meta = getCategoryMeta(cat);
     var catEvents = events.filter(function (ev) {
       return ev.category === cat && itemOverlapsRange({ type: 'span', start: ev.start, end: ev.end }, bounds);
     });
-    html += '<div class="timeline-row-group">';
-    html += '<div class="timeline-row-label">' + meta.icon + ' ' + meta.label + '</div>';
+    html += '<div class="timeline-row-group" draggable="true" data-cat="' + cat + '">';
+    html += '<div class="timeline-row-label"><span class="timeline-drag-handle" title="拖拽排序">⠿</span>' + meta.icon + ' ' + meta.label + '</div>';
     if (!catEvents.length) {
       html += '<div class="timeline-track"><div class="timeline-track-empty">这段时间没有记录</div></div>';
     } else {
@@ -2392,6 +2440,48 @@ function renderTimeline() {
   });
 
   bodyEl.innerHTML = html;
+  attachTimelineDragHandlers();
+}
+
+var _tlDragCat = null;
+
+function attachTimelineDragHandlers() {
+  document.querySelectorAll('.timeline-row-group[data-cat]').forEach(function (g) {
+    g.addEventListener('dragstart', function (e) {
+      _tlDragCat = g.dataset.cat;
+      g.classList.add('dragging');
+      if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+    });
+    g.addEventListener('dragend', function () {
+      g.classList.remove('dragging');
+      document.querySelectorAll('.timeline-row-group.drag-over').forEach(function (el) {
+        el.classList.remove('drag-over');
+      });
+    });
+    g.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      g.classList.add('drag-over');
+    });
+    g.addEventListener('dragleave', function () {
+      g.classList.remove('drag-over');
+    });
+    g.addEventListener('drop', function (e) {
+      e.preventDefault();
+      g.classList.remove('drag-over');
+      var targetCat = g.dataset.cat;
+      if (!_tlDragCat || _tlDragCat === targetCat) return;
+      var order = getCategoryOrder().slice();
+      var fromIdx = order.indexOf(_tlDragCat);
+      var toIdx = order.indexOf(targetCat);
+      if (fromIdx === -1 || toIdx === -1) return;
+      order.splice(fromIdx, 1);
+      order.splice(toIdx, 0, _tlDragCat);
+      appData.categoryOrder = order;
+      saveData();
+      _tlDragCat = null;
+      renderTimeline();
+    });
+  });
 }
 
 function showSpanEventModal(id) {
@@ -2424,14 +2514,57 @@ function showSpanEventModal(id) {
 
   var catSel = document.createElement('select');
   catSel.className = 'input-box';
-  SPAN_CATEGORY_ORDER.forEach(function (cat) {
+  getCategoryOrder().forEach(function (cat) {
+    var meta = getCategoryMeta(cat);
     var opt = document.createElement('option');
     opt.value = cat;
-    opt.textContent = SPAN_CATEGORIES[cat].icon + ' ' + SPAN_CATEGORIES[cat].label;
+    opt.textContent = meta.icon + ' ' + meta.label;
     catSel.appendChild(opt);
   });
+  var newCatOpt = document.createElement('option');
+  newCatOpt.value = '__new__';
+  newCatOpt.textContent = '+ 新建类别…';
+  catSel.appendChild(newCatOpt);
   if (editing) catSel.value = editing.category;
   field('类别', catSel);
+
+  var newCatWrap = document.createElement('div');
+  newCatWrap.style.cssText = 'display:none;gap:7px;align-items:center;margin:-4px 0 12px;';
+  var newCatLabel = document.createElement('input');
+  newCatLabel.type = 'text';
+  newCatLabel.className = 'input-box';
+  newCatLabel.placeholder = '类别名称，例如"追剧""看展"';
+  newCatLabel.maxLength = 6;
+  newCatLabel.style.flex = '1';
+  var newCatColor = document.createElement('input');
+  newCatColor.type = 'color';
+  newCatColor.value = '#7c3aed';
+  newCatColor.style.cssText = 'width:34px;height:34px;padding:3px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;background:none;flex-shrink:0;';
+  var newCatConfirm = document.createElement('button');
+  newCatConfirm.type = 'button';
+  newCatConfirm.textContent = '创建';
+  newCatConfirm.className = 'mbtn mbtn-primary';
+  newCatConfirm.style.cssText = 'flex:none;padding:8px 14px;';
+  newCatConfirm.onclick = function () {
+    var labelVal = newCatLabel.value.trim();
+    if (!labelVal) { newCatLabel.focus(); return; }
+    var newId = addCustomCategory(labelVal, newCatColor.value);
+    var opt = document.createElement('option');
+    opt.value = newId;
+    opt.textContent = CUSTOM_CATEGORY_ICON + ' ' + labelVal;
+    catSel.insertBefore(opt, newCatOpt);
+    catSel.value = newId;
+    newCatWrap.style.display = 'none';
+    newCatLabel.value = '';
+  };
+  newCatWrap.appendChild(newCatLabel);
+  newCatWrap.appendChild(newCatColor);
+  newCatWrap.appendChild(newCatConfirm);
+  sheet.appendChild(newCatWrap);
+
+  catSel.addEventListener('change', function () {
+    newCatWrap.style.display = catSel.value === '__new__' ? 'flex' : 'none';
+  });
 
   var titleInput = document.createElement('input');
   titleInput.type = 'text';
@@ -2447,40 +2580,26 @@ function showSpanEventModal(id) {
   field('开始日期', startInput);
 
   var modeWrap = document.createElement('div');
-  modeWrap.style.cssText = 'display:flex;flex-direction:column;gap:7px;margin-bottom:12px;';
-  var modeLab = document.createElement('div');
-  modeLab.style.cssText = 'font-size:11.5px;color:var(--text-muted);margin-bottom:2px;';
-  modeLab.textContent = '在日历上怎么显示';
-  modeWrap.appendChild(modeLab);
+  modeWrap.style.cssText = 'display:flex;gap:10px;margin-bottom:12px;';
 
   var modeName = 'spanDisplayMode_' + Date.now();
   var currentMode = editing ? (editing.displayMode || 'cover') : 'cover';
 
-  function modeOption(value, text, hint) {
+  function modeOption(value, text) {
     var lab = document.createElement('label');
-    lab.style.cssText = 'display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--text-dim);cursor:pointer;';
+    lab.style.cssText = 'flex:1;display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--text);cursor:pointer;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;';
     var radio = document.createElement('input');
     radio.type = 'radio';
     radio.name = modeName;
     radio.value = value;
     radio.checked = currentMode === value;
-    radio.style.marginTop = '2px';
-    var textWrap = document.createElement('div');
-    var main = document.createElement('div');
-    main.style.cssText = 'font-weight:600;color:var(--text);';
-    main.textContent = text;
-    var sub = document.createElement('div');
-    sub.style.cssText = 'font-size:11px;color:var(--text-muted);margin-top:1px;';
-    sub.textContent = hint;
-    textWrap.appendChild(main);
-    textWrap.appendChild(sub);
     lab.appendChild(radio);
-    lab.appendChild(textWrap);
+    lab.appendChild(document.createTextNode(text));
     return { label: lab, radio: radio };
   }
 
-  var coverOpt = modeOption('cover', '短期 · 盖住日期数字', '适合几天内的事，比如出去玩了几天');
-  var bandOpt  = modeOption('band',  '长期 · 底部色带', '适合持续较久的事，比如玩了一个月的游戏');
+  var coverOpt = modeOption('cover', '短期 · 盖住日期数字');
+  var bandOpt  = modeOption('band',  '长期 · 底部色带');
   modeWrap.appendChild(coverOpt.label);
   modeWrap.appendChild(bandOpt.label);
   sheet.appendChild(modeWrap);
@@ -2541,6 +2660,7 @@ function showSpanEventModal(id) {
     var titleVal = titleInput.value.trim();
     if (!titleVal) { titleInput.focus(); return; }
     if (!startInput.value) { startInput.focus(); return; }
+    if (catSel.value === '__new__') { newCatLabel.focus(); return; }
     var ev = {
       id: editing ? editing.id : genSpanId(),
       category: catSel.value,
@@ -3365,7 +3485,7 @@ function render() {
     var dayEvents  = getSpanEventsForDate(ds);
     var coverEvent = dayEvents.find(function(ev) { return ev.displayMode !== 'band'; });
     if (coverEvent) {
-      var coverMeta = SPAN_CATEGORIES[coverEvent.category] || { color: '#7c3aed' };
+      var coverMeta = getCategoryMeta(coverEvent.category);
       var bar = document.createElement('div');
       bar.className = 'span-cover-bar';
       bar.style.background = coverMeta.color;
@@ -3377,7 +3497,7 @@ function render() {
 
     // 跨度事件 · 长期模式：格子底部色带，多个可叠加
     dayEvents.filter(function(ev) { return ev.displayMode === 'band'; }).forEach(function(ev, i) {
-      var bandMeta = SPAN_CATEGORIES[ev.category] || { color: '#7c3aed' };
+      var bandMeta = getCategoryMeta(ev.category);
       var band = document.createElement('div');
       band.className = 'span-band';
       band.style.background = bandMeta.color;
@@ -3531,7 +3651,7 @@ function renderFitnessBodyLine(ds) {
   var lines = [];
   getFitnessBodyTexts(ds).forEach(function (t) { lines.push('#身体 ' + t); });
   getSpanEventsForDate(ds).forEach(function (ev) {
-    var meta = SPAN_CATEGORIES[ev.category] || { label: ev.category };
+    var meta = getCategoryMeta(ev.category);
     var dayIndex = Math.round((new Date(ds) - new Date(ev.start)) / 86400000) + 1;
     lines.push('#' + meta.label + ' 《' + ev.title + '》 · 第' + dayIndex + '天');
   });
@@ -3626,6 +3746,8 @@ function exportJSON() {
     calNotes:  appData.calNotes,
     spanEvents: appData.spanEvents,
     pinnedTags: appData.pinnedTags,
+    customCategories: appData.customCategories,
+    categoryOrder: appData.categoryOrder,
     todos:     appData.todos,
   };
   var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -3679,6 +3801,8 @@ function importJSON(evt) {
       if (data.calNotes) appData.calNotes = data.calNotes;
       if (data.spanEvents) appData.spanEvents = data.spanEvents;
       if (data.pinnedTags) appData.pinnedTags = data.pinnedTags;
+      if (data.customCategories) appData.customCategories = data.customCategories;
+      if (data.categoryOrder) appData.categoryOrder = data.categoryOrder;
       if (data.todos)    appData.todos    = data.todos;
       saveData();
       render();
