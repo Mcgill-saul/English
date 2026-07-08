@@ -409,11 +409,72 @@
   }
   .day-cell.selected::before { background: var(--blue); }
 
-  /* Expense intensity bar — bottom strip, opacity scales with amount */
-  .expense-bar {
+  /* Date number (span-cover-bar 会盖在它后面，所以需要层级) */
+  .day-num { position: relative; z-index: 2; }
+  .day-cell.has-span-cover .day-num { color: #fff !important; }
+
+  /* ── 跨度事件：短期模式，盖住日期数字 ─────────────────── */
+  .span-cover-bar {
     position: absolute;
-    left: 0; right: 0; bottom: 0;
+    top: 12px; left: 12px; right: 12px;
+    height: 22px;
+    border-radius: 6px;
+    cursor: pointer;
+    z-index: 1;
+    opacity: .85;
+    transition: opacity .13s;
+  }
+  .span-cover-bar:hover { opacity: 1; }
+  .span-cover-bar::after {
+    content: attr(data-label);
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    background: rgba(15,17,23,.82);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    padding: 3px 7px;
+    border-radius: 5px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .13s;
+    letter-spacing: .02em;
+    z-index: 10;
+  }
+  .span-cover-bar:hover::after { opacity: 1; }
+
+  /* ── 跨度事件：长期模式，格子底部色带（可叠加） ─────────── */
+  .span-band {
+    position: absolute;
+    left: 0; right: 0;
     height: 4px;
+  }
+
+  /* ── 支出：数字正下方的强度圆点，和运动chip/笔记预览同一行 */
+  .cell-body-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
+    flex: 1;
+    min-height: 0;
+  }
+  .expense-dot-slot {
+    width: 16px; height: 16px; flex-shrink: 0;
+    margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .expense-dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+  }
+  .cell-content-col {
+    flex: 1; min-width: 0; min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
 
   /* Date number */
@@ -898,6 +959,186 @@
 
   .drawer-divider { height: 1px; background: var(--border-lt); }
 
+  /* ── Content search drawer ────────────────────────────── */
+  .search-input-wrap { position: relative; }
+  .search-input-wrap .search-icon-inline {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted); font-size: 13px; pointer-events: none;
+  }
+  .search-input-wrap input.input-box { padding-left: 30px; }
+
+  .ctag-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ctag-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11.5px; font-weight: 600; font-family: 'Inter', sans-serif;
+    padding: 4px 10px; border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--surface2); color: var(--text-dim);
+    cursor: pointer; transition: all .13s; letter-spacing: .01em;
+  }
+  .ctag-chip:hover { border-color: var(--blue-bd); }
+  .ctag-chip.active { background: var(--blue-bg); border-color: var(--blue-bd); color: var(--blue); }
+
+  .date-range-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .date-range-chip {
+    font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: var(--radius-xs);
+    border: 1.5px solid var(--border); background: var(--surface2); color: var(--text-dim);
+    cursor: pointer; transition: all .13s; font-family: 'Inter', sans-serif;
+  }
+  .date-range-chip.active { background: var(--blue-bg); border-color: var(--blue-bd); color: var(--blue); }
+  .date-range-custom { display: flex; gap: 5px; align-items: center; margin-top: 7px; }
+  .date-range-custom input[type=date] {
+    font-size: 11.5px; padding: 5px 6px; border: 1.5px solid var(--border);
+    border-radius: var(--radius-xs); font-family: inherit; background: var(--surface2); color: var(--text);
+    flex: 1; min-width: 0;
+  }
+
+  .search-result-count { font-size: 10.5px; color: var(--text-muted); margin: 0 0 6px; }
+  .search-result-list { display: flex; flex-direction: column; }
+  .search-result-row {
+    display: flex; gap: 8px; align-items: flex-start; padding: 9px 2px;
+    border-bottom: 1px solid var(--border-lt); cursor: pointer; transition: background .1s;
+  }
+  .search-result-row:hover { background: var(--surface2); }
+  .search-result-row:last-child { border-bottom: none; }
+  .search-result-icon { font-size: 12.5px; margin-top: 1px; flex-shrink: 0; width: 16px; text-align: center; }
+  .search-result-meta { font-size: 10.5px; color: var(--text-muted); margin-bottom: 2px; }
+  .search-result-text {
+    font-size: 12.5px; color: var(--text); line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .search-result-text mark { background: var(--blue-bg); color: var(--blue); border-radius: 3px; padding: 0 1px; }
+  .search-empty { text-align: center; color: var(--text-muted); font-size: 12px; padding: 26px 0; font-style: italic; }
+
+  /* Quick tag insert row above note textarea */
+  .qtag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .qtag-btn {
+    font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px;
+    border: 1.5px solid var(--violet-bd); background: var(--violet-bg); color: var(--violet);
+    cursor: pointer; font-family: 'Inter', sans-serif; transition: all .13s;
+  }
+  .qtag-btn:hover { opacity: .8; }
+  .qtag-manage-btn {
+    font-size: 11px; padding: 3px 8px; border-radius: 20px; border: 1.5px dashed var(--border);
+    background: none; color: var(--text-muted); cursor: pointer; font-family: inherit;
+  }
+
+  /* # 输入联想下拉 */
+  .note-area-wrap {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--radius-sm);
+    transition: border-color .15s, background .15s;
+  }
+  .note-area-wrap:has(.note-fitness-line) {
+    border: 1px solid var(--border-lt);
+    background: var(--surface2);
+    overflow: hidden;
+  }
+  .note-area-wrap:has(.note-fitness-line):focus-within {
+    border-color: var(--violet-bd);
+    background: var(--violet-bg);
+  }
+  .note-fitness-line {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    line-height: 1.75;
+    color: var(--text-dim);
+    padding: 11px 13px 0;
+    cursor: default;
+  }
+  .note-area-wrap:has(.note-fitness-line) .note-area {
+    border: none;
+    background: transparent;
+    padding-top: 2px;
+  }
+  .note-area-wrap:has(.note-fitness-line) .note-area:focus {
+    border: none;
+    background: transparent;
+  }
+  .tag-autocomplete {
+    position: absolute; top: 6px; right: 6px; z-index: 60;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); box-shadow: var(--shadow-md);
+    max-height: 160px; overflow-y: auto; min-width: 130px; display: none;
+  }
+  .tag-autocomplete.open { display: block; }
+  .tag-autocomplete-item { padding: 7px 12px; font-size: 12.5px; color: var(--text); cursor: pointer; }
+  .tag-autocomplete-item:hover { background: var(--surface2); }
+
+  /* ── 全屏时间线视图 ─────────────────────────────────── */
+  .timeline-view {
+    position: fixed; inset: 0; z-index: 200;
+    background: var(--bg);
+    display: none;
+    flex-direction: column;
+  }
+  .timeline-view.open { display: flex; }
+  .timeline-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 22px; background: var(--surface);
+    border-bottom: 1px solid var(--border-lt);
+    flex-shrink: 0; flex-wrap: wrap;
+  }
+  .timeline-back {
+    width: 30px; height: 30px; border-radius: var(--radius-xs);
+    border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text-dim); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .timeline-title { font-size: 15px; font-weight: 700; color: var(--text); }
+  .timeline-add-btn {
+    margin-left: auto; font-size: 12.5px; font-weight: 600;
+    padding: 7px 14px; border-radius: var(--radius-xs); border: none;
+    background: var(--blue); color: #fff; cursor: pointer; font-family: inherit;
+  }
+  .timeline-body { flex: 1; overflow: auto; padding: 22px; }
+
+  .timeline-axis {
+    position: relative; height: 26px; margin-bottom: 10px;
+    border-bottom: 1px solid var(--border-lt);
+  }
+  .timeline-axis-tick {
+    position: absolute; top: 0; bottom: 0; font-size: 11px; color: var(--text-muted);
+    border-left: 1px solid var(--border-lt); padding-left: 5px;
+  }
+
+  .timeline-row-group { margin-bottom: 22px; }
+  .timeline-row-label {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12.5px; font-weight: 700; color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+  .timeline-track {
+    position: relative; min-height: 40px;
+    background: var(--surface); border: 1px solid var(--border-lt);
+    border-radius: var(--radius-xs);
+  }
+  .timeline-track-empty {
+    font-size: 11.5px; color: var(--text-muted); font-style: italic;
+    padding: 11px 13px;
+  }
+  .timeline-bar {
+    position: absolute; height: 24px; top: 8px; border-radius: 6px;
+    display: flex; align-items: center; padding: 0 8px; gap: 5px;
+    font-size: 11.5px; font-weight: 600; color: #fff; cursor: pointer;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    min-width: 18px; box-shadow: var(--shadow-xs);
+  }
+  .timeline-bar.ongoing { background-image: linear-gradient(to right, currentColor 85%, transparent); }
+
+  .timeline-notes-track {
+    position: relative; height: 30px; background: var(--surface);
+    border: 1px solid var(--border-lt); border-radius: var(--radius-xs);
+  }
+  .timeline-dot {
+    position: absolute; top: 8px; width: 13px; height: 13px; border-radius: 50%;
+    cursor: pointer; border: 2px solid var(--surface); box-shadow: var(--shadow-xs);
+    transform: translateX(-50%);
+  }
+
   /* ── Modal overlay (Gist panel) ──────────────────────── */
   .modal-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -1035,150 +1276,6 @@
     font-weight: 700;
     background: var(--blue-bg);
   }
-
-  /* ── Day tag bar ─────────────────────────────────────── */
-  .tag-bar {
-    position: absolute;
-    /* same top as day-num, same left/right as cell padding */
-    top: 12px;
-    left: 12px; right: 12px;
-    height: 22px;
-    border-radius: 6px;
-    cursor: pointer;
-    z-index: 1;           /* behind day-num text (z-index 2) */
-    opacity: .85;
-    transition: opacity .13s;
-  }
-  .tag-bar:hover { opacity: 1; }
-  .day-num { position: relative; z-index: 2; }
-  .day-cell.has-tag .day-num { color: #fff !important; }
-
-  /* tag tooltip */
-  .tag-bar::after {
-    content: attr(data-label);
-    position: absolute;
-    top: calc(100% + 5px);
-    left: 0;
-    background: rgba(15,17,23,.82);
-    color: #fff;
-    font-size: 10px;
-    font-weight: 600;
-    font-family: 'Inter', sans-serif;
-    padding: 3px 7px;
-    border-radius: 5px;
-    white-space: nowrap;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity .13s;
-    letter-spacing: .02em;
-  }
-  .tag-bar:hover::after { opacity: 1; }
-
-  /* ── Tag picker in detail panel ──────────────────────── */
-  .tag-compact { position: relative; flex-shrink: 0; }
-  .tag-compact-trigger {
-    height: 24px;
-    box-sizing: border-box;
-    display: inline-flex;
-    align-items: center;
-    cursor: pointer;
-    font-family: 'Inter', sans-serif;
-    transition: all .13s;
-  }
-  .tag-compact-trigger.tag-pill {
-    gap: 5px;
-    padding: 0 11px;
-    border-radius: 20px;
-    font-size: 11.5px;
-    font-weight: 600;
-    border: 1.5px solid transparent;
-  }
-  .tag-compact-trigger.tag-pill:hover { opacity: .82; }
-  .tag-compact-trigger.tag-plus {
-    position: relative;
-    width: 24px;
-    padding: 0;
-    border-radius: 50%;
-    background: var(--violet);
-    border: none;
-    color: transparent;
-    font-size: 0;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  .tag-compact-trigger.tag-plus::before,
-  .tag-compact-trigger.tag-plus::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    background: #fff;
-    border-radius: 1px;
-  }
-  .tag-compact-trigger.tag-plus::before { width: 10px; height: 2px; transform: translate(-50%, -50%); }
-  .tag-compact-trigger.tag-plus::after  { width: 2px; height: 10px; transform: translate(-50%, -50%); }
-  .tag-compact-trigger.tag-plus:hover { background: #6d28d9; }
-
-  .tag-dropdown {
-    display: none;
-    position: absolute;
-    top: calc(100% + 6px);
-    right: 0;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    box-shadow: var(--shadow-md);
-    padding: 8px;
-    min-width: 150px;
-    max-width: 220px;
-    z-index: 30;
-  }
-  .tag-compact.open .tag-dropdown {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .tag-dropdown .tag-btn { width: 100%; box-sizing: border-box; justify-content: flex-start; }
-  .tag-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 11.5px;
-    font-weight: 600;
-    font-family: 'Inter', sans-serif;
-    padding: 4px 10px;
-    border-radius: 20px;
-    border: 1.5px solid transparent;
-    cursor: pointer;
-    transition: all .13s;
-    background: var(--surface2);
-    color: var(--text-dim);
-    letter-spacing: .01em;
-  }
-  .tag-btn:hover { opacity: .8; }
-  .tag-btn.active {
-    color: #fff !important;
-    border-color: transparent !important;
-  }
-  .tag-btn-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    border: 1.5px solid rgba(255,255,255,.5);
-  }
-  .tag-btn-clear {
-    font-size: 11px;
-    color: var(--text-muted);
-    background: none;
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 4px 10px;
-    cursor: pointer;
-    font-family: 'Inter', sans-serif;
-    font-weight: 500;
-    transition: all .13s;
-  }
-  .tag-btn-clear:hover { color: var(--text); border-color: var(--text-muted); }
 
   /* ── Quick-capture FAB ───────────────────────────────── */
   .fab-btn {
@@ -1485,9 +1582,6 @@
     .cell-note { font-size: 8px; line-height: 1.4; height: 14px; min-height: 14px; padding: 1px 3px; }
     .cell-note:focus { height: auto; min-height: 26px; }
 
-    .tag-bar { top: 4px; left: 4px; right: 4px; height: 17px; }
-    .tag-bar::after { font-size: 9px; padding: 2px 5px; }
-
     /* Month picker popup */
     .cal-picker { width: 220px; padding: 11px; }
     .picker-item { font-size: 11px; padding: 5px 3px; }
@@ -1512,9 +1606,6 @@
     .detail-bar { padding: 9px 16px; flex-wrap: wrap; gap: 8px; }
     .detail-hint { font-size: 10px; flex-basis: 100%; }
     .detail-actions { width: 100%; justify-content: flex-end; }
-
-    /* Tag picker row */
-    .tag-btn { font-size: 10.5px; padding: 3px 8px; }
 
     /* Settings drawer: full width on mobile */
     .drawer { width: 88%; max-width: 340px; }
@@ -1544,7 +1635,9 @@
       border-radius: 2px;
       border: none;
     }
-    .expense-bar { height: 3px; }
+    .expense-dot-slot { width: 12px; height: 12px; }
+    .expense-dot { width: 7px; height: 7px; }
+    .span-band { height: 3px; }
   }
 </style>
 </head>
@@ -1594,21 +1687,6 @@
           </div>
           <input type="file" accept=".json" onchange="importJSON(event)" style="display:none">
         </label>
-      </div>
-    </div>
-
-    <div class="drawer-divider"></div>
-
-    <div>
-      <div class="drawer-section-title">标签管理</div>
-      <div class="drawer-row">
-        <button class="drawer-btn" onclick="closeDrawer(); showTagPanel();">
-          <span class="drawer-btn-icon">🏷</span>
-          <div>
-            <div class="drawer-btn-label">新建 / 删除标签</div>
-            <div class="drawer-btn-sub" id="tagDrawerSub">管理日期标签的种类和颜色</div>
-          </div>
-        </button>
       </div>
     </div>
 
@@ -1677,6 +1755,20 @@
     </nav>
   </div>
   <div class="topbar-right">
+    <button class="icon-btn" id="timelineBtn" onclick="openTimelineView()" title="时间线">
+      <svg width="15" height="15" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;flex-shrink:0;">
+        <path d="M2 5h10M2 10h6M2 15h13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        <circle cx="14.5" cy="5" r="1.6" fill="currentColor"/>
+        <circle cx="9.5" cy="10" r="1.6" fill="currentColor"/>
+        <circle cx="17" cy="15" r="1.6" fill="currentColor"/>
+      </svg>
+    </button>
+    <button class="icon-btn" id="searchBtn" onclick="openSearchDrawer()" title="搜索">
+      <svg width="15" height="15" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;flex-shrink:0;">
+        <circle cx="8.5" cy="8.5" r="6" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M17 17l-4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
     <button class="icon-btn" id="noteToggle" onclick="toggleNotes()" title="显示笔记">
       <svg id="eyeOpenIcon" width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;flex-shrink:0;">
         <path d="M1.5 10S4.5 4 10 4s8.5 6 8.5 6-3 6-8.5 6-8.5-6-8.5-6Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1689,12 +1781,72 @@
       </svg>
     </button>
     <button class="icon-btn" id="settingsBtn" onclick="openDrawer()" title="设置">
-      <svg width="15" height="15" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;flex-shrink:0;">
-        <path fill-rule="evenodd" clip-rule="evenodd" d="M10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0-1.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z" fill="currentColor"/>
-        <path fill-rule="evenodd" clip-rule="evenodd" d="M8.257 1.564a2 2 0 0 1 3.486 0l.353.613a1 1 0 0 0 1.166.44l.666-.217a2 2 0 0 1 2.487 2.133l-.065.7a1 1 0 0 0 .718.994l.68.19a2 2 0 0 1 .88 3.302l-.49.524a1 1 0 0 0 0 1.356l.49.524a2 2 0 0 1-.88 3.302l-.68.19a1 1 0 0 0-.718.994l.065.7a2 2 0 0 1-2.487 2.133l-.666-.217a1 1 0 0 0-1.166.44l-.353.613a2 2 0 0 1-3.486 0l-.353-.613a1 1 0 0 0-1.166-.44l-.666.217a2 2 0 0 1-2.487-2.133l.065-.7a1 1 0 0 0-.718-.994l-.68-.19a2 2 0 0 1-.88-3.302l.49-.524a1 1 0 0 0 0-1.356l-.49-.524a2 2 0 0 1 .88-3.302l.68-.19a1 1 0 0 0 .718-.994l-.065-.7a2 2 0 0 1 2.487-2.133l.666.217a1 1 0 0 0 1.166-.44l.353-.613ZM10 2.9l-.27.469a2.5 2.5 0 0 1-2.913 1.099l-.51-.166-.05.536a2.5 2.5 0 0 1-1.794 2.485l-.52.146.375.4a2.5 2.5 0 0 1 0 3.39l-.375.4.52.146a2.5 2.5 0 0 1 1.794 2.485l.05.536.51-.166a2.5 2.5 0 0 1 2.913 1.099l.27.469.27-.469a2.5 2.5 0 0 1 2.913-1.099l.51.166.05-.536a2.5 2.5 0 0 1 1.794-2.485l.52-.146-.375-.4a2.5 2.5 0 0 1 0-3.39l.375-.4-.52-.146a2.5 2.5 0 0 1-1.794-2.485l-.05-.536-.51.166A2.5 2.5 0 0 1 10.27 3.37L10 2.9Z" fill="currentColor"/>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;flex-shrink:0;">
+        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </button>
   </div>
+</div>
+
+<!-- Search drawer -->
+<div class="drawer-overlay" id="searchDrawerOverlay" onclick="closeSearchDrawer()"></div>
+<div class="drawer" id="searchDrawer">
+  <div class="drawer-header">
+    <div class="drawer-title">搜索</div>
+    <button class="drawer-close" onclick="closeSearchDrawer()">✕</button>
+  </div>
+  <div class="drawer-body">
+    <div class="search-input-wrap">
+      <span class="search-icon-inline">🔍</span>
+      <input type="text" class="input-box" id="searchKeywordInput" placeholder="搜索笔记、运动记录…" oninput="onSearchInputChange()">
+    </div>
+
+    <div>
+      <div class="drawer-section-title">标签</div>
+      <div class="ctag-row" id="searchTagChips"></div>
+    </div>
+
+    <div>
+      <div class="drawer-section-title">日期范围</div>
+      <div class="date-range-row" id="searchDateChips">
+        <button class="date-range-chip" data-range="month" onclick="setSearchDateRange('month')">本月</button>
+        <button class="date-range-chip active" data-range="year" onclick="setSearchDateRange('year')">今年</button>
+        <button class="date-range-chip" data-range="all" onclick="setSearchDateRange('all')">全部</button>
+      </div>
+      <div class="date-range-custom">
+        <input type="date" id="searchDateStart" onchange="setSearchDateCustom()">
+        <span style="color:var(--text-muted);font-size:11px;">至</span>
+        <input type="date" id="searchDateEnd" onchange="setSearchDateCustom()">
+      </div>
+    </div>
+
+    <div class="drawer-divider"></div>
+
+    <div>
+      <div class="search-result-count" id="searchResultCount"></div>
+      <div class="search-result-list" id="searchResultList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Timeline full-screen view -->
+<div class="timeline-view" id="timelineView">
+  <div class="timeline-header">
+    <button class="timeline-back" onclick="closeTimelineView()" title="返回">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12.5 4.5L6 10l6.5 5.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <div class="timeline-title">时间线</div>
+    <div class="date-range-row" id="timelineDateChips" style="margin-left:10px;">
+      <button class="date-range-chip" data-range="month" onclick="setTimelineRange('month')">本月</button>
+      <button class="date-range-chip active" data-range="year" onclick="setTimelineRange('year')">今年</button>
+      <button class="date-range-chip" data-range="all" onclick="setTimelineRange('all')">全部</button>
+    </div>
+    <button class="timeline-add-btn" onclick="showSpanEventModal()">+ 添加事件</button>
+  </div>
+  <div class="timeline-body" id="timelineBody"></div>
 </div>
 
 <!-- Todo sidebar: fixed-positioned so it floats in the leftover
@@ -1748,7 +1900,11 @@
       <div class="detail-left" id="detailLeft"></div>
       <div class="detail-right">
         <div class="detail-note-label">完整笔记</div>
-        <textarea class="note-area" id="noteArea" placeholder="记录今天的想法、计划或感受…"></textarea>
+        <div class="qtag-row" id="qtagRow"></div>
+        <div class="note-area-wrap">
+          <textarea class="note-area" id="noteArea" placeholder="记录今天的想法、计划或感受…" oninput="onNoteAreaInput()" onkeydown="onNoteAreaKeydown(event)"></textarea>
+          <div class="tag-autocomplete" id="tagAutocomplete"></div>
+        </div>
       </div>
     </div>
     <div class="detail-bar">
@@ -1786,17 +1942,6 @@ var EXPENSE_ICON = '💰';
 var MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function isNarrowViewport() { return window.innerWidth <= 768; }
 
-// ── Tag definitions (loaded from appData.tagDefs) ────────
-// TAG_DEFS is a live reference; always read appData.tagDefs
-var TAG_DEFS = []; // populated after loadData()
-
-function getTagDefs() {
-  return appData.tagDefs || [];
-}
-function getTagDef(id) {
-  return getTagDefs().find(function(t){ return t.id === id; });
-}
-
 var today    = new Date();
 var todayStr = fmtDate(today);
 var curYear  = today.getFullYear();
@@ -1808,13 +1953,13 @@ function getDefaultData() {
   return {
     notes:     {},    // { 'YYYY-MM-DD': '完整笔记' }
     calNotes:  {},    // { 'YYYY-MM-DD': '日历格显示文字（独立）' }
-    tags:      {},    // { 'YYYY-MM-DD': 'tagId' }
-    tagDefs:   [],    // [{ id, label, color }] — user-defined
     todos:     [],    // [{ id, text, done, date(可空), createdAt }] — 速记待办
     showNotes: true,  // 日历格笔记总开关
     expenseThreshold: null, // 支出色条"满格"对应的单日金额，跨月固定
     expenseColor: null, // 支出色条颜色
     fitnessColor: null, // 运动色条颜色，桌面/手机端统一
+    pinnedTags: [],   // 常用内容标签（#标签），手动排序，用于快捷插入按钮
+    spanEvents: [],   // 跨度事件：{ id, category, title, start, end(null=进行中), note }
     version:   1
   };
 }
@@ -1839,8 +1984,6 @@ function migrateData() {
     try { appData.calNotes = JSON.parse(localStorage.getItem('overview_cal_notes_v1') || '{}'); }
     catch(e) { appData.calNotes = {}; }
   }
-  if (!appData.tags) appData.tags = {};
-  if (!appData.tagDefs) appData.tagDefs = [];
   if (!appData.todos) appData.todos = [];
   if (appData.showNotes === undefined) {
     appData.showNotes = localStorage.getItem('overview_show_notes') !== 'false';
@@ -1857,6 +2000,8 @@ function migrateData() {
   }
   if (!appData.fitnessColor) appData.fitnessColor = '#059669';
   if (!appData.expenseColor) appData.expenseColor = '#d97706';
+  if (!appData.pinnedTags) appData.pinnedTags = [];
+  if (!appData.spanEvents) appData.spanEvents = [];
   if (!appData.version) appData.version = 1;
   localStorage.removeItem('overview_notes_v1');
   localStorage.removeItem('overview_cal_notes_v1');
@@ -1922,6 +2067,742 @@ function dedupe(arr) {
 }
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Content search & #标签 ────────────────────────────────
+// 统一检索索引：笔记里的 #标签（手打，可选）+ 运动记录里非空的
+// 「身体感受」字段（自动打上「身体」标签）。两者归一化成同一种
+// 条目结构，后面的搜索/筛选/标签面板都只认这一种结构。
+var TAG_SPLIT_RE = /#([^\s#，。,.!?！？;；\n]+)/g;
+
+function extractHashtags(text) {
+  var tags = [];
+  var re = new RegExp(TAG_SPLIT_RE.source, 'g');
+  var m;
+  while ((m = re.exec(text))) { if (m[1]) tags.push(m[1]); }
+  return tags;
+}
+
+// ── 跨度事件（旅行/游戏/电视剧……）────────────────────────
+var SPAN_CATEGORIES = {
+  travel: { label: '旅行',   icon: '🧳', color: '#0891b2' },
+  game:   { label: '游戏',   icon: '🎮', color: '#4f46e5' },
+  tv:     { label: '电视剧', icon: '📺', color: '#e11d48' }
+};
+var SPAN_CATEGORY_ORDER = ['travel', 'game', 'tv'];
+
+function genSpanId() { return 'ev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
+
+function addOrUpdateSpanEvent(ev) {
+  if (!appData.spanEvents) appData.spanEvents = [];
+  var idx = appData.spanEvents.findIndex(function (e) { return e.id === ev.id; });
+  if (idx >= 0) appData.spanEvents[idx] = ev;
+  else appData.spanEvents.push(ev);
+  saveData();
+}
+function deleteSpanEvent(id) {
+  appData.spanEvents = (appData.spanEvents || []).filter(function (e) { return e.id !== id; });
+  saveData();
+}
+function getSpanEventsForDate(ds) {
+  var today = fmtDate(new Date());
+  return (appData.spanEvents || []).filter(function (ev) {
+    var end = ev.end || today;
+    return ev.start <= ds && ds <= end;
+  });
+}
+
+function buildContentIndex() {
+  var idx = [];
+  var notes = appData.notes || {};
+  Object.keys(notes).forEach(function(ds) {
+    var text = notes[ds];
+    if (!text || !text.trim()) return;
+    idx.push({ type: 'note', date: ds, text: text, tags: extractHashtags(text) });
+  });
+  var fitRaw = [];
+  try { fitRaw = JSON.parse(localStorage.getItem(LS_FITNESS) || '[]'); } catch(e) {}
+  (Array.isArray(fitRaw) ? fitRaw : []).forEach(function(r) {
+    if (r && r.date && r.body && String(r.body).trim()) {
+      idx.push({ type: 'fitness-body', date: r.date, text: String(r.body), tags: ['身体'] });
+    }
+  });
+  (appData.spanEvents || []).forEach(function (ev) {
+    var meta = SPAN_CATEGORIES[ev.category] || { label: ev.category };
+    var text = ev.title + (ev.note ? '  ' + ev.note : '');
+    idx.push({ type: 'span', date: ev.start, start: ev.start, end: ev.end, category: ev.category, text: text, tags: [meta.label] });
+  });
+  idx.sort(function(a, b) { return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0); });
+  return idx;
+}
+
+function itemOverlapsRange(item, bounds) {
+  var today = fmtDate(new Date());
+  var itemStart = item.type === 'span' ? item.start : item.date;
+  var itemEnd = item.type === 'span' ? (item.end || today) : item.date;
+  if (bounds.start && itemEnd < bounds.start) return false;
+  if (bounds.end && itemStart > bounds.end) return false;
+  return true;
+}
+
+function getContentTagCounts(idx) {
+  var counts = {};
+  idx.forEach(function(item) {
+    (item.tags || []).forEach(function(t) { counts[t] = (counts[t] || 0) + 1; });
+  });
+  return counts;
+}
+
+// ── 搜索抽屉 ──────────────────────────────────────────────
+var searchState = { keyword: '', tag: null, range: 'year', start: null, end: null };
+
+function openSearchDrawer() {
+  document.getElementById('searchDrawerOverlay').classList.add('open');
+  document.getElementById('searchDrawer').classList.add('open');
+  renderSearchTagChips();
+  renderSearchResults();
+  setTimeout(function(){
+    var el = document.getElementById('searchKeywordInput');
+    if (el) el.focus();
+  }, 200);
+}
+function closeSearchDrawer() {
+  document.getElementById('searchDrawerOverlay').classList.remove('open');
+  document.getElementById('searchDrawer').classList.remove('open');
+}
+
+function onSearchInputChange() {
+  searchState.keyword = document.getElementById('searchKeywordInput').value || '';
+  renderSearchResults();
+}
+
+function setSearchDateRange(range) {
+  searchState.range = range;
+  searchState.start = null;
+  searchState.end = null;
+  document.querySelectorAll('#searchDateChips .date-range-chip').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.range === range);
+  });
+  document.getElementById('searchDateStart').value = '';
+  document.getElementById('searchDateEnd').value = '';
+  renderSearchResults();
+}
+
+function setSearchDateCustom() {
+  var s = document.getElementById('searchDateStart').value;
+  var e = document.getElementById('searchDateEnd').value;
+  if (!s && !e) return;
+  searchState.range = 'custom';
+  searchState.start = s || null;
+  searchState.end = e || null;
+  document.querySelectorAll('#searchDateChips .date-range-chip').forEach(function(b) { b.classList.remove('active'); });
+  renderSearchResults();
+}
+
+function getSearchDateBounds() {
+  var now = new Date();
+  if (searchState.range === 'month') {
+    var y = now.getFullYear(), m = now.getMonth();
+    return { start: fmtDate(new Date(y, m, 1)), end: fmtDate(new Date(y, m + 1, 0)) };
+  }
+  if (searchState.range === 'year') {
+    var y2 = now.getFullYear();
+    return { start: y2 + '-01-01', end: y2 + '-12-31' };
+  }
+  if (searchState.range === 'custom') {
+    return { start: searchState.start, end: searchState.end };
+  }
+  return { start: null, end: null };
+}
+
+function filterContentIndex(idx) {
+  var kw = (searchState.keyword || '').trim().toLowerCase();
+  var bounds = getSearchDateBounds();
+  return idx.filter(function(item) {
+    if (searchState.tag && (item.tags || []).indexOf(searchState.tag) === -1) return false;
+    if (!itemOverlapsRange(item, bounds)) return false;
+    if (kw && item.text.toLowerCase().indexOf(kw) === -1) return false;
+    return true;
+  });
+}
+
+function toggleSearchTag(tag) {
+  searchState.tag = (searchState.tag === tag) ? null : tag;
+  renderSearchTagChips();
+  renderSearchResults();
+}
+
+function renderSearchTagChips() {
+  var idx = buildContentIndex();
+  var counts = getContentTagCounts(idx);
+  var tags = Object.keys(counts).sort(function(a, b) { return counts[b] - counts[a]; });
+  var wrap = document.getElementById('searchTagChips');
+  if (!wrap) return;
+  if (!tags.length) {
+    wrap.innerHTML = '<span style="font-size:11px;color:var(--text-muted);font-style:italic;">还没有标签，在笔记里写 #标签 试试</span>';
+    return;
+  }
+  var html = '';
+  tags.forEach(function(t) {
+    var active = searchState.tag === t;
+    html += '<button class="ctag-chip' + (active ? ' active' : '') + '" onclick="toggleSearchTag(\'' + t.replace(/'/g, "\\'") + '\')">' +
+      escHtml(t) + ' · ' + counts[t] + '</button>';
+  });
+  wrap.innerHTML = html;
+}
+
+function highlightKeyword(text, kw) {
+  var esc = escHtml(text);
+  if (!kw) return esc;
+  try {
+    var re = new RegExp('(' + kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig');
+    return esc.replace(re, '<mark>$1</mark>');
+  } catch (e) { return esc; }
+}
+
+function renderSearchResults() {
+  var idx = buildContentIndex();
+  var results = filterContentIndex(idx);
+  var countEl = document.getElementById('searchResultCount');
+  var listEl = document.getElementById('searchResultList');
+  if (!countEl || !listEl) return;
+  var label = searchState.tag ? ('“' + searchState.tag + '” · ') : '';
+  countEl.textContent = label + '共 ' + results.length + ' 条';
+  if (!results.length) {
+    listEl.innerHTML = '<div class="search-empty">没有找到匹配的内容</div>';
+    return;
+  }
+  var kw = (searchState.keyword || '').trim();
+  var html = '';
+  results.slice(0, 150).forEach(function(item) {
+    var icon, srcLabel, metaText;
+    if (item.type === 'span') {
+      var meta = SPAN_CATEGORIES[item.category] || { icon: '📌', label: item.category };
+      icon = meta.icon;
+      srcLabel = meta.label;
+      metaText = item.start + ' ~ ' + (item.end || '进行中');
+    } else {
+      icon = item.type === 'note' ? '📝' : '🏃';
+      srcLabel = item.type === 'note' ? '笔记' : '运动记录';
+      metaText = item.date + ' · ' + srcLabel;
+    }
+    var snippet = item.text.split(/\n/)[0].trim();
+    html += '<div class="search-result-row" onclick="jumpToContentDate(\'' + item.date + '\')">' +
+      '<span class="search-result-icon">' + icon + '</span>' +
+      '<div style="flex:1;min-width:0;">' +
+      '<div class="search-result-meta">' + metaText + '</div>' +
+      '<div class="search-result-text">' + highlightKeyword(snippet, kw) + '</div>' +
+      '</div></div>';
+  });
+  listEl.innerHTML = html;
+}
+
+function jumpToContentDate(ds) {
+  closeSearchDrawer();
+  var parts = ds.split('-');
+  curYear = parseInt(parts[0], 10);
+  curMonth = parseInt(parts[1], 10) - 1;
+  render();
+  setTimeout(function () { openDetail(ds); }, 60);
+}
+
+// ── 全屏时间线视图 ────────────────────────────────────────
+var timelineState = { range: 'year', start: null, end: null };
+
+function getTimelineBounds() {
+  var now = new Date();
+  if (timelineState.range === 'month') {
+    var y = now.getFullYear(), m = now.getMonth();
+    return { start: fmtDate(new Date(y, m, 1)), end: fmtDate(new Date(y, m + 1, 0)) };
+  }
+  if (timelineState.range === 'year') {
+    var y2 = now.getFullYear();
+    return { start: y2 + '-01-01', end: y2 + '-12-31' };
+  }
+  if (timelineState.range === 'custom' && timelineState.start && timelineState.end) {
+    return { start: timelineState.start, end: timelineState.end };
+  }
+  var idx = buildContentIndex();
+  var dates = idx.map(function (it) { return it.type === 'span' ? it.start : it.date; });
+  var minDate = dates.length ? dates.reduce(function (a, b) { return a < b ? a : b; }) : fmtDate(now);
+  return { start: minDate, end: fmtDate(now) };
+}
+
+function setTimelineRange(range) {
+  timelineState.range = range;
+  timelineState.start = null;
+  timelineState.end = null;
+  document.querySelectorAll('#timelineDateChips .date-range-chip').forEach(function (b) {
+    b.classList.toggle('active', b.dataset.range === range);
+  });
+  renderTimeline();
+}
+
+function openTimelineView() {
+  document.getElementById('timelineView').classList.add('open');
+  renderTimeline();
+}
+function closeTimelineView() {
+  document.getElementById('timelineView').classList.remove('open');
+}
+
+function dateRatio(dateStr, s, e) {
+  var d = new Date(dateStr).getTime();
+  var sT = new Date(s).getTime();
+  var eT = new Date(e).getTime();
+  var total = eT - sT;
+  if (total <= 0) return 0;
+  return Math.min(1, Math.max(0, (d - sT) / total));
+}
+
+function buildTimelineAxisHtml(s, e) {
+  var start = new Date(s), end = new Date(e);
+  var html = '';
+  var cur = new Date(start.getFullYear(), start.getMonth(), 1);
+  var guard = 0;
+  while (cur <= end && guard < 60) {
+    var ratio = dateRatio(fmtDate(cur), s, e) * 100;
+    html += '<div class="timeline-axis-tick" style="left:' + ratio + '%;">' + (cur.getMonth() + 1) + '月</div>';
+    cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+    guard++;
+  }
+  return html;
+}
+
+function renderTimeline() {
+  var bodyEl = document.getElementById('timelineBody');
+  if (!bodyEl) return;
+  var bounds = getTimelineBounds();
+  var s = bounds.start, e = bounds.end;
+
+  var html = '<div class="timeline-axis">' + buildTimelineAxisHtml(s, e) + '</div>';
+
+  var events = appData.spanEvents || [];
+  SPAN_CATEGORY_ORDER.forEach(function (cat) {
+    var meta = SPAN_CATEGORIES[cat];
+    var catEvents = events.filter(function (ev) {
+      return ev.category === cat && itemOverlapsRange({ type: 'span', start: ev.start, end: ev.end }, bounds);
+    });
+    html += '<div class="timeline-row-group">';
+    html += '<div class="timeline-row-label">' + meta.icon + ' ' + meta.label + '</div>';
+    if (!catEvents.length) {
+      html += '<div class="timeline-track"><div class="timeline-track-empty">这段时间没有记录</div></div>';
+    } else {
+      html += '<div class="timeline-track" style="height:' + (catEvents.length * 32 + 8) + 'px;">';
+      catEvents.forEach(function (ev, i) {
+        var left = dateRatio(ev.start, s, e) * 100;
+        var rightR = dateRatio(ev.end || fmtDate(new Date()), s, e) * 100;
+        var width = Math.max(rightR - left, 1.5);
+        var ongoing = !ev.end;
+        html += '<div class="timeline-bar' + (ongoing ? ' ongoing' : '') + '" style="left:' + left + '%;width:' + width + '%;top:' + (8 + i * 32) + 'px;background:' + meta.color + ';" onclick="showSpanEventModal(\'' + ev.id + '\')" title="' + escHtml(ev.title) + '">' + escHtml(ev.title) + '</div>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+
+  var idxAll = buildContentIndex().filter(function (it) { return it.type !== 'span'; });
+  var notesInRange = idxAll.filter(function (it) { return itemOverlapsRange(it, bounds); });
+  html += '<div class="timeline-row-group">';
+  html += '<div class="timeline-row-label">📝 笔记 / 身体记录</div>';
+  if (!notesInRange.length) {
+    html += '<div class="timeline-notes-track"></div>';
+  } else {
+    html += '<div class="timeline-notes-track">';
+    notesInRange.forEach(function (it) {
+      var left = dateRatio(it.date, s, e) * 100;
+      var color = it.type === 'note' ? '#7c3aed' : '#059669';
+      var snippet = it.text.split(/\n/)[0].trim();
+      html += '<div class="timeline-dot" style="left:' + left + '%;background:' + color + ';" onclick="jumpToContentDate(\'' + it.date + '\')" title="' + it.date + ' · ' + escHtml(snippet) + '"></div>';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+
+  bodyEl.innerHTML = html;
+}
+
+function showSpanEventModal(id) {
+  var editing = id ? (appData.spanEvents || []).find(function (ev) { return ev.id === id; }) : null;
+
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.addEventListener('click', function () { overlay.remove(); });
+
+  var sheet = document.createElement('div');
+  sheet.className = 'modal-sheet';
+  sheet.style.maxWidth = '380px';
+  sheet.addEventListener('click', function (e) { e.stopPropagation(); });
+
+  var title = document.createElement('h3');
+  title.textContent = editing ? '编辑跨度事件' : '添加跨度事件';
+  sheet.appendChild(title);
+
+  function field(labelText, inputEl) {
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-bottom:12px;';
+    var lab = document.createElement('div');
+    lab.style.cssText = 'font-size:11.5px;color:var(--text-muted);margin-bottom:5px;';
+    lab.textContent = labelText;
+    wrap.appendChild(lab);
+    wrap.appendChild(inputEl);
+    sheet.appendChild(wrap);
+    return wrap;
+  }
+
+  var catSel = document.createElement('select');
+  catSel.className = 'input-box';
+  SPAN_CATEGORY_ORDER.forEach(function (cat) {
+    var opt = document.createElement('option');
+    opt.value = cat;
+    opt.textContent = SPAN_CATEGORIES[cat].icon + ' ' + SPAN_CATEGORIES[cat].label;
+    catSel.appendChild(opt);
+  });
+  if (editing) catSel.value = editing.category;
+  field('类别', catSel);
+
+  var titleInput = document.createElement('input');
+  titleInput.type = 'text';
+  titleInput.className = 'input-box';
+  titleInput.placeholder = '标题，例如《双人成行》';
+  if (editing) titleInput.value = editing.title;
+  field('标题', titleInput);
+
+  var startInput = document.createElement('input');
+  startInput.type = 'date';
+  startInput.className = 'input-box';
+  startInput.value = editing ? editing.start : fmtDate(new Date());
+  field('开始日期', startInput);
+
+  var modeWrap = document.createElement('div');
+  modeWrap.style.cssText = 'display:flex;flex-direction:column;gap:7px;margin-bottom:12px;';
+  var modeLab = document.createElement('div');
+  modeLab.style.cssText = 'font-size:11.5px;color:var(--text-muted);margin-bottom:2px;';
+  modeLab.textContent = '在日历上怎么显示';
+  modeWrap.appendChild(modeLab);
+
+  var modeName = 'spanDisplayMode_' + Date.now();
+  var currentMode = editing ? (editing.displayMode || 'cover') : 'cover';
+
+  function modeOption(value, text, hint) {
+    var lab = document.createElement('label');
+    lab.style.cssText = 'display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--text-dim);cursor:pointer;';
+    var radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = modeName;
+    radio.value = value;
+    radio.checked = currentMode === value;
+    radio.style.marginTop = '2px';
+    var textWrap = document.createElement('div');
+    var main = document.createElement('div');
+    main.style.cssText = 'font-weight:600;color:var(--text);';
+    main.textContent = text;
+    var sub = document.createElement('div');
+    sub.style.cssText = 'font-size:11px;color:var(--text-muted);margin-top:1px;';
+    sub.textContent = hint;
+    textWrap.appendChild(main);
+    textWrap.appendChild(sub);
+    lab.appendChild(radio);
+    lab.appendChild(textWrap);
+    return { label: lab, radio: radio };
+  }
+
+  var coverOpt = modeOption('cover', '短期 · 盖住日期数字', '适合几天内的事，比如出去玩了几天');
+  var bandOpt  = modeOption('band',  '长期 · 底部色带', '适合持续较久的事，比如玩了一个月的游戏');
+  modeWrap.appendChild(coverOpt.label);
+  modeWrap.appendChild(bandOpt.label);
+  sheet.appendChild(modeWrap);
+
+  var ongoingRow = document.createElement('label');
+  ongoingRow.style.cssText = 'display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text-dim);margin-bottom:10px;cursor:pointer;';
+  var ongoingCheck = document.createElement('input');
+  ongoingCheck.type = 'checkbox';
+  ongoingCheck.checked = editing ? !editing.end : true;
+  ongoingRow.appendChild(ongoingCheck);
+  ongoingRow.appendChild(document.createTextNode('还在进行中，先不填结束日期'));
+  sheet.appendChild(ongoingRow);
+
+  var endInput = document.createElement('input');
+  endInput.type = 'date';
+  endInput.className = 'input-box';
+  endInput.value = editing && editing.end ? editing.end : '';
+  var endWrap = field('结束日期', endInput);
+  endWrap.style.display = ongoingCheck.checked ? 'none' : 'block';
+  ongoingCheck.onchange = function () {
+    endWrap.style.display = ongoingCheck.checked ? 'none' : 'block';
+  };
+
+  var noteInput = document.createElement('textarea');
+  noteInput.className = 'input-box';
+  noteInput.style.cssText = 'width:100%;min-height:60px;resize:vertical;';
+  noteInput.placeholder = '备注（可选）';
+  if (editing && editing.note) noteInput.value = editing.note;
+  field('备注', noteInput);
+
+  var btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:8px;margin-top:6px;';
+
+  if (editing) {
+    var delBtn = document.createElement('button');
+    delBtn.className = 'mbtn';
+    delBtn.style.cssText = 'background:var(--surface2);color:#dc2626;border:1px solid var(--border);';
+    delBtn.textContent = '删除';
+    delBtn.onclick = function () {
+      deleteSpanEvent(editing.id);
+      overlay.remove();
+      renderTimeline();
+      render();
+    };
+    btnRow.appendChild(delBtn);
+  }
+
+  var cancelBtn = document.createElement('button');
+  cancelBtn.className = 'mbtn mbtn-outline';
+  cancelBtn.textContent = '取消';
+  cancelBtn.onclick = function () { overlay.remove(); };
+  btnRow.appendChild(cancelBtn);
+
+  var saveBtn = document.createElement('button');
+  saveBtn.className = 'mbtn mbtn-primary';
+  saveBtn.textContent = '保存';
+  saveBtn.onclick = function () {
+    var titleVal = titleInput.value.trim();
+    if (!titleVal) { titleInput.focus(); return; }
+    if (!startInput.value) { startInput.focus(); return; }
+    var ev = {
+      id: editing ? editing.id : genSpanId(),
+      category: catSel.value,
+      title: titleVal,
+      start: startInput.value,
+      end: ongoingCheck.checked ? null : (endInput.value || null),
+      note: noteInput.value.trim(),
+      displayMode: bandOpt.radio.checked ? 'band' : 'cover'
+    };
+    addOrUpdateSpanEvent(ev);
+    overlay.remove();
+    renderTimeline();
+    render();
+    if (typeof selDate !== 'undefined' && selDate) renderFitnessBodyLine(selDate);
+  };
+  btnRow.appendChild(saveBtn);
+
+  sheet.appendChild(btnRow);
+  overlay.appendChild(sheet);
+  document.body.appendChild(overlay);
+}
+
+// ── 笔记里的快捷标签按钮 + # 输入联想 ──────────────────────
+function getPinnedTags() {
+  var idx = buildContentIndex();
+  var counts = getContentTagCounts(idx);
+  var pinned = (appData.pinnedTags || []).filter(function (t) { return counts[t]; });
+  if (pinned.length) return pinned;
+  return Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; }).slice(0, 5);
+}
+
+function renderQuickTagButtons() {
+  var row = document.getElementById('qtagRow');
+  if (!row) return;
+  var pinned = getPinnedTags();
+  var html = '';
+  pinned.forEach(function (t) {
+    html += '<button type="button" class="qtag-btn" onclick="insertTagAtCursor(\'' + t.replace(/'/g, "\\'") + '\')">#' + escHtml(t) + '</button>';
+  });
+  html += '<button type="button" class="qtag-manage-btn" onclick="showContentTagPanel()">管理</button>';
+  row.innerHTML = html;
+}
+
+function insertTagAtCursor(tag) {
+  var ta = document.getElementById('noteArea');
+  if (!ta) return;
+  var insertText = '#' + tag + ' ';
+  var start = ta.selectionStart, end = ta.selectionEnd;
+  var val = ta.value;
+  ta.value = val.slice(0, start) + insertText + val.slice(end);
+  var pos = start + insertText.length;
+  ta.focus();
+  ta.setSelectionRange(pos, pos);
+}
+
+function onNoteAreaInput() {
+  var ta = document.getElementById('noteArea');
+  var box = document.getElementById('tagAutocomplete');
+  if (!ta || !box) return;
+  var pos = ta.selectionStart;
+  var upto = ta.value.slice(0, pos);
+  var re = new RegExp('#([^\\s#，。,.!?！？;；\\n]*)$');
+  var m = upto.match(re);
+  if (!m) { box.classList.remove('open'); box.innerHTML = ''; return; }
+  var prefix = m[1];
+  var idx = buildContentIndex();
+  var counts = getContentTagCounts(idx);
+  var all = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; });
+  var matches = all.filter(function (t) {
+    return prefix && t.toLowerCase().indexOf(prefix.toLowerCase()) === 0 && t !== prefix;
+  });
+  if (!matches.length) { box.classList.remove('open'); box.innerHTML = ''; return; }
+  var html = '';
+  matches.slice(0, 8).forEach(function (t) {
+    html += '<div class="tag-autocomplete-item" onmousedown="event.preventDefault();completeTag(\'' + t.replace(/'/g, "\\'") + '\')">#' + escHtml(t) + ' · ' + counts[t] + '</div>';
+  });
+  box.innerHTML = html;
+  box.classList.add('open');
+}
+
+function completeTag(tag) {
+  var ta = document.getElementById('noteArea');
+  if (!ta) return;
+  var pos = ta.selectionStart;
+  var val = ta.value;
+  var upto = val.slice(0, pos);
+  var re = new RegExp('#([^\\s#，。,.!?！？;；\\n]*)$');
+  var m = upto.match(re);
+  if (!m) return;
+  var startIdx = pos - m[0].length;
+  var insertText = '#' + tag + ' ';
+  ta.value = val.slice(0, startIdx) + insertText + val.slice(pos);
+  var newPos = startIdx + insertText.length;
+  ta.focus();
+  ta.setSelectionRange(newPos, newPos);
+  var box = document.getElementById('tagAutocomplete');
+  if (box) box.classList.remove('open');
+}
+
+function onNoteAreaKeydown(e) {
+  var box = document.getElementById('tagAutocomplete');
+  if (box && box.classList.contains('open') && e.key === 'Escape') {
+    box.classList.remove('open');
+  }
+}
+
+function showContentTagPanel() {
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.addEventListener('click', function () { overlay.remove(); renderQuickTagButtons(); });
+
+  function renderPanel() {
+    var idx = buildContentIndex();
+    var counts = getContentTagCounts(idx);
+    var allTags = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; });
+    if (!appData.pinnedTags) appData.pinnedTags = [];
+    var pinned = appData.pinnedTags.filter(function (t) { return counts[t]; });
+
+    var sheet = document.createElement('div');
+    sheet.className = 'modal-sheet';
+    sheet.style.maxWidth = '400px';
+    sheet.addEventListener('click', function (e) { e.stopPropagation(); });
+
+    var title = document.createElement('h3');
+    title.textContent = '常用标签管理';
+    sheet.appendChild(title);
+
+    var hint = document.createElement('div');
+    hint.style.cssText = 'font-size:11.5px;color:var(--text-muted);margin-bottom:12px;text-align:center;';
+    hint.textContent = '最多置顶 5 个，写笔记时可一键插入';
+    sheet.appendChild(hint);
+
+    var list = document.createElement('div');
+    list.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:14px;';
+
+    if (!pinned.length) {
+      var empty = document.createElement('div');
+      empty.style.cssText = 'font-size:12px;color:var(--text-muted);font-style:italic;text-align:center;padding:8px 0;';
+      empty.textContent = '还没有置顶标签';
+      list.appendChild(empty);
+    }
+
+    pinned.forEach(function (t, i) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border-lt);border-radius:8px;';
+
+      var labelEl = document.createElement('span');
+      labelEl.style.cssText = 'font-size:13px;font-weight:600;color:var(--text);flex:1;';
+      labelEl.textContent = '#' + t + ' (' + counts[t] + ')';
+
+      var upBtn = document.createElement('button');
+      upBtn.textContent = '↑';
+      upBtn.style.cssText = 'width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:none;cursor:pointer;color:var(--text-dim);font-family:inherit;' + (i === 0 ? 'opacity:.3;cursor:default;' : '');
+      upBtn.onclick = function () {
+        if (i === 0) return;
+        var arr = appData.pinnedTags;
+        var tmp = arr[i - 1]; arr[i - 1] = arr[i]; arr[i] = tmp;
+        saveData(); renderPanel(); renderQuickTagButtons();
+      };
+
+      var downBtn = document.createElement('button');
+      downBtn.textContent = '↓';
+      downBtn.style.cssText = 'width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:none;cursor:pointer;color:var(--text-dim);font-family:inherit;' + (i === pinned.length - 1 ? 'opacity:.3;cursor:default;' : '');
+      downBtn.onclick = function () {
+        if (i === pinned.length - 1) return;
+        var arr = appData.pinnedTags;
+        var tmp = arr[i + 1]; arr[i + 1] = arr[i]; arr[i] = tmp;
+        saveData(); renderPanel(); renderQuickTagButtons();
+      };
+
+      var rmBtn = document.createElement('button');
+      rmBtn.textContent = '移除';
+      rmBtn.style.cssText = 'font-size:11.5px;padding:4px 9px;border-radius:6px;border:1px solid var(--border);background:none;color:#dc2626;cursor:pointer;font-family:inherit;';
+      rmBtn.onclick = function () {
+        appData.pinnedTags = appData.pinnedTags.filter(function (x) { return x !== t; });
+        saveData(); renderPanel(); renderQuickTagButtons();
+      };
+
+      row.appendChild(labelEl);
+      row.appendChild(upBtn);
+      row.appendChild(downBtn);
+      row.appendChild(rmBtn);
+      list.appendChild(row);
+    });
+
+    sheet.appendChild(list);
+
+    var addable = allTags.filter(function (t) { return pinned.indexOf(t) === -1; });
+    if (addable.length && pinned.length < 5) {
+      var addRow = document.createElement('div');
+      addRow.style.cssText = 'display:flex;gap:7px;align-items:center;margin-bottom:10px;';
+
+      var sel = document.createElement('select');
+      sel.className = 'input-box';
+      sel.style.flex = '1';
+      addable.forEach(function (t) {
+        var opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = '#' + t + ' (' + counts[t] + ')';
+        sel.appendChild(opt);
+      });
+
+      var addBtn = document.createElement('button');
+      addBtn.textContent = '+ 置顶';
+      addBtn.style.cssText = 'font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:8px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;';
+      addBtn.onclick = function () {
+        if (!appData.pinnedTags) appData.pinnedTags = [];
+        if (appData.pinnedTags.length >= 5) return;
+        appData.pinnedTags.push(sel.value);
+        saveData(); renderPanel(); renderQuickTagButtons();
+      };
+
+      addRow.appendChild(sel);
+      addRow.appendChild(addBtn);
+      sheet.appendChild(addRow);
+    } else if (!allTags.length) {
+      var noTags = document.createElement('div');
+      noTags.style.cssText = 'font-size:11.5px;color:var(--text-muted);text-align:center;margin-bottom:10px;font-style:italic;';
+      noTags.textContent = '在笔记里写 #标签 后，这里就能选择置顶了';
+      sheet.appendChild(noTags);
+    }
+
+    var closeBtn = document.createElement('button');
+    closeBtn.className = 'mbtn mbtn-close';
+    closeBtn.textContent = '关闭';
+    closeBtn.onclick = function () { overlay.remove(); renderQuickTagButtons(); };
+    sheet.appendChild(closeBtn);
+
+    overlay.innerHTML = '';
+    overlay.appendChild(sheet);
+  }
+
+  renderPanel();
+  document.body.appendChild(overlay);
 }
 
 // ── Quick-capture Todos ───────────────────────────────────
@@ -2508,31 +3389,50 @@ function render() {
     num.textContent = d;
     cell.appendChild(num);
 
-    // Tag bar (covers day-num as its background)
-    var tagId = appData.tags[ds];
-    if (tagId) {
-      var tagDef = getTagDef(tagId);
-      if (tagDef) {
-        var bar = document.createElement('div');
-        bar.className = 'tag-bar';
-        bar.style.background = tagDef.color;
-        bar.setAttribute('data-label', tagDef.label);
-        bar.addEventListener('click', function(e) { e.stopPropagation(); openDetail(ds); });
-        cell.appendChild(bar);
-        cell.classList.add('has-tag');
-      }
+    // 跨度事件 · 短期模式：盖住日期数字（同一天多个的话只取第一个）
+    var dayEvents  = getSpanEventsForDate(ds);
+    var coverEvent = dayEvents.find(function(ev) { return ev.displayMode !== 'band'; });
+    if (coverEvent) {
+      var coverMeta = SPAN_CATEGORIES[coverEvent.category] || { color: '#7c3aed' };
+      var bar = document.createElement('div');
+      bar.className = 'span-cover-bar';
+      bar.style.background = coverMeta.color;
+      bar.setAttribute('data-label', coverEvent.title);
+      bar.addEventListener('click', function(e) { e.stopPropagation(); openDetail(ds); });
+      cell.appendChild(bar);
+      cell.classList.add('has-span-cover');
     }
+
+    // 跨度事件 · 长期模式：格子底部色带，多个可叠加
+    dayEvents.filter(function(ev) { return ev.displayMode === 'band'; }).forEach(function(ev, i) {
+      var bandMeta = SPAN_CATEGORIES[ev.category] || { color: '#7c3aed' };
+      var band = document.createElement('div');
+      band.className = 'span-band';
+      band.style.background = bandMeta.color;
+      band.style.bottom = (i * 5) + 'px';
+      band.title = ev.title;
+      cell.appendChild(band);
+    });
+
+    var bodyRow = document.createElement('div');
+    bodyRow.className = 'cell-body-row';
 
     if (pocket[ds]) {
       var threshold = appData.expenseThreshold || 300;
       var ratio = Math.min(1, pocket[ds] / threshold);
-      var expBar = document.createElement('div');
-      expBar.className = 'expense-bar';
-      expBar.style.background = appData.expenseColor || '#d97706';
-      expBar.style.opacity = (0.22 + ratio * 0.68).toFixed(2);
-      expBar.title = '支出 ' + fmtMoney(pocket[ds]);
-      cell.appendChild(expBar);
+      var dotSlot = document.createElement('div');
+      dotSlot.className = 'expense-dot-slot';
+      var expDot = document.createElement('div');
+      expDot.className = 'expense-dot';
+      expDot.style.background = appData.expenseColor || '#d97706';
+      expDot.style.opacity = (0.35 + ratio * 0.65).toFixed(2);
+      expDot.title = '支出 ' + fmtMoney(pocket[ds]);
+      dotSlot.appendChild(expDot);
+      bodyRow.appendChild(dotSlot);
     }
+
+    var contentCol = document.createElement('div');
+    contentCol.className = 'cell-content-col';
 
     if (fitness[ds] && fitness[ds].length) {
       dedupe(fitness[ds]).slice(0, 2).forEach(function(sp) {
@@ -2543,7 +3443,7 @@ function render() {
         var icon = label.split(' ')[0];
         fc.innerHTML = '<span class="chip-fitness-icon">' + icon + '</span>' +
           '<span class="chip-fitness-label">' + escHtml(sp) + '</span>';
-        cell.appendChild(fc);
+        contentCol.appendChild(fc);
       });
     }
 
@@ -2586,7 +3486,10 @@ function render() {
 
     noteWrap.appendChild(ta);
     noteWrap.appendChild(dots);
-    cell.appendChild(noteWrap);
+    contentCol.appendChild(noteWrap);
+
+    bodyRow.appendChild(contentCol);
+    cell.appendChild(bodyRow);
 
     cell.addEventListener('click', (function(dateStr) {
       return function() { openDetail(dateStr); };
@@ -2612,17 +3515,19 @@ function openDetail(ds) {
   var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
   var leftHtml = '';
-  var currentTag = appData.tags[ds] || '';
   leftHtml += '<div class="detail-date-row">' +
     '<div><div class="detail-date-big">' + MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear() + '</div>' +
     '<div class="detail-date-sub">' + DAYS[d.getDay()] + '</div></div>' +
-    '<div id="tagCompactWrap">' + buildTagCompactHtml(ds, currentTag) + '</div>' +
     '</div>';
 
   leftHtml += '<div id="statChipsWrap">' + buildStatChipsHtml(ds) + '</div>';
 
   document.getElementById('detailLeft').innerHTML = leftHtml;
   document.getElementById('noteArea').value = notes[ds] || '';
+  renderQuickTagButtons();
+  renderFitnessBodyLine(ds);
+  var ac = document.getElementById('tagAutocomplete');
+  if (ac) { ac.classList.remove('open'); ac.innerHTML = ''; }
 
   var panel = document.getElementById('detailPanel');
   panel.classList.add('open');
@@ -2632,9 +3537,39 @@ function openDetail(ds) {
 function closeDetail() {
   selDate = null;
   document.getElementById('detailPanel').classList.remove('open');
-  document.removeEventListener('click', closeTagDropdownOutside);
   document.querySelectorAll('.day-cell').forEach(function(c) {
     c.classList.remove('selected');
+  });
+}
+
+function getFitnessBodyTexts(ds) {
+  var fitRaw = [];
+  try { fitRaw = JSON.parse(localStorage.getItem(LS_FITNESS) || '[]'); } catch (e) {}
+  return (Array.isArray(fitRaw) ? fitRaw : [])
+    .filter(function (r) { return r && r.date === ds && r.body && String(r.body).trim(); })
+    .map(function (r) { return String(r.body).trim(); });
+}
+
+function renderFitnessBodyLine(ds) {
+  var noteAreaEl = document.querySelector('#noteArea');
+  var wrap = noteAreaEl && noteAreaEl.parentElement;
+  if (!wrap || !wrap.classList.contains('note-area-wrap')) return;
+  wrap.querySelectorAll('.note-fitness-line').forEach(function (el) { el.remove(); });
+
+  var lines = [];
+  getFitnessBodyTexts(ds).forEach(function (t) { lines.push('#身体 ' + t); });
+  getSpanEventsForDate(ds).forEach(function (ev) {
+    var meta = SPAN_CATEGORIES[ev.category] || { label: ev.category };
+    var dayIndex = Math.round((new Date(ds) - new Date(ev.start)) / 86400000) + 1;
+    lines.push('#' + meta.label + ' 《' + ev.title + '》 · 第' + dayIndex + '天');
+  });
+  if (!lines.length) return;
+
+  lines.forEach(function (text) {
+    var line = document.createElement('div');
+    line.className = 'note-fitness-line';
+    line.textContent = text;
+    wrap.insertBefore(line, noteAreaEl);
   });
 }
 
@@ -2664,367 +3599,13 @@ function refreshStatChips() {
   if (wrap) wrap.innerHTML = buildStatChipsHtml(selDate);
 }
 
-function buildTagCompactHtml(ds, currentTag) {
-  var triggerHtml = '';
-  if (currentTag) {
-    var def = getTagDef(currentTag);
-    if (def) {
-      triggerHtml = '<button type="button" class="tag-compact-trigger tag-pill" ' +
-        'style="background:' + def.color + '18;border-color:' + def.color + ';color:' + def.color + ';" ' +
-        'onclick="toggleTagDropdown(event)">' +
-        '<span class="tag-btn-dot" style="background:' + def.color + ';"></span>' +
-        escHtml(def.label) +
-        '</button>';
-    }
-  }
-  if (!triggerHtml) {
-    triggerHtml = '<button type="button" class="tag-compact-trigger tag-plus" ' +
-      'onclick="toggleTagDropdown(event)" aria-label="添加日期标签"></button>';
-  }
-  return '<div class="tag-compact" id="tagCompact">' +
-    triggerHtml +
-    '<div class="tag-dropdown" id="tagDropdown">' + buildTagPickerHtml(ds, currentTag) + '</div>' +
-    '</div>';
-}
-
-function toggleTagDropdown(e) {
-  e.stopPropagation();
-  var el = document.getElementById('tagCompact');
-  if (!el) return;
-  var willOpen = !el.classList.contains('open');
-  el.classList.toggle('open', willOpen);
-  if (willOpen) document.addEventListener('click', closeTagDropdownOutside);
-  else document.removeEventListener('click', closeTagDropdownOutside);
-}
-function closeTagDropdownOutside(e) {
-  var el = document.getElementById('tagCompact');
-  if (el && !el.contains(e.target)) {
-    el.classList.remove('open');
-  }
-  document.removeEventListener('click', closeTagDropdownOutside);
-}
-
-function buildTagPickerHtml(ds, currentTag) {
-  var defs = getTagDefs();
-  var html = '';
-  if (!defs.length) {
-    html += '<span style="font-size:11px;color:var(--text-muted);font-style:italic;">还没有标签，可在设置中新建</span>';
-    return html;
-  }
-  defs.forEach(function(t) {
-    var isActive = currentTag === t.id;
-    // clicking active tag → clear; clicking inactive → set
-    var nextId = isActive ? '' : t.id;
-    html += '<button class="tag-btn' + (isActive ? ' active' : '') + '" ' +
-      'data-tagid="' + t.id + '" ' +
-      'style="' + (isActive ? 'background:' + t.color + ';border-color:' + t.color + ';' : 'border-color:' + t.color + ';color:' + t.color + ';background:' + t.color + '18;') + '" ' +
-      'onclick="setTag(\'' + ds + '\',\'' + nextId + '\')">' +
-      '<span class="tag-btn-dot" style="background:' + t.color + ';"></span>' +
-      escHtml(t.label) +
-      '</button>';
-  });
-  return html;
-}
-
-function showTagPanel() {
-  var COLORS = ['#7c3aed','#dc2626','#0891b2','#059669','#d97706','#db2777','#0f172a','#64748b'];
-  var editingId = null; // track which tag row is in edit mode
-
-  var overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.id = 'tagPanelOverlay';
-  overlay.addEventListener('click', function(){ overlay.remove(); });
-
-  function renderPanel() {
-    var defs = getTagDefs();
-    var sheet = document.createElement('div');
-    sheet.className = 'modal-sheet';
-    sheet.style.maxWidth = '400px';
-    sheet.addEventListener('click', function(e){ e.stopPropagation(); });
-
-    // Title
-    var title = document.createElement('h3');
-    title.style.cssText = 'font-size:15px;font-weight:700;margin-bottom:14px;text-align:center;color:var(--text);letter-spacing:-.02em;';
-    title.textContent = '🏷 标签管理';
-    sheet.appendChild(title);
-
-    // Tag list
-    var list = document.createElement('div');
-    list.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:14px;';
-
-    if (!defs.length) {
-      var empty = document.createElement('div');
-      empty.style.cssText = 'font-size:12px;color:var(--text-muted);font-style:italic;text-align:center;padding:10px 0;';
-      empty.textContent = '暂无标签';
-      list.appendChild(empty);
-    }
-
-    defs.forEach(function(t) {
-      var row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border-lt);border-radius:8px;position:relative;';
-
-      if (editingId === t.id) {
-        // ── Edit mode ──
-        var swatch = document.createElement('input');
-        swatch.type = 'color';
-        swatch.value = t.color;
-        swatch.style.cssText = 'width:28px;height:28px;padding:2px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;background:none;flex-shrink:0;';
-
-        var input = document.createElement('input');
-        input.type = 'text';
-        input.value = t.label;
-        input.maxLength = 6;
-        input.style.cssText = 'flex:1;font-size:13px;font-weight:600;padding:4px 8px;border:1.5px solid var(--blue);border-radius:6px;outline:none;font-family:inherit;background:var(--surface);color:var(--text);';
-
-        var confirmBtn = document.createElement('button');
-        confirmBtn.textContent = '确认';
-        confirmBtn.style.cssText = 'font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:inherit;flex-shrink:0;';
-        confirmBtn.onclick = function() {
-          var newLabel = input.value.trim();
-          var newColor = swatch.value;
-          if (!newLabel) { input.focus(); return; }
-          var def = getTagDef(t.id);
-          if (def) { def.label = newLabel; def.color = newColor; }
-          saveData();
-          // Update visible bars for this tag
-          document.querySelectorAll('.tag-bar').forEach(function(el){
-            if (el.getAttribute('data-label') === t.label || el.parentElement.dataset.tagbarId === t.id) {
-              el.style.background = newColor;
-              el.setAttribute('data-label', newLabel);
-            }
-          });
-          // More reliable: re-check by stored tag
-          document.querySelectorAll('.day-cell').forEach(function(cell){
-            var ds2 = cell.dataset.date;
-            if (appData.tags[ds2] === t.id) {
-              var bar = cell.querySelector('.tag-bar');
-              if (bar) { bar.style.background = newColor; bar.setAttribute('data-label', newLabel); }
-            }
-          });
-          editingId = null;
-          refreshTagUI();
-          renderPanel();
-        };
-
-        var cancelBtn = document.createElement('button');
-        cancelBtn.textContent = '取消';
-        cancelBtn.style.cssText = 'font-size:12px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text-dim);cursor:pointer;font-family:inherit;flex-shrink:0;';
-        cancelBtn.onclick = function() { editingId = null; renderPanel(); };
-
-        row.appendChild(swatch);
-        row.appendChild(input);
-        row.appendChild(confirmBtn);
-        row.appendChild(cancelBtn);
-        setTimeout(function(){ input.focus(); input.select(); }, 30);
-
-      } else {
-        // ── Normal mode ──
-        var colorDot = document.createElement('span');
-        colorDot.style.cssText = 'width:14px;height:14px;border-radius:4px;background:' + t.color + ';flex-shrink:0;display:inline-block;';
-
-        var labelEl = document.createElement('span');
-        labelEl.style.cssText = 'font-size:13px;font-weight:600;color:var(--text);flex:1;';
-        labelEl.textContent = t.label;
-
-        // Three-dot menu button
-        var menuBtn = document.createElement('button');
-        menuBtn.innerHTML = '&#8942;'; // ⋮
-        menuBtn.title = '更多操作';
-        menuBtn.style.cssText = 'background:none;border:1px solid transparent;border-radius:6px;cursor:pointer;color:var(--text-muted);font-size:16px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit;line-height:1;transition:all .13s;padding:0;';
-        menuBtn.onmouseover = function(){ this.style.background='var(--surface3)'; this.style.borderColor='var(--border)'; };
-        menuBtn.onmouseout  = function(){ this.style.background=''; this.style.borderColor='transparent'; };
-
-        // Dropdown menu
-        menuBtn.onclick = function(e) {
-          e.stopPropagation();
-          var existing = row.querySelector('.tag-row-menu');
-          // Toggle: if already open, close it
-          if (existing) { existing.remove(); return; }
-          // Close any other open menus
-          document.querySelectorAll('.tag-row-menu').forEach(function(m){ m.remove(); });
-
-          var menu = document.createElement('div');
-          menu.className = 'tag-row-menu';
-          menu.style.cssText = 'position:absolute;right:10px;top:36px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);z-index:100;min-width:90px;overflow:hidden;';
-
-          var editOpt = document.createElement('button');
-          editOpt.textContent = '编辑';
-          editOpt.style.cssText = 'display:block;width:100%;text-align:left;padding:9px 14px;background:none;border:none;font-size:13px;font-weight:500;color:var(--text);cursor:pointer;font-family:inherit;transition:background .1s;';
-          editOpt.onmouseover = function(){ this.style.background='var(--surface2)'; };
-          editOpt.onmouseout  = function(){ this.style.background=''; };
-          editOpt.onclick = function(e) {
-            e.stopPropagation();
-            menu.remove();
-            editingId = t.id;
-            renderPanel();
-          };
-
-          var delOpt = document.createElement('button');
-          delOpt.textContent = '删除';
-          delOpt.style.cssText = 'display:block;width:100%;text-align:left;padding:9px 14px;background:none;border:none;font-size:13px;font-weight:500;color:#dc2626;cursor:pointer;font-family:inherit;transition:background .1s;border-top:1px solid var(--border-lt);';
-          delOpt.onmouseover = function(){ this.style.background='#fef2f2'; };
-          delOpt.onmouseout  = function(){ this.style.background=''; };
-          delOpt.onclick = function(e) {
-            e.stopPropagation();
-            menu.remove();
-            deleteTagDef(t.id);
-          };
-
-          menu.appendChild(editOpt);
-          menu.appendChild(delOpt);
-          row.appendChild(menu);
-
-          // Close on any click outside the menu AND outside the button itself
-          function closer(e) {
-            if (menu.contains(e.target) || menuBtn.contains(e.target)) return;
-            menu.remove();
-            document.removeEventListener('click', closer, true);
-          }
-          document.addEventListener('click', closer, true);
-        };
-
-        row.appendChild(colorDot);
-        row.appendChild(labelEl);
-        row.appendChild(menuBtn);
-      }
-
-      list.appendChild(row);
-    });
-
-    sheet.appendChild(list);
-
-    // New tag form
-    var formRow = document.createElement('div');
-    formRow.style.cssText = 'display:flex;align-items:center;gap:7px;';
-
-    var newLabel = document.createElement('input');
-    newLabel.id = 'tagNewLabel';
-    newLabel.type = 'text';
-    newLabel.placeholder = '标签名（最多6字）';
-    newLabel.maxLength = 6;
-    newLabel.style.cssText = 'flex:1;font-size:13px;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;outline:none;font-family:inherit;background:var(--surface2);color:var(--text);';
-
-    var newColor = document.createElement('input');
-    newColor.id = 'tagNewColor';
-    newColor.type = 'color';
-    newColor.value = COLORS[defs.length % COLORS.length];
-    newColor.style.cssText = 'width:34px;height:34px;padding:3px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;background:none;flex-shrink:0;';
-
-    var addBtn = document.createElement('button');
-    addBtn.textContent = '+ 新建';
-    addBtn.style.cssText = 'font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:8px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;';
-    addBtn.onclick = addTagDef;
-
-    formRow.appendChild(newLabel);
-    formRow.appendChild(newColor);
-    formRow.appendChild(addBtn);
-    sheet.appendChild(formRow);
-
-    // Close button
-    var closeBtn = document.createElement('button');
-    closeBtn.className = 'mbtn mbtn-close';
-    closeBtn.style.marginTop = '14px';
-    closeBtn.textContent = '关闭';
-    closeBtn.onclick = function(){ overlay.remove(); };
-    sheet.appendChild(closeBtn);
-
-    // Replace sheet content
-    overlay.innerHTML = '';
-    overlay.appendChild(sheet);
-  }
-
-  overlay._rerender = renderPanel;
-  renderPanel();
-  document.body.appendChild(overlay);
-}
-
-function addTagDef() {
-  var label = (document.getElementById('tagNewLabel').value || '').trim();
-  var color = document.getElementById('tagNewColor').value || '#7c3aed';
-  if (!label) { document.getElementById('tagNewLabel').focus(); return; }
-  var id = 'tag_' + Date.now();
-  if (!appData.tagDefs) appData.tagDefs = [];
-  appData.tagDefs.push({ id: id, label: label, color: color });
-  saveData();
-  // Re-render tag panel if open
-  var ov = document.getElementById('tagPanelOverlay');
-  if (ov && ov._rerender) ov._rerender();
-  refreshTagUI();
-}
-
-function deleteTagDef(id) {
-  if (!appData.tagDefs) return;
-  appData.tagDefs = appData.tagDefs.filter(function(t){ return t.id !== id; });
-  // Clear this tag from any days that used it
-  Object.keys(appData.tags).forEach(function(ds){
-    if (appData.tags[ds] === id) delete appData.tags[ds];
-  });
-  saveData();
-  // Remove bar from any visible cells
-  document.querySelectorAll('.tag-bar').forEach(function(el){
-    if (el.getAttribute('data-tagid') === id) { el.parentElement.classList.remove('has-tag'); el.remove(); }
-  });
-  // Re-render tag panel if open
-  var ov = document.getElementById('tagPanelOverlay');
-  if (ov && ov._rerender) ov._rerender();
-  refreshTagUI();
-}
-
-function refreshTagUI() {
-  var wrap = document.getElementById('tagCompactWrap');
-  if (wrap) wrap.innerHTML = buildTagCompactHtml(selDate, appData.tags[selDate] || '');
-  renderTagLegend();
-}
-
-function setTag(ds, tagId) {
-  if (tagId) appData.tags[ds] = tagId;
-  else delete appData.tags[ds];
-  saveData();
-  // Update bar in cell immediately
-  var cell = document.querySelector('.day-cell[data-date="' + ds + '"]');
-  if (cell) {
-    var oldBar = cell.querySelector('.tag-bar');
-    if (oldBar) oldBar.remove();
-    cell.classList.remove('has-tag');
-    if (tagId) {
-      var tagDef = getTagDef(tagId);
-      if (tagDef) {
-        var bar = document.createElement('div');
-        bar.className = 'tag-bar';
-        bar.style.background = tagDef.color;
-        bar.setAttribute('data-label', tagDef.label);
-        bar.addEventListener('click', function(e) { e.stopPropagation(); openDetail(ds); });
-        cell.appendChild(bar);
-        cell.classList.add('has-tag');
-      }
-    }
-  }
-  // Refresh picker in-place (rebuild closes the dropdown automatically)
-  if (selDate === ds) {
-    var wrap = document.getElementById('tagCompactWrap');
-    if (wrap) wrap.innerHTML = buildTagCompactHtml(ds, tagId);
-    document.removeEventListener('click', closeTagDropdownOutside);
-  }
-}
-
-function renderTagLegend() {
-  var legend = document.getElementById('tagLegend');
-  if (!legend) return;
-  legend.innerHTML = '';
-  getTagDefs().forEach(function(t){
-    var item = document.createElement('div');
-    item.className = 'legend-item';
-    item.innerHTML = '<div class="legend-pip" style="background:' + t.color + '"></div>' + escHtml(t.label);
-    legend.appendChild(item);
-  });
-}
-
 function doSave() {
   if (!selDate) return;
   var text = document.getElementById('noteArea').value;
   if (text.trim()) appData.notes[selDate] = text;
   else delete appData.notes[selDate];
   saveData();
+  renderQuickTagButtons();
 
   if (appData.calNotes[selDate] === undefined) {
     var cell = document.querySelector('.day-cell[data-date="' + selDate + '"]');
@@ -3071,8 +3652,8 @@ function exportJSON() {
     fitness:   JSON.parse(localStorage.getItem(LS_FITNESS) || '[]'),
     notes:     appData.notes,
     calNotes:  appData.calNotes,
-    tags:      appData.tags,
-    tagDefs:   appData.tagDefs,
+    spanEvents: appData.spanEvents,
+    pinnedTags: appData.pinnedTags,
     todos:     appData.todos,
   };
   var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -3124,8 +3705,8 @@ function importJSON(evt) {
       if (data.fitness)  localStorage.setItem(LS_FITNESS, JSON.stringify(data.fitness));
       if (data.notes)    appData.notes    = data.notes;
       if (data.calNotes) appData.calNotes = data.calNotes;
-      if (data.tags)     appData.tags     = data.tags;
-      if (data.tagDefs)  appData.tagDefs  = data.tagDefs;
+      if (data.spanEvents) appData.spanEvents = data.spanEvents;
+      if (data.pinnedTags) appData.pinnedTags = data.pinnedTags;
       if (data.todos)    appData.todos    = data.todos;
       saveData();
       render();
@@ -3148,11 +3729,6 @@ function openDrawer() {
   document.getElementById('expenseThresholdInput').value = appData.expenseThreshold || '';
   document.getElementById('expenseColorInput').value = appData.expenseColor || '#d97706';
   document.getElementById('fitnessColorInput').value = appData.fitnessColor || '#059669';
-  var sub = document.getElementById('tagDrawerSub');
-  if (sub) {
-    var n = getTagDefs().length;
-    sub.textContent = n ? '当前共 ' + n + ' 个标签' : '管理日期标签的种类和颜色';
-  }
 }
 function closeDrawer() {
   document.getElementById('settingsDrawer').classList.remove('open');
@@ -3452,7 +4028,6 @@ function updateGistBtnLabel() {
 loadData();
 updateGistBtnLabel();
 render();
-renderTagLegend();
 updateFabBadge();
 renderTodosOnGrid();
 refreshSidebarTodoList();
