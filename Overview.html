@@ -1583,6 +1583,20 @@
     .chip-fitness-icon,
     .chip-fitness-label { display: none; }
 
+    /* 跨度事件短期模式：桌面端用的是 12px/22px 这一套，是按 22px 的
+       day-num 对齐的；手机上 day-num 缩小成 17px、格子内边距也只有
+       4px，必须跟着缩小，否则色块会盖过头、把下面的内容顶出去，
+       数字圆圈上沿也会露出一小截（看起来像个多余的小圆点）。 */
+    .span-cover-bar {
+      top: 4px; left: 4px; right: 4px;
+      height: 17px;
+      border-radius: 5px;
+    }
+    /* 手机上没有真正的 hover，触摸后 tooltip 容易"卡住"一直显示、
+       还会被极窄的格子挤到溢出，所以手机端直接不显示，点进当天
+       详情本来就能看到完整标题 */
+    .span-cover-bar::after { display: none; }
+
     .cell-note { font-size: 8px; line-height: 1.4; height: 14px; min-height: 14px; padding: 1px 3px; }
     .cell-note:focus { height: auto; min-height: 26px; }
 
@@ -2533,7 +2547,7 @@ function showSpanEventModal(id) {
   var newCatLabel = document.createElement('input');
   newCatLabel.type = 'text';
   newCatLabel.className = 'input-box';
-  newCatLabel.placeholder = '类别名称，例如"追剧""看展"';
+  newCatLabel.placeholder = '';
   newCatLabel.maxLength = 6;
   newCatLabel.style.flex = '1';
   var newCatColor = document.createElement('input');
@@ -2569,7 +2583,7 @@ function showSpanEventModal(id) {
   var titleInput = document.createElement('input');
   titleInput.type = 'text';
   titleInput.className = 'input-box';
-  titleInput.placeholder = '标题，例如《双人成行》';
+  titleInput.placeholder = '';
   if (editing) titleInput.value = editing.title;
   field('标题', titleInput);
 
@@ -2610,7 +2624,7 @@ function showSpanEventModal(id) {
   ongoingCheck.type = 'checkbox';
   ongoingCheck.checked = editing ? !editing.end : true;
   ongoingRow.appendChild(ongoingCheck);
-  ongoingRow.appendChild(document.createTextNode('还在进行中，先不填结束日期'));
+  ongoingRow.appendChild(document.createTextNode('还在进行中'));
   sheet.appendChild(ongoingRow);
 
   var endInput = document.createElement('input');
@@ -2626,7 +2640,7 @@ function showSpanEventModal(id) {
   var noteInput = document.createElement('textarea');
   noteInput.className = 'input-box';
   noteInput.style.cssText = 'width:100%;min-height:60px;resize:vertical;';
-  noteInput.placeholder = '备注（可选）';
+  noteInput.placeholder = '';
   if (editing && editing.note) noteInput.value = editing.note;
   field('备注', noteInput);
 
