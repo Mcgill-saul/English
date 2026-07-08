@@ -1568,6 +1568,13 @@
 
     .chip { font-size: 7.5px; padding: 1px 4px; gap: 2px; }
 
+    /* 支出圆点：桌面端 16px 的圆点槽是按 22px 的 day-num 配的比例，
+       手机上 day-num 只有 17px，圆点槽还留着桌面那个尺寸，看起来
+       会比其他行都高一截，几乎占掉两行的空间，这里按比例缩小。 */
+    .cell-body-row { gap: 3px; }
+    .expense-dot-slot { width: 12px; height: 12px; margin-top: 1px; }
+    .expense-dot { width: 7px; height: 7px; }
+
     /* Fitness collapses into a plain full-width color bar on mobile —
        icon/label are fully hidden (not just font-size:0, since they
        have their own explicit sizing that doesn't inherit). */
@@ -1653,8 +1660,6 @@
       border-radius: 2px;
       border: none;
     }
-    .expense-dot-slot { width: 12px; height: 12px; }
-    .expense-dot { width: 7px; height: 7px; }
     .span-band { height: 3px; }
   }
 </style>
