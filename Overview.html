@@ -453,21 +453,21 @@
     height: 4px;
   }
 
-  /* ── 支出：数字正下方的强度圆点，和运动chip/笔记预览同一行 */
-  .cell-body-row {
+  /* ── 日期数字所在行，支出强度圆点紧跟在数字后面 ─────────── */
+  .day-num-row {
     display: flex;
-    align-items: flex-start;
-    gap: 5px;
-    flex: 1;
-    min-height: 0;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+    z-index: 2; /* 盖过 span-cover-bar（z-index:1），圆点不会被色块吃掉 */
+    flex-shrink: 0;
   }
   .expense-dot-slot {
-    width: 16px; height: 16px; flex-shrink: 0;
-    margin-top: 1px;
+    width: 14px; height: 14px; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
   }
   .expense-dot {
-    width: 9px; height: 9px;
+    width: 8px; height: 8px;
     border-radius: 50%;
   }
   .cell-content-col {
@@ -1571,9 +1571,9 @@
     /* 支出圆点：桌面端 16px 的圆点槽是按 22px 的 day-num 配的比例，
        手机上 day-num 只有 17px，圆点槽还留着桌面那个尺寸，看起来
        会比其他行都高一截，几乎占掉两行的空间，这里按比例缩小。 */
-    .cell-body-row { gap: 3px; }
-    .expense-dot-slot { width: 12px; height: 12px; margin-top: 1px; }
-    .expense-dot { width: 7px; height: 7px; }
+    .day-num-row { gap: 4px; }
+    .expense-dot-slot { width: 11px; height: 11px; }
+    .expense-dot { width: 6px; height: 6px; }
 
     /* Fitness collapses into a plain full-width color bar on mobile —
        icon/label are fully hidden (not just font-size:0, since they
@@ -3495,10 +3495,29 @@ function render() {
     cell.className = cls;
     cell.dataset.date = ds;
 
+    var numRow = document.createElement('div');
+    numRow.className = 'day-num-row';
+
     var num = document.createElement('div');
     num.className = 'day-num';
     num.textContent = d;
-    cell.appendChild(num);
+    numRow.appendChild(num);
+
+    if (pocket[ds]) {
+      var threshold = appData.expenseThreshold || 300;
+      var ratio = Math.min(1, pocket[ds] / threshold);
+      var dotSlot = document.createElement('div');
+      dotSlot.className = 'expense-dot-slot';
+      var expDot = document.createElement('div');
+      expDot.className = 'expense-dot';
+      expDot.style.background = appData.expenseColor || '#d97706';
+      expDot.style.opacity = (0.35 + ratio * 0.65).toFixed(2);
+      expDot.title = '支出 ' + fmtMoney(pocket[ds]);
+      dotSlot.appendChild(expDot);
+      numRow.appendChild(dotSlot);
+    }
+
+    cell.appendChild(numRow);
 
     // 跨度事件 · 短期模式：盖住日期数字（同一天多个的话只取第一个）
     var dayEvents  = getSpanEventsForDate(ds);
@@ -3524,23 +3543,6 @@ function render() {
       band.title = ev.title;
       cell.appendChild(band);
     });
-
-    var bodyRow = document.createElement('div');
-    bodyRow.className = 'cell-body-row';
-
-    if (pocket[ds]) {
-      var threshold = appData.expenseThreshold || 300;
-      var ratio = Math.min(1, pocket[ds] / threshold);
-      var dotSlot = document.createElement('div');
-      dotSlot.className = 'expense-dot-slot';
-      var expDot = document.createElement('div');
-      expDot.className = 'expense-dot';
-      expDot.style.background = appData.expenseColor || '#d97706';
-      expDot.style.opacity = (0.35 + ratio * 0.65).toFixed(2);
-      expDot.title = '支出 ' + fmtMoney(pocket[ds]);
-      dotSlot.appendChild(expDot);
-      bodyRow.appendChild(dotSlot);
-    }
 
     var contentCol = document.createElement('div');
     contentCol.className = 'cell-content-col';
@@ -3599,8 +3601,7 @@ function render() {
     noteWrap.appendChild(dots);
     contentCol.appendChild(noteWrap);
 
-    bodyRow.appendChild(contentCol);
-    cell.appendChild(bodyRow);
+    cell.appendChild(contentCol);
 
     cell.addEventListener('click', (function(dateStr) {
       return function() { openDetail(dateStr); };
