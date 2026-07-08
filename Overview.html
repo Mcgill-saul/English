@@ -1129,16 +1129,6 @@
   }
   .timeline-bar.ongoing { background-image: linear-gradient(to right, currentColor 85%, transparent); }
 
-  .timeline-notes-track {
-    position: relative; height: 30px; background: var(--surface);
-    border: 1px solid var(--border-lt); border-radius: var(--radius-xs);
-  }
-  .timeline-dot {
-    position: absolute; top: 8px; width: 13px; height: 13px; border-radius: 50%;
-    cursor: pointer; border: 2px solid var(--surface); box-shadow: var(--shadow-xs);
-    transform: translateX(-50%);
-  }
-
   /* ── Modal overlay (Gist panel) ──────────────────────── */
   .modal-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -2400,24 +2390,6 @@ function renderTimeline() {
     }
     html += '</div>';
   });
-
-  var idxAll = buildContentIndex().filter(function (it) { return it.type !== 'span'; });
-  var notesInRange = idxAll.filter(function (it) { return itemOverlapsRange(it, bounds); });
-  html += '<div class="timeline-row-group">';
-  html += '<div class="timeline-row-label">📝 笔记 / 身体记录</div>';
-  if (!notesInRange.length) {
-    html += '<div class="timeline-notes-track"></div>';
-  } else {
-    html += '<div class="timeline-notes-track">';
-    notesInRange.forEach(function (it) {
-      var left = dateRatio(it.date, s, e) * 100;
-      var color = it.type === 'note' ? '#7c3aed' : '#059669';
-      var snippet = it.text.split(/\n/)[0].trim();
-      html += '<div class="timeline-dot" style="left:' + left + '%;background:' + color + ';" onclick="jumpToContentDate(\'' + it.date + '\')" title="' + it.date + ' · ' + escHtml(snippet) + '"></div>';
-    });
-    html += '</div>';
-  }
-  html += '</div>';
 
   bodyEl.innerHTML = html;
 }
