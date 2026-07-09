@@ -987,6 +987,10 @@
     cursor: pointer; transition: all .13s; font-family: 'Inter', sans-serif;
   }
   .date-range-chip.active { background: var(--blue-bg); border-color: var(--blue-bd); color: var(--blue); }
+  .timeline-month-select {
+    -webkit-appearance: none; appearance: none;
+    outline: none;
+  }
   .date-range-custom { display: flex; gap: 5px; align-items: center; margin-top: 7px; }
   .date-range-custom input[type=date] {
     font-size: 11.5px; padding: 5px 6px; border: 1.5px solid var(--border);
@@ -1143,6 +1147,7 @@
   }
   .timeline-bar-label {
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;
+    text-align: center;
   }
   .timeline-bar.ongoing { background-image: linear-gradient(to right, currentColor 85%, transparent); }
 
@@ -2363,13 +2368,14 @@ function jumpToContentDate(ds) {
 }
 
 // ── 全屏时间线视图 ────────────────────────────────────────
-var timelineState = { range: 'year', year: new Date().getFullYear(), start: null, end: null };
+var timelineState = { range: 'year', year: new Date().getFullYear(), month: null, start: null, end: null };
 
 function getTimelineBounds() {
   var now = new Date();
-  if (timelineState.range === 'month') {
-    var y = now.getFullYear(), m = now.getMonth();
-    return { start: fmtDate(new Date(y, m, 1)), end: fmtDate(new Date(y, m + 1, 0)) };
+  if (timelineState.range === 'specific-month' && timelineState.month) {
+    var parts = timelineState.month.split('-');
+    var yy = parseInt(parts[0], 10), mm = parseInt(parts[1], 10) - 1;
+    return { start: fmtDate(new Date(yy, mm, 1)), end: fmtDate(new Date(yy, mm + 1, 0)) };
   }
   if (timelineState.range === 'year') {
     var y2 = timelineState.year || now.getFullYear();
@@ -2395,35 +2401,88 @@ function getYearsWithSpanEvents() {
   return Object.keys(years).map(Number).sort(function (a, b) { return b - a; });
 }
 
+function getMonthsWithSpanEvents() {
+  var months = {};
+  var today = fmtDate(new Date());
+  (appData.spanEvents || []).forEach(function (ev) {
+    var startD = new Date(ev.start);
+    var endD = new Date(ev.end || today);
+    var cur = new Date(startD.getFullYear(), startD.getMonth(), 1);
+    var guard = 0;
+    while (cur <= endD && guard < 600) {
+      var key = cur.getFullYear() + '-' + String(cur.getMonth() + 1).padStart(2, '0');
+      months[key] = true;
+      cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+      guard++;
+    }
+  });
+  var now = new Date();
+  var curKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  months[curKey] = true;
+  return Object.keys(months).sort(function (a, b) { return b < a ? -1 : (b > a ? 1 : 0); }); // 降序，最近的月份排前面
+}
+
 function renderTimelineDateChips() {
   var wrap = document.getElementById('timelineDateChips');
   if (!wrap) return;
   var curYearNow = new Date().getFullYear();
-  var otherYears = getYearsWithSpanEvents().filter(function (y) { return y !== curYearNow; });
+  var years = getYearsWithSpanEvents();
+  if (years.indexOf(curYearNow) === -1) years.push(curYearNow);
+  years.sort(function (a, b) { return b - a; }); // 降序，最近的年份排前面
+  var monthKeys = getMonthsWithSpanEvents();
 
-  var html = '<button class="date-range-chip" data-range="month" onclick="setTimelineRange(\'month\')">本月</button>';
-  html += '<button class="date-range-chip" data-range="year" data-year="' + curYearNow + '" onclick="setTimelineRange(\'year\',' + curYearNow + ')">今年</button>';
-  otherYears.forEach(function (y) {
-    html += '<button class="date-range-chip" data-range="year" data-year="' + y + '" onclick="setTimelineRange(\'year\',' + y + ')">' + y + '</button>';
+  var html = '<select class="date-range-chip timeline-month-select" id="timelineMonthSelect" onchange="setTimelineMonth(this.value)">';
+  html += '<option value="">按月查看…</option>';
+  monthKeys.forEach(function (k) {
+    var parts = k.split('-');
+    var label = parts[0] + '年' + parseInt(parts[1], 10) + '月';
+    var selected = (timelineState.range === 'specific-month' && timelineState.month === k) ? ' selected' : '';
+    html += '<option value="' + k + '"' + selected + '>' + label + '</option>';
   });
+  html += '</select>';
+
+  html += '<select class="date-range-chip timeline-year-select" id="timelineYearSelect" onchange="setTimelineRange(\'year\', parseInt(this.value,10))">';
+  years.forEach(function (y) {
+    var label = y === curYearNow ? '今年' : (y + '年');
+    var selected = (timelineState.range === 'year' && timelineState.year === y) ? ' selected' : '';
+    html += '<option value="' + y + '"' + selected + '>' + label + '</option>';
+  });
+  html += '</select>';
+
   html += '<button class="date-range-chip" data-range="all" onclick="setTimelineRange(\'all\')">全部</button>';
   wrap.innerHTML = html;
   updateTimelineChipActive();
 }
 
 function updateTimelineChipActive() {
-  document.querySelectorAll('#timelineDateChips .date-range-chip').forEach(function (b) {
-    var chipRange = b.dataset.range;
-    var chipYear = b.dataset.year ? parseInt(b.dataset.year, 10) : null;
-    var active = chipRange === timelineState.range &&
-      (chipRange !== 'year' || chipYear === timelineState.year);
+  document.querySelectorAll('#timelineDateChips .date-range-chip[data-range]').forEach(function (b) {
+    var active = b.dataset.range === timelineState.range;
     b.classList.toggle('active', active);
   });
+  var yearSel = document.getElementById('timelineYearSelect');
+  if (yearSel) {
+    yearSel.classList.toggle('active', timelineState.range === 'year');
+    if (timelineState.range === 'year' && timelineState.year != null) yearSel.value = String(timelineState.year);
+  }
+  var sel = document.getElementById('timelineMonthSelect');
+  if (sel) {
+    sel.classList.toggle('active', timelineState.range === 'specific-month');
+    if (timelineState.range !== 'specific-month') sel.value = '';
+  }
+}
+
+function setTimelineMonth(key) {
+  if (!key) return;
+  timelineState.range = 'specific-month';
+  timelineState.month = key;
+  updateTimelineChipActive();
+  renderTimeline();
 }
 
 function setTimelineRange(range, year) {
   timelineState.range = range;
   timelineState.year = range === 'year' ? (year || new Date().getFullYear()) : null;
+  timelineState.month = null;
   timelineState.start = null;
   timelineState.end = null;
   updateTimelineChipActive();
@@ -2462,6 +2521,37 @@ function buildTimelineAxisHtml(s, e) {
   return html;
 }
 
+function packEventsIntoRows(catEvents) {
+  var today = fmtDate(new Date());
+  var sorted = catEvents.slice().sort(function (a, b) {
+    return a.start < b.start ? -1 : (a.start > b.start ? 1 : 0);
+  });
+  var rows = []; // { lastEnd, lastSingleDay }
+  var rowOf = {}; // ev.id -> row index
+
+  sorted.forEach(function (ev) {
+    var evEnd = ev.end || today;
+    var isSingleDay = ev.start === evEnd;
+    var placedRow = -1;
+    for (var r = 0; r < rows.length; r++) {
+      var row = rows[r];
+      var noOverlap = ev.start > row.lastEnd;
+      var touchesBoundary = ev.start === row.lastEnd && !(isSingleDay && row.lastSingleDay);
+      if (noOverlap || touchesBoundary) { placedRow = r; break; }
+    }
+    if (placedRow === -1) {
+      rows.push({ lastEnd: evEnd, lastSingleDay: isSingleDay });
+      placedRow = rows.length - 1;
+    } else {
+      rows[placedRow].lastEnd = evEnd;
+      rows[placedRow].lastSingleDay = isSingleDay;
+    }
+    rowOf[ev.id] = placedRow;
+  });
+
+  return { rowOf: rowOf, rowCount: rows.length };
+}
+
 function renderTimeline() {
   var bodyEl = document.getElementById('timelineBody');
   if (!bodyEl) return;
@@ -2481,15 +2571,17 @@ function renderTimeline() {
     if (!catEvents.length) {
       html += '<div class="timeline-track"><div class="timeline-track-empty">这段时间没有记录</div></div>';
     } else {
-      html += '<div class="timeline-track" style="height:' + (catEvents.length * 32 + 8) + 'px;">';
-      catEvents.forEach(function (ev, i) {
+      var packed = packEventsIntoRows(catEvents);
+      html += '<div class="timeline-track" style="height:' + (packed.rowCount * 32 + 8) + 'px;">';
+      catEvents.forEach(function (ev) {
+        var rowIdx = packed.rowOf[ev.id];
         var left = dateRatio(ev.start, s, e) * 100;
         var rightR = dateRatio(ev.end || fmtDate(new Date()), s, e) * 100;
         var width = Math.max(rightR - left, 1.5);
         var ongoing = !ev.end;
         var rangeText = ev.start + ' ~ ' + (ev.end || '进行中');
         var tooltipText = ev.title + '\n' + rangeText;
-        html += '<div class="timeline-bar' + (ongoing ? ' ongoing' : '') + '" style="left:' + left + '%;width:' + width + '%;top:' + (8 + i * 32) + 'px;background:' + meta.color + ';" onclick="showSpanEventModal(\'' + ev.id + '\')" title="' + escHtml(tooltipText) + '"><span class="timeline-bar-label">' + escHtml(ev.title) + '</span></div>';
+        html += '<div class="timeline-bar' + (ongoing ? ' ongoing' : '') + '" style="left:' + left + '%;width:' + width + '%;top:' + (8 + rowIdx * 32) + 'px;background:' + meta.color + ';" onclick="showSpanEventModal(\'' + ev.id + '\')" title="' + escHtml(tooltipText) + '"><span class="timeline-bar-label">' + escHtml(ev.title) + '</span></div>';
       });
       html += '</div>';
     }
