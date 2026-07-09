@@ -1137,10 +1137,12 @@
   }
   .timeline-bar {
     position: absolute; height: 24px; top: 8px; border-radius: 6px;
-    display: flex; align-items: center; padding: 0 8px; gap: 5px;
+    display: flex; align-items: center; justify-content: center; padding: 0 8px;
     font-size: 11.5px; font-weight: 600; color: #fff; cursor: pointer;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     min-width: 18px; box-shadow: var(--shadow-xs);
+  }
+  .timeline-bar-label {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;
   }
   .timeline-bar.ongoing { background-image: linear-gradient(to right, currentColor 85%, transparent); }
 
@@ -1535,7 +1537,7 @@
     .cal-header { margin-bottom: 12px; }
     .month-nav { gap: 4px; }
     .nav-btn { width: 28px; height: 28px; font-size: 14px; flex-shrink: 0; }
-    .month-label { font-size: 14px; width: 50px; min-width: 0; flex-shrink: 0; padding: 0 2px; }
+    .month-label { font-size: 14px; width: 58px; min-width: 0; flex-shrink: 0; padding: 0 2px; }
     .cal-nav-spacer { width: 4px; }
     .cal-picker-btn { width: 28px; height: 28px; font-size: 13px; flex-shrink: 0; }
     .today-btn { height: 28px; padding: 0 10px; font-size: 10px; }
@@ -1648,7 +1650,7 @@
   @media (max-width: 380px) {
     .day-cell { min-height: 58px; }
     .topbar-link span:last-child { display: none; }
-    .month-label { font-size: 13px; width: 44px; min-width: 0; flex-shrink: 0; }
+    .month-label { font-size: 13px; width: 50px; min-width: 0; flex-shrink: 0; }
     .cal-nav-spacer { width: 2px; }
     .cal-month-stats { display: none; }
     .chip { display: none; }
@@ -1863,11 +1865,7 @@
       </svg>
     </button>
     <div class="timeline-title">时间线</div>
-    <div class="date-range-row" id="timelineDateChips" style="margin-left:10px;">
-      <button class="date-range-chip" data-range="month" onclick="setTimelineRange('month')">本月</button>
-      <button class="date-range-chip active" data-range="year" onclick="setTimelineRange('year')">今年</button>
-      <button class="date-range-chip" data-range="all" onclick="setTimelineRange('all')">全部</button>
-    </div>
+    <div class="date-range-row" id="timelineDateChips" style="margin-left:10px;"></div>
     <button class="timeline-add-btn" onclick="showSpanEventModal()">+ 添加事件</button>
   </div>
   <div class="timeline-body" id="timelineBody"></div>
@@ -2365,7 +2363,7 @@ function jumpToContentDate(ds) {
 }
 
 // ── 全屏时间线视图 ────────────────────────────────────────
-var timelineState = { range: 'year', start: null, end: null };
+var timelineState = { range: 'year', year: new Date().getFullYear(), start: null, end: null };
 
 function getTimelineBounds() {
   var now = new Date();
@@ -2374,7 +2372,7 @@ function getTimelineBounds() {
     return { start: fmtDate(new Date(y, m, 1)), end: fmtDate(new Date(y, m + 1, 0)) };
   }
   if (timelineState.range === 'year') {
-    var y2 = now.getFullYear();
+    var y2 = timelineState.year || now.getFullYear();
     return { start: y2 + '-01-01', end: y2 + '-12-31' };
   }
   if (timelineState.range === 'custom' && timelineState.start && timelineState.end) {
@@ -2386,18 +2384,55 @@ function getTimelineBounds() {
   return { start: minDate, end: fmtDate(now) };
 }
 
-function setTimelineRange(range) {
+function getYearsWithSpanEvents() {
+  var years = {};
+  var today = fmtDate(new Date());
+  (appData.spanEvents || []).forEach(function (ev) {
+    var startY = parseInt(ev.start.slice(0, 4), 10);
+    var endY = parseInt((ev.end || today).slice(0, 4), 10);
+    for (var y = startY; y <= endY; y++) years[y] = true;
+  });
+  return Object.keys(years).map(Number).sort(function (a, b) { return b - a; });
+}
+
+function renderTimelineDateChips() {
+  var wrap = document.getElementById('timelineDateChips');
+  if (!wrap) return;
+  var curYearNow = new Date().getFullYear();
+  var otherYears = getYearsWithSpanEvents().filter(function (y) { return y !== curYearNow; });
+
+  var html = '<button class="date-range-chip" data-range="month" onclick="setTimelineRange(\'month\')">本月</button>';
+  html += '<button class="date-range-chip" data-range="year" data-year="' + curYearNow + '" onclick="setTimelineRange(\'year\',' + curYearNow + ')">今年</button>';
+  otherYears.forEach(function (y) {
+    html += '<button class="date-range-chip" data-range="year" data-year="' + y + '" onclick="setTimelineRange(\'year\',' + y + ')">' + y + '</button>';
+  });
+  html += '<button class="date-range-chip" data-range="all" onclick="setTimelineRange(\'all\')">全部</button>';
+  wrap.innerHTML = html;
+  updateTimelineChipActive();
+}
+
+function updateTimelineChipActive() {
+  document.querySelectorAll('#timelineDateChips .date-range-chip').forEach(function (b) {
+    var chipRange = b.dataset.range;
+    var chipYear = b.dataset.year ? parseInt(b.dataset.year, 10) : null;
+    var active = chipRange === timelineState.range &&
+      (chipRange !== 'year' || chipYear === timelineState.year);
+    b.classList.toggle('active', active);
+  });
+}
+
+function setTimelineRange(range, year) {
   timelineState.range = range;
+  timelineState.year = range === 'year' ? (year || new Date().getFullYear()) : null;
   timelineState.start = null;
   timelineState.end = null;
-  document.querySelectorAll('#timelineDateChips .date-range-chip').forEach(function (b) {
-    b.classList.toggle('active', b.dataset.range === range);
-  });
+  updateTimelineChipActive();
   renderTimeline();
 }
 
 function openTimelineView() {
   document.getElementById('timelineView').classList.add('open');
+  renderTimelineDateChips();
   renderTimeline();
 }
 function closeTimelineView() {
@@ -2452,7 +2487,9 @@ function renderTimeline() {
         var rightR = dateRatio(ev.end || fmtDate(new Date()), s, e) * 100;
         var width = Math.max(rightR - left, 1.5);
         var ongoing = !ev.end;
-        html += '<div class="timeline-bar' + (ongoing ? ' ongoing' : '') + '" style="left:' + left + '%;width:' + width + '%;top:' + (8 + i * 32) + 'px;background:' + meta.color + ';" onclick="showSpanEventModal(\'' + ev.id + '\')" title="' + escHtml(ev.title) + '">' + escHtml(ev.title) + '</div>';
+        var rangeText = ev.start + ' ~ ' + (ev.end || '进行中');
+        var tooltipText = ev.title + '\n' + rangeText;
+        html += '<div class="timeline-bar' + (ongoing ? ' ongoing' : '') + '" style="left:' + left + '%;width:' + width + '%;top:' + (8 + i * 32) + 'px;background:' + meta.color + ';" onclick="showSpanEventModal(\'' + ev.id + '\')" title="' + escHtml(tooltipText) + '"><span class="timeline-bar-label">' + escHtml(ev.title) + '</span></div>';
       });
       html += '</div>';
     }
@@ -2661,6 +2698,7 @@ function showSpanEventModal(id) {
     delBtn.onclick = function () {
       deleteSpanEvent(editing.id);
       overlay.remove();
+      renderTimelineDateChips();
       renderTimeline();
       render();
     };
@@ -2692,6 +2730,7 @@ function showSpanEventModal(id) {
     };
     addOrUpdateSpanEvent(ev);
     overlay.remove();
+    renderTimelineDateChips();
     renderTimeline();
     render();
     if (typeof selDate !== 'undefined' && selDate) renderFitnessBodyLine(selDate);
