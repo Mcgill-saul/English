@@ -987,10 +987,6 @@
     cursor: pointer; transition: all .13s; font-family: 'Inter', sans-serif;
   }
   .date-range-chip.active { background: var(--blue-bg); border-color: var(--blue-bd); color: var(--blue); }
-  .timeline-month-select {
-    -webkit-appearance: none; appearance: none;
-    outline: none;
-  }
   .date-range-custom { display: flex; gap: 5px; align-items: center; margin-top: 7px; }
   .date-range-custom input[type=date] {
     font-size: 11.5px; padding: 5px 6px; border: 1.5px solid var(--border);
@@ -1280,6 +1276,7 @@
     text-align: center;
     transition: all .12s;
     font-family: inherit;
+    position: relative;
   }
   .picker-item:hover { background: var(--surface3); border-color: var(--border); color: var(--text); }
   .picker-item.current {
@@ -1287,6 +1284,30 @@
     color: var(--blue);
     font-weight: 700;
     background: var(--blue-bg);
+  }
+  .picker-item.has-data::after {
+    content: '';
+    position: absolute;
+    bottom: 3px; left: 50%;
+    transform: translateX(-50%);
+    width: 3px; height: 3px;
+    border-radius: 50%;
+    background: var(--blue);
+  }
+  .picker-item.has-data.current::after { background: var(--blue); }
+
+  .picker-back-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; margin-bottom: 9px;
+  }
+  .picker-back-row .picker-back { padding: 0; }
+  .picker-year-all { flex-shrink: 0; padding: 5px 12px; }
+
+  /* ── 时间线页面的年/月选择入口 ─────────────────────────── */
+  .timeline-picker-wrap { position: relative; display: inline-flex; }
+  .timeline-picker-label {
+    font-size: 12.5px; font-weight: 600; color: var(--text-dim);
+    white-space: nowrap;
   }
 
   /* ── Quick-capture FAB ───────────────────────────────── */
@@ -1870,7 +1891,17 @@
       </svg>
     </button>
     <div class="timeline-title">时间线</div>
-    <div class="date-range-row" id="timelineDateChips" style="margin-left:10px;"></div>
+    <div class="date-range-row" id="timelineDateChips" style="margin-left:10px;">
+      <div class="timeline-picker-wrap">
+        <button class="cal-picker-btn" id="timelinePickerBtn" onclick="toggleTimelinePicker()" title="选择年/月">📅</button>
+        <div class="cal-picker" id="timelinePicker">
+          <div class="picker-year-grid" id="timelinePickerYearGrid"></div>
+          <div class="picker-month-grid" id="timelinePickerMonthGrid" style="display:none"></div>
+        </div>
+      </div>
+      <span class="timeline-picker-label" id="timelinePickerLabel"></span>
+      <button class="date-range-chip" data-range="all" onclick="setTimelineRange('all')">全部</button>
+    </div>
     <button class="timeline-add-btn" onclick="showSpanEventModal()">+ 添加事件</button>
   </div>
   <div class="timeline-body" id="timelineBody"></div>
@@ -2423,53 +2454,114 @@ function getMonthsWithSpanEvents() {
 }
 
 function renderTimelineDateChips() {
-  var wrap = document.getElementById('timelineDateChips');
-  if (!wrap) return;
-  var curYearNow = new Date().getFullYear();
-  var years = getYearsWithSpanEvents();
-  if (years.indexOf(curYearNow) === -1) years.push(curYearNow);
-  years.sort(function (a, b) { return b - a; }); // 降序，最近的年份排前面
-  var monthKeys = getMonthsWithSpanEvents();
-
-  var html = '<select class="date-range-chip timeline-month-select" id="timelineMonthSelect" onchange="setTimelineMonth(this.value)">';
-  html += '<option value="">按月查看…</option>';
-  monthKeys.forEach(function (k) {
-    var parts = k.split('-');
-    var label = parts[0] + '年' + parseInt(parts[1], 10) + '月';
-    var selected = (timelineState.range === 'specific-month' && timelineState.month === k) ? ' selected' : '';
-    html += '<option value="' + k + '"' + selected + '>' + label + '</option>';
-  });
-  html += '</select>';
-
-  html += '<select class="date-range-chip timeline-year-select" id="timelineYearSelect" onchange="setTimelineRange(\'year\', parseInt(this.value,10))">';
-  years.forEach(function (y) {
-    var label = y === curYearNow ? '今年' : (y + '年');
-    var selected = (timelineState.range === 'year' && timelineState.year === y) ? ' selected' : '';
-    html += '<option value="' + y + '"' + selected + '>' + label + '</option>';
-  });
-  html += '</select>';
-
-  html += '<button class="date-range-chip" data-range="all" onclick="setTimelineRange(\'all\')">全部</button>';
-  wrap.innerHTML = html;
   updateTimelineChipActive();
 }
 
 function updateTimelineChipActive() {
   document.querySelectorAll('#timelineDateChips .date-range-chip[data-range]').forEach(function (b) {
-    var active = b.dataset.range === timelineState.range;
-    b.classList.toggle('active', active);
+    b.classList.toggle('active', b.dataset.range === timelineState.range);
   });
-  var yearSel = document.getElementById('timelineYearSelect');
-  if (yearSel) {
-    yearSel.classList.toggle('active', timelineState.range === 'year');
-    if (timelineState.range === 'year' && timelineState.year != null) yearSel.value = String(timelineState.year);
-  }
-  var sel = document.getElementById('timelineMonthSelect');
-  if (sel) {
-    sel.classList.toggle('active', timelineState.range === 'specific-month');
-    if (timelineState.range !== 'specific-month') sel.value = '';
+  var label = document.getElementById('timelinePickerLabel');
+  if (!label) return;
+  var curYearNow = new Date().getFullYear();
+  if (timelineState.range === 'year') {
+    label.textContent = timelineState.year === curYearNow ? '今年' : (timelineState.year + '年');
+  } else if (timelineState.range === 'specific-month') {
+    var parts = timelineState.month.split('-');
+    label.textContent = parts[0] + '年' + parseInt(parts[1], 10) + '月';
+  } else {
+    label.textContent = '';
   }
 }
+
+// ── 时间线年/月选择器（复用主日历“📅 跳转到指定年月”的宫格交互）──
+var timelinePickerOpen = false;
+
+function toggleTimelinePicker() {
+  timelinePickerOpen ? closeTimelinePicker() : openTimelinePicker();
+}
+function openTimelinePicker() {
+  timelinePickerOpen = true;
+  document.getElementById('timelinePicker').classList.add('open');
+  document.getElementById('timelinePickerBtn').classList.add('open');
+  showTimelinePickerYearGrid();
+}
+function closeTimelinePicker() {
+  timelinePickerOpen = false;
+  var picker = document.getElementById('timelinePicker');
+  var btn = document.getElementById('timelinePickerBtn');
+  if (picker) picker.classList.remove('open');
+  if (btn) btn.classList.remove('open');
+}
+
+function showTimelinePickerYearGrid() {
+  var yearGrid  = document.getElementById('timelinePickerYearGrid');
+  var monthGrid = document.getElementById('timelinePickerMonthGrid');
+  monthGrid.style.display = 'none';
+  yearGrid.style.display  = 'grid';
+
+  var curYearNow = new Date().getFullYear();
+  var years = getYearsWithSpanEvents();
+  if (years.indexOf(curYearNow) === -1) years.push(curYearNow);
+  years.sort(function (a, b) { return a - b; });
+
+  yearGrid.innerHTML = '<div class="picker-label" style="grid-column:1/-1">年份</div>';
+  years.forEach(function (y) {
+    var btn = document.createElement('button');
+    btn.className = 'picker-item' + (timelineState.range === 'year' && timelineState.year === y ? ' current' : '');
+    btn.textContent = y === curYearNow ? '今年' : y;
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      showTimelinePickerMonthGrid(y);
+    });
+    yearGrid.appendChild(btn);
+  });
+}
+
+function showTimelinePickerMonthGrid(yr) {
+  var yearGrid  = document.getElementById('timelinePickerYearGrid');
+  var monthGrid = document.getElementById('timelinePickerMonthGrid');
+  yearGrid.style.display  = 'none';
+  monthGrid.style.display = 'grid';
+
+  var monthsWithData = {};
+  getMonthsWithSpanEvents().forEach(function (k) { monthsWithData[k] = true; });
+
+  var yearActive = timelineState.range === 'year' && timelineState.year === yr;
+  var html = '<div class="picker-back-row" style="grid-column:1/-1">' +
+    '<button class="picker-back" onclick="event.stopPropagation();showTimelinePickerYearGrid()">← ' + yr + '</button>' +
+    '<button class="picker-item picker-year-all' + (yearActive ? ' current' : '') +
+      '" onclick="event.stopPropagation();pickTimelineYear(' + yr + ')">整年</button>' +
+    '</div>';
+
+  var MONTHS_CN = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  MONTHS_CN.forEach(function (m, i) {
+    var key = yr + '-' + String(i + 1).padStart(2, '0');
+    var hasData  = !!monthsWithData[key];
+    var isActive = timelineState.range === 'specific-month' && timelineState.month === key;
+    html += '<button class="picker-item' + (isActive ? ' current' : '') + (hasData ? ' has-data' : '') +
+      '" onclick="event.stopPropagation();pickTimelineMonth(\'' + key + '\')">' + m + '</button>';
+  });
+
+  monthGrid.innerHTML = html;
+}
+
+function pickTimelineYear(yr) {
+  setTimelineRange('year', yr);
+  closeTimelinePicker();
+}
+function pickTimelineMonth(key) {
+  setTimelineMonth(key);
+  closeTimelinePicker();
+}
+
+document.addEventListener('click', function (e) {
+  if (timelinePickerOpen &&
+      !document.getElementById('timelinePicker').contains(e.target) &&
+      e.target !== document.getElementById('timelinePickerBtn')) {
+    closeTimelinePicker();
+  }
+});
 
 function setTimelineMonth(key) {
   if (!key) return;
