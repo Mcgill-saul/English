@@ -265,6 +265,8 @@
     box-shadow: var(--shadow-xs);
   }
   .nav-btn:hover { border-color: var(--text-muted); color: var(--text); background: var(--surface2); }
+  .nav-btn:disabled { opacity: .35; cursor: default; box-shadow: none; }
+  .nav-btn:disabled:hover { border-color: var(--border); color: var(--text-dim); background: var(--surface); }
 
   .month-label-wrap {
     position: relative;
@@ -1091,7 +1093,7 @@
   }
   .timeline-title { font-size: 15px; font-weight: 700; color: var(--text); }
   .timeline-add-btn {
-    margin-left: auto; font-size: 12.5px; font-weight: 600;
+    font-size: 12.5px; font-weight: 600;
     padding: 7px 14px; border-radius: var(--radius-xs); border: none;
     background: var(--blue); color: #fff; cursor: pointer; font-family: inherit;
   }
@@ -1126,6 +1128,19 @@
     user-select: none;
   }
   .timeline-drag-handle:active { cursor: grabbing; }
+  .timeline-color-swatch {
+    width: 13px; height: 13px;
+    padding: 0; margin-left: 3px;
+    border: 1.5px solid var(--border);
+    border-radius: 50%;
+    cursor: pointer;
+    background: none;
+    -webkit-appearance: none; appearance: none;
+    flex-shrink: 0;
+  }
+  .timeline-color-swatch::-webkit-color-swatch-wrapper { padding: 0; border-radius: 50%; }
+  .timeline-color-swatch::-webkit-color-swatch { border: none; border-radius: 50%; }
+  .timeline-color-swatch::-moz-color-swatch { border: none; border-radius: 50%; }
   .timeline-track {
     position: relative; min-height: 40px;
     background: var(--surface); border: 1px solid var(--border-lt);
@@ -1762,18 +1777,6 @@
     <div class="drawer-divider"></div>
 
     <div>
-      <div class="drawer-section-title">运动色条颜色</div>
-      <div class="drawer-row" style="flex-direction: row; align-items: center; gap: 10px;">
-        <input type="color" id="fitnessColorInput" value="#059669"
-          onchange="saveFitnessColor(this.value)"
-          style="width: 36px; height: 28px; padding: 0; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: none; flex-shrink: 0;">
-        <div class="drawer-btn-sub" style="margin: 0;">日历格里运动记录色条的颜色，桌面端与手机端统一</div>
-      </div>
-    </div>
-
-    <div class="drawer-divider"></div>
-
-    <div>
       <div class="drawer-section-title">云同步</div>
       <div class="drawer-row">
         <button class="drawer-btn" id="gistSyncBtn" onclick="showGistPanel()">
@@ -1891,7 +1894,10 @@
       </svg>
     </button>
     <div class="timeline-title">时间线</div>
-    <div class="date-range-row" id="timelineDateChips" style="margin-left:10px;">
+    <div class="date-range-row" id="timelineDateChips" style="margin-left:auto;">
+      <button class="nav-btn" id="timelinePrevBtn" onclick="timelineNavStep(-1)" title="上一个">&#8249;</button>
+      <span class="timeline-picker-label" id="timelinePickerLabel"></span>
+      <button class="nav-btn" id="timelineNextBtn" onclick="timelineNavStep(1)" title="下一个">&#8250;</button>
       <div class="timeline-picker-wrap">
         <button class="cal-picker-btn" id="timelinePickerBtn" onclick="toggleTimelinePicker()" title="选择年/月">📅</button>
         <div class="cal-picker" id="timelinePicker">
@@ -1899,7 +1905,6 @@
           <div class="picker-month-grid" id="timelinePickerMonthGrid" style="display:none"></div>
         </div>
       </div>
-      <span class="timeline-picker-label" id="timelinePickerLabel"></span>
       <button class="date-range-chip" data-range="all" onclick="setTimelineRange('all')">全部</button>
     </div>
     <button class="timeline-add-btn" onclick="showSpanEventModal()">+ 添加事件</button>
@@ -1996,6 +2001,29 @@ var SPORT_LABEL = {
   'Hike':      '🥾 Hike',
   'Walk':      '🚶 Walk',
 };
+
+// ── 运动类型颜色：直接读 Fitness.html 存的那份，保持两边一致 ──
+// Fitness.html 把颜色按“分组”存在 localStorage（cal_sport_colors_v1），
+// 不是按运动名称单独存的（Hike/Walk 共用一组），这里镜像同一份映射关系。
+var LS_FITNESS_COLORS = 'cal_sport_colors_v1';
+var FITNESS_COLOR_GROUPS = {
+  'Run':       { key: 'Run',       default: '#16a06a' },
+  'Strength':  { key: 'Strength',  default: '#3b7ef8' },
+  'Jump Rope': { key: 'JumpRope',  default: '#d97706' },
+  'Badminton': { key: 'Badminton', default: '#7c5cf6' },
+  'Hike':      { key: 'HikeWalk',  default: '#059669' },
+  'Walk':      { key: 'HikeWalk',  default: '#059669' },
+};
+var FITNESS_COLOR_FALLBACK = '#9ba3b5'; // 自定义/未识别的运动类型，跟 Fitness.html 自己的兜底色一致
+
+function getFitnessSportColor(sport) {
+  var group = FITNESS_COLOR_GROUPS[sport];
+  if (!group) return FITNESS_COLOR_FALLBACK;
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(LS_FITNESS_COLORS) || '{}'); } catch (e) {}
+  return saved[group.key] || group.default;
+}
+
 var EXPENSE_ICON = '💰';
 var MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function isNarrowViewport() { return window.innerWidth <= 768; }
@@ -2015,11 +2043,11 @@ function getDefaultData() {
     showNotes: true,  // 日历格笔记总开关
     expenseThreshold: null, // 支出色条"满格"对应的单日金额，跨月固定
     expenseColor: null, // 支出色条颜色
-    fitnessColor: null, // 运动色条颜色，桌面/手机端统一
     pinnedTags: [],   // 常用内容标签（#标签），手动排序，用于快捷插入按钮
     spanEvents: [],   // 跨度事件：{ id, category, title, start, end(null=进行中), note, displayMode }
     customCategories: [], // 自定义跨度事件类别：[{ id, label, color }]
     categoryOrder: ['travel', 'game', 'tv'], // 时间线页面里类别行的显示顺序，可拖拽调整
+    categoryColors: {}, // 类别颜色覆盖：{ categoryId: '#hex' }，内置和自定义类别都可改
     version:   1
   };
 }
@@ -2058,12 +2086,12 @@ function migrateData() {
     }
     appData.expenseThreshold = defaultThreshold;
   }
-  if (!appData.fitnessColor) appData.fitnessColor = '#059669';
   if (!appData.expenseColor) appData.expenseColor = '#d97706';
   if (!appData.pinnedTags) appData.pinnedTags = [];
   if (!appData.spanEvents) appData.spanEvents = [];
   if (!appData.customCategories) appData.customCategories = [];
   if (!appData.categoryOrder) appData.categoryOrder = ['travel', 'game', 'tv'];
+  if (!appData.categoryColors) appData.categoryColors = {};
   if (!appData.version) appData.version = 1;
   localStorage.removeItem('overview_notes_v1');
   localStorage.removeItem('overview_cal_notes_v1');
@@ -2155,10 +2183,24 @@ var SPAN_CATEGORY_ORDER = ['travel', 'game', 'tv'];
 var CUSTOM_CATEGORY_ICON = '📌';
 
 function getCategoryMeta(catId) {
-  if (SPAN_CATEGORIES[catId]) return SPAN_CATEGORIES[catId];
-  var custom = (appData.customCategories || []).find(function (c) { return c.id === catId; });
-  if (custom) return { label: custom.label, icon: CUSTOM_CATEGORY_ICON, color: custom.color };
-  return { label: catId, icon: CUSTOM_CATEGORY_ICON, color: '#7c3aed' };
+  var base;
+  if (SPAN_CATEGORIES[catId]) {
+    base = SPAN_CATEGORIES[catId];
+  } else {
+    var custom = (appData.customCategories || []).find(function (c) { return c.id === catId; });
+    base = custom ? { label: custom.label, icon: CUSTOM_CATEGORY_ICON, color: custom.color }
+                   : { label: catId, icon: CUSTOM_CATEGORY_ICON, color: '#7c3aed' };
+  }
+  var override = appData.categoryColors && appData.categoryColors[catId];
+  return override ? { label: base.label, icon: base.icon, color: override } : base;
+}
+
+function setCategoryColor(catId, color) {
+  if (!appData.categoryColors) appData.categoryColors = {};
+  appData.categoryColors[catId] = color;
+  saveData();
+  renderTimeline();
+  render();
 }
 
 function getCategoryOrder() {
@@ -2461,6 +2503,11 @@ function updateTimelineChipActive() {
   document.querySelectorAll('#timelineDateChips .date-range-chip[data-range]').forEach(function (b) {
     b.classList.toggle('active', b.dataset.range === timelineState.range);
   });
+  var prevBtn = document.getElementById('timelinePrevBtn');
+  var nextBtn = document.getElementById('timelineNextBtn');
+  var isAll = timelineState.range === 'all';
+  if (prevBtn) prevBtn.disabled = isAll;
+  if (nextBtn) nextBtn.disabled = isAll;
   var label = document.getElementById('timelinePickerLabel');
   if (!label) return;
   var curYearNow = new Date().getFullYear();
@@ -2563,6 +2610,21 @@ document.addEventListener('click', function (e) {
   }
 });
 
+function timelineNavStep(direction) {
+  if (timelineState.range === 'year') {
+    var y = (timelineState.year || new Date().getFullYear()) + direction;
+    setTimelineRange('year', y);
+  } else if (timelineState.range === 'specific-month') {
+    var parts = timelineState.month.split('-');
+    var yy = parseInt(parts[0], 10);
+    var mm = parseInt(parts[1], 10) - 1 + direction;
+    var d = new Date(yy, mm, 1);
+    var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    setTimelineMonth(key);
+  }
+  // range === 'all' 时箭头本身是禁用状态，这里不需要处理
+}
+
 function setTimelineMonth(key) {
   if (!key) return;
   timelineState.range = 'specific-month';
@@ -2659,7 +2721,9 @@ function renderTimeline() {
       return ev.category === cat && itemOverlapsRange({ type: 'span', start: ev.start, end: ev.end }, bounds);
     });
     html += '<div class="timeline-row-group" draggable="true" data-cat="' + cat + '">';
-    html += '<div class="timeline-row-label"><span class="timeline-drag-handle" title="拖拽排序">⠿</span>' + meta.icon + ' ' + meta.label + '</div>';
+    html += '<div class="timeline-row-label"><span class="timeline-drag-handle" title="拖拽排序">⠿</span>' + meta.icon + ' ' + meta.label +
+      '<input type="color" class="timeline-color-swatch" value="' + meta.color + '" title="修改颜色" ' +
+      'onclick="event.stopPropagation()" onchange="setCategoryColor(\'' + cat + '\', this.value)"></div>';
     if (!catEvents.length) {
       html += '<div class="timeline-track"><div class="timeline-track-empty">这段时间没有记录</div></div>';
     } else {
@@ -3658,7 +3722,7 @@ function renderMonthStats(pocket, fitness, daysInMonth) {
     if (pocket[ds]) totalExpense += pocket[ds];
   }
   var expColor = appData.expenseColor || '#d97706';
-  var fitColor = appData.fitnessColor || '#059669';
+  var fitColor = '#059669'; // 月度汇总小圆点是聚合指标，不对应具体运动类型，固定用这个颜色
   var fitnessSummary = buildMonthFitnessSummary();
   var fitnessCount   = buildMonthFitnessCount();
 
@@ -3775,7 +3839,7 @@ function render() {
       dedupe(fitness[ds]).slice(0, 2).forEach(function(sp) {
         var fc = document.createElement('div');
         fc.className = 'chip chip-fitness';
-        fc.style.background = appData.fitnessColor || '#059669';
+        fc.style.background = getFitnessSportColor(sp);
         var label = SPORT_LABEL[sp] || ('🏅 ' + sp);
         var icon = label.split(' ')[0];
         fc.innerHTML = '<span class="chip-fitness-icon">' + icon + '</span>' +
@@ -3919,9 +3983,9 @@ function buildStatChipsHtml(ds) {
       '<span class="stat-chip-icon">' + EXPENSE_ICON + '</span>' + fmtMoney(pocket[ds]) + '</div>';
   }
   if (fitness[ds] && fitness[ds].length) {
-    var fitColor = appData.fitnessColor || '#059669';
     dedupe(fitness[ds]).forEach(function(sp) {
       var label = SPORT_LABEL[sp] || ('🏅 ' + sp);
+      var fitColor = getFitnessSportColor(sp);
       chips += '<div class="stat-chip fitness" style="background:' + fitColor + '18;border-color:' + fitColor + ';color:' + fitColor + ';">' +
         '<span class="stat-chip-icon">' + label.split(' ')[0] + '</span>' + escHtml(sp) + '</div>';
     });
@@ -3992,6 +4056,7 @@ function exportJSON() {
     pinnedTags: appData.pinnedTags,
     customCategories: appData.customCategories,
     categoryOrder: appData.categoryOrder,
+    categoryColors: appData.categoryColors,
     todos:     appData.todos,
   };
   var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -4047,6 +4112,7 @@ function importJSON(evt) {
       if (data.pinnedTags) appData.pinnedTags = data.pinnedTags;
       if (data.customCategories) appData.customCategories = data.customCategories;
       if (data.categoryOrder) appData.categoryOrder = data.categoryOrder;
+      if (data.categoryColors) appData.categoryColors = data.categoryColors;
       if (data.todos)    appData.todos    = data.todos;
       saveData();
       render();
@@ -4068,7 +4134,6 @@ function openDrawer() {
   updateDrawerNoteLabel();
   document.getElementById('expenseThresholdInput').value = appData.expenseThreshold || '';
   document.getElementById('expenseColorInput').value = appData.expenseColor || '#d97706';
-  document.getElementById('fitnessColorInput').value = appData.fitnessColor || '#059669';
 }
 function closeDrawer() {
   document.getElementById('settingsDrawer').classList.remove('open');
@@ -4092,13 +4157,6 @@ function saveExpenseThreshold(val) {
 function saveExpenseColor(val) {
   if (!val) return;
   appData.expenseColor = val;
-  saveData();
-  render();
-  refreshStatChips();
-}
-function saveFitnessColor(val) {
-  if (!val) return;
-  appData.fitnessColor = val;
   saveData();
   render();
   refreshStatChips();
