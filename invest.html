@@ -1959,7 +1959,7 @@ function pushToGist(manual){
   pushToGist._busy = true;
   if(manual) setGistStatus('检查云端状态…', '');
   // 上传前先确认云端版本没被其他设备改过，避免静默覆盖
-  fetch('https://api.github.com/gists/'+gistId, { headers: { Authorization: 'Bearer '+token, 'X-GitHub-Api-Version': '2022-11-28' } })
+  fetch('https://api.github.com/gists/'+gistId, { cache: 'no-store', headers: { Authorization: 'Bearer '+token, 'X-GitHub-Api-Version': '2022-11-28' } })
     .then(res=>{
       if(res.status===401) throw new Error('Token 无效或已过期，请重新生成（需勾选 gist 权限）');
       if(!res.ok) throw new Error('HTTP '+res.status);
@@ -2033,7 +2033,7 @@ function pullFromGist(manual){
   const gistId = localStorage.getItem(LS_GIST_ID);
   if(!token || !gistId){ if(manual) setGistStatus('请先配置 Token 和 Gist ID', 'error'); return; }
   if(manual) setGistStatus('下载中…', '');
-  fetch('https://api.github.com/gists/'+gistId, { headers: { Authorization: 'Bearer '+token, 'X-GitHub-Api-Version': '2022-11-28' } })
+  fetch('https://api.github.com/gists/'+gistId, { cache: 'no-store', headers: { Authorization: 'Bearer '+token, 'X-GitHub-Api-Version': '2022-11-28' } })
     .then(res=>{
       if(res.status===401) throw new Error('Token 无效或已过期，请重新生成（需勾选 gist 权限）');
       if(!res.ok) throw new Error('HTTP '+res.status); return res.json();
