@@ -488,7 +488,7 @@ let _xirrCalcRows = _saved && _saved.XIRR_CALC_ROWS ? _saved.XIRR_CALC_ROWS : [[
       <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-bottom:0">
         <div class="card" style="margin-bottom:0">
           <div class="card-header">
-            <div class="card-title"><svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>总资产趋势</div>
+            <div class="card-title"><svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>市值趋势</div>
             <button class="btn btn-primary btn-sm" onclick="openSnapshotModal('total',0,null)"><svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-right:4px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>录入快照</button>
           </div>
           <div style="position:relative;height:280px"><canvas id="c-snap-total" width="771" height="280" style="box-sizing: border-box; height: 280px; width: 771px; cursor: default; display: block;"></canvas></div>
@@ -4591,11 +4591,11 @@ function renderSnapshotChart(mode, level, group){
       plugins:{
         legend:{display:false},
         tooltip:{
-          backgroundColor:'var(--surface)',
-          borderColor:'var(--border2)',
+          backgroundColor:'rgba(26,26,26,0.94)',
+          borderColor:'rgba(255,255,255,0.1)',
           borderWidth:1,
-          titleColor:'var(--text)',
-          bodyColor:'var(--text2)',
+          titleColor:'#fff',
+          bodyColor:'#fff',
           padding:10,
           callbacks:{
             title: ctx=>[ctx[0].label],
