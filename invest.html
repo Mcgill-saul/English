@@ -669,7 +669,8 @@ let _xirrCalcRows = _saved && _saved.XIRR_CALC_ROWS ? _saved.XIRR_CALC_ROWS : [[
         <div class="dtab" onclick="showDataTab('shared')" id="dtab-shared">共管持仓</div>
         <div class="dtab" onclick="showDataTab('xirr-calc')" id="dtab-xirr-calc">XIRR 计算器</div>
         </div>
-        <button class="btn btn-sm" id="gist-sync-btn" onclick="showGistPanel()" style="flex-shrink:0;margin-bottom:8px">
+        <div style="display:flex;gap:10px;flex-shrink:0">
+        <button class="btn btn-primary btn-sm" id="gist-sync-btn" onclick="showGistPanel()" style="flex-shrink:0;margin-bottom:8px">
           <svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>
           配置云同步
         </button>
@@ -677,6 +678,7 @@ let _xirrCalcRows = _saved && _saved.XIRR_CALC_ROWS ? _saved.XIRR_CALC_ROWS : [[
           <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           导出 HTML
         </button>
+        </div>
       </div>
 
       <!-- 目标比例 -->
@@ -1797,9 +1799,9 @@ let _xirrCalcRows = _saved && _saved.XIRR_CALC_ROWS ? _saved.XIRR_CALC_ROWS : [[
     <div class="form-row"><label class="form-label">GitHub Token</label><input class="fi" type="password" id="gist-token" placeholder="ghp_xxxxxxxxxxxx"></div>
     <div class="form-row"><label class="form-label">Gist ID（第一次留空自动创建）</label><input class="fi" type="text" id="gist-id" placeholder="留空则自动创建新 Gist"></div>
     <div style="display:flex;gap:8px;margin:14px 0 10px">
-      <button class="btn btn-primary btn-sm" style="flex:1" onclick="saveGistConfig()">保存配置</button>
-      <button class="btn btn-sm" style="flex:1" onclick="pushToGist(true)">立即上传</button>
-      <button class="btn btn-sm" style="flex:1" onclick="pullFromGist(true)">从云端拉取</button>
+      <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="saveGistConfig()">保存配置</button>
+      <button class="btn btn-sm" style="flex:1;justify-content:center" onclick="pushToGist(true)">立即上传</button>
+      <button class="btn btn-sm" style="flex:1;justify-content:center" onclick="pullFromGist(true)">从云端拉取</button>
     </div>
     <div id="gist-status" style="font-size:12px;min-height:18px;text-align:center;margin-bottom:6px"></div>
     <div class="modal-footer">
