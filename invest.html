@@ -1689,7 +1689,7 @@ let _xirrCalcRows = _saved && _saved.XIRR_CALC_ROWS ? _saved.XIRR_CALC_ROWS : [[
       <span class="modal-close" onclick="closeMo('mo-batch')">×</span>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap;flex-shrink:0">
-      <div style="font-size:11px;color:var(--text3)">修改金额后点「保存全部」，所有品种一次写入。</div>
+      <div id="batch-total" style="font-size:13px;font-weight:700;color:var(--text)">¥0.00</div>
       <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
         <select id="batch-platform-filter" class="fi" style="font-size:11px;padding:4px 8px;width:auto" onchange="onBatchPlatformChange()"></select>
         <button id="batch-sort-btn" class="btn btn-sm" onclick="cycleBatchSort()" style="font-size:11px;flex-shrink:0">金额排序</button>
@@ -7370,16 +7370,31 @@ function _renderBatchRows(prods, sort){
   document.getElementById('batch-rows').innerHTML = sorted.length ? sorted.map((p,i)=>`
     <div style="display:grid;grid-template-columns:1fr 80px 140px;gap:8px;align-items:center">
       <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.name}">${p.name}</div>
-      <select class="fi" id="ba-ccy-${i}" style="padding:5px 6px;font-size:12px">
+      <select class="fi" id="ba-ccy-${i}" style="padding:5px 6px;font-size:12px" onchange="_updateBatchTotal()">
         ${['CNY','USD','HKD'].map(c=>`<option ${c===p.ccy?'selected':''}>${c}</option>`).join('')}
       </select>
       <input class="fi" type="number" id="ba-amt-${i}" value="${p.amount}"
         style="padding:5px 8px;font-size:13px;font-weight:600;text-align:right"
         data-idx="${PRODUCTS.indexOf(p)}"
+        oninput="_updateBatchTotal()"
         onfocus="this.select()"
         onkeydown="if(event.key==='Enter'){event.preventDefault();const nx=document.getElementById('ba-amt-${Math.min(i+1,sorted.length-1)}');if(nx){nx.focus();nx.select();}}">
     </div>`).join('') : '<div class="empty" style="padding:30px;text-align:center;color:var(--text3);font-size:12px">该平台下没有品种</div>';
   if(sorted.length) setTimeout(()=>{const el=document.getElementById('ba-amt-0');if(el){el.focus();el.select();}}, 30);
+  _updateBatchTotal();
+}
+
+// 根据当前弹窗里每一行实时的金额+币种（未保存也算），换算成 CNY 求和，随平台筛选/编辑联动
+function _updateBatchTotal(){
+  const rows = document.querySelectorAll('#batch-rows [data-idx]');
+  let total = 0;
+  rows.forEach((inp,i)=>{
+    const amt = parseFloat(inp.value);
+    const ccy = document.getElementById(`ba-ccy-${i}`)?.value || 'CNY';
+    if(!isNaN(amt)) total += toCNY(amt, ccy);
+  });
+  const el = document.getElementById('batch-total');
+  if(el) el.textContent = fmtCNY(total);
 }
 
 function cycleBatchSort(){
