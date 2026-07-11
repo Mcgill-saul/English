@@ -1055,10 +1055,21 @@
   .daytag-trigger:hover { background: var(--surface3); }
   .daytag-trigger.set { border-color: var(--blue-bd); background: var(--blue-bg); color: var(--blue); }
   .daytag-trigger.plus {
-    width: 26px; padding: 0; border-radius: 50%; justify-content: center;
-    font-size: 14px; font-weight: 700; color: var(--text-muted);
+    position: relative;
+    width: 26px; height: 26px; padding: 0; border-radius: 50%; justify-content: center;
+    color: transparent; font-size: 0;
     background: var(--surface2); border: 1.5px dashed var(--border);
   }
+  .daytag-trigger.plus::before,
+  .daytag-trigger.plus::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    background: var(--text-muted);
+    border-radius: 1px;
+  }
+  .daytag-trigger.plus::before { width: 10px; height: 2px; transform: translate(-50%, -50%); }
+  .daytag-trigger.plus::after  { width: 2px; height: 10px; transform: translate(-50%, -50%); }
   .daytag-dropdown {
     display: none;
     position: absolute; top: calc(100% + 6px); right: 0;
