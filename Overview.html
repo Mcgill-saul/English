@@ -31,6 +31,7 @@
     --text:        #0f1117;
     --text-dim:    #5a6070;
     --text-muted:  #9ba3b0;
+    --text-faint:  #c7cbd4; /* 比 text-muted 更浅，专给输入框的占位提示文字用 */
 
     /* Accents */
     --blue:        #7c3aed;       /* primary action */
@@ -456,6 +457,21 @@
     height: 4px;
   }
 
+  /* ── 日期标签徽章：右下角，跟日期数字对角线对称 ──────────── */
+  .day-tag-badge {
+    position: absolute;
+    bottom: 12px; right: 12px;
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border-lt);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    line-height: 1;
+    box-shadow: var(--shadow-xs);
+    z-index: 3;
+  }
+
   /* ── 日期数字所在行，支出强度圆点紧跟在数字后面 ─────────── */
   .day-num-row {
     display: flex;
@@ -663,7 +679,7 @@
     height: auto;
     min-height: 36px;
   }
-  .cell-note::placeholder { color: var(--text-muted); font-style: italic; }
+  .cell-note::placeholder { color: var(--text-faint); font-style: italic; }
 
   /* ── Detail panel ────────────────────────────────────── */
   .detail-outer {
@@ -793,7 +809,7 @@
     transition: border-color .15s, background .15s;
   }
   .note-area:focus { border-color: var(--violet-bd); background: var(--violet-bg); }
-  .note-area::placeholder { color: var(--text-muted); }
+  .note-area::placeholder { color: var(--text-faint); }
 
   /* Action bar */
   .detail-bar {
@@ -1026,6 +1042,48 @@
     background: none; color: var(--text-muted); cursor: pointer; font-family: inherit;
   }
 
+  /* ── 日期标签胶囊（详情面板日期右侧） ─────────────────── */
+  .daytag-compact { position: relative; flex-shrink: 0; }
+  .daytag-trigger {
+    height: 26px; box-sizing: border-box;
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 0 11px; border-radius: 20px;
+    font-size: 12px; font-weight: 600; font-family: 'Inter', sans-serif;
+    border: 1.5px solid var(--border); background: var(--surface2); color: var(--text-dim);
+    cursor: pointer; transition: all .13s;
+  }
+  .daytag-trigger:hover { background: var(--surface3); }
+  .daytag-trigger.set { border-color: var(--blue-bd); background: var(--blue-bg); color: var(--blue); }
+  .daytag-trigger.plus {
+    width: 26px; padding: 0; border-radius: 50%; justify-content: center;
+    font-size: 14px; font-weight: 700; color: var(--text-muted);
+    background: var(--surface2); border: 1.5px dashed var(--border);
+  }
+  .daytag-dropdown {
+    display: none;
+    position: absolute; top: calc(100% + 6px); right: 0;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); box-shadow: var(--shadow-md);
+    padding: 8px; min-width: 140px; max-width: 220px; z-index: 30;
+  }
+  .daytag-compact.open .daytag-dropdown { display: flex; flex-direction: column; gap: 4px; }
+  .daytag-option {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12.5px; font-weight: 600; font-family: 'Inter', sans-serif;
+    padding: 6px 10px; border-radius: 20px; border: none;
+    background: var(--surface2); color: var(--text-dim);
+    cursor: pointer; width: 100%; box-sizing: border-box; text-align: left;
+    transition: all .13s;
+  }
+  .daytag-option:hover { background: var(--surface3); }
+  .daytag-option.current { background: var(--blue-bg); color: var(--blue); }
+  .daytag-clear {
+    font-size: 11px; color: var(--text-muted); background: none;
+    border: 1px solid var(--border); border-radius: 20px; padding: 5px 10px;
+    cursor: pointer; font-family: 'Inter', sans-serif; font-weight: 500; transition: all .13s;
+  }
+  .daytag-clear:hover { color: var(--text); border-color: var(--text-muted); }
+
   /* # 输入联想下拉 */
   .note-area-wrap {
     position: relative;
@@ -1201,6 +1259,9 @@
     color: var(--text);
   }
   .input-box:focus { border-color: var(--blue); background: var(--surface); }
+  .input-box::placeholder,
+  input::placeholder,
+  textarea::placeholder { color: var(--text-faint); }
 
   .modal-btn-row { display: flex; gap: 7px; margin-bottom: 9px; }
   .mbtn {
@@ -1220,6 +1281,32 @@
     width: 100%; margin-top: 4px;
   }
   .mbtn-close:hover { color: var(--text); }
+
+  /* ── 圆形复选框，视觉上跟单选按钮的圆点保持一致，用于开关型选项 ── */
+  .toggle-circle-checkbox {
+    -webkit-appearance: none; appearance: none;
+    width: 15px; height: 15px;
+    border: 1.5px solid var(--border);
+    border-radius: 50%;
+    background: var(--surface);
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    margin: 0;
+    transition: all .13s;
+  }
+  .toggle-circle-checkbox:checked {
+    border-color: var(--blue);
+    background: var(--blue);
+  }
+  .toggle-circle-checkbox:checked::after {
+    content: '';
+    position: absolute; top: 50%; left: 50%;
+    width: 5px; height: 5px;
+    background: #fff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
 
   @keyframes ovFadeIn  { from{opacity:0} to{opacity:1} }
   @keyframes ovSlideUp { from{transform:translateY(18px);opacity:0} to{transform:translateY(0);opacity:1} }
@@ -1648,6 +1735,14 @@
        详情本来就能看到完整标题 */
     .span-cover-bar::after { display: none; }
 
+    /* 日期标签徽章同样按 day-num 缩小的比例跟着缩小 */
+    .day-tag-badge {
+      bottom: 4px; right: 4px;
+      width: 17px; height: 17px;
+      border-radius: 5px;
+      font-size: 10px;
+    }
+
     .cell-note { font-size: 8px; line-height: 1.4; height: 14px; min-height: 14px; padding: 1px 3px; }
     .cell-note:focus { height: auto; min-height: 26px; }
 
@@ -1771,6 +1866,21 @@
           onchange="saveExpenseColor(this.value)"
           style="width: 36px; height: 28px; padding: 0; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: none; flex-shrink: 0;">
         <div class="drawer-btn-sub" style="margin: 0;">支出色条与详情页金额胶囊的颜色</div>
+      </div>
+    </div>
+
+    <div class="drawer-divider"></div>
+
+    <div>
+      <div class="drawer-section-title">日期标签</div>
+      <div class="drawer-row">
+        <button class="drawer-btn" onclick="closeDrawer(); showDayTagPanel();">
+          <span class="drawer-btn-icon">🏷</span>
+          <div>
+            <div class="drawer-btn-label">新建 / 删除日期标签</div>
+            <div class="drawer-btn-sub">给某一天打个图标标记，比如节日、纪念日，默认有除夕和圣诞</div>
+          </div>
+        </button>
       </div>
     </div>
 
@@ -2048,6 +2158,8 @@ function getDefaultData() {
     customCategories: [], // 自定义跨度事件类别：[{ id, label, color }]
     categoryOrder: ['travel', 'game', 'tv'], // 时间线页面里类别行的显示顺序，可拖拽调整
     categoryColors: {}, // 类别颜色覆盖：{ categoryId: '#hex' }，内置和自定义类别都可改
+    dayTagDefs: null, // 日期标签类型：[{ id, icon, label }]，null 表示还没初始化过默认值
+    dayTags: {}, // 具体某天打了哪个标签：{ 'YYYY-MM-DD': tagDefId }，一天只能打一个
     version:   1
   };
 }
@@ -2092,6 +2204,13 @@ function migrateData() {
   if (!appData.customCategories) appData.customCategories = [];
   if (!appData.categoryOrder) appData.categoryOrder = ['travel', 'game', 'tv'];
   if (!appData.categoryColors) appData.categoryColors = {};
+  if (appData.dayTagDefs === null || appData.dayTagDefs === undefined) {
+    appData.dayTagDefs = [
+      { id: 'lny',  icon: '🧧', label: '除夕' },
+      { id: 'xmas', icon: '🎄', label: '圣诞' }
+    ];
+  }
+  if (!appData.dayTags) appData.dayTags = {};
   if (!appData.version) appData.version = 1;
   localStorage.removeItem('overview_notes_v1');
   localStorage.removeItem('overview_cal_notes_v1');
@@ -2201,6 +2320,40 @@ function setCategoryColor(catId, color) {
   saveData();
   renderTimeline();
   render();
+}
+
+// ── 日期标签（原来的手动打标签功能，重新做成通用的图标标记，
+//    默认预置除夕/圣诞，但不限于节日，随便打什么标签都行）──────
+function getDayTagDefs() { return appData.dayTagDefs || []; }
+function getDayTagDef(id) {
+  return getDayTagDefs().find(function (t) { return t.id === id; });
+}
+function addDayTagDef(icon, label) {
+  var id = 'dtag_' + Date.now();
+  if (!appData.dayTagDefs) appData.dayTagDefs = [];
+  appData.dayTagDefs.push({ id: id, icon: icon, label: label });
+  saveData();
+  return id;
+}
+function updateDayTagDef(id, icon, label) {
+  var def = getDayTagDef(id);
+  if (!def) return;
+  def.icon = icon;
+  def.label = label;
+  saveData();
+}
+function deleteDayTagDef(id) {
+  appData.dayTagDefs = getDayTagDefs().filter(function (t) { return t.id !== id; });
+  Object.keys(appData.dayTags || {}).forEach(function (ds) {
+    if (appData.dayTags[ds] === id) delete appData.dayTags[ds];
+  });
+  saveData();
+}
+function setDayTag(ds, tagId) {
+  if (!appData.dayTags) appData.dayTags = {};
+  if (tagId) appData.dayTags[ds] = tagId;
+  else delete appData.dayTags[ds];
+  saveData();
 }
 
 function getCategoryOrder() {
@@ -2890,7 +3043,7 @@ function showSpanEventModal(id) {
   var modeName = 'spanDisplayMode_' + Date.now();
   var currentMode = editing ? (editing.displayMode || 'cover') : 'cover';
 
-  function modeOption(value, text) {
+  function modeOption(value, line1, line2) {
     var lab = document.createElement('label');
     lab.style.cssText = 'flex:1;display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--text);cursor:pointer;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;';
     var radio = document.createElement('input');
@@ -2898,15 +3051,39 @@ function showSpanEventModal(id) {
     radio.name = modeName;
     radio.value = value;
     radio.checked = currentMode === value;
+    radio.style.accentColor = 'var(--blue)';
     lab.appendChild(radio);
-    lab.appendChild(document.createTextNode(text));
+
+    var textWrap = document.createElement('div');
+    textWrap.style.cssText = 'display:flex;flex-direction:column;line-height:1.35;';
+    var l1 = document.createElement('span');
+    l1.textContent = line1;
+    var l2 = document.createElement('span');
+    l2.style.cssText = 'font-size:10.5px;font-weight:500;color:var(--text-muted);';
+    l2.textContent = line2;
+    textWrap.appendChild(l1);
+    textWrap.appendChild(l2);
+    lab.appendChild(textWrap);
+
     return { label: lab, radio: radio };
   }
 
-  var coverOpt = modeOption('cover', '短期 · 盖住日期数字');
-  var bandOpt  = modeOption('band',  '长期 · 底部色带');
+  var coverOpt = modeOption('cover', '短期', '日期顶部');
+  var bandOpt  = modeOption('band',  '长期', '日期底部');
   modeWrap.appendChild(coverOpt.label);
   modeWrap.appendChild(bandOpt.label);
+
+  var showOnCalendarDefault = editing ? (editing.showOnCalendar !== false) : true;
+  var showLab = document.createElement('label');
+  showLab.style.cssText = 'flex:1;display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--text);cursor:pointer;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;';
+  var showCheckbox = document.createElement('input');
+  showCheckbox.type = 'checkbox';
+  showCheckbox.className = 'toggle-circle-checkbox';
+  showCheckbox.checked = showOnCalendarDefault;
+  showLab.appendChild(showCheckbox);
+  showLab.appendChild(document.createTextNode('页面显示'));
+  modeWrap.appendChild(showLab);
+
   sheet.appendChild(modeWrap);
 
   var ongoingRow = document.createElement('label');
@@ -2974,7 +3151,8 @@ function showSpanEventModal(id) {
       start: startInput.value,
       end: ongoingCheck.checked ? null : (endInput.value || null),
       note: noteInput.value.trim(),
-      displayMode: bandOpt.radio.checked ? 'band' : 'cover'
+      displayMode: bandOpt.radio.checked ? 'band' : 'cover',
+      showOnCalendar: showCheckbox.checked
     };
     addOrUpdateSpanEvent(ev);
     overlay.remove();
@@ -3074,10 +3252,197 @@ function onNoteAreaKeydown(e) {
   }
 }
 
+function showDayTagPanel() {
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.addEventListener('click', function () { overlay.remove(); refreshDayTagCompact(); render(); });
+
+  var sheet = document.createElement('div');
+  sheet.className = 'modal-sheet';
+  sheet.style.maxWidth = '380px';
+  sheet.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (openMenuId) { openMenuId = null; renderPanel(); }
+  });
+  overlay.appendChild(sheet);
+
+  var editingId = null;
+  var openMenuId = null;
+
+  function renderPanel() {
+    var defs = getDayTagDefs();
+    sheet.innerHTML = '';
+
+    var title = document.createElement('h3');
+    title.textContent = '日期标签管理';
+    sheet.appendChild(title);
+
+    var list = document.createElement('div');
+    list.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:14px;';
+
+    if (!defs.length) {
+      var empty = document.createElement('div');
+      empty.style.cssText = 'font-size:12px;color:var(--text-muted);font-style:italic;text-align:center;padding:8px 0;';
+      empty.textContent = '还没有标签';
+      list.appendChild(empty);
+    }
+
+    defs.forEach(function (t) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border-lt);border-radius:8px;position:relative;';
+
+      if (editingId === t.id) {
+        var iconEdit = document.createElement('input');
+        iconEdit.type = 'text';
+        iconEdit.className = 'input-box';
+        iconEdit.value = t.icon;
+        iconEdit.maxLength = 4;
+        iconEdit.style.cssText = 'width:52px;flex-shrink:0;text-align:center;';
+
+        var labelEdit = document.createElement('input');
+        labelEdit.type = 'text';
+        labelEdit.className = 'input-box';
+        labelEdit.value = t.label;
+        labelEdit.style.flex = '1';
+
+        var saveEditBtn = document.createElement('button');
+        saveEditBtn.textContent = '保存';
+        saveEditBtn.style.cssText = 'font-size:11.5px;font-weight:600;padding:6px 10px;border-radius:6px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:inherit;flex-shrink:0;';
+        saveEditBtn.onclick = function (e) {
+          e.stopPropagation();
+          var icon = iconEdit.value.trim();
+          var label = labelEdit.value.trim();
+          if (!icon || !label) return;
+          updateDayTagDef(t.id, icon, label);
+          editingId = null;
+          renderPanel();
+        };
+
+        var cancelEditBtn = document.createElement('button');
+        cancelEditBtn.textContent = '取消';
+        cancelEditBtn.style.cssText = 'font-size:11.5px;padding:6px 9px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text-dim);cursor:pointer;font-family:inherit;flex-shrink:0;';
+        cancelEditBtn.onclick = function (e) {
+          e.stopPropagation();
+          editingId = null;
+          renderPanel();
+        };
+
+        row.appendChild(iconEdit);
+        row.appendChild(labelEdit);
+        row.appendChild(saveEditBtn);
+        row.appendChild(cancelEditBtn);
+      } else {
+        var labelEl = document.createElement('span');
+        labelEl.style.cssText = 'font-size:14px;flex:1;';
+        labelEl.textContent = t.icon + ' ' + t.label;
+        row.appendChild(labelEl);
+
+        var menuBtn = document.createElement('button');
+        menuBtn.textContent = '⋮';
+        menuBtn.title = '编辑 / 删除';
+        menuBtn.style.cssText = 'width:22px;height:22px;border:none;background:none;cursor:pointer;color:var(--text-dim);font-family:inherit;font-size:16px;flex-shrink:0;line-height:1;';
+        menuBtn.onclick = function (e) {
+          e.stopPropagation();
+          openMenuId = (openMenuId === t.id) ? null : t.id;
+          renderPanel();
+        };
+        row.appendChild(menuBtn);
+
+        if (openMenuId === t.id) {
+          var menu = document.createElement('div');
+          menu.style.cssText = 'position:absolute;top:100%;right:10px;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);padding:4px;min-width:84px;z-index:20;';
+
+          var editItem = document.createElement('button');
+          editItem.textContent = '编辑';
+          editItem.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 10px;border:none;background:none;cursor:pointer;font-size:12px;color:var(--text-dim);border-radius:5px;font-family:inherit;';
+          editItem.onmouseenter = function () { editItem.style.background = 'var(--surface2)'; };
+          editItem.onmouseleave = function () { editItem.style.background = 'none'; };
+          editItem.onclick = function (e) {
+            e.stopPropagation();
+            editingId = t.id;
+            openMenuId = null;
+            renderPanel();
+          };
+
+          var delItem = document.createElement('button');
+          delItem.textContent = '删除';
+          delItem.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 10px;border:none;background:none;cursor:pointer;font-size:12px;color:#dc2626;border-radius:5px;font-family:inherit;';
+          delItem.onmouseenter = function () { delItem.style.background = 'var(--surface2)'; };
+          delItem.onmouseleave = function () { delItem.style.background = 'none'; };
+          delItem.onclick = function (e) {
+            e.stopPropagation();
+            deleteDayTagDef(t.id);
+            openMenuId = null;
+            renderPanel();
+          };
+
+          menu.appendChild(editItem);
+          menu.appendChild(delItem);
+          row.appendChild(menu);
+        }
+      }
+
+      list.appendChild(row);
+    });
+
+    sheet.appendChild(list);
+
+    var addRow = document.createElement('div');
+    addRow.style.cssText = 'display:flex;gap:7px;align-items:center;margin-bottom:10px;';
+
+    var iconInput = document.createElement('input');
+    iconInput.type = 'text';
+    iconInput.className = 'input-box';
+    iconInput.placeholder = '图标';
+    iconInput.maxLength = 4;
+    iconInput.style.cssText = 'width:56px;flex-shrink:0;text-align:center;';
+
+    var labelInput = document.createElement('input');
+    labelInput.type = 'text';
+    labelInput.className = 'input-box';
+    labelInput.placeholder = '名称，例如"生日"';
+    labelInput.style.flex = '1';
+
+    var addBtn = document.createElement('button');
+    addBtn.textContent = '+ 新建';
+    addBtn.style.cssText = 'font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:8px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;';
+    addBtn.onclick = function (e) {
+      e.stopPropagation();
+      var icon = iconInput.value.trim();
+      var label = labelInput.value.trim();
+      if (!icon || !label) return;
+      addDayTagDef(icon, label);
+      iconInput.value = '';
+      labelInput.value = '';
+      renderPanel();
+    };
+
+    addRow.appendChild(iconInput);
+    addRow.appendChild(labelInput);
+    addRow.appendChild(addBtn);
+    sheet.appendChild(addRow);
+
+    var closeBtn = document.createElement('button');
+    closeBtn.className = 'mbtn mbtn-close';
+    closeBtn.textContent = '关闭';
+    closeBtn.onclick = function () { overlay.remove(); refreshDayTagCompact(); render(); };
+    sheet.appendChild(closeBtn);
+  }
+
+  renderPanel();
+  document.body.appendChild(overlay);
+}
+
 function showContentTagPanel() {
   var overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.addEventListener('click', function () { overlay.remove(); renderQuickTagButtons(); });
+
+  var sheet = document.createElement('div');
+  sheet.className = 'modal-sheet';
+  sheet.style.maxWidth = '400px';
+  sheet.addEventListener('click', function (e) { e.stopPropagation(); });
+  overlay.appendChild(sheet);
 
   function renderPanel() {
     var idx = buildContentIndex();
@@ -3086,10 +3451,7 @@ function showContentTagPanel() {
     if (!appData.pinnedTags) appData.pinnedTags = [];
     var pinned = appData.pinnedTags.filter(function (t) { return counts[t]; });
 
-    var sheet = document.createElement('div');
-    sheet.className = 'modal-sheet';
-    sheet.style.maxWidth = '400px';
-    sheet.addEventListener('click', function (e) { e.stopPropagation(); });
+    sheet.innerHTML = '';
 
     var title = document.createElement('h3');
     title.textContent = '常用标签管理';
@@ -3195,9 +3557,6 @@ function showContentTagPanel() {
     closeBtn.textContent = '关闭';
     closeBtn.onclick = function () { overlay.remove(); renderQuickTagButtons(); };
     sheet.appendChild(closeBtn);
-
-    overlay.innerHTML = '';
-    overlay.appendChild(sheet);
   }
 
   renderPanel();
@@ -3808,7 +4167,8 @@ function render() {
     cell.appendChild(numRow);
 
     // 跨度事件 · 短期模式：盖住日期数字（同一天多个的话只取第一个）
-    var dayEvents  = getSpanEventsForDate(ds);
+    // 关闭了"页面显示"的事件不参与月历渲染，但时间线/搜索/详情自动提示不受影响
+    var dayEvents  = getSpanEventsForDate(ds).filter(function(ev) { return ev.showOnCalendar !== false; });
     var coverEvent = dayEvents.find(function(ev) { return ev.displayMode !== 'band'; });
     if (coverEvent) {
       var coverMeta = getCategoryMeta(coverEvent.category);
@@ -3891,6 +4251,18 @@ function render() {
 
     cell.appendChild(contentCol);
 
+    var dayTagId = (appData.dayTags || {})[ds];
+    if (dayTagId) {
+      var dayTagDef = getDayTagDef(dayTagId);
+      if (dayTagDef) {
+        var tagBadge = document.createElement('div');
+        tagBadge.className = 'day-tag-badge';
+        tagBadge.textContent = dayTagDef.icon;
+        tagBadge.title = dayTagDef.label;
+        cell.appendChild(tagBadge);
+      }
+    }
+
     cell.addEventListener('click', (function(dateStr) {
       return function() { openDetail(dateStr); };
     })(ds));
@@ -3915,9 +4287,11 @@ function openDetail(ds) {
   var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
   var leftHtml = '';
+  var curDayTagId = (appData.dayTags || {})[ds] || '';
   leftHtml += '<div class="detail-date-row">' +
     '<div><div class="detail-date-big">' + MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear() + '</div>' +
     '<div class="detail-date-sub">' + DAYS[d.getDay()] + '</div></div>' +
+    '<div id="dayTagCompactWrap">' + buildDayTagCompactHtml(ds, curDayTagId) + '</div>' +
     '</div>';
 
   leftHtml += '<div id="statChipsWrap">' + buildStatChipsHtml(ds) + '</div>';
@@ -3937,6 +4311,7 @@ function openDetail(ds) {
 function closeDetail() {
   selDate = null;
   document.getElementById('detailPanel').classList.remove('open');
+  document.removeEventListener('click', closeDayTagDropdownOutside);
   document.querySelectorAll('.day-cell').forEach(function(c) {
     c.classList.remove('selected');
   });
@@ -3971,6 +4346,57 @@ function renderFitnessBodyLine(ds) {
     line.textContent = text;
     wrap.insertBefore(line, noteAreaEl);
   });
+}
+
+function buildDayTagCompactHtml(ds, currentId) {
+  var def = currentId ? getDayTagDef(currentId) : null;
+  var triggerHtml = def
+    ? '<button type="button" class="daytag-trigger set" onclick="event.stopPropagation();toggleDayTagDropdown()">' + def.icon + ' ' + escHtml(def.label) + '</button>'
+    : '<button type="button" class="daytag-trigger plus" onclick="event.stopPropagation();toggleDayTagDropdown()">+</button>';
+
+  var defs = getDayTagDefs();
+  var optionsHtml = '';
+  if (!defs.length) {
+    optionsHtml = '<div style="font-size:11.5px;color:var(--text-muted);padding:6px 4px;text-align:center;">还没有标签，去设置里新建</div>';
+  } else {
+    defs.forEach(function (d) {
+      optionsHtml += '<button type="button" class="daytag-option' + (d.id === currentId ? ' current' : '') +
+        '" onclick="event.stopPropagation();chooseDayTag(\'' + ds + '\',\'' + d.id + '\')">' + d.icon + ' ' + escHtml(d.label) + '</button>';
+    });
+  }
+  if (currentId) {
+    optionsHtml += '<button type="button" class="daytag-clear" onclick="event.stopPropagation();chooseDayTag(\'' + ds + '\',null)">清除标签</button>';
+  }
+
+  return '<div class="daytag-compact" id="dayTagCompact">' + triggerHtml +
+    '<div class="daytag-dropdown">' + optionsHtml + '</div></div>';
+}
+
+function toggleDayTagDropdown() {
+  var wrap = document.getElementById('dayTagCompact');
+  if (!wrap) return;
+  var willOpen = !wrap.classList.contains('open');
+  wrap.classList.toggle('open');
+  if (willOpen) document.addEventListener('click', closeDayTagDropdownOutside);
+  else document.removeEventListener('click', closeDayTagDropdownOutside);
+}
+function closeDayTagDropdownOutside(e) {
+  var wrap = document.getElementById('dayTagCompact');
+  if (wrap && !wrap.contains(e.target)) {
+    wrap.classList.remove('open');
+    document.removeEventListener('click', closeDayTagDropdownOutside);
+  }
+}
+function chooseDayTag(ds, tagId) {
+  setDayTag(ds, tagId);
+  document.removeEventListener('click', closeDayTagDropdownOutside);
+  refreshDayTagCompact();
+  render();
+}
+function refreshDayTagCompact() {
+  if (typeof selDate === 'undefined' || !selDate) return;
+  var wrap = document.getElementById('dayTagCompactWrap');
+  if (wrap) wrap.innerHTML = buildDayTagCompactHtml(selDate, (appData.dayTags || {})[selDate] || '');
 }
 
 function buildStatChipsHtml(ds) {
@@ -4057,6 +4483,8 @@ function exportJSON() {
     customCategories: appData.customCategories,
     categoryOrder: appData.categoryOrder,
     categoryColors: appData.categoryColors,
+    dayTagDefs: appData.dayTagDefs,
+    dayTags: appData.dayTags,
     todos:     appData.todos,
   };
   var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -4113,6 +4541,8 @@ function importJSON(evt) {
       if (data.customCategories) appData.customCategories = data.customCategories;
       if (data.categoryOrder) appData.categoryOrder = data.categoryOrder;
       if (data.categoryColors) appData.categoryColors = data.categoryColors;
+      if (data.dayTagDefs) appData.dayTagDefs = data.dayTagDefs;
+      if (data.dayTags) appData.dayTags = data.dayTags;
       if (data.todos)    appData.todos    = data.todos;
       saveData();
       render();
