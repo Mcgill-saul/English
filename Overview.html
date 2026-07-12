@@ -1270,6 +1270,13 @@
     color: var(--text);
   }
   .input-box:focus { border-color: var(--blue); background: var(--surface); }
+  select.input-box {
+    -webkit-appearance: none; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235a6070' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 30px;
+  }
   .input-box::placeholder,
   input::placeholder,
   textarea::placeholder { color: var(--text-faint); }
@@ -1293,10 +1300,10 @@
   }
   .mbtn-close:hover { color: var(--text); }
 
-  /* ── 圆形复选框，视觉上跟单选按钮的圆点保持一致，用于开关型选项 ── */
-  .toggle-circle-checkbox {
+  /* ── 圆形指示点，单选/复选通用同一套外观，保证视觉统一 ── */
+  .toggle-dot {
     -webkit-appearance: none; appearance: none;
-    width: 15px; height: 15px;
+    width: 16px; height: 16px;
     border: 1.5px solid var(--border);
     border-radius: 50%;
     background: var(--surface);
@@ -1306,15 +1313,15 @@
     margin: 0;
     transition: all .13s;
   }
-  .toggle-circle-checkbox:checked {
+  .toggle-dot:checked {
     border-color: var(--blue);
-    background: var(--blue);
+    border-width: 2px;
   }
-  .toggle-circle-checkbox:checked::after {
+  .toggle-dot:checked::after {
     content: '';
     position: absolute; top: 50%; left: 50%;
-    width: 5px; height: 5px;
-    background: #fff;
+    width: 8px; height: 8px;
+    background: var(--blue);
     border-radius: 50%;
     transform: translate(-50%, -50%);
   }
@@ -2169,6 +2176,7 @@ function getDefaultData() {
     customCategories: [], // 自定义跨度事件类别：[{ id, label, color }]
     categoryOrder: ['travel', 'game', 'tv'], // 时间线页面里类别行的显示顺序，可拖拽调整
     categoryColors: {}, // 类别颜色覆盖：{ categoryId: '#hex' }，内置和自定义类别都可改
+    categoryOverrides: {}, // 类别名称/图标覆盖：{ categoryId: { icon, label } }，内置和自定义类别都可改
     dayTagDefs: null, // 日期标签类型：[{ id, icon, label }]，null 表示还没初始化过默认值
     dayTags: {}, // 具体某天打了哪个标签：{ 'YYYY-MM-DD': tagDefId }，一天只能打一个
     version:   1
@@ -2215,6 +2223,7 @@ function migrateData() {
   if (!appData.customCategories) appData.customCategories = [];
   if (!appData.categoryOrder) appData.categoryOrder = ['travel', 'game', 'tv'];
   if (!appData.categoryColors) appData.categoryColors = {};
+  if (!appData.categoryOverrides) appData.categoryOverrides = {};
   if (appData.dayTagDefs === null || appData.dayTagDefs === undefined) {
     appData.dayTagDefs = [
       { id: 'lny',  icon: '🧧', label: '除夕' },
@@ -2321,8 +2330,21 @@ function getCategoryMeta(catId) {
     base = custom ? { label: custom.label, icon: CUSTOM_CATEGORY_ICON, color: custom.color }
                    : { label: catId, icon: CUSTOM_CATEGORY_ICON, color: '#7c3aed' };
   }
-  var override = appData.categoryColors && appData.categoryColors[catId];
-  return override ? { label: base.label, icon: base.icon, color: override } : base;
+  var metaOv = appData.categoryOverrides && appData.categoryOverrides[catId];
+  var colorOv = appData.categoryColors && appData.categoryColors[catId];
+  return {
+    label: (metaOv && metaOv.label) || base.label,
+    icon:  (metaOv && metaOv.icon)  || base.icon,
+    color: colorOv || base.color
+  };
+}
+
+function setCategoryMeta(catId, icon, label) {
+  if (!appData.categoryOverrides) appData.categoryOverrides = {};
+  appData.categoryOverrides[catId] = { icon: icon, label: label };
+  saveData();
+  renderTimeline();
+  render();
 }
 
 function setCategoryColor(catId, color) {
@@ -2387,6 +2409,17 @@ function addCustomCategory(label, color) {
   getCategoryOrder(); // 顺带把新类别追加进 categoryOrder，不需要再手动 push
   saveData();
   return id;
+}
+function deleteCustomCategory(catId) {
+  appData.customCategories = (appData.customCategories || []).filter(function (c) { return c.id !== catId; });
+  if (appData.categoryOrder) {
+    appData.categoryOrder = appData.categoryOrder.filter(function (id) { return id !== catId; });
+  }
+  if (appData.categoryColors) delete appData.categoryColors[catId];
+  if (appData.categoryOverrides) delete appData.categoryOverrides[catId];
+  saveData();
+  renderTimeline();
+  render();
 }
 
 function genSpanId() { return 'ev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
@@ -2963,7 +2996,10 @@ function showSpanEventModal(id) {
   var sheet = document.createElement('div');
   sheet.className = 'modal-sheet';
   sheet.style.maxWidth = '380px';
-  sheet.addEventListener('click', function (e) { e.stopPropagation(); });
+  sheet.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (catMenu.style.display !== 'none') catMenu.style.display = 'none';
+  });
 
   var title = document.createElement('h3');
   title.textContent = editing ? '编辑跨度事件' : '添加跨度事件';
@@ -2983,6 +3019,7 @@ function showSpanEventModal(id) {
 
   var catSel = document.createElement('select');
   catSel.className = 'input-box';
+  catSel.style.flex = '1';
   getCategoryOrder().forEach(function (cat) {
     var meta = getCategoryMeta(cat);
     var opt = document.createElement('option');
@@ -2995,7 +3032,108 @@ function showSpanEventModal(id) {
   newCatOpt.textContent = '+ 新建类别…';
   catSel.appendChild(newCatOpt);
   if (editing) catSel.value = editing.category;
-  field('类别', catSel);
+
+  var catMenuWrap = document.createElement('div');
+  catMenuWrap.style.cssText = 'position:relative;flex-shrink:0;';
+
+  var catMenuBtn = document.createElement('button');
+  catMenuBtn.type = 'button';
+  catMenuBtn.title = '编辑 / 删除类别';
+  catMenuBtn.textContent = '⋮';
+  catMenuBtn.style.cssText = 'width:34px;height:34px;border:none;background:none;cursor:pointer;color:var(--text-dim);font-size:17px;font-family:inherit;line-height:1;';
+
+  var catMenu = document.createElement('div');
+  catMenu.style.cssText = 'display:none;position:absolute;top:100%;right:0;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);padding:4px;min-width:84px;z-index:25;';
+
+  var catMenuEditItem = document.createElement('button');
+  catMenuEditItem.type = 'button';
+  catMenuEditItem.textContent = '编辑';
+  catMenuEditItem.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 10px;border:none;background:none;cursor:pointer;font-size:12px;color:var(--text-dim);border-radius:5px;font-family:inherit;';
+  catMenuEditItem.onclick = function (e) {
+    e.stopPropagation();
+    catMenu.style.display = 'none';
+    var meta = getCategoryMeta(catSel.value);
+    catEditIcon.value = meta.icon;
+    catEditLabel.value = meta.label;
+    catEditColor.value = meta.color;
+    catEditWrap.style.display = 'flex';
+  };
+
+  var catMenuDelItem = document.createElement('button');
+  catMenuDelItem.type = 'button';
+  catMenuDelItem.textContent = '删除';
+  catMenuDelItem.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 10px;border:none;background:none;cursor:pointer;font-size:12px;color:#dc2626;border-radius:5px;font-family:inherit;';
+  catMenuDelItem.onclick = function (e) {
+    e.stopPropagation();
+    catMenu.style.display = 'none';
+    if (!confirm('删除这个类别？已有的跨度事件不会被删除，但会显示成未分类样式。')) return;
+    var delId = catSel.value;
+    deleteCustomCategory(delId);
+    var opt = Array.from(catSel.options).find(function (o) { return o.value === delId; });
+    if (opt) opt.remove();
+    catSel.value = getCategoryOrder()[0] || '';
+    catEditWrap.style.display = 'none';
+  };
+
+  catMenu.appendChild(catMenuEditItem);
+  catMenu.appendChild(catMenuDelItem);
+
+  catMenuBtn.onclick = function (e) {
+    e.stopPropagation();
+    if (catSel.value === '__new__') return;
+    var isBuiltIn = !!SPAN_CATEGORIES[catSel.value];
+    catMenuDelItem.style.display = isBuiltIn ? 'none' : 'block';
+    catMenu.style.display = catMenu.style.display === 'none' ? 'block' : 'none';
+  };
+
+  catMenuWrap.appendChild(catMenuBtn);
+  catMenuWrap.appendChild(catMenu);
+
+  var catRow = document.createElement('div');
+  catRow.style.cssText = 'display:flex;gap:2px;align-items:center;';
+  catRow.appendChild(catSel);
+  catRow.appendChild(catMenuWrap);
+  field('类别', catRow);
+
+  var catEditWrap = document.createElement('div');
+  catEditWrap.style.cssText = 'display:none;gap:7px;align-items:center;margin:-4px 0 12px;';
+  var catEditIcon = document.createElement('input');
+  catEditIcon.type = 'text';
+  catEditIcon.className = 'input-box';
+  catEditIcon.maxLength = 4;
+  catEditIcon.style.cssText = 'width:52px;flex-shrink:0;text-align:center;';
+  var catEditLabel = document.createElement('input');
+  catEditLabel.type = 'text';
+  catEditLabel.className = 'input-box';
+  catEditLabel.style.flex = '1';
+  var catEditColor = document.createElement('input');
+  catEditColor.type = 'color';
+  catEditColor.style.cssText = 'width:34px;height:34px;padding:3px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;background:none;flex-shrink:0;';
+  var catEditSaveBtn = document.createElement('button');
+  catEditSaveBtn.type = 'button';
+  catEditSaveBtn.textContent = '保存';
+  catEditSaveBtn.className = 'mbtn mbtn-primary';
+  catEditSaveBtn.style.cssText = 'flex:none;padding:8px 14px;';
+  catEditSaveBtn.onclick = function () {
+    var icon = catEditIcon.value.trim();
+    var label = catEditLabel.value.trim();
+    if (!icon || !label) return;
+    if (!appData.categoryOverrides) appData.categoryOverrides = {};
+    appData.categoryOverrides[catSel.value] = { icon: icon, label: label };
+    if (!appData.categoryColors) appData.categoryColors = {};
+    appData.categoryColors[catSel.value] = catEditColor.value;
+    saveData();
+    renderTimeline();
+    render();
+    var opt = Array.from(catSel.options).find(function (o) { return o.value === catSel.value; });
+    if (opt) opt.textContent = icon + ' ' + label;
+    catEditWrap.style.display = 'none';
+  };
+  catEditWrap.appendChild(catEditIcon);
+  catEditWrap.appendChild(catEditLabel);
+  catEditWrap.appendChild(catEditColor);
+  catEditWrap.appendChild(catEditSaveBtn);
+  sheet.appendChild(catEditWrap);
 
   var newCatWrap = document.createElement('div');
   newCatWrap.style.cssText = 'display:none;gap:7px;align-items:center;margin:-4px 0 12px;';
@@ -3032,6 +3170,7 @@ function showSpanEventModal(id) {
   sheet.appendChild(newCatWrap);
 
   catSel.addEventListener('change', function () {
+    catEditWrap.style.display = 'none';
     newCatWrap.style.display = catSel.value === '__new__' ? 'flex' : 'none';
   });
 
@@ -3062,7 +3201,7 @@ function showSpanEventModal(id) {
     radio.name = modeName;
     radio.value = value;
     radio.checked = currentMode === value;
-    radio.style.accentColor = 'var(--blue)';
+    radio.className = 'toggle-dot';
     lab.appendChild(radio);
 
     var textWrap = document.createElement('div');
@@ -3089,7 +3228,7 @@ function showSpanEventModal(id) {
   showLab.style.cssText = 'flex:1;display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--text);cursor:pointer;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;';
   var showCheckbox = document.createElement('input');
   showCheckbox.type = 'checkbox';
-  showCheckbox.className = 'toggle-circle-checkbox';
+  showCheckbox.className = 'toggle-dot';
   showCheckbox.checked = showOnCalendarDefault;
   showLab.appendChild(showCheckbox);
   showLab.appendChild(document.createTextNode('页面显示'));
@@ -3102,6 +3241,7 @@ function showSpanEventModal(id) {
   var ongoingCheck = document.createElement('input');
   ongoingCheck.type = 'checkbox';
   ongoingCheck.checked = editing ? !editing.end : true;
+  ongoingCheck.style.accentColor = 'var(--blue)';
   ongoingRow.appendChild(ongoingCheck);
   ongoingRow.appendChild(document.createTextNode('还在进行中'));
   sheet.appendChild(ongoingRow);
@@ -4494,6 +4634,7 @@ function exportJSON() {
     customCategories: appData.customCategories,
     categoryOrder: appData.categoryOrder,
     categoryColors: appData.categoryColors,
+    categoryOverrides: appData.categoryOverrides,
     dayTagDefs: appData.dayTagDefs,
     dayTags: appData.dayTags,
     todos:     appData.todos,
@@ -4552,6 +4693,7 @@ function importJSON(evt) {
       if (data.customCategories) appData.customCategories = data.customCategories;
       if (data.categoryOrder) appData.categoryOrder = data.categoryOrder;
       if (data.categoryColors) appData.categoryColors = data.categoryColors;
+      if (data.categoryOverrides) appData.categoryOverrides = data.categoryOverrides;
       if (data.dayTagDefs) appData.dayTagDefs = data.dayTagDefs;
       if (data.dayTags) appData.dayTags = data.dayTags;
       if (data.todos)    appData.todos    = data.todos;
