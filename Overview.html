@@ -2312,6 +2312,33 @@ function extractHashtags(text) {
   return tags;
 }
 
+// 「身体」和跨度事件类别名是系统自动生成的标签，不是笔记里手打的
+// #文字，改名只能改笔记正文，改不了这两种来源，所以不允许在这个
+// 面板里重命名，避免改了名字之后跟自动生成的部分对不上。
+function isRenamableContentTag(tagLabel) {
+  if (tagLabel === '身体') return false;
+  var isCategoryLabel = getCategoryOrder().some(function (cat) {
+    return getCategoryMeta(cat).label === tagLabel;
+  });
+  return !isCategoryLabel;
+}
+
+function renameContentTag(oldTag, newTag) {
+  if (!newTag || newTag === oldTag) return false;
+  var escaped = oldTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  var re = new RegExp('#' + escaped + '(?![^\\s#，。,.!?！？;；\\n])', 'g');
+  Object.keys(appData.notes || {}).forEach(function (ds) {
+    var text = appData.notes[ds];
+    if (text && text.indexOf('#' + oldTag) !== -1) {
+      var updated = text.replace(re, '#' + newTag);
+      if (updated !== text) appData.notes[ds] = updated;
+    }
+  });
+  appData.pinnedTags = (appData.pinnedTags || []).map(function (t) { return t === oldTag ? newTag : t; });
+  saveData();
+  return true;
+}
+
 // ── 跨度事件（旅行/游戏/电视剧……）────────────────────────
 var SPAN_CATEGORIES = {
   travel: { label: '旅行',   icon: '🧳', color: '#0891b2' },
@@ -3592,8 +3619,15 @@ function showContentTagPanel() {
   var sheet = document.createElement('div');
   sheet.className = 'modal-sheet';
   sheet.style.maxWidth = '400px';
-  sheet.addEventListener('click', function (e) { e.stopPropagation(); });
+  sheet.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (openMenuTag) { openMenuTag = null; renderPanel(); }
+  });
   overlay.appendChild(sheet);
+
+  var editingTag = null;
+  var openMenuTag = null;
+  var dragTagName = null;
 
   function renderPanel() {
     var idx = buildContentIndex();
@@ -3625,44 +3659,131 @@ function showContentTagPanel() {
 
     pinned.forEach(function (t, i) {
       var row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border-lt);border-radius:8px;';
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border-lt);border-radius:8px;position:relative;';
 
-      var labelEl = document.createElement('span');
-      labelEl.style.cssText = 'font-size:13px;font-weight:600;color:var(--text);flex:1;';
-      labelEl.textContent = '#' + t + ' (' + counts[t] + ')';
+      if (editingTag === t) {
+        var editInput = document.createElement('input');
+        editInput.type = 'text';
+        editInput.className = 'input-box';
+        editInput.value = t;
+        editInput.style.flex = '1';
 
-      var upBtn = document.createElement('button');
-      upBtn.textContent = '↑';
-      upBtn.style.cssText = 'width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:none;cursor:pointer;color:var(--text-dim);font-family:inherit;' + (i === 0 ? 'opacity:.3;cursor:default;' : '');
-      upBtn.onclick = function () {
-        if (i === 0) return;
-        var arr = appData.pinnedTags;
-        var tmp = arr[i - 1]; arr[i - 1] = arr[i]; arr[i] = tmp;
-        saveData(); renderPanel(); renderQuickTagButtons();
-      };
+        var saveEditBtn = document.createElement('button');
+        saveEditBtn.type = 'button';
+        saveEditBtn.textContent = '保存';
+        saveEditBtn.style.cssText = 'font-size:11.5px;font-weight:600;padding:6px 10px;border-radius:6px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:inherit;flex-shrink:0;';
+        saveEditBtn.onclick = function (e) {
+          e.stopPropagation();
+          var newTag = editInput.value.trim().replace(/^#+/, '');
+          if (!newTag) return;
+          renameContentTag(t, newTag);
+          editingTag = null;
+          renderPanel();
+          renderQuickTagButtons();
+        };
 
-      var downBtn = document.createElement('button');
-      downBtn.textContent = '↓';
-      downBtn.style.cssText = 'width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:none;cursor:pointer;color:var(--text-dim);font-family:inherit;' + (i === pinned.length - 1 ? 'opacity:.3;cursor:default;' : '');
-      downBtn.onclick = function () {
-        if (i === pinned.length - 1) return;
-        var arr = appData.pinnedTags;
-        var tmp = arr[i + 1]; arr[i + 1] = arr[i]; arr[i] = tmp;
-        saveData(); renderPanel(); renderQuickTagButtons();
-      };
+        var cancelEditBtn = document.createElement('button');
+        cancelEditBtn.type = 'button';
+        cancelEditBtn.textContent = '取消';
+        cancelEditBtn.style.cssText = 'font-size:11.5px;padding:6px 9px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text-dim);cursor:pointer;font-family:inherit;flex-shrink:0;';
+        cancelEditBtn.onclick = function (e) {
+          e.stopPropagation();
+          editingTag = null;
+          renderPanel();
+        };
 
-      var rmBtn = document.createElement('button');
-      rmBtn.textContent = '移除';
-      rmBtn.style.cssText = 'font-size:11.5px;padding:4px 9px;border-radius:6px;border:1px solid var(--border);background:none;color:#dc2626;cursor:pointer;font-family:inherit;';
-      rmBtn.onclick = function () {
-        appData.pinnedTags = appData.pinnedTags.filter(function (x) { return x !== t; });
-        saveData(); renderPanel(); renderQuickTagButtons();
-      };
+        row.appendChild(editInput);
+        row.appendChild(saveEditBtn);
+        row.appendChild(cancelEditBtn);
+      } else {
+        row.draggable = true;
 
-      row.appendChild(labelEl);
-      row.appendChild(upBtn);
-      row.appendChild(downBtn);
-      row.appendChild(rmBtn);
+        row.addEventListener('dragstart', function (e) {
+          dragTagName = t;
+          row.style.opacity = '.4';
+          if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+        });
+        row.addEventListener('dragend', function () { row.style.opacity = ''; });
+        row.addEventListener('dragover', function (e) {
+          e.preventDefault();
+          row.style.outline = '2px dashed var(--blue)';
+        });
+        row.addEventListener('dragleave', function () { row.style.outline = ''; });
+        row.addEventListener('drop', function (e) {
+          e.preventDefault();
+          row.style.outline = '';
+          if (!dragTagName || dragTagName === t) return;
+          var arr = appData.pinnedTags.slice();
+          var fromIdx = arr.indexOf(dragTagName);
+          var toIdx = arr.indexOf(t);
+          if (fromIdx === -1 || toIdx === -1) return;
+          arr.splice(fromIdx, 1);
+          arr.splice(toIdx, 0, dragTagName);
+          appData.pinnedTags = arr;
+          saveData();
+          dragTagName = null;
+          renderPanel();
+          renderQuickTagButtons();
+        });
+
+        var handle = document.createElement('span');
+        handle.textContent = '⠿';
+        handle.title = '拖拽排序';
+        handle.style.cssText = 'color:var(--text-muted);font-size:13px;flex-shrink:0;cursor:grab;';
+
+        var labelEl = document.createElement('span');
+        labelEl.style.cssText = 'font-size:13px;font-weight:600;color:var(--text);flex:1;';
+        labelEl.textContent = '#' + t + ' (' + counts[t] + ')';
+
+        var menuBtn = document.createElement('button');
+        menuBtn.type = 'button';
+        menuBtn.textContent = '⋮';
+        menuBtn.title = '编辑 / 移除';
+        menuBtn.style.cssText = 'width:22px;height:22px;border:none;background:none;cursor:pointer;color:var(--text-dim);font-size:16px;font-family:inherit;flex-shrink:0;line-height:1;';
+        menuBtn.onclick = function (e) {
+          e.stopPropagation();
+          openMenuTag = (openMenuTag === t) ? null : t;
+          renderPanel();
+        };
+
+        row.appendChild(handle);
+        row.appendChild(labelEl);
+        row.appendChild(menuBtn);
+
+        if (openMenuTag === t) {
+          var menu = document.createElement('div');
+          menu.style.cssText = 'position:absolute;top:100%;right:10px;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);padding:4px;min-width:84px;z-index:20;';
+
+          if (isRenamableContentTag(t)) {
+            var editItem = document.createElement('button');
+            editItem.type = 'button';
+            editItem.textContent = '编辑';
+            editItem.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 10px;border:none;background:none;cursor:pointer;font-size:12px;color:var(--text-dim);border-radius:5px;font-family:inherit;';
+            editItem.onclick = function (e) {
+              e.stopPropagation();
+              editingTag = t;
+              openMenuTag = null;
+              renderPanel();
+            };
+            menu.appendChild(editItem);
+          }
+
+          var rmItem = document.createElement('button');
+          rmItem.type = 'button';
+          rmItem.textContent = '移除';
+          rmItem.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 10px;border:none;background:none;cursor:pointer;font-size:12px;color:#dc2626;border-radius:5px;font-family:inherit;';
+          rmItem.onclick = function (e) {
+            e.stopPropagation();
+            appData.pinnedTags = appData.pinnedTags.filter(function (x) { return x !== t; });
+            openMenuTag = null;
+            saveData(); renderPanel(); renderQuickTagButtons();
+          };
+          menu.appendChild(rmItem);
+
+          row.appendChild(menu);
+        }
+      }
+
       list.appendChild(row);
     });
 
