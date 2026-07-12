@@ -1623,11 +1623,14 @@ let _xirrCalcRows = _saved && _saved.XIRR_CALC_ROWS ? _saved.XIRR_CALC_ROWS : [[
         <select class="fi" id="mc-type"><option>成本资金</option><option>分红</option><option>年度快照</option></select>
       </div>
       <div class="form-row"><label class="form-label">币种</label>
-        <select class="fi" id="mc-ccy"><option>CNY</option><option>USD</option><option>HKD</option></select>
+        <select class="fi" id="mc-ccy" onchange="_onMcCcyChange()"><option>CNY</option><option>USD</option><option>HKD</option></select>
       </div>
       <div class="form-row"><label class="form-label">金额</label><input class="fi" type="number" id="mc-amount" placeholder="买入填负数，卖出/分红填正数"></div>
     </div>
-    <div class="form-row"><label class="form-label">备注</label><input class="fi" id="mc-note" placeholder="可选"></div>
+    <div class="fg2">
+      <div class="form-row"><label class="form-label">汇率</label><input class="fi" type="number" step="0.0001" id="mc-fxrate" onchange="_mcFxRateTouched=true"></div>
+      <div class="form-row"><label class="form-label">备注</label><input class="fi" id="mc-note" placeholder="可选"></div>
+    </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeMo('mo-cf')">取消</button>
       <button class="btn btn-primary" onclick="saveCF()">保存</button>
@@ -2088,6 +2091,16 @@ document.addEventListener('click', ()=>document.querySelectorAll('.kebab-menu').
 // ── helpers ──
 function today(){return new Date().toISOString().slice(0,10)}
 function toCNY(a,c){return a*(FX[c]||1)}
+// “流水”专用换算：优先用这条记录当时保存的汇率(fxRate)，
+// 没有该字段（历史旧数据，或本来就是CNY）时退回当前汇率表 —— 和以前的行为完全一致，
+// 只有你主动在流水弹窗里填了历史汇率的记录，换算结果才会变。
+// 适用于 CASHFLOWS 里的全部类型：成本资金/分红/共管转让/年度快照——
+// 年度快照按历史汇率换算，是为了让趋势图里同一笔历史快照的人民币金额不会因为“今天的汇率变了”而跟着漂移。
+function costCNY(c){
+  if(c.ccy==='CNY') return c.amount;
+  const rate = (c.fxRate!=null && c.fxRate>0) ? c.fxRate : (FX[c.ccy]||1);
+  return c.amount * rate;
+}
 function fmtCNY(v){return '¥'+v.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function fmtPct(v){return(v>=0?'+':'')+v.toFixed(2)+'%'}
 function _xirrResultHtml(r,cf){
@@ -2145,7 +2158,7 @@ function buildL1XirrFlows(l1name){
   const marketVal=l1MarketVal(l1name);
   if(!marketVal)return null;
   // user convention already matches XIRR: buy = negative (cash out), sell = positive (cash in)
-  const cf=costs.map(c=>({date:c.date,amount:toCNY(c.amount,c.ccy)}));
+  const cf=costs.map(c=>({date:c.date,amount:costCNY(c)}));
   cf.push({date:today(),amount:marketVal});
   cf.sort((a,b)=>a.date.localeCompare(b.date));
   return cf;
@@ -2172,20 +2185,20 @@ function _globalYearlyStats(){
       closeDate = todayStr;
     } else {
       close = flows.filter(c=>c.type==='年度快照'&&c.date.startsWith(String(Y)))
-                   .reduce((s,c)=>s+toCNY(c.amount,c.ccy),0);
+                   .reduce((s,c)=>s+costCNY(c),0);
       closeDate = `${Y}-12-31`;
     }
     let open=null, openAvailable=false;
     const prevSnaps = flows.filter(c=>c.type==='年度快照'&&c.date.startsWith(String(Y-1)));
     if(prevSnaps.length){
-      open = prevSnaps.reduce((s,c)=>s+toCNY(c.amount,c.ccy),0);
+      open = prevSnaps.reduce((s,c)=>s+costCNY(c),0);
       openAvailable = true;
     } else if(Y===inceptionYear){
       open = 0;
       openAvailable = true;
     }
     const costsY = flows.filter(c=>(c.type==='成本资金'||c.type==='分红'||c.type==='共管转让')&&new Date(c.date).getFullYear()===Y)
-                         .map(c=>({date:c.date, amount:toCNY(c.amount,c.ccy)}));
+                         .map(c=>({date:c.date, amount:costCNY(c)}));
     const netCostSignedY = costsY.reduce((s,c)=>s+c.amount,0);
     let gain=null, rate=null;
     if(openAvailable){
@@ -2447,7 +2460,7 @@ function buildGroupXirrFlows(level, groupName){
   if(!costs.length)return null;
   const marketVal=_groupMarketVal2(level,groupName);
   if(!marketVal)return null;
-  const cf=costs.map(c=>({date:c.date,amount:toCNY(c.amount,c.ccy)}));
+  const cf=costs.map(c=>({date:c.date,amount:costCNY(c)}));
   cf.push({date:today(),amount:marketVal});
   cf.sort((a,b)=>a.date.localeCompare(b.date));
   return cf;
@@ -2455,30 +2468,43 @@ function buildGroupXirrFlows(level, groupName){
 
 // ── 「若未转让」XIRR 辅助 ──
 // 计算某一级组合若无共管转让、持仓留到今天，市值会多出多少
+// 返回该 L1 组合"若未转让"应加回的份额价值——按共管持仓自己的币种(sp.ccy)原始计算，
+// 不在这里换算成人民币（换算交给调用方，因为调用方可能需要人民币口径也可能需要外币口径）
 function _l1WouldBeDelta(l1name){
-  let delta=0;
+  const byCcy = {}; // ccy -> 原始金额
   SHARED_PRODUCTS.forEach(sp=>{
     const st=_computeSharedProductState(sp);
     (sp.lots||[]).forEach(lot=>{
       if(lot.l1!==l1name) return;
       const outU=st.transferOutUnits[lot.id]||0;
       if(outU<=0||!st.nav) return;
-      delta+=outU*st.nav;
+      const ccy = sp.ccy||'CNY';
+      byCcy[ccy] = (byCcy[ccy]||0) + outU*st.nav;
     });
   });
-  return delta;
+  return byCcy;
 }
+// 汇总一个组合(可能含多个L1)的"若未转让"份额价值。
+// 返回 {cny: 换算成人民币后的合计（用当前汇率，因为这是"假设放到今天值多少钱"，本就该用当前汇率）,
+//       byCcy: {ccy: 原始金额} 按币种汇总，供外币口径展示用}
 function _groupWouldBeDelta(level, groupName){
   const members=level===1?[groupName]:_groupL1Members(level,groupName);
-  return members.reduce((s,l1)=>s+_l1WouldBeDelta(l1),0);
+  const byCcy = {};
+  members.forEach(l1=>{
+    const d = _l1WouldBeDelta(l1);
+    Object.keys(d).forEach(ccy=>{ byCcy[ccy] = (byCcy[ccy]||0) + d[ccy]; });
+  });
+  let cny = 0;
+  Object.keys(byCcy).forEach(ccy=>{ cny += byCcy[ccy] * (ccy==='CNY' ? 1 : (FX[ccy]||1)); });
+  return {cny, byCcy};
 }
 // 若未转让视角：剔除「共管转让」流水，终值加回 wouldBe delta
 function buildGroupXirrFlowsWouldBe(level, groupName){
   const costs=_groupCashflows(level,groupName).filter(c=>c.type==='成本资金'||c.type==='分红');
   if(!costs.length) return null;
-  const marketVal=_groupMarketVal2(level,groupName)+_groupWouldBeDelta(level,groupName);
+  const marketVal=_groupMarketVal2(level,groupName)+_groupWouldBeDelta(level,groupName).cny;
   if(!marketVal) return null;
-  const cf=costs.map(c=>({date:c.date,amount:toCNY(c.amount,c.ccy)}));
+  const cf=costs.map(c=>({date:c.date,amount:costCNY(c)}));
   cf.push({date:today(),amount:marketVal});
   cf.sort((a,b)=>a.date.localeCompare(b.date));
   return cf;
@@ -3195,6 +3221,16 @@ function fmtForeign(v,ccy){
   const sym = ccy==='USD'?'$':ccy==='HKD'?'HK$':'';
   return sym+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+(sym?'':' '+ccy);
 }
+// 判断一组品种里的外币构成：null=纯人民币，'MIXED'=两种及以上外币混合，否则返回唯一的外币代码
+function _soleForeignCcy(prods){
+  const set = new Set(prods.map(p=>p.ccy).filter(c=>c && c!=='CNY'));
+  if(set.size===0) return null;
+  return set.size===1 ? [...set][0] : 'MIXED';
+}
+// 多币种混合时的小提醒图标（悬浮显示说明），不点开、不占地方
+function _mixedCcyHint(){
+  return `<span title="该范围内含多种外币持仓，暂不显示外币合计" style="cursor:help;color:var(--text3);font-size:10px;border:1px solid var(--border2);border-radius:50%;width:13px;height:13px;display:inline-flex;align-items:center;justify-content:center;line-height:1;flex-shrink:0">i</span>`;
+}
 
 function renderMarketPlan(){
   const labels={A:'A股',H:'H股',US:'美股'};
@@ -3290,15 +3326,15 @@ function _renderMarketPlanResults(){
 // ── Overview ──
 function renderOverview(){
   const total=totalCNY();
-  const invested=CASHFLOWS.filter(c=>c.type==='成本资金'&&c.amount<0).reduce((s,c)=>s+Math.abs(toCNY(c.amount,c.ccy)),0);
-  const dividends=CASHFLOWS.filter(c=>c.type==='分红').reduce((s,c)=>s+toCNY(c.amount,c.ccy),0);
-  const redeemed=CASHFLOWS.filter(c=>c.type==='成本资金'&&c.amount>0).reduce((s,c)=>s+toCNY(c.amount,c.ccy),0);
+  const invested=CASHFLOWS.filter(c=>c.type==='成本资金'&&c.amount<0).reduce((s,c)=>s+Math.abs(costCNY(c)),0);
+  const dividends=CASHFLOWS.filter(c=>c.type==='分红').reduce((s,c)=>s+costCNY(c),0);
+  const redeemed=CASHFLOWS.filter(c=>c.type==='成本资金'&&c.amount>0).reduce((s,c)=>s+costCNY(c),0);
   const received=dividends+redeemed;
   const netCost=invested-received;
   const gain=total-netCost;
   const gainPct=netCost>0?gain/netCost*100:0;
   // global xirr — 终值使用当前实时总市值，不使用年度快照
-  const allCosts=CASHFLOWS.filter(c=>c.type==='成本资金'||c.type==='分红'||c.type==='共管转让').map(c=>({date:c.date,amount:toCNY(c.amount,c.ccy)}));
+  const allCosts=CASHFLOWS.filter(c=>c.type==='成本资金'||c.type==='分红'||c.type==='共管转让').map(c=>({date:c.date,amount:costCNY(c)}));
   let globalR=null;
   if(allCosts.length&&total>0){
     const cf=[...allCosts,{date:today(),amount:total}].sort((a,b)=>a.date.localeCompare(b.date));
@@ -3641,9 +3677,9 @@ function onHDragEnd(e){ e.currentTarget.classList.remove('drag-active'); _hDragN
 let cfF='all';
 function renderCashflow(){
   const isDividendCF=c=>c.type==='分红';
-  const invested=CASHFLOWS.filter(c=>c.type==='成本资金'&&c.amount<0).reduce((s,c)=>s+Math.abs(toCNY(c.amount,c.ccy)),0);
-  const dividends=CASHFLOWS.filter(isDividendCF).reduce((s,c)=>s+toCNY(c.amount,c.ccy),0);
-  const redeemed=CASHFLOWS.filter(c=>c.type==='成本资金'&&c.amount>0).reduce((s,c)=>s+toCNY(c.amount,c.ccy),0);
+  const invested=CASHFLOWS.filter(c=>c.type==='成本资金'&&c.amount<0).reduce((s,c)=>s+Math.abs(costCNY(c)),0);
+  const dividends=CASHFLOWS.filter(isDividendCF).reduce((s,c)=>s+costCNY(c),0);
+  const redeemed=CASHFLOWS.filter(c=>c.type==='成本资金'&&c.amount>0).reduce((s,c)=>s+costCNY(c),0);
   const snaps=CASHFLOWS.filter(c=>c.type==='年度快照').sort((a,b)=>b.date.localeCompare(a.date));
   const ls=snaps[0];
   document.getElementById('cf-kpi').innerHTML=`
@@ -3700,7 +3736,7 @@ function _renderACFTable(){
       <td style="color:var(--text3);font-size:11px">${c.date}</td>
       <td style="font-weight:600">${c.l1||''}</td>
       <td class="${c.amount>0?'pos':'neg'}">${c.amount>0?'+':''}${c.amount.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})} ${c.ccy}</td>
-      <td>${fmtCNY(toCNY(c.amount,c.ccy))}</td>
+      <td>${fmtCNY(costCNY(c))}</td>
       <td style="color:var(--text3);font-size:11px">${c.note||''}</td>
       <td><button class="kebab-btn" onclick="_openKebab(event,[{l:'编辑',a:'openACFModal(${idx})'},{l:'删除',a:'deleteACF(${idx})',d:1}])">⋮</button></td>
     </tr>`;
@@ -3778,7 +3814,7 @@ function _renderCFTable(){
       <td style="font-weight:600">${l1Val}</td>
       <td><span class="pill ${pillCls}">${displayType}</span></td>
       <td class="${c.type==='成本资金'?(c.amount>0?'pos':'neg'):''}">${c.amount>0?'+':''}${c.amount.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})} ${c.ccy}</td>
-      <td>${fmtCNY(toCNY(c.amount,c.ccy))}</td>
+      <td>${fmtCNY(costCNY(c))}</td>
       <td style="color:var(--text3);font-size:11px">${c.note||''}</td>
       <td>${c._sharedSrc
         ? `<button class="kebab-btn" onclick="_openKebab(event,[{l:'编辑备注',a:'editSharedCFNote(\\\'${c._sharedKey}\\\')'}])">⋮</button>`
@@ -3790,7 +3826,7 @@ function _renderCFTable(){
 
 // ── XIRR page ──
 function renderXirr(){
-  const allCosts=CASHFLOWS.filter(c=>c.type==='成本资金'||c.type==='分红'||c.type==='共管转让').map(c=>({date:c.date,amount:toCNY(c.amount,c.ccy)}));
+  const allCosts=CASHFLOWS.filter(c=>c.type==='成本资金'||c.type==='分红'||c.type==='共管转让').map(c=>({date:c.date,amount:costCNY(c)}));
   const total=totalCNY();
   let gr=null;
   if(allCosts.length&&total>0){const cf=[...allCosts,{date:today(),amount:total}].sort((a,b)=>a.date.localeCompare(b.date));gr=xirr(cf)}
@@ -3985,10 +4021,24 @@ function deleteProduct(idx){
 }
 
 // ── CF modal ──
+let _mcFxRateTouched = false; // 用户是否手动改过汇率输入框；没改过的话，切换币种时可以放心帮他重新预填当前汇率
+function _onMcCcyChange(){
+  const ccy = document.getElementById('mc-ccy').value;
+  const rateEl = document.getElementById('mc-fxrate');
+  if(ccy==='CNY'){
+    rateEl.value = 1;
+    rateEl.disabled = true;
+  } else {
+    rateEl.disabled = false;
+    if(!_mcFxRateTouched || !rateEl.value || parseFloat(rateEl.value)<=0){
+      rateEl.value = FX[ccy] || 1;
+    }
+  }
+}
 function openCFModal(idx){
   document.getElementById('mc-idx').value=idx;
   document.getElementById('mc-title').textContent=idx<0?'新增流水':'编辑流水';
-  const c=idx>=0?CASHFLOWS[idx]:{date:today(),l1:getAllL1()[0]||'',type:'成本资金',ccy:'CNY',amount:0,note:''};
+  const c=idx>=0?CASHFLOWS[idx]:{date:today(),l1:getAllL1()[0]||'',type:'成本资金',ccy:'CNY',amount:0,fxRate:null,note:''};
   const sel=document.getElementById('mc-l1');
   const l1s=getAllL1();
   sel.innerHTML=l1s.length
@@ -3999,6 +4049,10 @@ function openCFModal(idx){
   document.getElementById('mc-ccy').value=c.ccy;
   document.getElementById('mc-amount').value=c.amount;
   document.getElementById('mc-note').value=c.note||'';
+  // 已有历史汇率的记录（编辑时）：标记为"已手动填过"，避免下面 _onMcCcyChange() 把它按当前汇率覆盖掉
+  _mcFxRateTouched = !!(c.ccy!=='CNY' && c.fxRate!=null && c.fxRate>0);
+  document.getElementById('mc-fxrate').value = c.ccy==='CNY' ? 1 : (_mcFxRateTouched ? c.fxRate : (FX[c.ccy]||1));
+  _onMcCcyChange();
   document.getElementById('mo-cf').classList.add('open');
 }
 function saveCF(){
@@ -4006,11 +4060,13 @@ function saveCF(){
   let type=document.getElementById('mc-type').value;
   let amount=parseFloat(document.getElementById('mc-amount').value)||0;
   let note=document.getElementById('mc-note').value.trim();
+  let ccy=document.getElementById('mc-ccy').value;
+  let fxRate = ccy==='CNY' ? 1 : (parseFloat(document.getElementById('mc-fxrate').value)||FX[ccy]||1);
   // 分红：强制正数，直接存 type='分红'
   if(type==='分红'){
     amount=Math.abs(amount);
   }
-  const cf={date:document.getElementById('mc-date').value,l1:document.getElementById('mc-l1').value,type,ccy:document.getElementById('mc-ccy').value,amount,note};
+  const cf={date:document.getElementById('mc-date').value,l1:document.getElementById('mc-l1').value,type,ccy,amount,fxRate,note};
   if(!cf.date||!cf.amount){toast('请填写日期和金额',true);return}
   if(!cf.l1){toast('请选择一级组合',true);return}
   if(idx<0)CASHFLOWS.push(cf);else CASHFLOWS[idx]=cf;
@@ -4505,13 +4561,13 @@ function _getSnapshotPoints(mode, level, group){
     const byDate = {};
     CASHFLOWS.filter(c=>c.type==='年度快照').forEach(c=>{
       if(!byDate[c.date]) byDate[c.date]=0;
-      byDate[c.date] += toCNY(c.amount, c.ccy);
+      byDate[c.date] += costCNY(c);
     });
     yearlySnaps = Object.entries(byDate).map(([date,amount])=>({date, amount, src:'yearly'}));
   } else {
     yearlySnaps = CASHFLOWS
       .filter(c=>c.type==='年度快照' && (c.l1===group||c.product===group))
-      .map(c=>({date:c.date, amount:toCNY(c.amount,c.ccy), src:'yearly'}));
+      .map(c=>({date:c.date, amount:costCNY(c), src:'yearly'}));
   }
   // merge: prefer snap over yearly on same date
   const snapDates = new Set(pts.map(p=>p.date));
@@ -4667,9 +4723,15 @@ function renderBoard(){
         const r = flows ? xirr(flows) : null;
         const isActive = _boardGroup === g;
         const esc = g.replace(/'/g,"\\'");
+        const soleCcy = _soleForeignCcy(prods);
+        const foreignExtra = soleCcy==='MIXED'
+          ? ` ${_mixedCcyHint()}`
+          : soleCcy
+            ? ` <span style="font-size:10px;color:var(--blue);opacity:.8">${fmtForeign(prods.filter(p=>p.ccy===soleCcy).reduce((s,p)=>s+p.amount,0), soleCcy)}</span>`
+            : '';
         return `<div class="bl1-card ${isActive?'active':''}" onclick="selectBoardGroup('${esc}')">
           <div class="bl1-card-name" title="${g}">${g}</div>
-          <div class="bl1-card-val">${fmtCNY(val)}</div>
+          <div class="bl1-card-val">${fmtCNY(val)}${foreignExtra}</div>
           <div class="bl1-card-sub">
             <span>${pct.toFixed(2)}%</span>
             <span>${prods.length}个品种</span>
@@ -4723,10 +4785,10 @@ function _l1XirrFromYear(l1name, fromYear){
   const costs = CASHFLOWS.filter(c=>(c.l1||c.product)===l1name&&(c.type==='成本资金'||c.type==='分红')&&new Date(c.date).getFullYear()>=fromYear);
   const cf = [];
   if(prevSnaps.length){
-    const open = prevSnaps.reduce((s,c)=>s+toCNY(c.amount,c.ccy),0);
+    const open = prevSnaps.reduce((s,c)=>s+costCNY(c),0);
     cf.push({date:`${fromYear}-01-01`, amount:-open, label:`${fromYear-1} 年末快照（期初净值）`});
   }
-  costs.forEach(c=>cf.push({date:c.date, amount:toCNY(c.amount,c.ccy), label:c.type==='分红'?'分红':'成本资金'}));
+  costs.forEach(c=>cf.push({date:c.date, amount:costCNY(c), label:c.type==='分红'?'分红':'成本资金'}));
   if(!cf.length) return null;
   cf.push({date:today(), amount:l1Total, label:'今日市值（期末）'});
   cf.sort((a,b)=>a.date.localeCompare(b.date));
@@ -4741,11 +4803,11 @@ function _l1XirrRange(l1name, fromYear, toYear){
   const prevSnaps = CASHFLOWS.filter(c=>(c.l1||c.product)===l1name&&c.type==='年度快照'&&c.date.startsWith(String(fromYear-1)));
   const endSnaps  = CASHFLOWS.filter(c=>(c.l1||c.product)===l1name&&c.type==='年度快照'&&c.date.startsWith(String(toYear)));
   if(!prevSnaps.length||!endSnaps.length) return null;
-  const open  = prevSnaps.reduce((s,c)=>s+toCNY(c.amount,c.ccy),0);
-  const close = endSnaps.reduce((s,c)=>s+toCNY(c.amount,c.ccy),0);
+  const open  = prevSnaps.reduce((s,c)=>s+costCNY(c),0);
+  const close = endSnaps.reduce((s,c)=>s+costCNY(c),0);
   const costs = CASHFLOWS.filter(c=>(c.l1||c.product)===l1name&&(c.type==='成本资金'||c.type==='分红')).filter(c=>{const y=new Date(c.date).getFullYear();return y>=fromYear&&y<=toYear;});
   const cf = [{date:`${fromYear}-01-01`, amount:-open, label:`${fromYear-1} 年末快照（期初净值）`}];
-  costs.forEach(c=>cf.push({date:c.date, amount:toCNY(c.amount,c.ccy), label:c.type==='分红'?'分红':'成本资金'}));
+  costs.forEach(c=>cf.push({date:c.date, amount:costCNY(c), label:c.type==='分红'?'分红':'成本资金'}));
   cf.push({date:`${toYear}-12-31`, amount:close, label:`${toYear} 年末快照（期末净值）`});
   cf.sort((a,b)=>a.date.localeCompare(b.date));
   return {r:xirr(cf), cf};
@@ -4781,7 +4843,7 @@ function _l1YearlyStats(l1name){
       closeDate = todayStr;
     } else {
       const curSnaps = flows.filter(c=>c.type==='年度快照'&&c.date.startsWith(String(Y)));
-      close = curSnaps.reduce((s,c)=>s+toCNY(c.amount,c.ccy),0);
+      close = curSnaps.reduce((s,c)=>s+costCNY(c),0);
       closeDate = `${Y}-12-31`;
     }
 
@@ -4789,7 +4851,7 @@ function _l1YearlyStats(l1name){
     let open=null, openAvailable=false, openLabel='';
     const prevSnaps = flows.filter(c=>c.type==='年度快照'&&c.date.startsWith(String(Y-1)));
     if(prevSnaps.length){
-      open = prevSnaps.reduce((s,c)=>s+toCNY(c.amount,c.ccy),0);
+      open = prevSnaps.reduce((s,c)=>s+costCNY(c),0);
       openAvailable = true;
       openLabel = `${Y-1} 年末快照（期初净值）`;
     } else if(Y===inceptionYear){
@@ -4800,7 +4862,7 @@ function _l1YearlyStats(l1name){
 
     // ── within-year cost flows（含共管转让，与全程XIRR口径一致）──
     const costsY = flows.filter(c=>(c.type==='成本资金'||c.type==='分红'||c.type==='共管转让')&&new Date(c.date).getFullYear()===Y)
-                         .map(c=>({date:c.date, amount:toCNY(c.amount,c.ccy), label:c.type==='共管转让'?'共管转让':c.type==='分红'?'分红':'成本资金'}));
+                         .map(c=>({date:c.date, amount:costCNY(c), label:c.type==='共管转让'?'共管转让':c.type==='分红'?'分红':'成本资金'}));
     const netCostSignedY = costsY.reduce((s,c)=>s+c.amount,0);
     const netInvested = -netCostSignedY;
 
@@ -4830,10 +4892,10 @@ function _groupXirrFromYear(level, groupName, fromYear){
   const costs = flows.filter(c=>(c.type==='成本资金'||c.type==='分红')&&new Date(c.date).getFullYear()>=fromYear);
   const cf = [];
   if(prevSnaps.length){
-    const open = prevSnaps.reduce((s,c)=>s+toCNY(c.amount,c.ccy),0);
+    const open = prevSnaps.reduce((s,c)=>s+costCNY(c),0);
     cf.push({date:`${fromYear}-01-01`, amount:-open, label:`${fromYear-1} 年末快照（期初净值）`});
   }
-  costs.forEach(c=>cf.push({date:c.date, amount:toCNY(c.amount,c.ccy), label:c.type==='分红'?'分红':'成本资金'}));
+  costs.forEach(c=>cf.push({date:c.date, amount:costCNY(c), label:c.type==='分红'?'分红':'成本资金'}));
   if(!cf.length) return null;
   cf.push({date:today(), amount:grpTotal, label:'今日市值（期末）'});
   cf.sort((a,b)=>a.date.localeCompare(b.date));
@@ -4854,14 +4916,14 @@ function _groupXirrRange(level, groupName, fromYear, toYear){
     closeLabel = '今日市值（期末，本年未结算）';
   } else {
     if(!endSnaps.length) return null;
-    close = endSnaps.reduce((s,c)=>s+toCNY(c.amount,c.ccy),0);
+    close = endSnaps.reduce((s,c)=>s+costCNY(c),0);
     closeDate = `${toYear}-12-31`;
     closeLabel = `${toYear} 年末快照（期末净值）`;
   }
-  const open = prevSnaps.reduce((s,c)=>s+toCNY(c.amount,c.ccy),0);
+  const open = prevSnaps.reduce((s,c)=>s+costCNY(c),0);
   const costs = flows.filter(c=>(c.type==='成本资金'||c.type==='分红')).filter(c=>{const y=new Date(c.date).getFullYear();return y>=fromYear&&y<=toYear;});
   const cf = [{date:`${fromYear}-01-01`, amount:-open, label:`${fromYear-1} 年末快照（期初净值）`}];
-  costs.forEach(c=>cf.push({date:c.date, amount:toCNY(c.amount,c.ccy), label:c.type==='分红'?'分红':'成本资金'}));
+  costs.forEach(c=>cf.push({date:c.date, amount:costCNY(c), label:c.type==='分红'?'分红':'成本资金'}));
   cf.push({date:closeDate, amount:close, label:closeLabel});
   cf.sort((a,b)=>a.date.localeCompare(b.date));
   return {r:xirr(cf), cf};
@@ -4885,13 +4947,13 @@ function _groupYearlyStats(level, groupName){
       closeDate = todayStr;
     } else {
       const curSnaps = flows.filter(c=>c.type==='年度快照'&&c.date.startsWith(String(Y)));
-      close = curSnaps.reduce((s,c)=>s+toCNY(c.amount,c.ccy),0);
+      close = curSnaps.reduce((s,c)=>s+costCNY(c),0);
       closeDate = `${Y}-12-31`;
     }
     let open=null, openAvailable=false, openLabel='';
     const prevSnaps = flows.filter(c=>c.type==='年度快照'&&c.date.startsWith(String(Y-1)));
     if(prevSnaps.length){
-      open = prevSnaps.reduce((s,c)=>s+toCNY(c.amount,c.ccy),0);
+      open = prevSnaps.reduce((s,c)=>s+costCNY(c),0);
       openAvailable = true;
       openLabel = `${Y-1} 年末快照（期初净值）`;
     } else if(Y===inceptionYear){
@@ -4900,7 +4962,7 @@ function _groupYearlyStats(level, groupName){
       openLabel = `${Y} 年建仓（期初记为 0）`;
     }
     const costsY = flows.filter(c=>(c.type==='成本资金'||c.type==='分红'||c.type==='共管转让')&&new Date(c.date).getFullYear()===Y)
-                         .map(c=>({date:c.date, amount:toCNY(c.amount,c.ccy), label:c.type==='共管转让'?'共管转让':c.type==='分红'?'分红':'成本资金'}));
+                         .map(c=>({date:c.date, amount:costCNY(c), label:c.type==='共管转让'?'共管转让':c.type==='分红'?'分红':'成本资金'}));
     const netCostSignedY = costsY.reduce((s,c)=>s+c.amount,0);
     const netInvested = -netCostSignedY;
     let gain=null, rate=null, cf=null;
@@ -4979,7 +5041,7 @@ function buildActualXirrFlows(lv, groupName){
       ACTUAL_CASHFLOWS.filter(c=>c.l1===l1).forEach(c=>flows.push({date:c.date,amount:toCNY(c.amount,c.ccy)}));
     } else {
       CASHFLOWS.filter(c=>(c.l1||c.product)===l1&&(c.type==='成本资金'||c.type==='分红'||c.type==='共管转让'))
-        .forEach(c=>flows.push({date:c.date,amount:toCNY(c.amount,c.ccy)}));
+        .forEach(c=>flows.push({date:c.date,amount:costCNY(c)}));
     }
   });
   if(!flows.length) return null;
@@ -5001,12 +5063,24 @@ function _renderGroupBoard(lv, groupName){
 
   // Financials
   const cfs = _groupCashflows(lv, groupName);
-  const invested  = cfs.filter(c=>c.type==='成本资金'&&c.amount<0).reduce((s,c)=>s+Math.abs(toCNY(c.amount,c.ccy)),0);
-  const dividends = cfs.filter(c=>c.type==='分红').reduce((s,c)=>s+toCNY(c.amount,c.ccy),0);
-  const redeemed  = cfs.filter(c=>c.type==='成本资金'&&c.amount>0).reduce((s,c)=>s+toCNY(c.amount,c.ccy),0);
+  const invested  = cfs.filter(c=>c.type==='成本资金'&&c.amount<0).reduce((s,c)=>s+Math.abs(costCNY(c)),0);
+  const dividends = cfs.filter(c=>c.type==='分红').reduce((s,c)=>s+costCNY(c),0);
+  const redeemed  = cfs.filter(c=>c.type==='成本资金'&&c.amount>0).reduce((s,c)=>s+costCNY(c),0);
   const netCost = invested - redeemed - dividends;
   const gain    = grpTotal - netCost;
   const gainPct = netCost>0 ? gain/netCost*100 : 0;
+  // 外币口径：当组合内只含一种外币时，直接用外币原始金额算现价/本金/盈亏，不做人民币换算
+  const soleCcy = _soleForeignCcy(prods);
+  let grpTotalF=0, netCostF=0, gainF=0, gainFPct=0;
+  if(soleCcy && soleCcy!=='MIXED'){
+    grpTotalF = prods.filter(p=>p.ccy===soleCcy).reduce((s,p)=>s+p.amount,0);
+    const investedFC  = cfs.filter(c=>c.type==='成本资金'&&c.amount<0&&c.ccy===soleCcy).reduce((s,c)=>s+Math.abs(c.amount),0);
+    const dividendsFC = cfs.filter(c=>c.type==='分红'&&c.ccy===soleCcy).reduce((s,c)=>s+c.amount,0);
+    const redeemedFC  = cfs.filter(c=>c.type==='成本资金'&&c.amount>0&&c.ccy===soleCcy).reduce((s,c)=>s+c.amount,0);
+    netCostF = investedFC - redeemedFC - dividendsFC;
+    gainF = grpTotalF - netCostF;
+    gainFPct = netCostF>0 ? gainF/netCostF*100 : 0;
+  }
   const flows   = buildGroupXirrFlows(lv, groupName);
   const xirrR   = flows ? xirr(flows) : null;
   // 若未转让视角
@@ -5021,6 +5095,25 @@ function _renderGroupBoard(lv, groupName){
   const nonCashVal  = _groupProducts(lv, groupName)
     .filter(p => (p.cat||getCatOf(p.type)) !== '现金债券')
     .reduce((s, p) => s + toCNY(p.amount, p.ccy), 0);
+  // 实操 XIRR 明细展示（保留原始币种，不像 actualFlows 那样为了算 XIRR 而统一换算成人民币）
+  const actualFlowsDisplay = (() => {
+    const mem = lv===1 ? [groupName] : _groupL1Members(lv, groupName);
+    const actualL1s = new Set(ACTUAL_CASHFLOWS.map(c=>c.l1));
+    const rows = [];
+    mem.forEach(l1=>{
+      if(actualL1s.has(l1)){
+        ACTUAL_CASHFLOWS.filter(c=>c.l1===l1).forEach(c=>rows.push({date:c.date, amount:c.amount, ccy:c.ccy}));
+      } else {
+        CASHFLOWS.filter(c=>(c.l1||c.product)===l1&&(c.type==='成本资金'||c.type==='分红'||c.type==='共管转让'))
+          .forEach(c=>rows.push({date:c.date, amount:c.amount, ccy:c.ccy}));
+      }
+    });
+    return rows.sort((a,b)=>a.date.localeCompare(b.date));
+  })();
+  // 已投现值的外币口径：跟 nonCashVal 一致的范围（剔除“现金债券”），仅当组合是单一外币时给出
+  const nonCashValF = (soleCcy && soleCcy!=='MIXED')
+    ? _groupProducts(lv, groupName).filter(p => (p.cat||getCatOf(p.type)) !== '现金债券' && p.ccy===soleCcy).reduce((s,p)=>s+p.amount,0)
+    : null;
 
   // Holding period
   const costDates = cfs.filter(c=>c.type==='成本资金'||c.type==='分红'||c.type==='共管转让').map(c=>c.date).sort();
@@ -5039,35 +5132,39 @@ function _renderGroupBoard(lv, groupName){
   // Recent cash flows
   const recentCF = cfs.sort((a,b)=>a.date.localeCompare(b.date)).slice(-12);
 
-  // XIRR flow rows
+  // XIRR flow rows —— 有外币时按流水各自的原始币种显示（不换算成人民币），人民币流水仍显示人民币
   const xirrFlowRows = cfs.filter(c=>c.type==='成本资金'||c.type==='分红'||c.type==='共管转让')
     .sort((a,b)=>a.date.localeCompare(b.date))
     .map(c=>`<div style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">
       <span style="color:var(--text3);width:88px;flex-shrink:0">${c.date}</span>
       <span style="font-size:10px;color:var(--text3);flex-shrink:0">${c.type==='分红'?'分红':c.type==='共管转让'?'共管转让':c.amount<0?'买入':'卖出'}</span>
       ${lv>1?`<span style="font-size:10px;color:var(--text3);flex-shrink:0">${c.l1||c.product||''}</span>`:''}
-      <span class="${c.amount<0?'neg':'pos'}" style="font-weight:600;flex:1;text-align:right">${c.amount>0?'+':''}${fmtCNY(toCNY(c.amount,c.ccy))}</span>
+      <span class="${c.amount<0?'neg':'pos'}" style="font-weight:600;flex:1;text-align:right">${c.amount>0?'+':''}${c.ccy==='CNY'?fmtCNY(c.amount):fmtForeign(c.amount,c.ccy)}</span>
       <span style="color:var(--text3);width:60px;text-align:right">${c.ccy}</span>
     </div>`).join('');
   const xirrTermRow = `<div style="display:flex;gap:12px;padding:5px 0;font-size:12px;border-top:2px solid var(--border);margin-top:2px">
     <span style="color:var(--text3);width:88px;flex-shrink:0">${today()}</span>
-    <span class="pos" style="font-weight:700;flex:1;text-align:right">+${fmtCNY(grpTotal)}</span>
+    <span class="pos" style="font-weight:700;flex:1;text-align:right">+${soleCcy&&soleCcy!=='MIXED'?fmtForeign(grpTotalF,soleCcy):fmtCNY(grpTotal)}</span>
     <span style="color:var(--text3);width:60px;text-align:right">当前市值</span>
   </div>`;
   // 若未转让视角的流水和终值
-  const wouldBeTotal = grpTotal + _groupWouldBeDelta(lv, groupName);
+  const wouldBeDelta = _groupWouldBeDelta(lv, groupName);
+  const wouldBeTotal = grpTotal + wouldBeDelta.cny;
+  // 外币口径的"若未转让终值"：只有当组合本身是单一外币(soleCcy)时才展示，
+  // 转让份额的币种理论上和组合其它持仓一致（共管持仓不会外币人民币混用），直接相加即可
+  const wouldBeTotalF = (soleCcy && soleCcy!=='MIXED') ? grpTotalF + (wouldBeDelta.byCcy[soleCcy]||0) : null;
   const xirrFlowRowsWouldBe = hasTransferOut ? cfs.filter(c=>c.type==='成本资金'||c.type==='分红')
     .sort((a,b)=>a.date.localeCompare(b.date))
     .map(c=>`<div style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">
       <span style="color:var(--text3);width:88px;flex-shrink:0">${c.date}</span>
       <span style="font-size:10px;color:var(--text3);flex-shrink:0">${c.type==='分红'?'分红':c.amount<0?'买入':'卖出'}</span>
       ${lv>1?`<span style="font-size:10px;color:var(--text3);flex-shrink:0">${c.l1||c.product||''}</span>`:''}
-      <span class="${c.amount<0?'neg':'pos'}" style="font-weight:600;flex:1;text-align:right">${c.amount>0?'+':''}${fmtCNY(toCNY(c.amount,c.ccy))}</span>
+      <span class="${c.amount<0?'neg':'pos'}" style="font-weight:600;flex:1;text-align:right">${c.amount>0?'+':''}${c.ccy==='CNY'?fmtCNY(c.amount):fmtForeign(c.amount,c.ccy)}</span>
       <span style="color:var(--text3);width:60px;text-align:right">${c.ccy}</span>
     </div>`).join('') : '';
   const xirrTermRowWouldBe = `<div style="display:flex;gap:12px;padding:5px 0;font-size:12px;border-top:2px solid var(--border);margin-top:2px">
     <span style="color:var(--text3);width:88px;flex-shrink:0">${today()}</span>
-    <span class="pos" style="font-weight:700;flex:1;text-align:right">+${fmtCNY(wouldBeTotal)}</span>
+    <span class="pos" style="font-weight:700;flex:1;text-align:right">+${wouldBeTotalF!=null?fmtForeign(wouldBeTotalF,soleCcy):fmtCNY(wouldBeTotal)}</span>
     <span style="color:var(--text3);width:60px;text-align:right;flex-shrink:0">若未转让</span>
   </div>`;
 
@@ -5177,6 +5274,11 @@ function _renderGroupBoard(lv, groupName){
               <span class="kpi-v-val">${fmtCNY(grpTotal)}</span>
               <span class="kpi-v-sub">本金 ${fmtCNY(netCost)}</span>
             </div>
+            ${soleCcy==='MIXED' ? `<div style="margin-top:3px">${_mixedCcyHint()}</div>` : soleCcy ? `
+            <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:3px">
+              <span class="kpi-v-sub" style="font-size:12px">${fmtForeign(grpTotalF, soleCcy)}</span>
+              <span class="kpi-v-sub">本金 ${fmtForeign(netCostF, soleCcy)}</span>
+            </div>` : ''}
           </div>
           <div>
             <div class="kpi-v-label">浮动盈亏</div>
@@ -5184,6 +5286,11 @@ function _renderGroupBoard(lv, groupName){
               <span class="kpi-v-val ${gain>=0?'pos':'neg'}">${gain>=0?'+':''}${gainPct.toFixed(2)}%</span>
               <span class="kpi-v-sub ${gain>=0?'pos':'neg'}" style="font-size:13px;font-weight:600">${gain>=0?'+':''}${fmtCNY(gain)}</span>
             </div>
+            ${soleCcy==='MIXED' ? `<div style="margin-top:3px">${_mixedCcyHint()}</div>` : soleCcy ? `
+            <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin-top:3px">
+              <span class="kpi-v-sub ${gainF>=0?'pos':'neg'}" style="font-size:12px">${gainF>=0?'+':''}${gainFPct.toFixed(2)}%</span>
+              <span class="kpi-v-sub ${gainF>=0?'pos':'neg'}" style="font-size:12px">${gainF>=0?'+':''}${fmtForeign(gainF, soleCcy)}</span>
+            </div>` : ''}
           </div>
         </div>
         <hr>
@@ -5224,16 +5331,22 @@ function _renderGroupBoard(lv, groupName){
               </div>
             </div>
             ${hasActual?`<div id="bd-xirr-view-actual" style="display:none">
-              ${(actualFlows||[]).filter((_,i,a)=>i<a.length-1).map(f=>`<div style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">
+              ${(actualFlowsDisplay||[]).map(f=>`<div style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">
                 <span style="color:var(--text3);width:88px;flex-shrink:0">${f.date}</span>
                 <span style="font-size:10px;color:var(--text3);flex-shrink:0">${f.amount<0?'投入':'取出'}</span>
-                <span class="${f.amount<0?'neg':'pos'}" style="font-weight:600;flex:1;text-align:right">${f.amount>0?'+':''}${fmtCNY(f.amount)}</span>
+                <span class="${f.amount<0?'neg':'pos'}" style="font-weight:600;flex:1;text-align:right">${f.amount>0?'+':''}${f.ccy==='CNY'?fmtCNY(f.amount):fmtForeign(f.amount,f.ccy)}</span>
+                <span style="color:var(--text3);width:60px;text-align:right">${f.ccy}</span>
               </div>`).join('')||'<div style="font-size:12px;color:var(--text3)">暂无实操流水记录</div>'}
               <div style="display:flex;gap:12px;padding:5px 0;font-size:12px;border-top:2px solid var(--border);margin-top:2px">
                 <span style="color:var(--text3);width:88px;flex-shrink:0">${today()}</span>
                 <span class="pos" style="font-weight:700;flex:1;text-align:right">+${fmtCNY(nonCashVal)}</span>
                 <span style="color:var(--text3);width:60px;text-align:right">已投现值</span>
               </div>
+              ${nonCashValF!=null ? `<div style="display:flex;gap:12px;padding:1px 0 5px;font-size:12px">
+                <span style="width:88px;flex-shrink:0"></span>
+                <span class="pos" style="font-weight:700;flex:1;text-align:right">+${fmtForeign(nonCashValF,soleCcy)}</span>
+                <span style="width:60px;flex-shrink:0"></span>
+              </div>` : ''}
               <div style="display:flex;justify-content:flex-end;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);gap:8px">
                 <span style="font-size:11px;color:var(--text3)">实操 XIRR</span>
                 <span style="font-size:15px;font-weight:700" class="${xirrActual>=0?'pos':'neg'}">${xirrActual>=0?'+':''}${(xirrActual*100).toFixed(2)}%</span>
@@ -5356,7 +5469,7 @@ function _renderGroupBoard(lv, groupName){
         ${recentCF.length
           ? recentCF.map(c=>{
               const isCost=c.type==='成本资金';
-              const cny=toCNY(c.amount,c.ccy);
+              const cny=costCNY(c);
               return`<div class="cf-mini-row">
                 <span style="color:var(--text3);width:68px;flex-shrink:0">${c.date}</span>
                 <span style="font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.l1||c.product}</span>
@@ -6547,7 +6660,7 @@ function ppGroupStartCapital(g, startYear){
   let total = 0;
   members.forEach(l1=>{
     const snaps = CASHFLOWS.filter(c=>(c.l1||c.product)===l1 && c.type==='年度快照' && c.date.startsWith(String(priorYear)));
-    total += snaps.reduce((s,c)=>s+toCNY(c.amount,c.ccy),0);
+    total += snaps.reduce((s,c)=>s+costCNY(c),0);
   });
   return total;
 }
@@ -7388,13 +7501,21 @@ function _renderBatchRows(prods, sort){
 function _updateBatchTotal(){
   const rows = document.querySelectorAll('#batch-rows [data-idx]');
   let total = 0;
+  const foreignSums = {}; // ccy -> 原始外币金额合计（不换算）
   rows.forEach((inp,i)=>{
     const amt = parseFloat(inp.value);
     const ccy = document.getElementById(`ba-ccy-${i}`)?.value || 'CNY';
-    if(!isNaN(amt)) total += toCNY(amt, ccy);
+    if(!isNaN(amt)){
+      total += toCNY(amt, ccy);
+      if(ccy!=='CNY') foreignSums[ccy] = (foreignSums[ccy]||0) + amt;
+    }
   });
   const el = document.getElementById('batch-total');
-  if(el) el.textContent = fmtCNY(total);
+  const foreignCcys = Object.keys(foreignSums);
+  const extra = foreignCcys.length===1
+    ? ` <span style="font-size:12px;font-weight:600;color:var(--text3)">${fmtForeign(foreignSums[foreignCcys[0]], foreignCcys[0])}</span>`
+    : foreignCcys.length>1 ? ` ${_mixedCcyHint()}` : '';
+  if(el) el.innerHTML = fmtCNY(total) + extra;
 }
 
 function cycleBatchSort(){
