@@ -3221,6 +3221,16 @@ function fmtForeign(v,ccy){
   const sym = ccy==='USD'?'$':ccy==='HKD'?'HK$':'';
   return sym+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+(sym?'':' '+ccy);
 }
+// “现金流明细”这类需要显示正负号的场景专用：币种符号在前，正负号紧跟其后再是数字，
+// 如 ¥+1,000.00 / ¥-500.00 / $+86.00 / $-89.60 —— 和 fmtCNY/fmtForeign（不带正负号，用于“本金/总值”这类只看大小的场景）区分开
+function fmtSigned(v,ccy){
+  ccy = ccy||'CNY';
+  const sign = v>=0?'+':'-';
+  const abs = Math.abs(v);
+  if(ccy==='CNY') return '¥'+sign+abs.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const sym = ccy==='USD'?'$':ccy==='HKD'?'HK$':'';
+  return (sym||ccy+' ')+sign+abs.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
 // 判断一组品种里的外币构成：null=纯人民币，'MIXED'=两种及以上外币混合，否则返回唯一的外币代码
 function _soleForeignCcy(prods){
   const set = new Set(prods.map(p=>p.ccy).filter(c=>c && c!=='CNY'));
@@ -5139,12 +5149,12 @@ function _renderGroupBoard(lv, groupName){
       <span style="color:var(--text3);width:88px;flex-shrink:0">${c.date}</span>
       <span style="font-size:10px;color:var(--text3);flex-shrink:0">${c.type==='分红'?'分红':c.type==='共管转让'?'共管转让':c.amount<0?'买入':'卖出'}</span>
       ${lv>1?`<span style="font-size:10px;color:var(--text3);flex-shrink:0">${c.l1||c.product||''}</span>`:''}
-      <span class="${c.amount<0?'neg':'pos'}" style="font-weight:600;flex:1;text-align:right">${c.amount>0?'+':''}${c.ccy==='CNY'?fmtCNY(c.amount):fmtForeign(c.amount,c.ccy)}</span>
+      <span class="${c.amount<0?'neg':'pos'}" style="font-weight:600;flex:1;text-align:right">${fmtSigned(c.amount,c.ccy)}</span>
       <span style="color:var(--text3);width:60px;text-align:right">${c.ccy}</span>
     </div>`).join('');
   const xirrTermRow = `<div style="display:flex;gap:12px;padding:5px 0;font-size:12px;border-top:2px solid var(--border);margin-top:2px">
     <span style="color:var(--text3);width:88px;flex-shrink:0">${today()}</span>
-    <span class="pos" style="font-weight:700;flex:1;text-align:right">+${soleCcy&&soleCcy!=='MIXED'?fmtForeign(grpTotalF,soleCcy):fmtCNY(grpTotal)}</span>
+    <span class="pos" style="font-weight:700;flex:1;text-align:right">${soleCcy&&soleCcy!=='MIXED'?fmtSigned(grpTotalF,soleCcy):fmtSigned(grpTotal,'CNY')}</span>
     <span style="color:var(--text3);width:60px;text-align:right">当前市值</span>
   </div>`;
   // 若未转让视角的流水和终值
@@ -5159,12 +5169,12 @@ function _renderGroupBoard(lv, groupName){
       <span style="color:var(--text3);width:88px;flex-shrink:0">${c.date}</span>
       <span style="font-size:10px;color:var(--text3);flex-shrink:0">${c.type==='分红'?'分红':c.amount<0?'买入':'卖出'}</span>
       ${lv>1?`<span style="font-size:10px;color:var(--text3);flex-shrink:0">${c.l1||c.product||''}</span>`:''}
-      <span class="${c.amount<0?'neg':'pos'}" style="font-weight:600;flex:1;text-align:right">${c.amount>0?'+':''}${c.ccy==='CNY'?fmtCNY(c.amount):fmtForeign(c.amount,c.ccy)}</span>
+      <span class="${c.amount<0?'neg':'pos'}" style="font-weight:600;flex:1;text-align:right">${fmtSigned(c.amount,c.ccy)}</span>
       <span style="color:var(--text3);width:60px;text-align:right">${c.ccy}</span>
     </div>`).join('') : '';
   const xirrTermRowWouldBe = `<div style="display:flex;gap:12px;padding:5px 0;font-size:12px;border-top:2px solid var(--border);margin-top:2px">
     <span style="color:var(--text3);width:88px;flex-shrink:0">${today()}</span>
-    <span class="pos" style="font-weight:700;flex:1;text-align:right">+${wouldBeTotalF!=null?fmtForeign(wouldBeTotalF,soleCcy):fmtCNY(wouldBeTotal)}</span>
+    <span class="pos" style="font-weight:700;flex:1;text-align:right">${wouldBeTotalF!=null?fmtSigned(wouldBeTotalF,soleCcy):fmtSigned(wouldBeTotal,'CNY')}</span>
     <span style="color:var(--text3);width:60px;text-align:right;flex-shrink:0">若未转让</span>
   </div>`;
 
@@ -5334,19 +5344,18 @@ function _renderGroupBoard(lv, groupName){
               ${(actualFlowsDisplay||[]).map(f=>`<div style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">
                 <span style="color:var(--text3);width:88px;flex-shrink:0">${f.date}</span>
                 <span style="font-size:10px;color:var(--text3);flex-shrink:0">${f.amount<0?'投入':'取出'}</span>
-                <span class="${f.amount<0?'neg':'pos'}" style="font-weight:600;flex:1;text-align:right">${f.amount>0?'+':''}${f.ccy==='CNY'?fmtCNY(f.amount):fmtForeign(f.amount,f.ccy)}</span>
+                <span class="${f.amount<0?'neg':'pos'}" style="font-weight:600;flex:1;text-align:right">${fmtSigned(f.amount,f.ccy)}</span>
                 <span style="color:var(--text3);width:60px;text-align:right">${f.ccy}</span>
               </div>`).join('')||'<div style="font-size:12px;color:var(--text3)">暂无实操流水记录</div>'}
-              <div style="display:flex;gap:12px;padding:5px 0;font-size:12px;border-top:2px solid var(--border);margin-top:2px">
+              ${nonCashValF!=null ? `<div style="display:flex;gap:12px;padding:5px 0;font-size:12px;border-top:2px solid var(--border);margin-top:2px">
                 <span style="color:var(--text3);width:88px;flex-shrink:0">${today()}</span>
-                <span class="pos" style="font-weight:700;flex:1;text-align:right">+${fmtCNY(nonCashVal)}</span>
+                <span class="pos" style="font-weight:700;flex:1;text-align:right">${fmtSigned(nonCashValF,soleCcy)}</span>
                 <span style="color:var(--text3);width:60px;text-align:right">已投现值</span>
-              </div>
-              ${nonCashValF!=null ? `<div style="display:flex;gap:12px;padding:1px 0 5px;font-size:12px">
-                <span style="width:88px;flex-shrink:0"></span>
-                <span class="pos" style="font-weight:700;flex:1;text-align:right">+${fmtForeign(nonCashValF,soleCcy)}</span>
-                <span style="width:60px;flex-shrink:0"></span>
-              </div>` : ''}
+              </div>` : `<div style="display:flex;gap:12px;padding:5px 0;font-size:12px;border-top:2px solid var(--border);margin-top:2px">
+                <span style="color:var(--text3);width:88px;flex-shrink:0">${today()}</span>
+                <span class="pos" style="font-weight:700;flex:1;text-align:right">${fmtSigned(nonCashVal,'CNY')}</span>
+                <span style="color:var(--text3);width:60px;text-align:right">已投现值</span>
+              </div>`}
               <div style="display:flex;justify-content:flex-end;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);gap:8px">
                 <span style="font-size:11px;color:var(--text3)">实操 XIRR</span>
                 <span style="font-size:15px;font-weight:700" class="${xirrActual>=0?'pos':'neg'}">${xirrActual>=0?'+':''}${(xirrActual*100).toFixed(2)}%</span>
@@ -5630,8 +5639,8 @@ function _buildProdTable(prods, grpTotal, lv, groupName){
     const merged = {};
     const order = [];
     prods.forEach(p=>{
-      if(!merged[p.name]){ merged[p.name]={...p, _cny:toCNY(p.amount,p.ccy)}; order.push(p.name); }
-      else merged[p.name]._cny += toCNY(p.amount,p.ccy);
+      if(!merged[p.name]){ merged[p.name]={...p, _cny:toCNY(p.amount,p.ccy), _nativeAmt:p.amount}; order.push(p.name); }
+      else { merged[p.name]._cny += toCNY(p.amount,p.ccy); merged[p.name]._nativeAmt += p.amount; }
     });
     displayProds = order.map(n=>merged[n]);
   }
@@ -5651,6 +5660,14 @@ function _buildProdTable(prods, grpTotal, lv, groupName){
         : prodTargetInGroup(p.name, lv, groupName);
       if(t!=null){ targetSum += t; hasTarget=true; }
     });
+    // 大类小计的外币口径：这一类下可能混着好几个不同品种，只有当它们的外币币种唯一时才显示外币小计
+    const typeSoleCcy = _soleForeignCcy(groupProds);
+    const typeNativeSum = (typeSoleCcy && typeSoleCcy!=='MIXED')
+      ? groupProds.filter(p=>p.ccy===typeSoleCcy).reduce((s,p)=>s+(lv===1?p.amount:p._nativeAmt),0)
+      : null;
+    const typeFgnExtra = typeSoleCcy==='MIXED'
+      ? ` ${_mixedCcyHint()}`
+      : (typeNativeSum!=null ? ` <span style="font-size:11px;font-weight:600;color:var(--text3)">${fmtForeign(typeNativeSum,typeSoleCcy)}</span>` : '');
     const actualSum    = grpTotal>0 ? valSum/grpTotal*100 : 0;
     const targetAmtSum = hasTarget ? grpTotal*targetSum/100 : null;
     const devSum       = hasTarget ? actualSum-targetSum : null;
@@ -5666,7 +5683,7 @@ function _buildProdTable(prods, grpTotal, lv, groupName){
         <div style="display:flex;align-items:center;gap:10px">
           <span style="opacity:.35;font-size:11px;cursor:grab;user-select:none">⠿</span>
           <span style="font-weight:700;font-size:13px">${type}</span>
-          <span style="font-weight:700;font-size:13px">${fmtCNY(valSum)}</span>
+          <span style="font-weight:700;font-size:13px">${fmtCNY(valSum)}${typeFgnExtra}</span>
           <span style="font-weight:700;font-size:13px;color:var(--blue)">${actualSum.toFixed(2)}%</span>
           <span style="flex:1"></span>
           ${hasTarget ? `<span style="font-size:11px;color:var(--text3)">目标 ${targetSum.toFixed(2)}%${devSum!=null?` · 偏差 <span class="${Math.abs(devSum)<1?'dev-ok':devSum>0?'dev-pos':'dev-neg'}" style="font-weight:600">${devSum>=0?'+':''}${devSum.toFixed(2)}%</span>`:''}${rebalSum!=null&&Math.abs(rebalSum)>=_rebalThreshAmt(grpTotal)?` · ${rebalSum>0?'<span class="dev-neg">买入</span>':'<span class="dev-pos">卖出</span>'} ${fmtCNY(Math.abs(rebalSum))}`:''}</span>` : ''}
@@ -5676,6 +5693,7 @@ function _buildProdTable(prods, grpTotal, lv, groupName){
 
     groupProds.forEach(p=>{
       const val    = lv===1 ? toCNY(p.amount,p.ccy) : p._cny;
+      const nativeAmt = lv===1 ? p.amount : p._nativeAmt;
       const actual = grpTotal>0 ? val/grpTotal*100 : 0;
       const target = lv===1
         ? (TARGET_ALLOC[p.name]&&TARGET_ALLOC[p.name][p.l1]!=null ? TARGET_ALLOC[p.name][p.l1] : null)
@@ -5690,7 +5708,7 @@ function _buildProdTable(prods, grpTotal, lv, groupName){
         </td>
         <td style="text-align:right;color:var(--text3)">${target!=null?parseFloat(target).toFixed(2)+'%':'—'}</td>
         <td style="text-align:right;color:var(--text3)">${target!=null?fmtCNY(targetAmt):'—'}</td>
-        <td style="text-align:right;font-weight:600">${fmtCNY(val)}</td>
+        <td style="text-align:right;font-weight:600">${p.ccy==='CNY'?fmtCNY(val):fmtForeign(nativeAmt,p.ccy)}</td>
         <td style="text-align:right">${actual.toFixed(2)}%</td>
         <td style="text-align:center">
           ${dev!=null
@@ -6369,7 +6387,7 @@ function openSharedLotEditModal(spId, lotId){
   const l1Opts=getAllL1().map(l=>`<option ${l===lot.l1?'selected':''}>${l}</option>`).join('');
   const html=`<div class="mo" id="modal-lotedit" onclick="if(event.target===this)closeDynMo('modal-lotedit')">
     <div class="modal" style="width:400px">
-      <div class="modal-header"><div class="modal-title">编辑买入记录 · ${sp.name}</div><div class="modal-close" onclick="closeDynMo('modal-lotedit')">×</div></div>
+      <div class="modal-title"><span>编辑买入记录 · ${sp.name}</span><span class="modal-close" onclick="closeDynMo('modal-lotedit')">×</span></div>
       <div class="form-row"><label class="form-label">所属一级组合</label><select class="fi" id="le-l1">${l1Opts}</select></div>
       <div class="fg2">
         <div class="form-row"><label class="form-label">买入金额（${sp.ccy||'CNY'}）</label><input type="number" class="fi" id="le-amount" step="0.01" value="${lot.amount}"></div>
@@ -6470,7 +6488,7 @@ function openSharedEventModal(spId,evType,lotId){
   const titles={lot:'新增买入',redeem:'部分赎回',transfer:'份额转让'};
   const html=`<div class="mo" id="modal-spev" onclick="if(event.target===this)closeDynMo('modal-spev')">
     <div class="modal" style="width:440px">
-      <div class="modal-header"><div class="modal-title">${titles[evType]} · ${sp.name}</div><div class="modal-close" onclick="closeDynMo('modal-spev')">×</div></div>
+      <div class="modal-title"><span>${titles[evType]} · ${sp.name}</span><span class="modal-close" onclick="closeDynMo('modal-spev')">×</span></div>
       ${inner}
       <div class="modal-footer">
         <button class="btn" onclick="closeDynMo('modal-spev')">取消</button>
