@@ -2315,12 +2315,15 @@ function extractHashtags(text) {
 // 「身体」和跨度事件类别名是系统自动生成的标签，不是笔记里手打的
 // #文字，改名只能改笔记正文，改不了这两种来源，所以不允许在这个
 // 面板里重命名，避免改了名字之后跟自动生成的部分对不上。
-function isRenamableContentTag(tagLabel) {
-  if (tagLabel === '身体') return false;
-  var isCategoryLabel = getCategoryOrder().some(function (cat) {
+function isCategoryDerivedTag(tagLabel) {
+  return getCategoryOrder().some(function (cat) {
     return getCategoryMeta(cat).label === tagLabel;
   });
-  return !isCategoryLabel;
+}
+
+function isRenamableContentTag(tagLabel) {
+  if (tagLabel === '身体') return false;
+  return !isCategoryDerivedTag(tagLabel);
 }
 
 function renameContentTag(oldTag, newTag) {
@@ -3350,9 +3353,10 @@ function showSpanEventModal(id) {
 function getPinnedTags() {
   var idx = buildContentIndex();
   var counts = getContentTagCounts(idx);
-  var pinned = (appData.pinnedTags || []).filter(function (t) { return counts[t]; });
+  var pinned = (appData.pinnedTags || []).filter(function (t) { return counts[t] && !isCategoryDerivedTag(t); });
   if (pinned.length) return pinned;
-  return Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; }).slice(0, 5);
+  return Object.keys(counts).filter(function (t) { return !isCategoryDerivedTag(t); })
+    .sort(function (a, b) { return counts[b] - counts[a]; }).slice(0, 5);
 }
 
 function renderQuickTagButtons() {
@@ -3632,8 +3636,15 @@ function showContentTagPanel() {
   function renderPanel() {
     var idx = buildContentIndex();
     var counts = getContentTagCounts(idx);
-    var allTags = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; });
+    var allTags = Object.keys(counts)
+      .filter(function (t) { return t === '身体' || !isCategoryDerivedTag(t); })
+      .sort(function (a, b) { return counts[b] - counts[a]; });
     if (!appData.pinnedTags) appData.pinnedTags = [];
+    // 清理历史遗留：跨度事件类别同名的标签不该出现在这套"手动置顶"系统里
+    if (appData.pinnedTags.some(function (t) { return isCategoryDerivedTag(t); })) {
+      appData.pinnedTags = appData.pinnedTags.filter(function (t) { return !isCategoryDerivedTag(t); });
+      saveData();
+    }
     var pinned = appData.pinnedTags.filter(function (t) { return counts[t]; });
     var others = allTags.filter(function (t) { return pinned.indexOf(t) === -1; });
 
@@ -3734,7 +3745,7 @@ function showContentTagPanel() {
       var menuBtn = document.createElement('button');
       menuBtn.type = 'button';
       menuBtn.textContent = '⋮';
-      menuBtn.title = isPinned ? '编辑 / 移除' : '编辑 / 置顶';
+      menuBtn.title = isPinned ? '编辑 / 取消置顶' : '编辑 / 置顶';
       menuBtn.style.cssText = 'width:22px;height:22px;border:none;background:none;cursor:pointer;color:var(--text-dim);font-size:16px;font-family:inherit;flex-shrink:0;line-height:1;';
       menuBtn.onclick = function (e) {
         e.stopPropagation();
@@ -3764,8 +3775,8 @@ function showContentTagPanel() {
         if (isPinned) {
           var rmItem = document.createElement('button');
           rmItem.type = 'button';
-          rmItem.textContent = '移除';
-          rmItem.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 10px;border:none;background:none;cursor:pointer;font-size:12px;color:#dc2626;border-radius:5px;font-family:inherit;';
+          rmItem.textContent = '取消置顶';
+          rmItem.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 10px;border:none;background:none;cursor:pointer;font-size:12px;color:var(--text-dim);border-radius:5px;font-family:inherit;';
           rmItem.onclick = function (e) {
             e.stopPropagation();
             appData.pinnedTags = appData.pinnedTags.filter(function (x) { return x !== t; });
