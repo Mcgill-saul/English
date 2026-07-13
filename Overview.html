@@ -3635,6 +3635,7 @@ function showContentTagPanel() {
     var allTags = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; });
     if (!appData.pinnedTags) appData.pinnedTags = [];
     var pinned = appData.pinnedTags.filter(function (t) { return counts[t]; });
+    var others = allTags.filter(function (t) { return pinned.indexOf(t) === -1; });
 
     sheet.innerHTML = '';
 
@@ -3647,17 +3648,7 @@ function showContentTagPanel() {
     hint.textContent = '最多置顶 5 个，写笔记时可一键插入';
     sheet.appendChild(hint);
 
-    var list = document.createElement('div');
-    list.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:14px;';
-
-    if (!pinned.length) {
-      var empty = document.createElement('div');
-      empty.style.cssText = 'font-size:12px;color:var(--text-muted);font-style:italic;text-align:center;padding:8px 0;';
-      empty.textContent = '还没有置顶标签';
-      list.appendChild(empty);
-    }
-
-    pinned.forEach(function (t, i) {
+    function buildTagRow(t, isPinned) {
       var row = document.createElement('div');
       row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border-lt);border-radius:8px;position:relative;';
 
@@ -3695,9 +3686,11 @@ function showContentTagPanel() {
         row.appendChild(editInput);
         row.appendChild(saveEditBtn);
         row.appendChild(cancelEditBtn);
-      } else {
-        row.draggable = true;
+        return row;
+      }
 
+      if (isPinned) {
+        row.draggable = true;
         row.addEventListener('dragstart', function (e) {
           dragTagName = t;
           row.style.opacity = '.4';
@@ -3730,44 +3723,45 @@ function showContentTagPanel() {
         handle.textContent = '⠿';
         handle.title = '拖拽排序';
         handle.style.cssText = 'color:var(--text-muted);font-size:13px;flex-shrink:0;cursor:grab;';
-
-        var labelEl = document.createElement('span');
-        labelEl.style.cssText = 'font-size:13px;font-weight:600;color:var(--text);flex:1;';
-        labelEl.textContent = '#' + t + ' (' + counts[t] + ')';
-
-        var menuBtn = document.createElement('button');
-        menuBtn.type = 'button';
-        menuBtn.textContent = '⋮';
-        menuBtn.title = '编辑 / 移除';
-        menuBtn.style.cssText = 'width:22px;height:22px;border:none;background:none;cursor:pointer;color:var(--text-dim);font-size:16px;font-family:inherit;flex-shrink:0;line-height:1;';
-        menuBtn.onclick = function (e) {
-          e.stopPropagation();
-          openMenuTag = (openMenuTag === t) ? null : t;
-          renderPanel();
-        };
-
         row.appendChild(handle);
-        row.appendChild(labelEl);
-        row.appendChild(menuBtn);
+      }
 
-        if (openMenuTag === t) {
-          var menu = document.createElement('div');
-          menu.style.cssText = 'position:absolute;top:100%;right:10px;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);padding:4px;min-width:84px;z-index:20;';
+      var labelEl = document.createElement('span');
+      labelEl.style.cssText = 'font-size:13px;font-weight:600;color:' + (isPinned ? 'var(--text)' : 'var(--text-dim)') + ';flex:1;';
+      labelEl.textContent = '#' + t + ' (' + counts[t] + ')';
+      row.appendChild(labelEl);
 
-          if (isRenamableContentTag(t)) {
-            var editItem = document.createElement('button');
-            editItem.type = 'button';
-            editItem.textContent = '编辑';
-            editItem.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 10px;border:none;background:none;cursor:pointer;font-size:12px;color:var(--text-dim);border-radius:5px;font-family:inherit;';
-            editItem.onclick = function (e) {
-              e.stopPropagation();
-              editingTag = t;
-              openMenuTag = null;
-              renderPanel();
-            };
-            menu.appendChild(editItem);
-          }
+      var menuBtn = document.createElement('button');
+      menuBtn.type = 'button';
+      menuBtn.textContent = '⋮';
+      menuBtn.title = isPinned ? '编辑 / 移除' : '编辑 / 置顶';
+      menuBtn.style.cssText = 'width:22px;height:22px;border:none;background:none;cursor:pointer;color:var(--text-dim);font-size:16px;font-family:inherit;flex-shrink:0;line-height:1;';
+      menuBtn.onclick = function (e) {
+        e.stopPropagation();
+        openMenuTag = (openMenuTag === t) ? null : t;
+        renderPanel();
+      };
+      row.appendChild(menuBtn);
 
+      if (openMenuTag === t) {
+        var menu = document.createElement('div');
+        menu.style.cssText = 'position:absolute;top:100%;right:10px;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);padding:4px;min-width:84px;z-index:20;';
+
+        if (isRenamableContentTag(t)) {
+          var editItem = document.createElement('button');
+          editItem.type = 'button';
+          editItem.textContent = '编辑';
+          editItem.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 10px;border:none;background:none;cursor:pointer;font-size:12px;color:var(--text-dim);border-radius:5px;font-family:inherit;';
+          editItem.onclick = function (e) {
+            e.stopPropagation();
+            editingTag = t;
+            openMenuTag = null;
+            renderPanel();
+          };
+          menu.appendChild(editItem);
+        }
+
+        if (isPinned) {
           var rmItem = document.createElement('button');
           rmItem.type = 'button';
           rmItem.textContent = '移除';
@@ -3779,44 +3773,50 @@ function showContentTagPanel() {
             saveData(); renderPanel(); renderQuickTagButtons();
           };
           menu.appendChild(rmItem);
-
-          row.appendChild(menu);
+        } else if (pinned.length < 5) {
+          var pinItem = document.createElement('button');
+          pinItem.type = 'button';
+          pinItem.textContent = '置顶';
+          pinItem.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 10px;border:none;background:none;cursor:pointer;font-size:12px;color:var(--text-dim);border-radius:5px;font-family:inherit;';
+          pinItem.onclick = function (e) {
+            e.stopPropagation();
+            if (!appData.pinnedTags) appData.pinnedTags = [];
+            appData.pinnedTags.push(t);
+            openMenuTag = null;
+            saveData(); renderPanel(); renderQuickTagButtons();
+          };
+          menu.appendChild(pinItem);
         }
+
+        row.appendChild(menu);
       }
 
-      list.appendChild(row);
-    });
+      return row;
+    }
 
+    var list = document.createElement('div');
+    list.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:14px;';
+
+    if (!pinned.length) {
+      var empty = document.createElement('div');
+      empty.style.cssText = 'font-size:12px;color:var(--text-muted);font-style:italic;text-align:center;padding:8px 0;';
+      empty.textContent = '还没有置顶标签';
+      list.appendChild(empty);
+    }
+
+    pinned.forEach(function (t) { list.appendChild(buildTagRow(t, true)); });
     sheet.appendChild(list);
 
-    var addable = allTags.filter(function (t) { return pinned.indexOf(t) === -1; });
-    if (addable.length && pinned.length < 5) {
-      var addRow = document.createElement('div');
-      addRow.style.cssText = 'display:flex;gap:7px;align-items:center;margin-bottom:10px;';
+    if (others.length) {
+      var othersTitle = document.createElement('div');
+      othersTitle.style.cssText = 'font-size:11px;color:var(--text-muted);margin:2px 0 6px;';
+      othersTitle.textContent = '其他标签';
+      sheet.appendChild(othersTitle);
 
-      var sel = document.createElement('select');
-      sel.className = 'input-box';
-      sel.style.flex = '1';
-      addable.forEach(function (t) {
-        var opt = document.createElement('option');
-        opt.value = t;
-        opt.textContent = '#' + t + ' (' + counts[t] + ')';
-        sel.appendChild(opt);
-      });
-
-      var addBtn = document.createElement('button');
-      addBtn.textContent = '+ 置顶';
-      addBtn.style.cssText = 'font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:8px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;';
-      addBtn.onclick = function () {
-        if (!appData.pinnedTags) appData.pinnedTags = [];
-        if (appData.pinnedTags.length >= 5) return;
-        appData.pinnedTags.push(sel.value);
-        saveData(); renderPanel(); renderQuickTagButtons();
-      };
-
-      addRow.appendChild(sel);
-      addRow.appendChild(addBtn);
-      sheet.appendChild(addRow);
+      var othersList = document.createElement('div');
+      othersList.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:14px;max-height:200px;overflow-y:auto;';
+      others.forEach(function (t) { othersList.appendChild(buildTagRow(t, false)); });
+      sheet.appendChild(othersList);
     } else if (!allTags.length) {
       var noTags = document.createElement('div');
       noTags.style.cssText = 'font-size:11.5px;color:var(--text-muted);text-align:center;margin-bottom:10px;font-style:italic;';
