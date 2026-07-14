@@ -119,6 +119,10 @@ tbody tr.editing td{background:#fffbe6}
 .kebab-btn{background:none;border:none;cursor:pointer;padding:2px 7px;font-size:18px;color:var(--text3);border-radius:4px;line-height:1;letter-spacing:-.5px}
 .kebab-btn:hover{background:var(--surface2);color:var(--text)}
 .kebab-menu{background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.15);min-width:90px;overflow:hidden;z-index:9999}
+.pp-explain-box{position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:12px 14px;font-size:11px;line-height:1.7;width:360px;color:var(--text)}
+.pp-explain-line{margin-bottom:8px}
+.pp-explain-line:last-child{margin-bottom:0}
+.pp-explain-line b{font-weight:700}
 .kebab-item{padding:8px 14px;font-size:13px;cursor:pointer;color:var(--text);white-space:nowrap;user-select:none}
 .kebab-item:hover{background:var(--surface2)}
 .kebab-item.danger{color:var(--red)}
@@ -1452,7 +1456,8 @@ let _xirrCalcRows = _saved && _saved.XIRR_CALC_ROWS ? _saved.XIRR_CALC_ROWS : [[
 
     <!-- PERPETUAL WITHDRAWAL PLAN -->
     <div id="page-perpetual" class="page">
-      <div class="card" style="margin-bottom:14px">
+      <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:14px">
+      <div class="card" style="flex:1;min-width:0">
         <div class="card-header" style="cursor:pointer" onclick="togglePerpetualConfig()">
           <div class="card-title">参数配置</div>
           <span id="pp-config-arrow" style="font-size:11px;color:var(--text3)">收起 ▴</span>
@@ -1476,6 +1481,17 @@ let _xirrCalcRows = _saved && _saved.XIRR_CALC_ROWS ? _saved.XIRR_CALC_ROWS : [[
           </div>
           <div id="pp-groups-list" data-dynamic=""></div>
         </div>
+      </div>
+
+      <div class="card" style="flex:2;min-width:0">
+        <div class="card-header" style="cursor:pointer" onclick="togglePpFormulaCard()">
+          <div class="card-title">公式说明</div>
+          <span id="pp-formula-arrow" style="font-size:11px;color:var(--text3)">展开 ▾</span>
+        </div>
+        <div id="pp-formula-body" style="display:none">
+          <div id="pp-formula-content" style="font-size:12px;line-height:1.8;color:var(--text2)" data-dynamic=""></div>
+        </div>
+      </div>
       </div>
 
       <div id="pp-empty" style="display:none" class="bl1-empty">请先在上方添加至少一个参与组合</div>
@@ -6744,11 +6760,12 @@ function ppSimulate(){
     // grow each group by其当年收益率：理想线固定用idealRate；实际线优先用用户填的"年末实际余额"反推收益率，未填则用idealRate占位
     const rateYear = y; // 本次循环代表"y年"这一年的增长
     const groupRows = [];
-    let actualBaseTotal = 0;
+    let actualBaseTotal = 0, idealBaseTotal = 0;
     sortedGroups.forEach(g=>{
       const idealRate = g.idealRate||0;
       const baseForGrowth = actualBal[_gk(g)]; // 提取后、增值前的基数
       actualBaseTotal += baseForGrowth;
+      idealBaseTotal += idealBal[_gk(g)]; // 提取后、增值前的"理想线"基数（仅用于展示"综合理想年化”，不参与任何计算）
       let actualRate = idealRate;
       let actualEnd;
       if(g.actualBalances && g.actualBalances[rateYear]!=null){
@@ -6771,19 +6788,131 @@ function ppSimulate(){
     const idealTotal = Object.values(idealBal).reduce((s,v)=>s+v,0);
     const actualTotal = Object.values(actualBal).reduce((s,v)=>s+v,0);
     const compositeActualRate = actualBaseTotal>0 ? (actualTotal/actualBaseTotal - 1) : 0;
+    const compositeIdealRate  = idealBaseTotal>0  ? (idealTotal/idealBaseTotal - 1)   : 0;
     const diff = actualTotal - idealTotal;
     const inflation = p.inflationRate||0;
     const realValue = actualTotal / Math.pow(1+inflation, n);
-    years.push({ n, year:y, age, withdraw, plannedWithdraw, groupRows, idealTotal, actualTotal, compositeActualRate, diff, realValue });
+    years.push({ n, year:y, age, withdraw, plannedWithdraw, groupRows, idealTotal, actualTotal, compositeActualRate, compositeIdealRate, actualBaseTotal, idealBaseTotal, diff, realValue, idealWLog, actualWLog });
   }
   return { years, sortedGroups, idealStartTotal, baseWithdraw };
 }
 
 let _ppTableExpanded = true;
 let _ppChart = null;
+let _ppLastSim = null; // renderPerpetualPlan() 每次调用后缓存，供悬浮说明框直接取数，不用重新跑一遍模拟
+
+// 5个核心指标的公式定义：卡片和悬浮框共用同一份措辞（变量名、说法完全一致），
+// 卡片展示 abstract（不代入数字），悬浮框在此基础上把变量换成真实数字。
+const PP_FORMULAS = [
+  {title:'当年提取额', abstract:'当年提取额 = 基础提取额 ×(1+提取增长率)^增长年数　【未到增长起始年份则 = 基础提取额；该年若手动填写，则直接取手填值，不再按公式算】'},
+  {title:'综合理想年化 / 综合实际年化', abstract:'某一年的"综合年化"，不是单独设置的一个数字，而是全部参与组合当年增值结果反推出来的加权收益率：综合年化 = 全部组合增值后总余额 ÷ 全部组合扣减提取额后的总余额 − 1　【综合理想年化：每个组合都固定按自己设置的"理想年化"增值；综合实际年化：某组合某年若手填了"实际余额"，就按这个反推它当年的真实收益率，没填的组合借用它自己的理想年化占位——所以理想线和实际线在"没有实际数据"的地方是重合的】'},
+  {title:'理想总余额', abstract:'理想总余额(第n年) = (期初理想总余额 − 当年提取额) ×(1+综合理想年化)'},
+  {title:'实际总余额', abstract:'实际总余额(第n年) = (期初实际总余额 − 当年提取额) ×(1+综合实际年化)'},
+  {title:'差值', abstract:'差值 = 实际总余额 − 理想总余额'},
+  {title:'折现净值', abstract:'折现净值(第n年) = 实际总余额 ÷ (1+通胀率)^n　【第n年，即距起始年份的年数】'}
+];
+const PP_ORDER_NOTE = '当年提取额不是平均从每个参与组合里扣，而是严格按"参与组合"列表里的顺位来：先从第1顺位组合的期初余额里扣，扣到这个组合余额归零后，不够的部分再从第2顺位扣，以此类推，直到扣满当年提取额为止。理想线和实际线各自独立按同一个顺位走一遍，两条线因为余额不同，实际扣到的组合、金额可能不完全一样。';
+
+// 生成"第n年计算过程"悬浮说明框的HTML内容——和 PP_FORMULAS 用的是同一套变量措辞，只是代入了真实数字
+function _ppYearExplainHtml(y, prevY, sim){
+  const p = PERPETUAL_PLAN;
+  if(y.n===0){
+    return `<div class="pp-explain-line" style="color:var(--text3)">第 0 年 = 起始快照（${y.year}-12-31），此时尚未发生任何提取或增值，理想线和实际线都等于起始总本金 ${fmtCNY(y.idealTotal)}。</div>`;
+  }
+  const openIdeal = prevY.idealTotal, openActual = prevY.actualTotal;
+  const withdrawNote = (p.actualWithdrawals && p.actualWithdrawals[y.year]!=null)
+    ? `已手动覆盖为 ${fmtCNY(y.withdraw)}（公式原值 ${fmtCNY(y.plannedWithdraw)}）`
+    : `按公式计算：基础提取额 ${fmtCNY(sim.baseWithdraw)}${(p.growthStartYear && y.year>=p.growthStartYear) ? ` ×(1+${((p.withdrawGrowthRate||0)*100).toFixed(1)}%)^${y.year-p.growthStartYear+1} `:' '}= ${fmtCNY(y.withdraw)}`;
+  const sameLog = JSON.stringify(y.idealWLog)===JSON.stringify(y.actualWLog);
+  function logLine(log){
+    return (sim.sortedGroups||[]).map(g=>{
+      const key = g.level+'|'+g.l1;
+      const take = log[key]||0;
+      return take>0 ? `${g.l1} 扣 ${fmtCNY(take)}` : null;
+    }).filter(Boolean).join('，') || '（提取额为0，无需扣减）';
+  }
+  const withdrawLogHtml = sameLog
+    ? `按提取顺位扣减：${logLine(y.idealWLog)}`
+    : `按提取顺位扣减 —— 理想线：${logLine(y.idealWLog)}；实际线：${logLine(y.actualWLog)}（两条线扣的不同，是因为期初余额不同）`;
+  return `
+    <div class="pp-explain-line"><b>① 提取 ${fmtCNY(y.withdraw)}</b><br><span style="color:var(--text3)">${withdrawNote}</span><br><span style="color:var(--text3)">${withdrawLogHtml}</span></div>
+    <div class="pp-explain-line"><b>②-a 综合理想/实际年化</b>（不是单独设置的数字，是当年增值结果反推出来的）<br>
+      综合理想年化 = 理想总余额 ÷ 扣减后理想基数 − 1 = ${fmtCNY(y.idealTotal)} ÷ ${fmtCNY(y.idealBaseTotal)} − 1 = ${(y.compositeIdealRate*100).toFixed(2)}%<br>
+      综合实际年化 = 实际总余额 ÷ 扣减后实际基数 − 1 = ${fmtCNY(y.actualTotal)} ÷ ${fmtCNY(y.actualBaseTotal)} − 1 = ${(y.compositeActualRate*100).toFixed(2)}%
+    </div>
+    <div class="pp-explain-line"><b>②-b 增值</b>（提取后的余额，按上面算出的综合年化增值一整年）<br>
+      理想：(${fmtCNY(openIdeal)} − ${fmtCNY(y.withdraw)}) ×(1+${(y.compositeIdealRate*100).toFixed(2)}%) = ${fmtCNY(y.idealTotal)}<br>
+      实际：(${fmtCNY(openActual)} − ${fmtCNY(y.withdraw)}) ×(1+${(y.compositeActualRate*100).toFixed(2)}%) = ${fmtCNY(y.actualTotal)}
+    </div>
+    <div class="pp-explain-line"><b>③ 差值</b> = 实际总余额 − 理想总余额 = ${fmtCNY(y.actualTotal)} − ${fmtCNY(y.idealTotal)} = ${y.diff>=0?'+':''}${fmtCNY(y.diff)}</div>
+    <div class="pp-explain-line"><b>④ 折现净值</b> = 实际总余额 ÷ (1+${((p.inflationRate||0)*100).toFixed(1)}%)^${y.n} = ${fmtCNY(y.realValue)}</div>
+  `;
+}
+// 显示/隐藏悬浮说明框：故意和"内容生成"(_ppYearExplainHtml)分开写，以后如果要在触屏上改成"点击弹出"，
+// 只需要再挂一个 onclick 调这同一个内容生成函数即可，不用重写这部分逻辑。
+function ppRowClickToggle(e, n){
+  e.stopPropagation(); // 防止这次点击立刻被下面"点击空白处关闭"的监听给关掉
+  const box = document.getElementById('pp-explain-box');
+  if(box && box.dataset.n === String(n)){
+    // 再点一下已经打开的这一行 = 关闭
+    _ppHideExplain();
+    return;
+  }
+  _ppShowExplain(e, n);
+}
+document.addEventListener('click', (e)=>{
+  const box = document.getElementById('pp-explain-box');
+  if(box && !box.contains(e.target)) _ppHideExplain();
+});
+function _ppShowExplain(e, n){
+  if(!_ppLastSim) return;
+  const y = _ppLastSim.years.find(yy=>yy.n===n);
+  const prevY = _ppLastSim.years.find(yy=>yy.n===n-1);
+  if(!y) return;
+  _ppHideExplain();
+  const box = document.createElement('div');
+  box.id = 'pp-explain-box';
+  box.className = 'pp-explain-box';
+  box.dataset.n = String(n);
+  box.innerHTML = `<div style="font-weight:700;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">第 ${y.n} 年（${y.year}）计算过程</div>` + _ppYearExplainHtml(y, prevY, _ppLastSim);
+  document.body.appendChild(box);
+  // 定位用行的位置算，不用鼠标坐标——这样以后改成点击触发（没有连续鼠标坐标）也能直接复用这段定位逻辑
+  const rect = e.currentTarget.getBoundingClientRect();
+  let top = rect.bottom + 6;
+  let left = rect.left;
+  const boxRect = box.getBoundingClientRect();
+  if(left + boxRect.width > window.innerWidth - 12) left = window.innerWidth - boxRect.width - 12;
+  if(left < 12) left = 12;
+  if(top + boxRect.height > window.innerHeight - 12) top = rect.top - boxRect.height - 6;
+  box.style.top = top+'px';
+  box.style.left = left+'px';
+}
+function _ppHideExplain(){
+  const el = document.getElementById('pp-explain-box');
+  if(el) el.remove();
+}
+function togglePpFormulaCard(){
+  const body = document.getElementById('pp-formula-body');
+  const arrow = document.getElementById('pp-formula-arrow');
+  const collapsed = body.style.display === 'none';
+  body.style.display = collapsed ? '' : 'none';
+  arrow.textContent = collapsed ? '收起 ▴' : '展开 ▾';
+}
+function renderPpFormulaCard(){
+  const el = document.getElementById('pp-formula-content');
+  if(!el) return;
+  el.innerHTML = `
+    <div style="margin-bottom:10px;padding:10px 12px;background:var(--surface2);border-radius:var(--rs)">
+      <b>提取顺位机制</b><br>${PP_ORDER_NOTE}
+    </div>
+    ${PP_FORMULAS.map(f=>`<div style="margin-bottom:8px"><b>${f.title}</b><br><span style="color:var(--text3)">${f.abstract}</span></div>`).join('')}
+    <div style="color:var(--text3);font-size:11px">点击下方年度明细表的任意一行，可以看到这一年代入真实数字后的完整计算过程；再点一次收起。</div>
+  `;
+}
 
 function renderPerpetualPlan(){
   const p = PERPETUAL_PLAN;
+  renderPpFormulaCard();
   p.groups.forEach(g=>{ if(g.level==null) g.level=1; }); // 兼容旧数据（无level字段时默认一级）
   if(!p.actualWithdrawals) p.actualWithdrawals={}; // 兼容旧数据
   document.getElementById('pp-startyear').value = p.startYear||'';
@@ -6830,6 +6959,7 @@ function renderPerpetualPlan(){
 
   const sim = ppSimulate();
   if(!sim){ document.getElementById('pp-empty').style.display=''; document.getElementById('pp-results').style.display='none'; return; }
+  _ppLastSim = sim;
 
   // KPI
   const last = sim.years[sim.years.length-1];
@@ -6873,12 +7003,12 @@ function renderPerpetualPlan(){
     const editable = y.n>0 && _ppWithdrawEditable(y.year);
     const isOverridden = PERPETUAL_PLAN.actualWithdrawals && PERPETUAL_PLAN.actualWithdrawals[y.year]!=null;
     const withdrawCell = y.n===0 ? '—' : editable
-      ? `<input type="number" step="0.01" style="width:90px;height:14px;box-sizing:border-box;text-align:right;border:1px solid transparent;background:transparent;color:inherit;font:inherit;line-height:14px;padding:0 2px;border-radius:4px;outline:none;vertical-align:middle" value="${isOverridden?y.withdraw.toFixed(2):''}" placeholder="${y.plannedWithdraw.toFixed(2)}" onchange="ppUpdateWithdraw(${y.year},this.value)" onfocus="this.style.borderColor='var(--blue)';this.style.background='var(--surface)'" onblur="this.style.borderColor='transparent';this.style.background='transparent'">`
+      ? `<input type="number" step="0.01" style="width:90px;height:14px;box-sizing:border-box;text-align:right;border:1px solid transparent;background:transparent;color:inherit;font:inherit;line-height:14px;padding:0 2px;border-radius:4px;outline:none;vertical-align:middle" value="${isOverridden?y.withdraw.toFixed(2):''}" placeholder="${y.plannedWithdraw.toFixed(2)}" onclick="event.stopPropagation()" onchange="ppUpdateWithdraw(${y.year},this.value)" onfocus="this.style.borderColor='var(--blue)';this.style.background='var(--surface)'" onblur="this.style.borderColor='transparent';this.style.background='transparent'">`
       : fmtCNY(y.withdraw);
     const isCurYear = y.year===_ppCurYear();
     const rowStyle = isCurYear ? 'background:rgba(68,136,204,.12)' : (_ppIsYearPast(y.year)?'':'color:var(--text3)');
     return `
-    <tr style="${rowStyle}">
+    <tr style="${rowStyle};cursor:pointer" onclick="ppRowClickToggle(event,${y.n})">
       <td>${y.n}</td>
       <td>${y.year}</td>
       <td>${y.age!=null?y.age:'—'}</td>
