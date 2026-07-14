@@ -2298,6 +2298,31 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// 下拉小菜单（"⋮"那种）默认往下弹，靠近视口/容器底部时会被裁切或溢出。
+// 这个函数在菜单已经挂进真实 DOM（哪怕 display:none 也没关系，因为
+// 用的是锚点自身的位置去判断，不依赖菜单自身高度）之后调用一次，
+// 如果下方空间不够就直接翻到锚点上方。
+function smartPositionMenu(menuEl) {
+  if (!menuEl) return;
+  var anchor = menuEl.parentElement;
+  if (!anchor) return;
+  var menuH = menuEl.offsetHeight || 90; // display:none 时量不到高度，给个保守估计
+  var anchorRect = anchor.getBoundingClientRect();
+  var spaceBelow = window.innerHeight - anchorRect.bottom;
+  var spaceAbove = anchorRect.top;
+  if (spaceBelow < menuH + 12 && spaceAbove > spaceBelow) {
+    menuEl.style.top = 'auto';
+    menuEl.style.bottom = '100%';
+    menuEl.style.marginTop = '0';
+    menuEl.style.marginBottom = '6px';
+  } else {
+    menuEl.style.top = '100%';
+    menuEl.style.bottom = 'auto';
+    menuEl.style.marginTop = '6px';
+    menuEl.style.marginBottom = '0';
+  }
+}
+
 // ── Content search & #标签 ────────────────────────────────
 // 统一检索索引：笔记里的 #标签（手打，可选）+ 运动记录里非空的
 // 「身体感受」字段（自动打上「身体」标签）。两者归一化成同一种
@@ -3113,7 +3138,9 @@ function showSpanEventModal(id) {
     if (catSel.value === '__new__') return;
     var isBuiltIn = !!SPAN_CATEGORIES[catSel.value];
     catMenuDelItem.style.display = isBuiltIn ? 'none' : 'block';
-    catMenu.style.display = catMenu.style.display === 'none' ? 'block' : 'none';
+    var willOpen = catMenu.style.display === 'none';
+    catMenu.style.display = willOpen ? 'block' : 'none';
+    if (willOpen) smartPositionMenu(catMenu);
   };
 
   catMenuWrap.appendChild(catMenuBtn);
@@ -3532,6 +3559,7 @@ function showDayTagPanel() {
 
         if (openMenuId === t.id) {
           var menu = document.createElement('div');
+          menu.className = 'edit-menu-popover';
           menu.style.cssText = 'position:absolute;top:100%;right:10px;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);padding:4px;min-width:84px;z-index:20;';
 
           var editItem = document.createElement('button');
@@ -3609,6 +3637,8 @@ function showDayTagPanel() {
     closeBtn.textContent = '关闭';
     closeBtn.onclick = function () { overlay.remove(); refreshDayTagCompact(); render(); };
     sheet.appendChild(closeBtn);
+
+    smartPositionMenu(sheet.querySelector('.edit-menu-popover'));
   }
 
   renderPanel();
@@ -3756,6 +3786,7 @@ function showContentTagPanel() {
 
       if (openMenuTag === t) {
         var menu = document.createElement('div');
+        menu.className = 'edit-menu-popover';
         menu.style.cssText = 'position:absolute;top:100%;right:10px;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);padding:4px;min-width:84px;z-index:20;';
 
         if (isRenamableContentTag(t)) {
@@ -3840,6 +3871,8 @@ function showContentTagPanel() {
     closeBtn.textContent = '关闭';
     closeBtn.onclick = function () { overlay.remove(); renderQuickTagButtons(); };
     sheet.appendChild(closeBtn);
+
+    smartPositionMenu(sheet.querySelector('.edit-menu-popover'));
   }
 
   renderPanel();
