@@ -639,8 +639,8 @@
   .todo-item { position: relative; }
 
   /* ── Cal note textarea ───────────────────────────────── */
-  .cell-note-wrap { flex: 1; display: flex; flex-direction: column; margin-top: 2px; }
-  .notes-hidden .cell-note { display: none; }
+  .cell-note-wrap { flex: 1; display: flex; flex-direction: column; margin-top: 2px; min-height: 0; }
+  .notes-hidden .cell-note-preview { display: none; }
   .cell-note-dots {
     display: none;
     font-size: 10.5px;
@@ -649,37 +649,23 @@
     color: var(--text-muted);
     padding: 2px 5px;
     letter-spacing: 1px;
-    cursor: text;
   }
   .notes-hidden .cell-note-dots.has-content { display: block; }
 
-  .cell-note {
+  .cell-note-preview {
+    flex: 1;
     font-size: 10.5px;
     font-family: 'Inter', sans-serif;
-    line-height: 1.6;
+    line-height: 1.5;
     color: var(--text-dim);
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: var(--radius-xs);
     padding: 2px 5px;
-    width: 100%;
-    resize: none;
-    outline: none;
-    height: 20px;
-    min-height: 20px;
+    white-space: pre-wrap;
+    word-break: break-word;
     overflow: hidden;
-    cursor: text;
-    transition: border-color .13s, background .13s;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 6;
   }
-  .cell-note:hover { border-color: var(--border-lt); background: var(--surface2); }
-  .cell-note:focus {
-    border-color: var(--violet-bd);
-    background: var(--violet-bg);
-    color: var(--text);
-    height: auto;
-    min-height: 36px;
-  }
-  .cell-note::placeholder { color: var(--text-faint); font-style: italic; }
 
   /* ── Detail panel ────────────────────────────────────── */
   .detail-outer {
@@ -1761,8 +1747,7 @@
       font-size: 10px;
     }
 
-    .cell-note { font-size: 8px; line-height: 1.4; height: 14px; min-height: 14px; padding: 1px 3px; }
-    .cell-note:focus { height: auto; min-height: 26px; }
+    .cell-note-preview { font-size: 8px; line-height: 1.4; padding: 1px 3px; -webkit-line-clamp: 3; }
 
     /* Month picker popup */
     .cal-picker { width: 220px; padding: 11px; }
@@ -2270,15 +2255,6 @@ function loadFitness() {
     });
     return out;
   } catch(e) { return {}; }
-}
-
-function getCalDisplay(ds, notes, calNotes) {
-  if (calNotes[ds] !== undefined) return calNotes[ds];
-  if (notes[ds]) {
-    var first = notes[ds].split(/\n/)[0].trim();
-    return first.length > 60 ? first.slice(0, 60) + '…' : first;
-  }
-  return '';
 }
 
 function fmtDate(d) {
@@ -4527,41 +4503,18 @@ function render() {
     var noteWrap = document.createElement('div');
     noteWrap.className = 'cell-note-wrap';
 
-    var ta = document.createElement('textarea');
-    ta.className = 'cell-note';
-    ta.placeholder = '';
-    ta.value = getCalDisplay(ds, notes, calNotes);
-    ta.rows = 1;
-    ta.dataset.date = ds;
+    var notePreview = document.createElement('div');
+    notePreview.className = 'cell-note-preview';
+    var fullNoteText = notes[ds] || '';
+    notePreview.textContent = fullNoteText;
+    notePreview.dataset.date = ds;
 
-    ta.addEventListener('mousedown', function(e) { e.stopPropagation(); });
-    ta.addEventListener('click',     function(e) { e.stopPropagation(); });
-    ta.addEventListener('focus', function() {
-      this.style.height = 'auto';
-      this.style.height = Math.max(38, this.scrollHeight) + 'px';
-    });
-    ta.addEventListener('input', function() {
-      this.style.height = 'auto';
-      this.style.height = Math.max(38, this.scrollHeight) + 'px';
-    });
     var dots = document.createElement('div');
-    dots.className = 'cell-note-dots' + (ta.value.trim() ? ' has-content' : '');
+    dots.className = 'cell-note-dots' + (fullNoteText.trim() ? ' has-content' : '');
     dots.textContent = '···';
     dots.dataset.date = ds;
-    dots.addEventListener('click', function(e) { e.stopPropagation(); });
 
-    ta.addEventListener('blur', (function(dateStr, textarea, dotsEl) {
-      return function() {
-        var val = textarea.value;
-        if (val.trim()) appData.calNotes[dateStr] = val;
-        else delete appData.calNotes[dateStr];
-        saveData();
-        textarea.style.height = '';
-        dotsEl.classList.toggle('has-content', !!val.trim());
-      };
-    })(ds, ta, dots));
-
-    noteWrap.appendChild(ta);
+    noteWrap.appendChild(notePreview);
     noteWrap.appendChild(dots);
     contentCol.appendChild(noteWrap);
 
@@ -4749,17 +4702,12 @@ function doSave() {
   saveData();
   renderQuickTagButtons();
 
-  if (appData.calNotes[selDate] === undefined) {
-    var cell = document.querySelector('.day-cell[data-date="' + selDate + '"]');
-    if (cell) {
-      var ta = cell.querySelector('.cell-note');
-      if (ta) {
-        var first = text.split(/\n/)[0].trim();
-        ta.value = first.length > 60 ? first.slice(0, 60) + '…' : first;
-        var dotsEl = cell.querySelector('.cell-note-dots');
-        if (dotsEl) dotsEl.classList.toggle('has-content', !!first.trim());
-      }
-    }
+  var cell = document.querySelector('.day-cell[data-date="' + selDate + '"]');
+  if (cell) {
+    var preview = cell.querySelector('.cell-note-preview');
+    if (preview) preview.textContent = text;
+    var dotsEl = cell.querySelector('.cell-note-dots');
+    if (dotsEl) dotsEl.classList.toggle('has-content', !!text.trim());
   }
 
   var btn = document.getElementById('btnSave');
