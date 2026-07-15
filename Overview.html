@@ -3447,177 +3447,198 @@ function showDayTagPanel() {
   sheet.style.maxWidth = '380px';
   sheet.addEventListener('click', function (e) {
     e.stopPropagation();
-    if (openMenuId) { openMenuId = null; renderPanel(); }
+    if (openMenuId) { openMenuId = null; refresh(); }
   });
   overlay.appendChild(sheet);
 
   var editingId = null;
   var openMenuId = null;
+  var rows = {}; // tag id -> { el, sig }
 
-  function renderPanel() {
-    var defs = getDayTagDefs();
-    sheet.innerHTML = '';
+  var title = document.createElement('h3');
+  title.textContent = '日期标签管理';
+  sheet.appendChild(title);
 
-    var title = document.createElement('h3');
-    title.textContent = '日期标签管理';
-    sheet.appendChild(title);
+  var emptyMsg = document.createElement('div');
+  emptyMsg.style.cssText = 'font-size:12px;color:var(--text-muted);font-style:italic;text-align:center;padding:8px 0;display:none;';
+  emptyMsg.textContent = '还没有标签';
 
-    var list = document.createElement('div');
-    list.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:14px;';
+  var list = document.createElement('div');
+  list.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:14px;';
+  list.appendChild(emptyMsg);
+  sheet.appendChild(list);
 
-    if (!defs.length) {
-      var empty = document.createElement('div');
-      empty.style.cssText = 'font-size:12px;color:var(--text-muted);font-style:italic;text-align:center;padding:8px 0;';
-      empty.textContent = '还没有标签';
-      list.appendChild(empty);
+  var addRow = document.createElement('div');
+  addRow.style.cssText = 'display:flex;gap:7px;align-items:center;margin-bottom:10px;';
+
+  var iconInput = document.createElement('input');
+  iconInput.type = 'text';
+  iconInput.className = 'input-box';
+  iconInput.placeholder = '图标';
+  iconInput.maxLength = 4;
+  iconInput.style.cssText = 'width:56px;flex-shrink:0;text-align:center;';
+
+  var labelInput = document.createElement('input');
+  labelInput.type = 'text';
+  labelInput.className = 'input-box';
+  labelInput.placeholder = '名称，例如"生日"';
+  labelInput.style.flex = '1';
+
+  var addBtn = document.createElement('button');
+  addBtn.textContent = '+ 新建';
+  addBtn.style.cssText = 'font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:8px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;';
+  addBtn.onclick = function (e) {
+    e.stopPropagation();
+    var icon = iconInput.value.trim();
+    var label = labelInput.value.trim();
+    if (!icon || !label) return;
+    addDayTagDef(icon, label);
+    iconInput.value = '';
+    labelInput.value = '';
+    refresh();
+  };
+
+  addRow.appendChild(iconInput);
+  addRow.appendChild(labelInput);
+  addRow.appendChild(addBtn);
+  sheet.appendChild(addRow);
+
+  var closeBtn = document.createElement('button');
+  closeBtn.className = 'mbtn mbtn-close';
+  closeBtn.textContent = '关闭';
+  closeBtn.onclick = function () { overlay.remove(); refreshDayTagCompact(); render(); };
+  sheet.appendChild(closeBtn);
+
+  function paintRow(t, entry) {
+    var row = entry.el;
+    row.innerHTML = '';
+
+    if (editingId === t.id) {
+      var iconEdit = document.createElement('input');
+      iconEdit.type = 'text';
+      iconEdit.className = 'input-box';
+      iconEdit.value = t.icon;
+      iconEdit.maxLength = 4;
+      iconEdit.style.cssText = 'width:52px;flex-shrink:0;text-align:center;';
+
+      var labelEdit = document.createElement('input');
+      labelEdit.type = 'text';
+      labelEdit.className = 'input-box';
+      labelEdit.value = t.label;
+      labelEdit.style.flex = '1';
+
+      var saveEditBtn = document.createElement('button');
+      saveEditBtn.textContent = '保存';
+      saveEditBtn.style.cssText = 'font-size:11.5px;font-weight:600;padding:6px 10px;border-radius:6px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:inherit;flex-shrink:0;';
+      saveEditBtn.onclick = function (e) {
+        e.stopPropagation();
+        var icon = iconEdit.value.trim();
+        var label = labelEdit.value.trim();
+        if (!icon || !label) return;
+        updateDayTagDef(t.id, icon, label);
+        editingId = null;
+        refresh();
+      };
+
+      var cancelEditBtn = document.createElement('button');
+      cancelEditBtn.textContent = '取消';
+      cancelEditBtn.style.cssText = 'font-size:11.5px;padding:6px 9px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text-dim);cursor:pointer;font-family:inherit;flex-shrink:0;';
+      cancelEditBtn.onclick = function (e) {
+        e.stopPropagation();
+        editingId = null;
+        refresh();
+      };
+
+      row.appendChild(iconEdit);
+      row.appendChild(labelEdit);
+      row.appendChild(saveEditBtn);
+      row.appendChild(cancelEditBtn);
+      return;
     }
 
-    defs.forEach(function (t) {
-      var row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border-lt);border-radius:8px;position:relative;';
+    var labelEl = document.createElement('span');
+    labelEl.style.cssText = 'font-size:14px;flex:1;';
+    labelEl.textContent = t.icon + ' ' + t.label;
+    row.appendChild(labelEl);
 
-      if (editingId === t.id) {
-        var iconEdit = document.createElement('input');
-        iconEdit.type = 'text';
-        iconEdit.className = 'input-box';
-        iconEdit.value = t.icon;
-        iconEdit.maxLength = 4;
-        iconEdit.style.cssText = 'width:52px;flex-shrink:0;text-align:center;';
-
-        var labelEdit = document.createElement('input');
-        labelEdit.type = 'text';
-        labelEdit.className = 'input-box';
-        labelEdit.value = t.label;
-        labelEdit.style.flex = '1';
-
-        var saveEditBtn = document.createElement('button');
-        saveEditBtn.textContent = '保存';
-        saveEditBtn.style.cssText = 'font-size:11.5px;font-weight:600;padding:6px 10px;border-radius:6px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:inherit;flex-shrink:0;';
-        saveEditBtn.onclick = function (e) {
-          e.stopPropagation();
-          var icon = iconEdit.value.trim();
-          var label = labelEdit.value.trim();
-          if (!icon || !label) return;
-          updateDayTagDef(t.id, icon, label);
-          editingId = null;
-          renderPanel();
-        };
-
-        var cancelEditBtn = document.createElement('button');
-        cancelEditBtn.textContent = '取消';
-        cancelEditBtn.style.cssText = 'font-size:11.5px;padding:6px 9px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text-dim);cursor:pointer;font-family:inherit;flex-shrink:0;';
-        cancelEditBtn.onclick = function (e) {
-          e.stopPropagation();
-          editingId = null;
-          renderPanel();
-        };
-
-        row.appendChild(iconEdit);
-        row.appendChild(labelEdit);
-        row.appendChild(saveEditBtn);
-        row.appendChild(cancelEditBtn);
-      } else {
-        var labelEl = document.createElement('span');
-        labelEl.style.cssText = 'font-size:14px;flex:1;';
-        labelEl.textContent = t.icon + ' ' + t.label;
-        row.appendChild(labelEl);
-
-        var menuBtn = document.createElement('button');
-        menuBtn.textContent = '⋮';
-        menuBtn.title = '编辑 / 删除';
-        menuBtn.style.cssText = 'width:22px;height:22px;border:none;background:none;cursor:pointer;color:var(--text-dim);font-family:inherit;font-size:16px;flex-shrink:0;line-height:1;';
-        menuBtn.onclick = function (e) {
-          e.stopPropagation();
-          openMenuId = (openMenuId === t.id) ? null : t.id;
-          renderPanel();
-        };
-        row.appendChild(menuBtn);
-
-        if (openMenuId === t.id) {
-          var menu = document.createElement('div');
-          menu.className = 'edit-menu-popover';
-          menu.style.cssText = 'position:absolute;top:100%;right:10px;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);padding:4px;min-width:84px;z-index:20;';
-
-          var editItem = document.createElement('button');
-          editItem.textContent = '编辑';
-          editItem.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 10px;border:none;background:none;cursor:pointer;font-size:12px;color:var(--text-dim);border-radius:5px;font-family:inherit;';
-          editItem.onmouseenter = function () { editItem.style.background = 'var(--surface2)'; };
-          editItem.onmouseleave = function () { editItem.style.background = 'none'; };
-          editItem.onclick = function (e) {
-            e.stopPropagation();
-            editingId = t.id;
-            openMenuId = null;
-            renderPanel();
-          };
-
-          var delItem = document.createElement('button');
-          delItem.textContent = '删除';
-          delItem.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 10px;border:none;background:none;cursor:pointer;font-size:12px;color:#dc2626;border-radius:5px;font-family:inherit;';
-          delItem.onmouseenter = function () { delItem.style.background = 'var(--surface2)'; };
-          delItem.onmouseleave = function () { delItem.style.background = 'none'; };
-          delItem.onclick = function (e) {
-            e.stopPropagation();
-            deleteDayTagDef(t.id);
-            openMenuId = null;
-            renderPanel();
-          };
-
-          menu.appendChild(editItem);
-          menu.appendChild(delItem);
-          row.appendChild(menu);
-        }
-      }
-
-      list.appendChild(row);
-    });
-
-    sheet.appendChild(list);
-
-    var addRow = document.createElement('div');
-    addRow.style.cssText = 'display:flex;gap:7px;align-items:center;margin-bottom:10px;';
-
-    var iconInput = document.createElement('input');
-    iconInput.type = 'text';
-    iconInput.className = 'input-box';
-    iconInput.placeholder = '图标';
-    iconInput.maxLength = 4;
-    iconInput.style.cssText = 'width:56px;flex-shrink:0;text-align:center;';
-
-    var labelInput = document.createElement('input');
-    labelInput.type = 'text';
-    labelInput.className = 'input-box';
-    labelInput.placeholder = '名称，例如"生日"';
-    labelInput.style.flex = '1';
-
-    var addBtn = document.createElement('button');
-    addBtn.textContent = '+ 新建';
-    addBtn.style.cssText = 'font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:8px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;';
-    addBtn.onclick = function (e) {
+    var menuBtn = document.createElement('button');
+    menuBtn.textContent = '⋮';
+    menuBtn.title = '编辑 / 删除';
+    menuBtn.style.cssText = 'width:22px;height:22px;border:none;background:none;cursor:pointer;color:var(--text-dim);font-family:inherit;font-size:16px;flex-shrink:0;line-height:1;';
+    menuBtn.onclick = function (e) {
       e.stopPropagation();
-      var icon = iconInput.value.trim();
-      var label = labelInput.value.trim();
-      if (!icon || !label) return;
-      addDayTagDef(icon, label);
-      iconInput.value = '';
-      labelInput.value = '';
-      renderPanel();
+      openMenuId = (openMenuId === t.id) ? null : t.id;
+      refresh();
     };
+    row.appendChild(menuBtn);
 
-    addRow.appendChild(iconInput);
-    addRow.appendChild(labelInput);
-    addRow.appendChild(addBtn);
-    sheet.appendChild(addRow);
+    if (openMenuId === t.id) {
+      var menu = document.createElement('div');
+      menu.className = 'edit-menu-popover';
+      menu.style.cssText = 'position:absolute;top:100%;right:10px;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);padding:4px;min-width:84px;z-index:20;';
 
-    var closeBtn = document.createElement('button');
-    closeBtn.className = 'mbtn mbtn-close';
-    closeBtn.textContent = '关闭';
-    closeBtn.onclick = function () { overlay.remove(); refreshDayTagCompact(); render(); };
-    sheet.appendChild(closeBtn);
+      var editItem = document.createElement('button');
+      editItem.textContent = '编辑';
+      editItem.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 10px;border:none;background:none;cursor:pointer;font-size:12px;color:var(--text-dim);border-radius:5px;font-family:inherit;';
+      editItem.onmouseenter = function () { editItem.style.background = 'var(--surface2)'; };
+      editItem.onmouseleave = function () { editItem.style.background = 'none'; };
+      editItem.onclick = function (e) {
+        e.stopPropagation();
+        editingId = t.id;
+        openMenuId = null;
+        refresh();
+      };
 
-    smartPositionMenu(sheet.querySelector('.edit-menu-popover'));
+      var delItem = document.createElement('button');
+      delItem.textContent = '删除';
+      delItem.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 10px;border:none;background:none;cursor:pointer;font-size:12px;color:#dc2626;border-radius:5px;font-family:inherit;';
+      delItem.onmouseenter = function () { delItem.style.background = 'var(--surface2)'; };
+      delItem.onmouseleave = function () { delItem.style.background = 'none'; };
+      delItem.onclick = function (e) {
+        e.stopPropagation();
+        deleteDayTagDef(t.id);
+        openMenuId = null;
+        refresh();
+      };
+
+      menu.appendChild(editItem);
+      menu.appendChild(delItem);
+      row.appendChild(menu);
+    }
   }
 
-  renderPanel();
+  function refresh() {
+    var savedScrollTop = sheet.scrollTop;
+    var defs = getDayTagDefs();
+
+    var liveIds = {};
+    defs.forEach(function (t) { liveIds[t.id] = true; });
+    Object.keys(rows).forEach(function (id) {
+      if (!liveIds[id]) { rows[id].el.remove(); delete rows[id]; }
+    });
+
+    emptyMsg.style.display = defs.length ? 'none' : 'block';
+
+    defs.forEach(function (t) {
+      var entry = rows[t.id];
+      if (!entry) {
+        var el = document.createElement('div');
+        el.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border-lt);border-radius:8px;position:relative;';
+        entry = rows[t.id] = { el: el, sig: null };
+      }
+      var sig = t.icon + '|' + t.label + '|' + (editingId === t.id) + '|' + (openMenuId === t.id);
+      if (entry.sig !== sig) {
+        entry.sig = sig;
+        paintRow(t, entry);
+      }
+      list.appendChild(entry.el);
+    });
+
+    smartPositionMenu(sheet.querySelector('.edit-menu-popover'));
+    sheet.scrollTop = savedScrollTop;
+  }
+
+  refresh();
   document.body.appendChild(overlay);
 }
 
@@ -3631,15 +3652,226 @@ function showContentTagPanel() {
   sheet.style.maxWidth = '400px';
   sheet.addEventListener('click', function (e) {
     e.stopPropagation();
-    if (openMenuTag) { openMenuTag = null; renderPanel(); }
+    if (openMenuTag) { openMenuTag = null; refresh(); }
   });
   overlay.appendChild(sheet);
 
   var editingTag = null;
   var openMenuTag = null;
   var dragTagName = null;
+  var rows = {}; // tag -> { el, isPinned, sig }
 
-  function renderPanel() {
+  // ── 静态骨架：只建一次，后面 refresh() 只在这些容器内部做增量更新，
+  //    从不整体清空 sheet，滚动位置、正在编辑的输入框都不会被打断 ──
+  var title = document.createElement('h3');
+  title.textContent = '常用标签管理';
+  sheet.appendChild(title);
+
+  var hint = document.createElement('div');
+  hint.style.cssText = 'font-size:11.5px;color:var(--text-muted);margin-bottom:12px;text-align:center;';
+  hint.textContent = '最多置顶 5 个，写笔记时可一键插入';
+  sheet.appendChild(hint);
+
+  var pinnedEmptyMsg = document.createElement('div');
+  pinnedEmptyMsg.style.cssText = 'font-size:12px;color:var(--text-muted);font-style:italic;text-align:center;padding:8px 0;display:none;';
+  pinnedEmptyMsg.textContent = '还没有置顶标签';
+
+  var pinnedList = document.createElement('div');
+  pinnedList.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:14px;';
+  pinnedList.appendChild(pinnedEmptyMsg);
+  sheet.appendChild(pinnedList);
+
+  var othersTitle = document.createElement('div');
+  othersTitle.style.cssText = 'font-size:11px;color:var(--text-muted);margin:2px 0 6px;display:none;';
+  othersTitle.textContent = '其他标签';
+  sheet.appendChild(othersTitle);
+
+  var othersList = document.createElement('div');
+  othersList.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:14px;max-height:200px;overflow-y:auto;';
+  sheet.appendChild(othersList);
+
+  var noTagsMsg = document.createElement('div');
+  noTagsMsg.style.cssText = 'font-size:11.5px;color:var(--text-muted);text-align:center;margin-bottom:10px;font-style:italic;display:none;';
+  noTagsMsg.textContent = '在笔记里写 #标签 后，这里就能选择置顶了';
+  sheet.appendChild(noTagsMsg);
+
+  var closeBtn = document.createElement('button');
+  closeBtn.className = 'mbtn mbtn-close';
+  closeBtn.textContent = '关闭';
+  closeBtn.onclick = function () { overlay.remove(); renderQuickTagButtons(); };
+  sheet.appendChild(closeBtn);
+
+  // ── 单个标签行的内容渲染，只在这一行自己相关的状态变化时才会被调用 ──
+  function paintRow(t, entry, counts, pinnedCount) {
+    var row = entry.el;
+    var isPinned = entry.isPinned;
+    row.innerHTML = '';
+    row.draggable = false;
+    row.ondragstart = row.ondragend = row.ondragover = row.ondragleave = row.ondrop = null;
+
+    if (editingTag === t) {
+      var editInput = document.createElement('input');
+      editInput.type = 'text';
+      editInput.className = 'input-box';
+      editInput.value = t;
+      editInput.style.flex = '1';
+
+      var saveEditBtn = document.createElement('button');
+      saveEditBtn.type = 'button';
+      saveEditBtn.textContent = '保存';
+      saveEditBtn.style.cssText = 'font-size:11.5px;font-weight:600;padding:6px 10px;border-radius:6px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:inherit;flex-shrink:0;';
+      saveEditBtn.onclick = function (e) {
+        e.stopPropagation();
+        var newTag = editInput.value.trim().replace(/^#+/, '');
+        if (!newTag) return;
+        renameContentTag(t, newTag);
+        editingTag = null;
+        renderQuickTagButtons();
+        refresh();
+      };
+
+      var cancelEditBtn = document.createElement('button');
+      cancelEditBtn.type = 'button';
+      cancelEditBtn.textContent = '取消';
+      cancelEditBtn.style.cssText = 'font-size:11.5px;padding:6px 9px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text-dim);cursor:pointer;font-family:inherit;flex-shrink:0;';
+      cancelEditBtn.onclick = function (e) {
+        e.stopPropagation();
+        editingTag = null;
+        refresh();
+      };
+
+      row.appendChild(editInput);
+      row.appendChild(saveEditBtn);
+      row.appendChild(cancelEditBtn);
+      return;
+    }
+
+    if (isPinned) {
+      row.draggable = true;
+      row.addEventListener('dragstart', function (e) {
+        dragTagName = t;
+        row.style.opacity = '.4';
+        if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+      });
+      row.addEventListener('dragend', function () { row.style.opacity = ''; });
+      row.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        row.style.outline = '2px dashed var(--blue)';
+      });
+      row.addEventListener('dragleave', function () { row.style.outline = ''; });
+      row.addEventListener('drop', function (e) {
+        e.preventDefault();
+        row.style.outline = '';
+        if (!dragTagName || dragTagName === t) return;
+        var arr = appData.pinnedTags.slice();
+        var fromIdx = arr.indexOf(dragTagName);
+        var toIdx = arr.indexOf(t);
+        if (fromIdx === -1 || toIdx === -1) return;
+        arr.splice(fromIdx, 1);
+        arr.splice(toIdx, 0, dragTagName);
+        appData.pinnedTags = arr;
+        saveData();
+        dragTagName = null;
+        renderQuickTagButtons();
+        refresh();
+      });
+
+      var handle = document.createElement('span');
+      handle.textContent = '⠿';
+      handle.title = '拖拽排序';
+      handle.style.cssText = 'color:var(--text-muted);font-size:13px;flex-shrink:0;cursor:grab;';
+      row.appendChild(handle);
+    }
+
+    var labelEl = document.createElement('span');
+    labelEl.style.cssText = 'font-size:13px;font-weight:600;color:' + (isPinned ? 'var(--text)' : 'var(--text-dim)') + ';flex:1;';
+    labelEl.textContent = '#' + t + ' (' + counts[t] + ')';
+    row.appendChild(labelEl);
+
+    var menuBtn = document.createElement('button');
+    menuBtn.type = 'button';
+    menuBtn.textContent = '⋮';
+    menuBtn.title = isPinned ? '编辑 / 取消置顶' : '编辑 / 置顶';
+    menuBtn.style.cssText = 'width:22px;height:22px;border:none;background:none;cursor:pointer;color:var(--text-dim);font-size:16px;font-family:inherit;flex-shrink:0;line-height:1;';
+    menuBtn.onclick = function (e) {
+      e.stopPropagation();
+      openMenuTag = (openMenuTag === t) ? null : t;
+      refresh();
+    };
+    row.appendChild(menuBtn);
+
+    if (openMenuTag === t) {
+      var menu = document.createElement('div');
+      menu.className = 'edit-menu-popover';
+      menu.style.cssText = 'position:absolute;top:100%;right:10px;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);padding:4px;min-width:84px;z-index:20;';
+
+      if (isRenamableContentTag(t)) {
+        var editItem = document.createElement('button');
+        editItem.type = 'button';
+        editItem.textContent = '编辑';
+        editItem.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 10px;border:none;background:none;cursor:pointer;font-size:12px;color:var(--text-dim);border-radius:5px;font-family:inherit;';
+        editItem.onclick = function (e) {
+          e.stopPropagation();
+          editingTag = t;
+          openMenuTag = null;
+          refresh();
+        };
+        menu.appendChild(editItem);
+      }
+
+      if (isPinned) {
+        var rmItem = document.createElement('button');
+        rmItem.type = 'button';
+        rmItem.textContent = '取消置顶';
+        rmItem.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 10px;border:none;background:none;cursor:pointer;font-size:12px;color:var(--text-dim);border-radius:5px;font-family:inherit;';
+        rmItem.onclick = function (e) {
+          e.stopPropagation();
+          appData.pinnedTags = appData.pinnedTags.filter(function (x) { return x !== t; });
+          openMenuTag = null;
+          saveData(); renderQuickTagButtons(); refresh();
+        };
+        menu.appendChild(rmItem);
+      } else if (pinnedCount < 5) {
+        var pinItem = document.createElement('button');
+        pinItem.type = 'button';
+        pinItem.textContent = '置顶';
+        pinItem.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 10px;border:none;background:none;cursor:pointer;font-size:12px;color:var(--text-dim);border-radius:5px;font-family:inherit;';
+        pinItem.onclick = function (e) {
+          e.stopPropagation();
+          if (!appData.pinnedTags) appData.pinnedTags = [];
+          appData.pinnedTags.push(t);
+          openMenuTag = null;
+          saveData(); renderQuickTagButtons(); refresh();
+        };
+        menu.appendChild(pinItem);
+      }
+
+      row.appendChild(menu);
+    }
+  }
+
+  // ── 把一组标签对应挂到某个列表容器下：已有的行 DOM 节点直接复用/挪位置，
+  //    不存在的才新建，多余的才删掉；内容只有"签名"变化时才重新绘制 ──
+  function reconcile(container, tags, isPinned, counts, pinnedCount) {
+    tags.forEach(function (t) {
+      var entry = rows[t];
+      if (!entry || entry.isPinned !== isPinned) {
+        if (entry) entry.el.remove();
+        var el = document.createElement('div');
+        el.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border-lt);border-radius:8px;position:relative;';
+        entry = rows[t] = { el: el, isPinned: isPinned, sig: null };
+      }
+      var sig = isPinned + '|' + counts[t] + '|' + (editingTag === t) + '|' + (openMenuTag === t) + '|' + pinnedCount;
+      if (entry.sig !== sig) {
+        entry.sig = sig;
+        paintRow(t, entry, counts, pinnedCount);
+      }
+      container.appendChild(entry.el); // 已存在就是纯移动，不会重建
+    });
+  }
+
+  function refresh() {
+    var savedScrollTop = sheet.scrollTop;
     var idx = buildContentIndex();
     var counts = getContentTagCounts(idx);
     var allTags = Object.keys(counts)
@@ -3653,205 +3885,26 @@ function showContentTagPanel() {
     }
     var pinned = appData.pinnedTags.filter(function (t) { return counts[t]; });
     var others = allTags.filter(function (t) { return pinned.indexOf(t) === -1; });
+    var liveTags = {};
+    pinned.forEach(function (t) { liveTags[t] = true; });
+    others.forEach(function (t) { liveTags[t] = true; });
+    Object.keys(rows).forEach(function (t) {
+      if (!liveTags[t]) { rows[t].el.remove(); delete rows[t]; }
+    });
 
-    sheet.innerHTML = '';
+    pinnedEmptyMsg.style.display = pinned.length ? 'none' : 'block';
+    reconcile(pinnedList, pinned, true, counts, pinned.length);
 
-    var title = document.createElement('h3');
-    title.textContent = '常用标签管理';
-    sheet.appendChild(title);
+    othersTitle.style.display = others.length ? 'block' : 'none';
+    reconcile(othersList, others, false, counts, pinned.length);
 
-    var hint = document.createElement('div');
-    hint.style.cssText = 'font-size:11.5px;color:var(--text-muted);margin-bottom:12px;text-align:center;';
-    hint.textContent = '最多置顶 5 个，写笔记时可一键插入';
-    sheet.appendChild(hint);
-
-    function buildTagRow(t, isPinned) {
-      var row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border-lt);border-radius:8px;position:relative;';
-
-      if (editingTag === t) {
-        var editInput = document.createElement('input');
-        editInput.type = 'text';
-        editInput.className = 'input-box';
-        editInput.value = t;
-        editInput.style.flex = '1';
-
-        var saveEditBtn = document.createElement('button');
-        saveEditBtn.type = 'button';
-        saveEditBtn.textContent = '保存';
-        saveEditBtn.style.cssText = 'font-size:11.5px;font-weight:600;padding:6px 10px;border-radius:6px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:inherit;flex-shrink:0;';
-        saveEditBtn.onclick = function (e) {
-          e.stopPropagation();
-          var newTag = editInput.value.trim().replace(/^#+/, '');
-          if (!newTag) return;
-          renameContentTag(t, newTag);
-          editingTag = null;
-          renderPanel();
-          renderQuickTagButtons();
-        };
-
-        var cancelEditBtn = document.createElement('button');
-        cancelEditBtn.type = 'button';
-        cancelEditBtn.textContent = '取消';
-        cancelEditBtn.style.cssText = 'font-size:11.5px;padding:6px 9px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text-dim);cursor:pointer;font-family:inherit;flex-shrink:0;';
-        cancelEditBtn.onclick = function (e) {
-          e.stopPropagation();
-          editingTag = null;
-          renderPanel();
-        };
-
-        row.appendChild(editInput);
-        row.appendChild(saveEditBtn);
-        row.appendChild(cancelEditBtn);
-        return row;
-      }
-
-      if (isPinned) {
-        row.draggable = true;
-        row.addEventListener('dragstart', function (e) {
-          dragTagName = t;
-          row.style.opacity = '.4';
-          if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
-        });
-        row.addEventListener('dragend', function () { row.style.opacity = ''; });
-        row.addEventListener('dragover', function (e) {
-          e.preventDefault();
-          row.style.outline = '2px dashed var(--blue)';
-        });
-        row.addEventListener('dragleave', function () { row.style.outline = ''; });
-        row.addEventListener('drop', function (e) {
-          e.preventDefault();
-          row.style.outline = '';
-          if (!dragTagName || dragTagName === t) return;
-          var arr = appData.pinnedTags.slice();
-          var fromIdx = arr.indexOf(dragTagName);
-          var toIdx = arr.indexOf(t);
-          if (fromIdx === -1 || toIdx === -1) return;
-          arr.splice(fromIdx, 1);
-          arr.splice(toIdx, 0, dragTagName);
-          appData.pinnedTags = arr;
-          saveData();
-          dragTagName = null;
-          renderPanel();
-          renderQuickTagButtons();
-        });
-
-        var handle = document.createElement('span');
-        handle.textContent = '⠿';
-        handle.title = '拖拽排序';
-        handle.style.cssText = 'color:var(--text-muted);font-size:13px;flex-shrink:0;cursor:grab;';
-        row.appendChild(handle);
-      }
-
-      var labelEl = document.createElement('span');
-      labelEl.style.cssText = 'font-size:13px;font-weight:600;color:' + (isPinned ? 'var(--text)' : 'var(--text-dim)') + ';flex:1;';
-      labelEl.textContent = '#' + t + ' (' + counts[t] + ')';
-      row.appendChild(labelEl);
-
-      var menuBtn = document.createElement('button');
-      menuBtn.type = 'button';
-      menuBtn.textContent = '⋮';
-      menuBtn.title = isPinned ? '编辑 / 取消置顶' : '编辑 / 置顶';
-      menuBtn.style.cssText = 'width:22px;height:22px;border:none;background:none;cursor:pointer;color:var(--text-dim);font-size:16px;font-family:inherit;flex-shrink:0;line-height:1;';
-      menuBtn.onclick = function (e) {
-        e.stopPropagation();
-        openMenuTag = (openMenuTag === t) ? null : t;
-        renderPanel();
-      };
-      row.appendChild(menuBtn);
-
-      if (openMenuTag === t) {
-        var menu = document.createElement('div');
-        menu.className = 'edit-menu-popover';
-        menu.style.cssText = 'position:absolute;top:100%;right:10px;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-md);padding:4px;min-width:84px;z-index:20;';
-
-        if (isRenamableContentTag(t)) {
-          var editItem = document.createElement('button');
-          editItem.type = 'button';
-          editItem.textContent = '编辑';
-          editItem.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 10px;border:none;background:none;cursor:pointer;font-size:12px;color:var(--text-dim);border-radius:5px;font-family:inherit;';
-          editItem.onclick = function (e) {
-            e.stopPropagation();
-            editingTag = t;
-            openMenuTag = null;
-            renderPanel();
-          };
-          menu.appendChild(editItem);
-        }
-
-        if (isPinned) {
-          var rmItem = document.createElement('button');
-          rmItem.type = 'button';
-          rmItem.textContent = '取消置顶';
-          rmItem.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 10px;border:none;background:none;cursor:pointer;font-size:12px;color:var(--text-dim);border-radius:5px;font-family:inherit;';
-          rmItem.onclick = function (e) {
-            e.stopPropagation();
-            appData.pinnedTags = appData.pinnedTags.filter(function (x) { return x !== t; });
-            openMenuTag = null;
-            saveData(); renderPanel(); renderQuickTagButtons();
-          };
-          menu.appendChild(rmItem);
-        } else if (pinned.length < 5) {
-          var pinItem = document.createElement('button');
-          pinItem.type = 'button';
-          pinItem.textContent = '置顶';
-          pinItem.style.cssText = 'display:block;width:100%;text-align:left;padding:6px 10px;border:none;background:none;cursor:pointer;font-size:12px;color:var(--text-dim);border-radius:5px;font-family:inherit;';
-          pinItem.onclick = function (e) {
-            e.stopPropagation();
-            if (!appData.pinnedTags) appData.pinnedTags = [];
-            appData.pinnedTags.push(t);
-            openMenuTag = null;
-            saveData(); renderPanel(); renderQuickTagButtons();
-          };
-          menu.appendChild(pinItem);
-        }
-
-        row.appendChild(menu);
-      }
-
-      return row;
-    }
-
-    var list = document.createElement('div');
-    list.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:14px;';
-
-    if (!pinned.length) {
-      var empty = document.createElement('div');
-      empty.style.cssText = 'font-size:12px;color:var(--text-muted);font-style:italic;text-align:center;padding:8px 0;';
-      empty.textContent = '还没有置顶标签';
-      list.appendChild(empty);
-    }
-
-    pinned.forEach(function (t) { list.appendChild(buildTagRow(t, true)); });
-    sheet.appendChild(list);
-
-    if (others.length) {
-      var othersTitle = document.createElement('div');
-      othersTitle.style.cssText = 'font-size:11px;color:var(--text-muted);margin:2px 0 6px;';
-      othersTitle.textContent = '其他标签';
-      sheet.appendChild(othersTitle);
-
-      var othersList = document.createElement('div');
-      othersList.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:14px;max-height:200px;overflow-y:auto;';
-      others.forEach(function (t) { othersList.appendChild(buildTagRow(t, false)); });
-      sheet.appendChild(othersList);
-    } else if (!allTags.length) {
-      var noTags = document.createElement('div');
-      noTags.style.cssText = 'font-size:11.5px;color:var(--text-muted);text-align:center;margin-bottom:10px;font-style:italic;';
-      noTags.textContent = '在笔记里写 #标签 后，这里就能选择置顶了';
-      sheet.appendChild(noTags);
-    }
-
-    var closeBtn = document.createElement('button');
-    closeBtn.className = 'mbtn mbtn-close';
-    closeBtn.textContent = '关闭';
-    closeBtn.onclick = function () { overlay.remove(); renderQuickTagButtons(); };
-    sheet.appendChild(closeBtn);
+    noTagsMsg.style.display = allTags.length ? 'none' : 'block';
 
     smartPositionMenu(sheet.querySelector('.edit-menu-popover'));
+    sheet.scrollTop = savedScrollTop;
   }
 
-  renderPanel();
+  refresh();
   document.body.appendChild(overlay);
 }
 
