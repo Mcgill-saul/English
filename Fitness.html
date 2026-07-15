@@ -355,6 +355,13 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .btn-danger{background:var(--coral-lt);color:var(--coral);border:1.5px solid #f9b0b0;}
 .btn-danger:hover{background:var(--coral);color:#fff;}
 .btn-sm{padding:5px 12px;font-size:12px;}
+.batch-toggle-btn{
+  padding:5px 12px;border-radius:var(--radius);font-size:12px;font-weight:600;
+  cursor:pointer;font-family:var(--font);transition:all .15s;
+  background:var(--blue-lt);color:var(--blue-dk);border:1.5px solid #bfdbfe;
+}
+.batch-toggle-btn:hover{border-color:var(--blue);}
+.batch-toggle-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
 
 /* Records */
 .search-row{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
@@ -892,7 +899,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
     </div>
     <div class="records-header">
       <div class="records-title" id="records-count">全部记录</div>
-      <button class="btn btn-secondary btn-sm" id="batchToggleBtn" onclick="toggleBatchMode()">☑ 批量选择</button>
+      <button class="batch-toggle-btn" id="batchToggleBtn" onclick="toggleBatchMode()">批量选择</button>
     </div>
     <div id="record-col-header" class="record-list-header"></div>
     <div class="record-list" id="recordList"></div>
@@ -1606,13 +1613,16 @@ function showTab(n){
 //  下方默认展示「当前月」
 // ══════════════════════════════════════
 function scrollCalendarToDefault(){
+  if(window.innerWidth > 768) return; // 只在手机端生效，桌面端不自动跳转
   requestAnimationFrame(()=>{
-    const now = new Date();
-    const targetMonth = now.getMonth();
-    const monthEl = document.getElementById('cal-month-' + targetMonth);
-    if(!monthEl) return;
-    const rect = monthEl.getBoundingClientRect();
-    window.scrollTo({ top: window.scrollY + rect.top, behavior: 'auto' });
+    requestAnimationFrame(()=>{
+      const now = new Date();
+      const targetMonth = now.getMonth();
+      const monthEl = document.getElementById('cal-month-' + targetMonth);
+      if(!monthEl) return;
+      const rect = monthEl.getBoundingClientRect();
+      window.scrollTo({ top: window.scrollY + rect.top, behavior: 'auto' });
+    });
   });
 }
 
@@ -3190,13 +3200,20 @@ function renderDataStats(){
 let batchMode = false;
 let selectedIds = new Set();
 
+const BATCH_BTN_TEXT_ON  = '退出选择';
+const BATCH_BTN_TEXT_OFF = '批量选择';
+function setBatchBtnState(active){
+  const btn = document.getElementById('batchToggleBtn');
+  if(!btn) return;
+  btn.classList.toggle('active', active);
+  btn.textContent = active ? BATCH_BTN_TEXT_ON : BATCH_BTN_TEXT_OFF;
+}
+
 function toggleBatchMode(){
   batchMode = !batchMode;
   selectedIds.clear();
-  const btn = document.getElementById('batchToggleBtn');
   const bar = document.getElementById('selectBar');
-  btn.textContent = batchMode ? '✕ 退出选择' : '☑ 批量选择';
-  btn.className = batchMode ? 'btn btn-secondary btn-sm' : 'btn btn-secondary btn-sm';
+  setBatchBtnState(batchMode);
   bar.classList.toggle('show', batchMode);
   renderRecordPage();
 }
@@ -3205,7 +3222,7 @@ function clearSelection(){
   selectedIds.clear();
   batchMode = false;
   document.getElementById('selectBar').classList.remove('show');
-  document.getElementById('batchToggleBtn').textContent = '☑ 批量选择';
+  setBatchBtnState(false);
   renderRecordPage();
 }
 
@@ -3245,7 +3262,7 @@ function deleteSelected(){
   updateSelectBar();
   batchMode = false;
   document.getElementById('selectBar').classList.remove('show');
-  document.getElementById('batchToggleBtn').textContent = '☑ 批量选择';
+  setBatchBtnState(false);
   renderRecordPage();
   showToast(`已删除 ${cnt} 条记录 ✓`);
 }
