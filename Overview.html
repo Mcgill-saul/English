@@ -801,15 +801,10 @@
   .detail-bar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     padding: 10px 22px;
     background: var(--surface2);
     border-top: 1px solid var(--border-lt);
-  }
-  .detail-hint {
-    font-size: 11px;
-    color: var(--text-muted);
-    font-weight: 500;
   }
   .detail-actions { display: flex; gap: 7px; }
 
@@ -1216,6 +1211,50 @@
     text-align: center;
   }
   .timeline-bar.ongoing { background-image: linear-gradient(to right, currentColor 85%, transparent); }
+
+  /* ── 标签打点行：把 #内容标签按天打点显示在时间轴上 ─────── */
+  .timeline-tagrows-section { margin-top: 4px; }
+  .timeline-dots-track {
+    position: relative;
+    min-height: 30px;
+    background: var(--surface);
+    border: 1px solid var(--border-lt);
+    border-radius: var(--radius-xs);
+  }
+  .timeline-dot {
+    position: absolute;
+    top: 50%;
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--violet);
+    transform: translate(-50%, -50%);
+    box-shadow: var(--shadow-xs);
+    cursor: default;
+  }
+  .timeline-tagrow-remove {
+    border: none; background: none; color: var(--text-muted); cursor: pointer;
+    font-size: 11px; margin-left: 5px; padding: 0 2px; line-height: 1;
+    vertical-align: middle;
+  }
+  .timeline-tagrow-remove:hover { color: #dc2626; }
+
+  .timeline-add-tagrow-wrap { position: relative; display: inline-block; margin-top: 4px; }
+  .timeline-add-tagrow-btn {
+    font-size: 12px; font-weight: 600; padding: 7px 12px; border-radius: 8px;
+    border: 1.5px dashed var(--border); background: none; color: var(--text-muted);
+    cursor: pointer; font-family: inherit; transition: all .13s;
+  }
+  .timeline-add-tagrow-btn:hover { border-color: var(--blue-bd); color: var(--blue); }
+
+  .add-tagrow-menu {
+    display: none;
+    position: absolute; top: calc(100% + 6px); left: 0;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); box-shadow: var(--shadow-md);
+    padding: 8px; min-width: 160px; max-width: 240px; max-height: 240px; overflow-y: auto;
+    z-index: 30;
+  }
+  .add-tagrow-menu.open { display: flex; flex-direction: column; gap: 4px; }
 
   /* ── Modal overlay (Gist panel) ──────────────────────── */
   .modal-overlay {
@@ -1771,7 +1810,6 @@
     }
     .note-area { min-height: 80px; font-size: 12.5px; }
     .detail-bar { padding: 9px 16px; flex-wrap: wrap; gap: 8px; }
-    .detail-hint { font-size: 10px; flex-basis: 100%; }
     .detail-actions { width: 100%; justify-content: flex-end; }
 
     /* Settings drawer: full width on mobile */
@@ -2084,7 +2122,6 @@
       </div>
     </div>
     <div class="detail-bar">
-      <div class="detail-hint" id="detailHint">完整笔记 · 与日历格子里的显示文字相互独立</div>
       <div class="detail-actions">
         <button class="btn-ghost" onclick="closeDetail()">关闭</button>
         <button class="btn-primary" id="btnSave" onclick="doSave()">保存笔记</button>
@@ -2164,6 +2201,7 @@ function getDefaultData() {
     categoryOverrides: {}, // 类别名称/图标覆盖：{ categoryId: { icon, label } }，内置和自定义类别都可改
     dayTagDefs: null, // 日期标签类型：[{ id, icon, label }]，null 表示还没初始化过默认值
     dayTags: {}, // 具体某天打了哪个标签：{ 'YYYY-MM-DD': tagDefId }，一天只能打一个
+    timelineTagRows: [], // 时间线页面里选中要打点展示的 #内容标签，比如 ['电影']
     version:   1
   };
 }
@@ -2216,6 +2254,7 @@ function migrateData() {
     ];
   }
   if (!appData.dayTags) appData.dayTags = {};
+  if (!appData.timelineTagRows) appData.timelineTagRows = [];
   if (!appData.version) appData.version = 1;
   localStorage.removeItem('overview_notes_v1');
   localStorage.removeItem('overview_cal_notes_v1');
@@ -2889,6 +2928,12 @@ function dateRatio(dateStr, s, e) {
   return Math.min(1, Math.max(0, (d - sT) / total));
 }
 
+function addDaysToDateStr(dateStr, n) {
+  var d = new Date(dateStr);
+  d.setDate(d.getDate() + n);
+  return fmtDate(d);
+}
+
 function buildTimelineAxisHtml(s, e) {
   var start = new Date(s), end = new Date(e);
   var html = '';
@@ -2957,20 +3002,69 @@ function renderTimeline() {
     } else {
       var packed = packEventsIntoRows(catEvents);
       html += '<div class="timeline-track" style="height:' + (packed.rowCount * 32 + 8) + 'px;">';
+
+      var byRow = {};
       catEvents.forEach(function (ev) {
-        var rowIdx = packed.rowOf[ev.id];
-        var left = dateRatio(ev.start, s, e) * 100;
-        var rightR = dateRatio(ev.end || fmtDate(new Date()), s, e) * 100;
-        var width = Math.max(rightR - left, 1.5);
-        var ongoing = !ev.end;
-        var rangeText = ev.start + ' ~ ' + (ev.end || '进行中');
-        var tooltipText = ev.title + '\n' + rangeText;
-        html += '<div class="timeline-bar' + (ongoing ? ' ongoing' : '') + '" style="left:' + left + '%;width:' + width + '%;top:' + (8 + rowIdx * 32) + 'px;background:' + meta.color + ';" onclick="showSpanEventModal(\'' + ev.id + '\')" title="' + escHtml(tooltipText) + '"><span class="timeline-bar-label">' + escHtml(ev.title) + '</span></div>';
+        var r = packed.rowOf[ev.id];
+        if (!byRow[r]) byRow[r] = [];
+        byRow[r].push(ev);
+      });
+      Object.keys(byRow).forEach(function (r) {
+        byRow[r].sort(function (a, b) { return a.start < b.start ? -1 : (a.start > b.start ? 1 : 0); });
+        var rowIdx = parseInt(r, 10);
+        var prevRightRatio = null;
+        byRow[r].forEach(function (ev) {
+          var today = fmtDate(new Date());
+          var endExclusive = addDaysToDateStr(ev.end || today, 1); // 覆盖到结束日期当天的终点，而不是起点
+          var leftRatio = dateRatio(ev.start, s, e);
+          var rightRatio = dateRatio(endExclusive, s, e);
+          // 同一行内首尾日期相接（比如前一个到7号、后一个从7号开始）时，
+          // 7号这一整天在视觉上会被前一个事件"领走"，避免画出重叠的一截
+          if (prevRightRatio !== null && leftRatio < prevRightRatio) leftRatio = prevRightRatio;
+          prevRightRatio = rightRatio;
+
+          var left = leftRatio * 100;
+          var width = Math.max((rightRatio - leftRatio) * 100, 1.5);
+          var ongoing = !ev.end;
+          var rangeText = ev.start + ' ~ ' + (ev.end || '进行中');
+          var tooltipText = ev.title + '\n' + rangeText;
+          html += '<div class="timeline-bar' + (ongoing ? ' ongoing' : '') + '" style="left:' + left + '%;width:' + width + '%;top:' + (8 + rowIdx * 32) + 'px;background:' + meta.color + ';" onclick="showSpanEventModal(\'' + ev.id + '\')" title="' + escHtml(tooltipText) + '"><span class="timeline-bar-label">' + escHtml(ev.title) + '</span></div>';
+        });
       });
       html += '</div>';
     }
     html += '</div>';
   });
+
+  // ── 标签打点行：把 #内容标签（比如 #电影）按天打点显示在同一条时间轴上 ──
+  html += '<div class="timeline-tagrows-section">';
+  var contentIdx = buildContentIndex();
+  (appData.timelineTagRows || []).forEach(function (tagName) {
+    var entries = contentIdx.filter(function (it) {
+      return it.type !== 'span' && (it.tags || []).indexOf(tagName) !== -1 && itemOverlapsRange(it, bounds);
+    });
+    html += '<div class="timeline-row-group">';
+    html += '<div class="timeline-row-label">#' + escHtml(tagName) +
+      '<button class="timeline-tagrow-remove" onclick="removeTimelineTagRow(\'' + tagName.replace(/'/g, "\\'") + '\')" title="移除这一行">✕</button></div>';
+    if (!entries.length) {
+      html += '<div class="timeline-dots-track"><div class="timeline-track-empty">这段时间没有记录</div></div>';
+    } else {
+      html += '<div class="timeline-dots-track">';
+      entries.forEach(function (it) {
+        var left = dateRatio(it.date, s, e) * 100;
+        var snippet = it.text.split(/\n/)[0].trim();
+        var tip = it.date + ' · ' + snippet;
+        html += '<div class="timeline-dot" style="left:' + left + '%;" title="' + escHtml(tip) + '"></div>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  html += '<div class="timeline-add-tagrow-wrap">' +
+    '<button class="timeline-add-tagrow-btn" onclick="toggleAddTagRowMenu()">+ 添加标签行</button>' +
+    '<div class="add-tagrow-menu" id="addTagRowMenu"></div>' +
+    '</div>';
+  html += '</div>';
 
   bodyEl.innerHTML = html;
   attachTimelineDragHandlers();
@@ -3015,6 +3109,61 @@ function attachTimelineDragHandlers() {
       renderTimeline();
     });
   });
+}
+
+// ── 时间线标签打点行 ───────────────────────────────────────
+var _addTagRowMenuOpen = false;
+
+function toggleAddTagRowMenu() {
+  _addTagRowMenuOpen = !_addTagRowMenuOpen;
+  var menu = document.getElementById('addTagRowMenu');
+  if (!menu) return;
+  if (_addTagRowMenuOpen) {
+    var counts = getContentTagCounts(buildContentIndex());
+    var existing = appData.timelineTagRows || [];
+    var available = Object.keys(counts)
+      .filter(function (t) { return t !== '身体' && !isCategoryDerivedTag(t) && existing.indexOf(t) === -1; })
+      .sort(function (a, b) { return counts[b] - counts[a]; });
+
+    if (!available.length) {
+      menu.innerHTML = '<div style="font-size:11.5px;color:var(--text-muted);padding:6px 10px;text-align:center;">没有可添加的标签了</div>';
+    } else {
+      menu.innerHTML = available.map(function (t) {
+        return '<button type="button" class="daytag-option" onclick="event.stopPropagation();addTimelineTagRow(\'' + t.replace(/'/g, "\\'") + '\')">#' + escHtml(t) + ' (' + counts[t] + ')</button>';
+      }).join('');
+    }
+    menu.classList.add('open');
+    smartPositionMenu(menu);
+    document.addEventListener('click', closeAddTagRowMenuOutside);
+  } else {
+    menu.classList.remove('open');
+    document.removeEventListener('click', closeAddTagRowMenuOutside);
+  }
+}
+
+function closeAddTagRowMenuOutside(e) {
+  var wrap = document.querySelector('.timeline-add-tagrow-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    _addTagRowMenuOpen = false;
+    var menu = document.getElementById('addTagRowMenu');
+    if (menu) menu.classList.remove('open');
+    document.removeEventListener('click', closeAddTagRowMenuOutside);
+  }
+}
+
+function addTimelineTagRow(tagName) {
+  if (!appData.timelineTagRows) appData.timelineTagRows = [];
+  if (appData.timelineTagRows.indexOf(tagName) === -1) appData.timelineTagRows.push(tagName);
+  saveData();
+  _addTagRowMenuOpen = false;
+  document.removeEventListener('click', closeAddTagRowMenuOutside);
+  renderTimeline();
+}
+
+function removeTimelineTagRow(tagName) {
+  appData.timelineTagRows = (appData.timelineTagRows || []).filter(function (t) { return t !== tagName; });
+  saveData();
+  renderTimeline();
 }
 
 function showSpanEventModal(id) {
@@ -4803,6 +4952,7 @@ function exportJSON() {
     categoryOverrides: appData.categoryOverrides,
     dayTagDefs: appData.dayTagDefs,
     dayTags: appData.dayTags,
+    timelineTagRows: appData.timelineTagRows,
     todos:     appData.todos,
   };
   var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -4862,6 +5012,7 @@ function importJSON(evt) {
       if (data.categoryOverrides) appData.categoryOverrides = data.categoryOverrides;
       if (data.dayTagDefs) appData.dayTagDefs = data.dayTagDefs;
       if (data.dayTags) appData.dayTags = data.dayTags;
+      if (data.timelineTagRows) appData.timelineTagRows = data.timelineTagRows;
       if (data.todos)    appData.todos    = data.todos;
       saveData();
       render();
