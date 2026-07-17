@@ -6,9 +6,77 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script>if(typeof ChartDataLabels!=='undefined')Chart.unregister(ChartDataLabels);</script>
 <style>
-:root{--bg:#f5f5f3;--surface:#fff;--surface2:#f9f9f7;--border:rgba(0,0,0,.08);--border2:rgba(0,0,0,.15);--text:#1a1a1a;--text2:#666;--text3:#999;--green:#1D9E75;--green-bg:#E1F5EE;--red:#D85A30;--red-bg:#FAECE7;--blue:#378ADD;--blue-bg:#E6F1FB;--amber:#BA7517;--amber-bg:#FAEEDA;--coral:#E06C4F;--coral-bg:#FDF0E9;--purple:#534AB7;--purple-bg:#EEEDFE;--gray-bg:#F1EFE8;--pink:#993556;--pink-bg:#FBEAF0;--teal:#0F6E56;--teal-bg:#E1F5EE;--r:10px;--rs:6px;--sh:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04)}
+:root{--bg:#f5f5f3;--surface:#fff;--surface2:#f9f9f7;--border:rgba(0,0,0,.08);--border2:rgba(0,0,0,.15);--text:#1a1a1a;--text2:#666;--text3:#999;--green:#1D9E75;--green-bg:#E1F5EE;--red:#D85A30;--red-bg:#FAECE7;--blue:#378ADD;--blue-bg:#E6F1FB;--amber:#BA7517;--amber-bg:#FAEEDA;--coral:#E06C4F;--coral-bg:#FDF0E9;--purple:#534AB7;--purple-bg:#EEEDFE;--gray-bg:#F1EFE8;--pink:#993556;--pink-bg:#FBEAF0;--teal:#0F6E56;--teal-bg:#E1F5EE;
+  /* 间距刻度：把现在文件里事实上已经在大量使用、内部已经一致的几档间距值，正式确立成变量。
+     不去替换现有的1600+处内联数值（改了肉眼看不出区别、纯粹增加风险），只作为以后新写样式/做层级调整时的统一取值来源。 */
+  --sp-1:4px; --sp-1-5:6px; --sp-2:8px; --sp-3:12px; --sp-3-5:14px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  /* 字号刻度：同样是把已经存在、且各自有清晰语义角色的字号档位确立成变量，不做批量替换。
+     9=最小号装饰性小标签/图标(pill、箭头)　10=微标签(KPI小标题、表头密集场景)　11=次要文字(标签、表头、徽章)
+     12=默认正文/表格/按钮　13=卡片标题、表单控件　14=正文基准(body)　15=弹窗标题　16=顶栏标题
+     18-20=次级强调数字(KPI副值、圆环图中心数字)　22-24=核心强调数字(总市值等主KPI)　30=全局仅用过一次的最大号，留给真正的"唯一焦点"数字 */
+  --fs-9:9px; --fs-10:10px; --fs-11:11px; --fs-12:12px; --fs-13:13px; --fs-14:14px;
+  --fs-15:15px; --fs-16:16px; --fs-18:18px; --fs-19:19px; --fs-20:20px; --fs-22:22px; --fs-24:24px; --fs-30:30px;
+  --hero-grad:linear-gradient(135deg,#4A47D6,#7B6EF0);--hero-sh:0 12px 32px -8px rgba(74,71,214,.45);
+  --r:10px;--rs:6px;--sh:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04)}
+
+/* ══ Bento Grid：只用于总览页这类"展示面"，密集表格页面不受影响 ══
+   这一版颜色纪律先完全放开（不再守"红=亏损/绿=盈利/蓝=可交互"那套），纯粹追求柔和好看，
+   之后如果要收拢回颜色纪律，是后续单独一步要做的事，不在这版范围内。 */
+#page-overview .card, #page-overview .kpi-card-v{border-radius:20px;padding:22px}
+#page-overview .card-header{margin-bottom:18px}
+#page-overview .donut-wrap{margin:4px auto 16px}
+#page-overview .bento-card{border:none;box-shadow:0 4px 16px -6px rgba(0,0,0,.08)}
+
+.bento-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  grid-template-rows:auto auto auto;
+  gap:16px;
+  grid-template-areas:
+    "hero  conc  conc  year"
+    "mkt   l5    l3    year"
+    "trend trend trend trend";
+}
+.bento-area-hero{grid-area:hero}
+.bento-area-conc{grid-area:conc}
+.bento-area-year{grid-area:year}
+.bento-area-l5{grid-area:l5}
+.bento-area-l3{grid-area:l3}
+.bento-area-trend{grid-area:trend}
+.bento-area-mkt{grid-area:mkt}
+
+/* Bento 主角卡片专用点缀色：青柠绿（参照 Hotelify 风格参考图），胶囊标签 + 圆形徽章都用这套 */
+#page-overview .kpi-pill{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;line-height:1.4}
+#page-overview .kpi-pill.pos{background:#ECFCCB;color:#4D7C0F}
+#page-overview .kpi-pill.neg{background:#FFE4E0;color:#B91C1C}
+#page-overview .kpi-badge-circle{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  width:44px;height:44px;border-radius:50%;background:#ECFCCB;color:#4D7C0F;
+  font-size:15px;font-weight:800;line-height:1;flex-shrink:0;
+}
+#page-overview .kpi-badge-circle .badge-unit{font-size:8px;font-weight:600;margin-top:2px;color:#5B8C1A}
+#page-overview #snap-drawdown{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#page-overview .kpi-card-v.bento-hero{
+  background:linear-gradient(160deg,#2F6FED,#3D7EF5);border:none;box-shadow:0 8px 20px -6px rgba(47,111,237,.4);
+  border-radius:24px;padding:26px 26px 22px;color:#fff;
+}
+#page-overview .kpi-card-v.bento-hero .kpi-v-label{color:rgba(255,255,255,.7)}
+#page-overview .kpi-card-v.bento-hero .kpi-v-val{color:#fff}
+#page-overview .kpi-card-v.bento-hero .kpi-v-sub{color:rgba(255,255,255,.8)}
+#page-overview .kpi-card-v.bento-hero .kpi-v-val.pos,#page-overview .kpi-card-v.bento-hero .kpi-v-sub.pos{color:#8CF2C7}
+#page-overview .kpi-card-v.bento-hero .kpi-v-val.neg,#page-overview .kpi-card-v.bento-hero .kpi-v-sub.neg{color:#FFB4A0}
+#page-overview .kpi-card-v.bento-hero hr{border:none;border-top:1px solid rgba(255,255,255,.2);margin:16px 0}
+
+/* 其余卡片：各自一个柔和粉彩底色，图标+标题文字同步换成对应色系的深一档，正文数字保持深灰(--text)不变，保证可读性 */
+/* 颜色收敛：只留主角卡片(总市值)一个强调色，其余6张卡片改回中性白，避免"每张卡都不同色"太花哨 */
+#page-overview .bento-card.bento-mint,
+#page-overview .bento-card.bento-peach,
+#page-overview .bento-card.bento-sky,
+#page-overview .bento-card.bento-butter,
+#page-overview .bento-card.bento-lilac,
+#page-overview .bento-card.bento-pink{background:var(--surface)}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);font-size:14px;font-variant-numeric:tabular-nums;font-feature-settings:'tnum'}
 .sidebar{position:fixed;left:0;top:0;bottom:0;width:56px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:4px;z-index:100}
 .slogo{width:32px;height:32px;background:var(--text);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;cursor:pointer}
 .slogo svg{width:18px;height:18px;fill:white}
@@ -101,7 +169,7 @@ tbody tr.editing td{background:#fffbe6}
 .fx-table{width:100%;border-collapse:collapse;font-size:13px}
 .fx-table td{padding:10px 14px;border-bottom:1px solid var(--border)}
 .fx-ccy{font-weight:700;font-size:15px}
-.fx-rate{font-size:16px;font-weight:600;color:var(--blue)}
+.fx-rate{font-size:16px;font-weight:600;color:var(--text)}
 .section-full{margin-bottom:16px}
 .empty{text-align:center;color:var(--text3);padding:40px;font-size:13px}
 /* inline edit inputs */
@@ -154,7 +222,7 @@ input.fi:focus,select.fi:focus{border-color:var(--blue)}
 .tree-l2{margin-left:16px}
 .tree-l2-n{color:var(--text2)}
 .tree-l1{margin-left:16px}
-.tree-l1-n{color:var(--blue);font-size:11px;border-bottom:1px dashed var(--border);padding:4px 8px}
+.tree-l1-n{color:var(--text2);font-size:11px;border-bottom:1px dashed var(--border);padding:4px 8px}
 /* weight tree */
 .wt-node{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:4px;cursor:pointer;user-select:none;font-size:12px;transition:background .12s}
 .wt-node:hover{background:var(--surface2)}
@@ -231,7 +299,7 @@ input[type=number]{-moz-appearance:textfield}
 .bl1-card:hover{border-color:var(--blue);background:var(--blue-bg)}
 .bl1-card.active{border-color:var(--blue);background:var(--blue-bg);box-shadow:0 0 0 3px rgba(55,138,221,.15)}
 .bl1-card-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bl1-card-val{font-size:12px;color:var(--blue);font-weight:600}
+.bl1-card-val{font-size:12px;color:var(--text);font-weight:700}
 .bl1-card-sub{display:flex;gap:8px;margin-top:3px;font-size:11px;color:var(--text3)}
 .bl1-card-xirr{font-size:11px;font-weight:600;margin-top:2px}
 .bl1-empty{padding:80px;text-align:center;color:var(--text3);font-size:13px}
@@ -455,56 +523,68 @@ let _xirrCalcRows = _saved && _saved.XIRR_CALC_ROWS ? _saved.XIRR_CALC_ROWS : [[
          （页面刚打开是空的）。导出文件时会自动清空所有这类容器，避免把当前
          渲染出来的内容也打包进文件。完整说明见文件顶部 DATA 区块的架构注释。 -->
     <div id="page-overview" class="page active">
-      <!-- Row 1: KPI card + Concentration + Yearly returns (equal thirds) -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;align-items:start">
-        <div class="kpi-card-v" id="kpi-grid" data-dynamic=""></div>
-        <div class="card" style="margin-bottom:0">
+      <div class="bento-grid">
+        <div class="kpi-card-v bento-hero bento-area-hero" id="kpi-grid" data-dynamic=""></div>
+
+        <div class="card bento-card bento-mint bento-area-conc">
           <div class="card-header">
             <div class="card-title"><svg viewBox="0 0 24 24"><path d="M18 20V10"></path><path d="M12 20V4"></path><path d="M6 20v-6"></path></svg>全局集中度</div>
             <div style="font-size:11px;color:var(--text3)">同名品种已跨组合合并统计 · <span style="cursor:pointer;color:var(--blue)" onclick="showPage('analysis');showAnalysisTab('conc')">持仓集中度</span></div>
           </div>
           <div style="display:flex;flex-direction:column;gap:10px" id="ov-conc-stats" data-dynamic=""></div>
         </div>
-        <div class="card" style="margin-bottom:0">
-          <div class="card-header"><div class="card-title"><svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline></svg>逐年收益率</div></div>
+
+        <div class="card bento-card bento-peach bento-area-year">
+          <div class="card-header">
+            <div class="card-title"><svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline></svg>逐年收益率</div>
+            <div style="font-size:11px;color:var(--text3)"><span style="cursor:pointer;color:var(--blue)" onclick="showPage('analysis');showAnalysisTab('xirr')">查看完整版</span></div>
+          </div>
           <div id="xirr-ov" data-eusoft-scrollable-element="1" data-dynamic=""></div>
         </div>
-      </div>
-      <!-- Row 2: three donut cards -->
-      <div class="row3">
-        <div class="card">
+
+        <div class="card bento-card bento-sky bento-area-l5">
           <div class="card-header"><div class="card-title"><svg viewBox="0 0 24 24"><path d="M21.21 15.89A9 9 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>五级组合</div></div>
           <div class="donut-wrap"><canvas id="c-l5" role="img" aria-label="五级组合分布" width="130" height="130" style="display: block; box-sizing: border-box; height: 130px; width: 130px;"></canvas><div class="donut-center"><div class="donut-num" id="l5-n">4</div><div class="donut-lbl">个五级</div></div></div>
           <div class="legend" id="leg-l5" data-dynamic=""></div>
         </div>
-        <div class="card">
+
+        <div class="card bento-card bento-butter bento-area-l3">
           <div class="card-header"><div class="card-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>三级组合</div></div>
           <div class="donut-wrap"><canvas id="c-l3" role="img" aria-label="三级组合分布" width="130" height="130" style="display: block; box-sizing: border-box; height: 130px; width: 130px;"></canvas><div class="donut-center"><div class="donut-num" id="l3-n">8</div><div class="donut-lbl">个三级</div></div></div>
           <div class="legend legend-grid" id="leg-l3" data-dynamic=""></div>
         </div>
-        <div class="card">
+
+        <div class="card bento-card bento-lilac bento-area-trend">
+          <div class="card-header" style="align-items:flex-start">
+            <div>
+              <div class="card-title" style="margin-bottom:8px"><svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>市值趋势</div>
+              <div id="trend-headline-val" style="font-size:24px;font-weight:800;color:var(--text);line-height:1"></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div class="kpi-badge-circle" style="width:32px;height:32px;background:#DBEAFE" title="市值趋势">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#2F6FED" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="openSnapshotModal('total',0,null)"><svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-right:4px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>录入快照</button>
+            </div>
+          </div>
+          <div style="position:relative;height:260px;margin-top:6px"><canvas id="c-snap-total" width="771" height="280" style="box-sizing: border-box; height: 260px; width: 771px; cursor: default; display: block;"></canvas></div>
+          <div id="snap-drawdown" style="margin-top:12px">
+            <span style="font-size:11px;color:var(--text3)">历史峰值回撤</span>
+            <span id="snap-drawdown-val" class="kpi-pill pos">+0.00%</span>
+            <span id="snap-drawdown-sub" style="color:var(--text3);font-size:11px">峰值 2026-07-03</span>
+          </div>
+        </div>
+
+        <div class="card bento-card bento-pink bento-area-mkt">
           <div class="card-header"><div class="card-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>市场分布</div></div>
           <div class="donut-wrap"><canvas id="c-mkt" role="img" aria-label="市场分布" width="130" height="130" style="display: block; box-sizing: border-box; height: 130px; width: 130px;"></canvas></div>
           <div style="display:flex;flex-direction:column;gap:4px;margin-top:10px" id="mkt-leg" data-dynamic=""></div>
         </div>
       </div>
-      <!-- Row 3: Total asset trend chart -->
-      <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-bottom:0">
-        <div class="card" style="margin-bottom:0">
-          <div class="card-header">
-            <div class="card-title"><svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>市值趋势</div>
-            <button class="btn btn-primary btn-sm" onclick="openSnapshotModal('total',0,null)"><svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-right:4px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>录入快照</button>
-          </div>
-          <div style="position:relative;height:280px"><canvas id="c-snap-total" width="771" height="280" style="box-sizing: border-box; height: 280px; width: 771px; cursor: default; display: block;"></canvas></div>
-          <div id="snap-drawdown" style="margin-top: 10px; padding: 8px 12px; background: var(--surface2); border-radius: var(--rs); font-size: 12px;">
-            <span style="color:var(--text3)">历史峰值回撤</span>
-            <span id="snap-drawdown-val" style="font-weight:700;margin-left:8px" class="pos">+0.00%</span>
-            <span id="snap-drawdown-sub" style="color:var(--text3);margin-left:6px;font-size:11px">峰值 2026-07-03</span>
-          </div>
-        </div>
-        <div></div>
-      </div>
     </div>
+    <!-- 【结构变更备忘】总览页从"三段独立grid(row1/row2/row3)"改成了一个统一的 .bento-grid（用
+         grid-template-areas 做不规则布局），旧的三段结构已不存在。如果以后要在这个页面里新增/
+         删除卡片，记得同步改 .bento-grid 的 grid-template-areas 和对应的 .bento-area-* 类。 -->
     <div id="page-holdings" class="page">
       <div class="card section-full">
         <div class="card-header">
@@ -1877,13 +1957,13 @@ const CAT_ORDER = ['现金债券','红利','大盘','小盘','双创','行业类
 function catSortIndex(name){const i=CAT_ORDER.indexOf(name);return i===-1?CAT_ORDER.length:i;}
 const CAT_COLOR = {
   '现金债券': '#2FA87A',
-  '红利':     '#E07040',
+  '红利':     '#882222',
   '大盘':     '#4488CC',
   '小盘':     '#EF9F27',
   '双创':     '#8877CC',
   '行业类':   '#8B6040',
-  '恒生指数': '#882222',
-  '恒生科技': '#C44444',
+  '恒生指数': '#B5453A',
+  '恒生科技': '#E0836F',
   '投顾债券': '#5CC49A',
   '投顾权益': '#F4B84A',
 };
@@ -3368,29 +3448,31 @@ function renderOverview(){
   }
   document.getElementById('kpi-grid').innerHTML=`
     <div>
-      <div class="kpi-v-label">总市值</div>
-      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
-        <div style="display:flex;align-items:baseline;gap:8px">
-          <span class="kpi-v-val">${fmtCNY(total)}</span>
-          <span class="kpi-v-sub">本金 ${fmtCNY(netCost)}</span>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between">
+        <div class="kpi-v-label">总市值</div>
+        <div class="kpi-badge-circle" title="当前持有品种数">
+          ${[...new Set(PRODUCTS.map(p=>p.name))].length}
         </div>
-        <span class="kpi-v-sub">${[...new Set(PRODUCTS.map(p=>p.name))].length} 个品种</span>
       </div>
+      <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+        <span class="kpi-v-val">${fmtCNY(total)}</span>
+      </div>
+      <div class="kpi-v-sub" style="margin-top:2px">本金 ${fmtCNY(netCost)} · ${[...new Set(PRODUCTS.map(p=>p.name))].length} 个品种</div>
     </div>
-    <hr>
-    <div>
+    <div style="margin-top:16px">
       <div class="kpi-v-label">浮动盈亏</div>
-      <div style="display:flex;align-items:baseline;gap:8px">
-        <span class="kpi-v-val ${gain>=0?'pos':'neg'}">${gain>=0?'+':''}${gainPct.toFixed(2)}%</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="kpi-pill ${gain>=0?'pos':'neg'}">${gain>=0?'+':''}${gainPct.toFixed(2)}%</span>
         <span class="kpi-v-sub ${gain>=0?'pos':'neg'}" style="font-size:13px;font-weight:600">${gain>=0?'+':''}${fmtCNY(gain)}</span>
       </div>
     </div>
-    <hr>
-    <div>
-      <div class="kpi-v-label">全程 XIRR</div>
-      <div class="kpi-v-val ${globalR&&globalR>=0?'pos':'neg'}">${globalR!=null?(globalR>=0?'+':'')+(globalR*100).toFixed(2)+'%':'N/A'}</div>
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:space-between">
+      <span class="kpi-v-label" style="margin-bottom:0">全程 XIRR</span>
+      <span class="${globalR&&globalR>=0?'pos':'neg'}" style="font-size:14px;font-weight:700">${globalR!=null?(globalR>=0?'+':'')+(globalR*100).toFixed(2)+'%':'N/A'}</span>
     </div>
   `;
+  const trendHeadlineEl = document.getElementById('trend-headline-val');
+  if(trendHeadlineEl) trendHeadlineEl.textContent = fmtCNY(total);
   // global concentration summary (merged by name across all L1s)
   const mergedExp = _mergedProductExposure();
   const hhiG = calcHHI(mergedExp.map(([,v])=>v));
@@ -4632,8 +4714,8 @@ function renderSnapshotChart(mode, level, group){
   // gradient fill
   const ctx2d = canvas.getContext('2d');
   const grad = ctx2d.createLinearGradient(0,0,0,280);
-  grad.addColorStop(0,'rgba(99,102,241,0.18)');
-  grad.addColorStop(1,'rgba(99,102,241,0.01)');
+  grad.addColorStop(0,'rgba(47,111,237,0.20)');
+  grad.addColorStop(1,'rgba(47,111,237,0.01)');
 
   // Y axis formatter — no decimals, use 万/亿
   function fmtY(v){
@@ -4648,7 +4730,7 @@ function renderSnapshotChart(mode, level, group){
       labels,
       datasets:[{
         data: amounts,
-        borderColor:'#6366f1',
+        borderColor:'#2F6FED',
         backgroundColor: grad,
         borderWidth:2.5,
         fill:true,
@@ -4656,7 +4738,7 @@ function renderSnapshotChart(mode, level, group){
         pointStyle: pts.map(p=>p.src==='yearly'?'rect':'circle'),
         pointRadius: pts.map(p=>p.src==='yearly'?5:4),
         pointHoverRadius:6,
-        pointBackgroundColor: pts.map(p=>p.src==='yearly'?'#f59e0b':'#6366f1'),
+        pointBackgroundColor: pts.map(p=>p.src==='yearly'?'#65A30D':'#2F6FED'),
         pointBorderColor:'#fff',
         pointBorderWidth:1.5,
       }]
@@ -4720,7 +4802,7 @@ function renderSnapshotChart(mode, level, group){
     const dd = peakAmt>0 ? (lastAmt-peakAmt)/peakAmt*100 : 0;
     ddEl.style.display='';
     ddVal.textContent = (dd>=0?'+':'')+dd.toFixed(2)+'%';
-    ddVal.className = dd>=0?'pos':'neg';
+    ddVal.className = 'kpi-pill '+(dd>=0?'pos':'neg');
     ddSub.textContent = '峰值 '+labels[peakIdx];
   } else if(ddEl){
     ddEl.style.display='none';
@@ -4753,7 +4835,7 @@ function renderBoard(){
         const foreignExtra = soleCcy==='MIXED'
           ? ` ${_mixedCcyHint()}`
           : soleCcy
-            ? ` <span style="font-size:10px;color:var(--blue);opacity:.8">${fmtForeign(prods.filter(p=>p.ccy===soleCcy).reduce((s,p)=>s+p.amount,0), soleCcy)}</span>`
+            ? ` <span style="font-size:10px;color:var(--text3);font-weight:600">${fmtForeign(prods.filter(p=>p.ccy===soleCcy).reduce((s,p)=>s+p.amount,0), soleCcy)}</span>`
             : '';
         return `<div class="bl1-card ${isActive?'active':''}" onclick="selectBoardGroup('${esc}')">
           <div class="bl1-card-name" title="${g}">${g}</div>
@@ -5221,7 +5303,7 @@ function _renderGroupBoard(lv, groupName){
       <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
         <div style="font-size:11px;font-weight:600;width:90px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.p.name}">${d.p.name}</div>
         <div style="flex:1;height:8px;background:var(--bg);border-radius:4px;position:relative;overflow:visible">
-          <div style="position:absolute;top:0;left:0;height:100%;width:${d.actual/globalMax*100}%;background:var(--blue);opacity:.75;border-radius:4px"></div>
+          <div style="position:absolute;top:0;left:0;height:100%;width:${d.actual/globalMax*100}%;background:var(--blue);opacity:.9;border-radius:4px"></div>
           ${d.target!=null?`<div style="position:absolute;top:-4px;width:2px;height:16px;border-radius:1px;background:var(--red);left:${d.target/globalMax*100}%"></div>`:''}
         </div>
         <div style="font-size:10px;width:82px;text-align:right;flex-shrink:0;white-space:nowrap;color:var(--text3)">${d.actual.toFixed(2)}%${d.target!=null?` / ${d.target}%`:''}</div>
@@ -5246,7 +5328,7 @@ function _renderGroupBoard(lv, groupName){
       <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
         <div style="font-size:11px;font-weight:600;width:90px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.p.name}">${d.p.name}</div>
         <div style="flex:1;height:8px;background:var(--bg);border-radius:4px;position:relative;overflow:visible">
-          <div style="position:absolute;top:0;left:0;height:100%;width:${d.actual/globalMax*100}%;background:var(--blue);opacity:.75;border-radius:4px"></div>
+          <div style="position:absolute;top:0;left:0;height:100%;width:${d.actual/globalMax*100}%;background:var(--blue);opacity:.9;border-radius:4px"></div>
           ${d.target!=null?`<div style="position:absolute;top:-4px;width:2px;height:16px;border-radius:1px;background:var(--red);left:${d.target/globalMax*100}%"></div>`:''}
         </div>
         <div style="font-size:10px;width:82px;text-align:right;flex-shrink:0;white-space:nowrap;color:var(--text3)">${d.actual.toFixed(2)}%${d.target!=null?` / ${d.target.toFixed(2)}%`:''}</div>
@@ -5700,7 +5782,7 @@ function _buildProdTable(prods, grpTotal, lv, groupName){
           <span style="opacity:.35;font-size:11px;cursor:grab;user-select:none">⠿</span>
           <span style="font-weight:700;font-size:13px">${type}</span>
           <span style="font-weight:700;font-size:13px">${fmtCNY(valSum)}${typeFgnExtra}</span>
-          <span style="font-weight:700;font-size:13px;color:var(--blue)">${actualSum.toFixed(2)}%</span>
+          <span style="font-weight:700;font-size:13px;color:var(--text)">${actualSum.toFixed(2)}%</span>
           <span style="flex:1"></span>
           ${hasTarget ? `<span style="font-size:11px;color:var(--text3)">目标 ${targetSum.toFixed(2)}%${devSum!=null?` · 偏差 <span class="${Math.abs(devSum)<1?'dev-ok':devSum>0?'dev-pos':'dev-neg'}" style="font-weight:600">${devSum>=0?'+':''}${devSum.toFixed(2)}%</span>`:''}${rebalSum!=null&&Math.abs(rebalSum)>=_rebalThreshAmt(grpTotal)?` · ${rebalSum>0?'<span class="dev-neg">买入</span>':'<span class="dev-pos">卖出</span>'} ${fmtCNY(Math.abs(rebalSum))}`:''}</span>` : ''}
         </div>
@@ -6473,7 +6555,7 @@ function openSharedEventModal(spId,evType,lotId){
     inner=`
       <div style="padding:10px 12px;background:var(--surface2);border-radius:var(--rs);margin-bottom:14px;font-size:12px">
         <div>赎回对象：<span style="font-weight:600">${lot.l1}</span> · 买入 ${lot.date} · 买入额 ${fmtCNY(lot.amount)}</div>
-        <div style="margin-top:3px;color:var(--text3)">当前估算价值：<span style="font-weight:700;color:var(--blue)">${fmtCNY(curVal)}</span></div>
+        <div style="margin-top:3px;color:var(--text3)">当前估算价值：<span style="font-weight:700;color:var(--text)">${fmtCNY(curVal)}</span></div>
       </div>
       <div class="form-row"><label class="form-label">赎回金额（${sp.ccy||'CNY'}）</label><input type="number" class="fi" id="ev-amount" step="0.01" min="0" placeholder="最多约 ${curVal.toFixed(0)}"></div>
       <div class="fg2">
@@ -6490,7 +6572,7 @@ function openSharedEventModal(spId,evType,lotId){
     inner=`
       <div style="padding:10px 12px;background:var(--surface2);border-radius:var(--rs);margin-bottom:14px;font-size:12px">
         <div>转让来源：<span style="font-weight:600">${lot.l1}</span> · 买入 ${lot.date} · 买入额 ${fmtCNY(lot.amount)}</div>
-        <div style="margin-top:3px;color:var(--text3)">当前估算价值：<span style="font-weight:700;color:var(--blue)">${fmtCNY(curVal)}</span></div>
+        <div style="margin-top:3px;color:var(--text3)">当前估算价值：<span style="font-weight:700;color:var(--text)">${fmtCNY(curVal)}</span></div>
       </div>
       <div style="font-size:11px;color:var(--text3);margin-bottom:12px;padding:8px 12px;background:var(--surface2);border-radius:var(--rs)">钱不会真正离开产品，份额池子总量不变，只是从这笔记录划到另一个一级组合名下；来源这笔不产生赎回流水，XIRR感受不到，目标那笔会正常产生一笔买入记录。目标一级组合需要已存在，没有的话请先到「数据管理 → 组合层级」新建。</div>
       <div class="form-row"><label class="form-label">转让去哪个一级组合</label><select class="fi" id="ev-tol1">${l1Opts}</select></div>
@@ -7227,7 +7309,7 @@ function _renderBPMatrix(){
   }
   function fixedCell(row, y, isHeader){
     if(isHeader) return '<div style="width:'+FIXED_W+';flex-shrink:0;padding:0 6px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">'
-      +y+'<br><span style="color:var(--blue);font-size:9px;font-weight:600;letter-spacing:0">至今</span></div>';
+      +y+'<br><span style="color:var(--text);font-size:9px;font-weight:700;letter-spacing:0">至今</span></div>';
     return '<div style="width:'+FIXED_W+';flex-shrink:0;padding:0 6px;text-align:right">'+cellContent(row,y)+'</div>';
   }
   function scrollCell(row, y, isHeader){
@@ -7567,7 +7649,7 @@ function _renderBPResults(){
       <th class="no-sort" style="text-align:right;color:var(--text3);font-weight:400">费率</th>
       <th class="no-sort" style="text-align:right">累计净值</th>
       <th class="no-sort" style="text-align:right">累计收益率</th>
-      ${yearsDesc.map(y=>`<th class="no-sort" style="text-align:right">${y}${y===curYear?'<span style="font-size:9px;color:var(--blue);margin-left:2px">至今</span>':''}</th>`).join('')}
+      ${yearsDesc.map(y=>`<th class="no-sort" style="text-align:right">${y}${y===curYear?'<span style="font-size:9px;color:var(--text);font-weight:700;margin-left:2px">至今</span>':''}</th>`).join('')}
     </tr></thead>
     <tbody>${rowsHtml}</tbody>`;
 }
