@@ -1149,8 +1149,14 @@
   }
   .timeline-body { flex: 1; overflow: auto; padding: 22px; }
 
+  .timeline-axis-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+  }
   .timeline-axis {
     position: relative; height: 26px; margin-bottom: 10px;
+    flex: 1; min-width: 0;
     border-bottom: 1px solid var(--border-lt);
   }
   .timeline-axis-tick {
@@ -1159,16 +1165,34 @@
   }
 
   .timeline-row-group {
-    margin-bottom: 22px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
     border-radius: 8px;
     transition: opacity .15s, outline .1s;
   }
+  .timeline-row-group[draggable="true"] { user-select: none; -webkit-user-drag: element; }
   .timeline-row-group.dragging { opacity: .4; }
   .timeline-row-group.drag-over { outline: 2px dashed var(--blue); outline-offset: 4px; }
   .timeline-row-label {
-    display: flex; align-items: center; gap: 6px;
-    font-size: 12.5px; font-weight: 700; color: var(--text-dim);
-    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 5px;
+    flex-shrink: 0;
+    width: 54px;
+  }
+  .timeline-row-icon {
+    font-size: 14px;
+    line-height: 1;
+    cursor: default;
+  }
+  .timeline-tag-icon {
+    width: 16px; height: 16px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    background: var(--violet-bg);
+    color: var(--violet);
+    font-size: 11px;
+    font-weight: 700;
   }
   .timeline-drag-handle {
     cursor: grab;
@@ -1193,6 +1217,7 @@
   .timeline-color-swatch::-moz-color-swatch { border: none; border-radius: 50%; }
   .timeline-track {
     position: relative; min-height: 40px;
+    flex: 1; min-width: 0;
     background: var(--surface); border: 1px solid var(--border-lt);
     border-radius: var(--radius-xs);
   }
@@ -1217,6 +1242,7 @@
   .timeline-dots-track {
     position: relative;
     min-height: 30px;
+    flex: 1; min-width: 0;
     background: var(--surface);
     border: 1px solid var(--border-lt);
     border-radius: var(--radius-xs);
@@ -1680,6 +1706,8 @@
      ════════════════════════════════════════════════════════ */
   @media (max-width: 768px) {
     body { font-size: 13px; }
+
+    .timeline-row-label { width: 40px; }
 
     /* Topbar */
     .topbar {
@@ -2985,7 +3013,10 @@ function renderTimeline() {
   var bounds = getTimelineBounds();
   var s = bounds.start, e = bounds.end;
 
-  var html = '<div class="timeline-axis">' + buildTimelineAxisHtml(s, e) + '</div>';
+  var html = '<div class="timeline-axis-row">' +
+    '<div class="timeline-row-label"></div>' +
+    '<div class="timeline-axis">' + buildTimelineAxisHtml(s, e) + '</div>' +
+    '</div>';
 
   var events = appData.spanEvents || [];
   getCategoryOrder().forEach(function (cat) {
@@ -2994,9 +3025,9 @@ function renderTimeline() {
       return ev.category === cat && itemOverlapsRange({ type: 'span', start: ev.start, end: ev.end }, bounds);
     });
     html += '<div class="timeline-row-group" draggable="true" data-cat="' + cat + '">';
-    html += '<div class="timeline-row-label"><span class="timeline-drag-handle" title="拖拽排序">⠿</span>' + meta.icon + ' ' + meta.label +
-      '<input type="color" class="timeline-color-swatch" value="' + meta.color + '" title="修改颜色" ' +
-      'onclick="event.stopPropagation()" onchange="setCategoryColor(\'' + cat + '\', this.value)"></div>';
+    html += '<div class="timeline-row-label" title="' + escHtml(meta.label) + '"><span class="timeline-drag-handle" draggable="false" title="拖拽排序">⠿</span><span class="timeline-row-icon" draggable="false">' + meta.icon + '</span>' +
+      '<input type="color" class="timeline-color-swatch" draggable="false" value="' + meta.color + '" title="' + escHtml(meta.label) + ' · 修改颜色" ' +
+      'onmousedown="event.stopPropagation()" onclick="event.stopPropagation()" onchange="setCategoryColor(\'' + cat + '\', this.value)"></div>';
     if (!catEvents.length) {
       html += '<div class="timeline-track"><div class="timeline-track-empty">这段时间没有记录</div></div>';
     } else {
@@ -3043,9 +3074,9 @@ function renderTimeline() {
     var entries = contentIdx.filter(function (it) {
       return it.type !== 'span' && (it.tags || []).indexOf(tagName) !== -1 && itemOverlapsRange(it, bounds);
     });
-    html += '<div class="timeline-row-group">';
-    html += '<div class="timeline-row-label">#' + escHtml(tagName) +
-      '<button class="timeline-tagrow-remove" onclick="removeTimelineTagRow(\'' + tagName.replace(/'/g, "\\'") + '\')" title="移除这一行">✕</button></div>';
+    html += '<div class="timeline-row-group" draggable="true" data-tag="' + escHtml(tagName) + '">';
+    html += '<div class="timeline-row-label" title="#' + escHtml(tagName) + '"><span class="timeline-drag-handle" draggable="false" title="拖拽排序">⠿</span><span class="timeline-row-icon timeline-tag-icon" draggable="false">#</span>' +
+      '<button class="timeline-tagrow-remove" draggable="false" onmousedown="event.stopPropagation()" onclick="event.stopPropagation();removeTimelineTagRow(\'' + tagName.replace(/'/g, "\\'") + '\')" title="移除这一行">✕</button></div>';
     if (!entries.length) {
       html += '<div class="timeline-dots-track"><div class="timeline-track-empty">这段时间没有记录</div></div>';
     } else {
@@ -3071,13 +3102,19 @@ function renderTimeline() {
 }
 
 var _tlDragCat = null;
+var _tlDragTag = null;
 
 function attachTimelineDragHandlers() {
   document.querySelectorAll('.timeline-row-group[data-cat]').forEach(function (g) {
     g.addEventListener('dragstart', function (e) {
       _tlDragCat = g.dataset.cat;
       g.classList.add('dragging');
-      if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'move';
+        // Firefox 要求 dragstart 时必须调用 setData，否则整个拖拽会被浏览器
+        // 静默中止（不报错，看起来像是"能拖但没反应"）。
+        e.dataTransfer.setData('text/plain', g.dataset.cat);
+      }
     });
     g.addEventListener('dragend', function () {
       g.classList.remove('dragging');
@@ -3085,8 +3122,10 @@ function attachTimelineDragHandlers() {
         el.classList.remove('drag-over');
       });
     });
+    g.addEventListener('dragenter', function (e) { e.preventDefault(); });
     g.addEventListener('dragover', function (e) {
       e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
       g.classList.add('drag-over');
     });
     g.addEventListener('dragleave', function () {
@@ -3106,6 +3145,48 @@ function attachTimelineDragHandlers() {
       appData.categoryOrder = order;
       saveData();
       _tlDragCat = null;
+      renderTimeline();
+    });
+  });
+
+  document.querySelectorAll('.timeline-row-group[data-tag]').forEach(function (g) {
+    g.addEventListener('dragstart', function (e) {
+      _tlDragTag = g.dataset.tag;
+      g.classList.add('dragging');
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', g.dataset.tag);
+      }
+    });
+    g.addEventListener('dragend', function () {
+      g.classList.remove('dragging');
+      document.querySelectorAll('.timeline-row-group.drag-over').forEach(function (el) {
+        el.classList.remove('drag-over');
+      });
+    });
+    g.addEventListener('dragenter', function (e) { e.preventDefault(); });
+    g.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+      g.classList.add('drag-over');
+    });
+    g.addEventListener('dragleave', function () {
+      g.classList.remove('drag-over');
+    });
+    g.addEventListener('drop', function (e) {
+      e.preventDefault();
+      g.classList.remove('drag-over');
+      var targetTag = g.dataset.tag;
+      if (!_tlDragTag || _tlDragTag === targetTag) return;
+      var rows = (appData.timelineTagRows || []).slice();
+      var fromIdx = rows.indexOf(_tlDragTag);
+      var toIdx = rows.indexOf(targetTag);
+      if (fromIdx === -1 || toIdx === -1) return;
+      rows.splice(fromIdx, 1);
+      rows.splice(toIdx, 0, _tlDragTag);
+      appData.timelineTagRows = rows;
+      saveData();
+      _tlDragTag = null;
       renderTimeline();
     });
   });
