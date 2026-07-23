@@ -317,6 +317,31 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .ff.span2{grid-column:span 2;}
 .ff.span4{grid-column:1/-1;}
 
+/* Mini date-range picker (dashboard cards) */
+.mini-date-input{
+  background:var(--bg3);
+  border:1.5px solid var(--border);
+  border-radius:var(--radius);
+  color:var(--text);
+  font-size:12px;
+  padding:5px 7px;
+  font-family:var(--font);
+  height:30px;
+  transition:border-color .15s;
+}
+.mini-date-input:focus{outline:none;border-color:var(--green);background:#fff;}
+.mini-reset-link{
+  font-size:11px;
+  color:var(--text3);
+  cursor:pointer;
+  text-decoration:underline;
+  white-space:nowrap;
+  transition:color .15s;
+  user-select:none;
+}
+.mini-reset-link:hover{color:var(--green);}
+.mini-date-label{font-size:11px;color:var(--text3);white-space:nowrap;}
+
 /* Checkbox pill */
 .check-row{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);}
 .check-row input[type=checkbox]{width:15px;height:15px;accent-color:var(--green);}
@@ -665,7 +690,11 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
       <!-- 左：总运动次数 + 饼图 同一卡片，横向三区域 -->
       <div class="chart-card dash-stat-card" style="display:flex;align-items:center;gap:20px">
         <!-- 数字区 -->
-        <div style="flex-shrink:0;min-width:130px">
+        <div style="flex-shrink:0;min-width:150px">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap">
+            <input type="date" id="dash-stat-start" class="mini-date-input" onchange="onDashStatStartChange()" title="选择统计起始日期">
+            <span class="mini-reset-link" onclick="resetDashStatStart()" title="重置为最早日期">重置</span>
+          </div>
           <div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-variant-numeric:tabular-nums" id="dash-date-range">—</div>
           <div style="display:flex;align-items:flex-end;gap:3px;line-height:1">
             <div style="font-size:40px;font-weight:800;color:var(--green);font-variant-numeric:tabular-nums;line-height:1" id="dash-total">—</div>
@@ -701,8 +730,17 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
     <!-- 第二行：月度运动构成独占一行 -->
     <div class="chart-card full" style="margin-bottom:1.5rem">
-      <div class="chart-title">月度运动构成</div>
-      <div class="chart-sub">每月各运动类型次数</div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="chart-title">月度运动构成</div>
+          <div class="chart-sub">每月各运动类型次数</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span class="mini-date-label">起始月份</span>
+          <input type="date" id="dash-monthly-start" class="mini-date-input" onchange="onDashMonthlyStartChange()" title="选择起始月份">
+          <span class="mini-reset-link" onclick="resetDashMonthlyStart()" title="重置为最早日期">重置</span>
+        </div>
+      </div>
       <div class="legend">
         <div class="legend-item"><div class="legend-dot" id="legend-dot-Strength" style="background:#3b7ef8"></div>无氧</div>
         <div class="legend-item"><div class="legend-dot" id="legend-dot-Run" style="background:#16a06a"></div>跑步</div>
@@ -2196,10 +2234,49 @@ function delRecord(id){
 const CI={};
 function dc(id){ if(CI[id]){CI[id].destroy();delete CI[id];} }
 
-function getMonthRange(){
+// 💾 Dashboard 自定义起始日期（用于总计卡片 / 月度构成柱状图）
+const LS_DASH_STAT_START='fitness_dash_stat_start';
+const LS_DASH_MONTHLY_START='fitness_dash_monthly_start';
+let dashStatStart = localStorage.getItem(LS_DASH_STAT_START) || '';
+let dashMonthlyStart = localStorage.getItem(LS_DASH_MONTHLY_START) || '';
+
+function earliestRecordDate(){
+  const dates=records.filter(r=>r.date).map(r=>r.date).sort();
+  return dates.length ? dates[0] : '';
+}
+function onDashStatStartChange(){
+  dashStatStart = document.getElementById('dash-stat-start').value || '';
+  localStorage.setItem(LS_DASH_STAT_START, dashStatStart);
+  renderDashboard();
+}
+function resetDashStatStart(){
+  dashStatStart='';
+  localStorage.removeItem(LS_DASH_STAT_START);
+  renderDashboard();
+}
+function onDashMonthlyStartChange(){
+  dashMonthlyStart = document.getElementById('dash-monthly-start').value || '';
+  localStorage.setItem(LS_DASH_MONTHLY_START, dashMonthlyStart);
+  renderDashboard();
+}
+function resetDashMonthlyStart(){
+  dashMonthlyStart='';
+  localStorage.removeItem(LS_DASH_MONTHLY_START);
+  renderDashboard();
+}
+
+function getMonthRange(startDate){
   const all=records.filter(r=>r.date).map(r=>r.date.slice(0,7)).sort();
   if(!all.length) return [];
-  const res=[]; let cur=new Date(all[0]+'-01'); const end=new Date(all[all.length-1]+'-01');
+  let startYm=all[0];
+  if(startDate){
+    const custom=startDate.slice(0,7);
+    // 若自定义起始月份晚于最早记录月份，则采用自定义值；否则忽略（不允许早于最早记录）
+    if(custom>startYm) startYm=custom;
+  }
+  const endYm=all[all.length-1];
+  if(startYm>endYm) return [];
+  const res=[]; let cur=new Date(startYm+'-01'); const end=new Date(endYm+'-01');
   while(cur<=end){ res.push(localYearMonth(cur)); cur.setMonth(cur.getMonth()+1); }
   return res;
 }
@@ -2218,25 +2295,37 @@ function lineDS(data,color){
 }
 
 function renderDashboard(){
-  const recs=records;
+  const allDates=records.filter(r=>r.date).map(r=>r.date).sort();
+  const earliest=allDates.length>0?allDates[0]:'';
+  const latest=allDates.length>0?allDates[allDates.length-1]:'';
+
+  // 起始日期输入框：同步 min/max/value（不允许早于最早记录，不允许晚于最新记录）
+  const statInput=document.getElementById('dash-stat-start');
+  const monthlyInput=document.getElementById('dash-monthly-start');
+  if(statInput){ statInput.min=earliest; statInput.max=latest; statInput.value=dashStatStart||''; statInput.placeholder=earliest; }
+  if(monthlyInput){ monthlyInput.min=earliest; monthlyInput.max=latest; monthlyInput.value=dashMonthlyStart||''; monthlyInput.placeholder=earliest; }
+
+  // 统计卡片：若选择了起始日期（且不早于最早记录），只统计该日期起（含当天）的记录
+  const statStart = (dashStatStart && dashStatStart>=earliest) ? dashStatStart : '';
+  const recs = statStart ? records.filter(r=>r.date && r.date>=statStart) : records;
   const dates=recs.filter(r=>r.date).map(r=>r.date).sort();
   const total=recs.length;
-  const firstDate=dates.length>0?dates[0]:'—';
-  const weekAvg=dates.length>1?((total/weeksBetween(dates[0],dates[dates.length-1])).toFixed(1)):'—';
+  const firstDate=statStart || (dates.length>0?dates[0]:'—');
+  const weekAvg=dates.length>1?((total/weeksBetween(dates[0],dates[dates.length-1])).toFixed(1)):(total===1?'1.0':'—');
 
   document.getElementById('dash-total').textContent=total;
-  document.getElementById('dash-date-range').textContent= firstDate!=='—' ? `${firstDate} 至今` : '—';
+  document.getElementById('dash-date-range').textContent= firstDate && firstDate!=='—' ? `${firstDate} 至今` : '—';
   document.getElementById('dash-week-avg').textContent= weekAvg!=='—' ? `周均 ${weekAvg} 次` : '—';
 
-  // 月度堆叠柱状图 + 白色数字标签
-  const months=getMonthRange();
+  // 月度堆叠柱状图 + 白色数字标签（可选自定义起始月份，默认从最早记录开始）
+  const months=getMonthRange(dashMonthlyStart);
   const types=['Strength','Run','Jump Rope','Badminton','Hike','Walk'];
   dc('monthlyChart');
   CI.monthlyChart=new Chart(document.getElementById('monthlyChart'),{type:'bar',
     data:{labels:months.map(m=>m.slice(2).replace('-','/')),
       datasets:types.map(t=>({
         label:t,
-        data:months.map(m=>recs.filter(r=>r.date?.startsWith(m)&&r.sport===t).length),
+        data:months.map(m=>records.filter(r=>r.date?.startsWith(m)&&r.sport===t).length),
         backgroundColor:getSportColor(t),
         borderRadius:2,
       }))
@@ -2281,7 +2370,7 @@ function renderDashboard(){
   });
 
   // 训练类型占比甜甜圈 — 数据标签直接显示在图上
-  const tc={};recs.forEach(r=>{const s=r.sport||'其他';tc[s]=(tc[s]||0)+1;});
+  const tc={};records.forEach(r=>{const s=r.sport||'其他';tc[s]=(tc[s]||0)+1;});
   const tcLabels=Object.keys(tc); const tcVals=Object.values(tc);
   dc('typeChart');
   CI.typeChart=new Chart(document.getElementById('typeChart'),{type:'doughnut',
