@@ -350,7 +350,7 @@
     color: var(--text-muted);
     padding: 3px 0;
   }
-  .weekday.sun { color: #e05a3a; }
+  .weekday.sun { color: var(--blue-dim); }
   .weekday.sat { color: var(--blue-dim); }
 
   /* ── Day cell ────────────────────────────────────────── */
@@ -515,7 +515,7 @@
     color: #fff;
     font-weight: 700;
   }
-  .day-cell.sunday  .day-num { color: #e05a3a; }
+  .day-cell.sunday  .day-num { color: var(--blue-dim); }
   .day-cell.saturday .day-num { color: var(--blue-dim); }
   .day-cell.today   .day-num { color: #fff !important; }
 
@@ -1170,38 +1170,47 @@
     gap: 10px;
     margin-bottom: 10px;
     border-radius: 8px;
-    transition: opacity .15s, outline .1s;
   }
-  .timeline-row-group[draggable="true"] { user-select: none; -webkit-user-drag: element; }
-  .timeline-row-group.dragging { opacity: .4; }
-  .timeline-row-group.drag-over { outline: 2px dashed var(--blue); outline-offset: 4px; }
+  /* 拖拽时只保留一种高亮：预计会插入到哪一行，用虚线框表示"松手会插
+     到这附近"。被抓起的那一行本身不再额外描边——同时出现两个虚线框
+     反而分散注意力，且拖拽过程中完全不挪动真实 DOM，只是切换这个
+     class，成本几乎为零，不会有卡顿感。*/
+  .timeline-row-group.drag-target {
+    outline: 2px dashed var(--blue);
+    outline-offset: 2px;
+  }
   .timeline-row-label {
-    display: flex; align-items: center; gap: 5px;
+    display: flex; align-items: center; gap: 4px;
     flex-shrink: 0;
-    width: 54px;
+    width: 56px;
+    position: relative;
+    cursor: grab;
+    touch-action: none;
+    -webkit-user-select: none; user-select: none;
+    border-radius: 6px;
   }
+  .timeline-row-label:hover { background: var(--surface3); }
+  .timeline-row-label:active { cursor: grabbing; }
   .timeline-row-icon {
     font-size: 14px;
     line-height: 1;
-    cursor: default;
+    cursor: inherit;
   }
+  /* #标签行的徽标：显示标签名的前两个字，取代原来固定不变的 "#" 圆圈，
+     形状也从正圆改成宽度自适应的圆角矩形，两个汉字才放得下；背景色
+     跟随这个标签自己的自定义颜色（下面那个颜色点改的就是它），淡淡
+     一层底色 + 同色文字，跟时间轴上打的点是同一个颜色，一眼能对上。*/
   .timeline-tag-icon {
-    width: 16px; height: 16px;
+    min-width: 18px; height: 16px;
     display: flex; align-items: center; justify-content: center;
-    border-radius: 50%;
-    background: var(--violet-bg);
-    color: var(--violet);
-    font-size: 11px;
+    border-radius: 5px;
+    padding: 0 3px;
+    font-size: 10px;
     font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: inherit;
   }
-  .timeline-drag-handle {
-    cursor: grab;
-    color: var(--text-muted);
-    font-size: 13px;
-    margin-right: 1px;
-    user-select: none;
-  }
-  .timeline-drag-handle:active { cursor: grabbing; }
   .timeline-color-swatch {
     width: 13px; height: 13px;
     padding: 0; margin-left: 3px;
@@ -1215,6 +1224,17 @@
   .timeline-color-swatch::-webkit-color-swatch-wrapper { padding: 0; border-radius: 50%; }
   .timeline-color-swatch::-webkit-color-swatch { border: none; border-radius: 50%; }
   .timeline-color-swatch::-moz-color-swatch { border: none; border-radius: 50%; }
+  /* 点一下标题区域（没有拖动）弹出的小菜单，目前只有标签行会用到
+     （删除这一行；改颜色直接点颜色点就行，不用走菜单）。复用跟
+     "+添加标签行" 菜单一样的 .daytag-option 按钮样式，保持视觉统一。 */
+  .tagrow-menu {
+    position: absolute; top: calc(100% + 4px); left: 0;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); box-shadow: var(--shadow-md);
+    padding: 4px; min-width: 128px; z-index: 30;
+    cursor: default;
+  }
+  .tagrow-menu .daytag-option { white-space: nowrap; }
   .timeline-track {
     position: relative; min-height: 40px;
     flex: 1; min-width: 0;
@@ -1237,8 +1257,31 @@
   }
   .timeline-bar.ongoing { background-image: linear-gradient(to right, currentColor 85%, transparent); }
 
+  /* 跨度事件条的自定义悬浮提示框，见 showBarTooltip()。用 margin 而不
+     是敲几个空格字符来做标题和备注之间的间距——HTML 里连续空格默认会
+     被折叠成一个，margin 更可控，视觉上大致相当于 3~4 个空格的宽度。*/
+  .timeline-bar-tooltip {
+    position: fixed;
+    z-index: 200;
+    background: #1f2430; color: #fff;
+    font-size: 11.5px;
+    line-height: 1.5;
+    padding: 6px 10px;
+    border-radius: 6px;
+    box-shadow: var(--shadow-md);
+    max-width: 280px;
+    pointer-events: none;
+  }
+  .tbt-line1 { font-weight: 600; }
+  .tbt-note {
+    font-style: italic;
+    font-weight: 400;
+    opacity: .82;
+    margin-left: 1.1em;
+  }
+  .tbt-line2 { margin-top: 2px; opacity: .7; font-size: 11px; }
+
   /* ── 标签打点行：把 #内容标签按天打点显示在时间轴上 ─────── */
-  .timeline-tagrows-section { margin-top: 4px; }
   .timeline-dots-track {
     position: relative;
     min-height: 30px;
@@ -1257,13 +1300,6 @@
     box-shadow: var(--shadow-xs);
     cursor: default;
   }
-  .timeline-tagrow-remove {
-    border: none; background: none; color: var(--text-muted); cursor: pointer;
-    font-size: 11px; margin-left: 5px; padding: 0 2px; line-height: 1;
-    vertical-align: middle;
-  }
-  .timeline-tagrow-remove:hover { color: #dc2626; }
-
   .timeline-add-tagrow-wrap { position: relative; display: inline-block; margin-top: 4px; }
   .timeline-add-tagrow-btn {
     font-size: 12px; font-weight: 600; padding: 7px 12px; border-radius: 8px;
@@ -1707,7 +1743,7 @@
   @media (max-width: 768px) {
     body { font-size: 13px; }
 
-    .timeline-row-label { width: 40px; }
+    .timeline-row-label { width: 48px; }
 
     /* Topbar */
     .topbar {
@@ -2230,6 +2266,7 @@ function getDefaultData() {
     dayTagDefs: null, // 日期标签类型：[{ id, icon, label }]，null 表示还没初始化过默认值
     dayTags: {}, // 具体某天打了哪个标签：{ 'YYYY-MM-DD': tagDefId }，一天只能打一个
     timelineTagRows: [], // 时间线页面里选中要打点展示的 #内容标签，比如 ['电影']
+    tagRowColors: {}, // #标签行的颜色覆盖：{ tagName: '#hex' }，跟类别颜色是同一套逻辑
     version:   1
   };
 }
@@ -2274,6 +2311,7 @@ function migrateData() {
   if (!appData.customCategories) appData.customCategories = [];
   if (!appData.categoryOrder) appData.categoryOrder = ['travel', 'game', 'tv'];
   if (!appData.categoryColors) appData.categoryColors = {};
+  if (!appData.tagRowColors) appData.tagRowColors = {};
   if (!appData.categoryOverrides) appData.categoryOverrides = {};
   if (appData.dayTagDefs === null || appData.dayTagDefs === undefined) {
     appData.dayTagDefs = [
@@ -2339,6 +2377,12 @@ function dedupe(arr) {
 }
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// 把文本安全地塞进内联事件属性里的 JS 字符串字面量（单引号包裹）：
+// 先转义反斜杠，再转义单引号，换行也替换掉（内联属性里不能有真换行）。
+function escJsStr(s) {
+  return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, ' ');
 }
 
 // 下拉小菜单（"⋮"那种）默认往下弹，靠近视口/容器底部时会被裁切或溢出。
@@ -2453,6 +2497,17 @@ function setCategoryColor(catId, color) {
   render();
 }
 
+function getTagRowColor(tagName) {
+  return (appData.tagRowColors && appData.tagRowColors[tagName]) || '#7c3aed';
+}
+
+function setTagRowColor(tagName, color) {
+  if (!appData.tagRowColors) appData.tagRowColors = {};
+  appData.tagRowColors[tagName] = color;
+  saveData();
+  renderTimeline();
+}
+
 // ── 日期标签（原来的手动打标签功能，重新做成通用的图标标记，
 //    默认预置除夕/圣诞，但不限于节日，随便打什么标签都行）──────
 function getDayTagDefs() { return appData.dayTagDefs || []; }
@@ -2498,6 +2553,49 @@ function getCategoryOrder() {
     return arr.indexOf(id) === i;
   });
   return appData.categoryOrder;
+}
+
+// ── 时间线甘特图的行顺序：类别行 + #标签打点行统一放在同一个数组里，
+//    这样才能真正互相插入，而不是分成两组各排各的。用 'cat:xxx' /
+//    'tag:xxx' 这种带前缀的 key 表示一行，getCategoryOrder() 和
+//    appData.timelineTagRows 仍然保留（分别给类别下拉框、"已添加哪些
+//    标签行"这两个用途用），这里只是额外维护一份"甘特图里怎么排"的
+//    视图顺序，两边数据不冲突。
+function getTimelineRowOrder() {
+  if (!appData.timelineRowOrder) {
+    // 首次迁移：把原来"类别顺序"和"标签行顺序"接在一起，尽量不打乱
+    // 用户已经调整过的类别顺序。
+    var cats = getCategoryOrder().map(function (c) { return 'cat:' + c; });
+    var tags = (appData.timelineTagRows || []).map(function (t) { return 'tag:' + t; });
+    appData.timelineRowOrder = cats.concat(tags);
+  }
+
+  var knownCats = SPAN_CATEGORY_ORDER.concat((appData.customCategories || []).map(function (c) { return c.id; }));
+  var catKeySet = {};
+  knownCats.forEach(function (id) { catKeySet['cat:' + id] = true; });
+  var tagKeySet = {};
+  (appData.timelineTagRows || []).forEach(function (t) { tagKeySet['tag:' + t] = true; });
+
+  // 去掉失效项（类别被删了 / 标签行被移除了）+ 去重
+  var seen = {};
+  appData.timelineRowOrder = appData.timelineRowOrder.filter(function (key) {
+    if (seen[key]) return false;
+    if (!catKeySet[key] && !tagKeySet[key]) return false;
+    seen[key] = true;
+    return true;
+  });
+
+  // 新出现的类别 / 新添加的标签行追加到末尾
+  knownCats.forEach(function (id) {
+    var key = 'cat:' + id;
+    if (!seen[key]) { appData.timelineRowOrder.push(key); seen[key] = true; }
+  });
+  (appData.timelineTagRows || []).forEach(function (t) {
+    var key = 'tag:' + t;
+    if (!seen[key]) { appData.timelineRowOrder.push(key); seen[key] = true; }
+  });
+
+  return appData.timelineRowOrder;
 }
 
 function addCustomCategory(label, color) {
@@ -3007,9 +3105,97 @@ function packEventsIntoRows(catEvents) {
   return { rowOf: rowOf, rowCount: rows.length };
 }
 
+function renderCategoryRowHtml(cat, events, bounds, s, e) {
+  var meta = getCategoryMeta(cat);
+  var catEvents = events.filter(function (ev) {
+    return ev.category === cat && itemOverlapsRange({ type: 'span', start: ev.start, end: ev.end }, bounds);
+  });
+  var key = 'cat:' + cat;
+  var html = '<div class="timeline-row-group" data-key="' + escHtml(key) + '">';
+  html += '<div class="timeline-row-label" title="' + escHtml(meta.label) + '" onpointerdown="startRowDrag(event,\'' + key.replace(/'/g, "\\'") + '\')">' +
+    '<span class="timeline-row-icon">' + meta.icon + '</span>' +
+    '<input type="color" class="timeline-color-swatch" value="' + meta.color + '" title="' + escHtml(meta.label) + ' · 修改颜色" ' +
+    'onchange="setCategoryColor(\'' + cat + '\', this.value)"></div>';
+  if (!catEvents.length) {
+    html += '<div class="timeline-track"><div class="timeline-track-empty">这段时间没有记录</div></div>';
+  } else {
+    var packed = packEventsIntoRows(catEvents);
+    html += '<div class="timeline-track" style="height:' + (packed.rowCount * 32 + 8) + 'px;">';
+
+    var byRow = {};
+    catEvents.forEach(function (ev) {
+      var r = packed.rowOf[ev.id];
+      if (!byRow[r]) byRow[r] = [];
+      byRow[r].push(ev);
+    });
+    Object.keys(byRow).forEach(function (r) {
+      byRow[r].sort(function (a, b) { return a.start < b.start ? -1 : (a.start > b.start ? 1 : 0); });
+      var rowIdx = parseInt(r, 10);
+      var prevRightRatio = null;
+      byRow[r].forEach(function (ev) {
+        var today = fmtDate(new Date());
+        var endExclusive = addDaysToDateStr(ev.end || today, 1); // 覆盖到结束日期当天的终点，而不是起点
+        var leftRatio = dateRatio(ev.start, s, e);
+        var rightRatio = dateRatio(endExclusive, s, e);
+        // 同一行内首尾日期相接（比如前一个到7号、后一个从7号开始）时，
+        // 7号这一整天在视觉上会被前一个事件"领走"，避免画出重叠的一截
+        if (prevRightRatio !== null && leftRatio < prevRightRatio) leftRatio = prevRightRatio;
+        prevRightRatio = rightRatio;
+
+        var left = leftRatio * 100;
+        var width = Math.max((rightRatio - leftRatio) * 100, 1.5);
+        var ongoing = !ev.end;
+        var rangeText = ev.start + ' ~ ' + (ev.end || '进行中');
+        // 原生 title="" 只能显示纯文本、没法让备注部分单独斜体，所以这里
+        // 改成自己做一个悬浮提示框（鼠标移入时创建，移出时移除），备注只
+        // 取第一行，太长的备注也不适合塞进一个悬浮框里。
+        var noteSnippet = (ev.note || '').split(/\n/)[0].trim();
+        html += '<div class="timeline-bar' + (ongoing ? ' ongoing' : '') + '" style="left:' + left + '%;width:' + width + '%;top:' + (8 + rowIdx * 32) + 'px;background:' + meta.color + ';" ' +
+          'onclick="showSpanEventModal(\'' + ev.id + '\')" ' +
+          'onmouseenter="showBarTooltip(event,\'' + escJsStr(ev.title) + '\',\'' + escJsStr(noteSnippet) + '\',\'' + escJsStr(rangeText) + '\')" ' +
+          'onmouseleave="hideBarTooltip()"><span class="timeline-bar-label">' + escHtml(ev.title) + '</span></div>';
+      });
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderTagRowHtml(tagName, contentIdx, bounds, s, e) {
+  var entries = contentIdx.filter(function (it) {
+    return it.type !== 'span' && (it.tags || []).indexOf(tagName) !== -1 && itemOverlapsRange(it, bounds);
+  });
+  var key = 'tag:' + tagName;
+  var color = getTagRowColor(tagName);
+  // 用 Array.from 按"字符"而不是按 UTF-16 编码单元截取，避免 emoji 这种
+  // 占两个编码单元的字符被从中间切断、显示成乱码。
+  var pillText = Array.from(tagName).slice(0, 2).join('');
+  var html = '<div class="timeline-row-group" data-key="' + escHtml(key) + '">';
+  html += '<div class="timeline-row-label" title="#' + escHtml(tagName) + '" onpointerdown="startRowDrag(event,\'' + key.replace(/'/g, "\\'") + '\')">' +
+    '<span class="timeline-row-icon timeline-tag-icon" style="background:' + color + '1a;color:' + color + ';">' + escHtml(pillText) + '</span>' +
+    '<input type="color" class="timeline-color-swatch" value="' + color + '" title="#' + escHtml(tagName) + ' · 修改颜色" ' +
+    'onchange="setTagRowColor(\'' + tagName.replace(/'/g, "\\'") + '\', this.value)"></div>';
+  if (!entries.length) {
+    html += '<div class="timeline-dots-track"><div class="timeline-track-empty">这段时间没有记录</div></div>';
+  } else {
+    html += '<div class="timeline-dots-track">';
+    entries.forEach(function (it) {
+      var left = dateRatio(it.date, s, e) * 100;
+      var snippet = it.text.split(/\n/)[0].trim();
+      var tip = it.date + ' · ' + snippet;
+      html += '<div class="timeline-dot" style="left:' + left + '%;background:' + color + ';" title="' + escHtml(tip) + '"></div>';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
 function renderTimeline() {
   var bodyEl = document.getElementById('timelineBody');
   if (!bodyEl) return;
+  closeTagRowMenu(); // 重新渲染会把菜单挂靠的行整个换掉，先关掉避免残留引用
   var bounds = getTimelineBounds();
   var s = bounds.start, e = bounds.end;
 
@@ -3018,178 +3204,206 @@ function renderTimeline() {
     '<div class="timeline-axis">' + buildTimelineAxisHtml(s, e) + '</div>' +
     '</div>';
 
+  // ── 类别行（跨度事件）和 #标签打点行统一按 getTimelineRowOrder() 的
+  // 顺序渲染成同一层级的兄弟节点——这样两种行才能真正拖拽互相插入，
+  // 而不是分属两个独立容器、各排各的。
   var events = appData.spanEvents || [];
-  getCategoryOrder().forEach(function (cat) {
-    var meta = getCategoryMeta(cat);
-    var catEvents = events.filter(function (ev) {
-      return ev.category === cat && itemOverlapsRange({ type: 'span', start: ev.start, end: ev.end }, bounds);
-    });
-    html += '<div class="timeline-row-group" draggable="true" data-cat="' + cat + '">';
-    html += '<div class="timeline-row-label" title="' + escHtml(meta.label) + '"><span class="timeline-drag-handle" draggable="false" title="拖拽排序">⠿</span><span class="timeline-row-icon" draggable="false">' + meta.icon + '</span>' +
-      '<input type="color" class="timeline-color-swatch" draggable="false" value="' + meta.color + '" title="' + escHtml(meta.label) + ' · 修改颜色" ' +
-      'onmousedown="event.stopPropagation()" onclick="event.stopPropagation()" onchange="setCategoryColor(\'' + cat + '\', this.value)"></div>';
-    if (!catEvents.length) {
-      html += '<div class="timeline-track"><div class="timeline-track-empty">这段时间没有记录</div></div>';
-    } else {
-      var packed = packEventsIntoRows(catEvents);
-      html += '<div class="timeline-track" style="height:' + (packed.rowCount * 32 + 8) + 'px;">';
-
-      var byRow = {};
-      catEvents.forEach(function (ev) {
-        var r = packed.rowOf[ev.id];
-        if (!byRow[r]) byRow[r] = [];
-        byRow[r].push(ev);
-      });
-      Object.keys(byRow).forEach(function (r) {
-        byRow[r].sort(function (a, b) { return a.start < b.start ? -1 : (a.start > b.start ? 1 : 0); });
-        var rowIdx = parseInt(r, 10);
-        var prevRightRatio = null;
-        byRow[r].forEach(function (ev) {
-          var today = fmtDate(new Date());
-          var endExclusive = addDaysToDateStr(ev.end || today, 1); // 覆盖到结束日期当天的终点，而不是起点
-          var leftRatio = dateRatio(ev.start, s, e);
-          var rightRatio = dateRatio(endExclusive, s, e);
-          // 同一行内首尾日期相接（比如前一个到7号、后一个从7号开始）时，
-          // 7号这一整天在视觉上会被前一个事件"领走"，避免画出重叠的一截
-          if (prevRightRatio !== null && leftRatio < prevRightRatio) leftRatio = prevRightRatio;
-          prevRightRatio = rightRatio;
-
-          var left = leftRatio * 100;
-          var width = Math.max((rightRatio - leftRatio) * 100, 1.5);
-          var ongoing = !ev.end;
-          var rangeText = ev.start + ' ~ ' + (ev.end || '进行中');
-          var tooltipText = ev.title + '\n' + rangeText;
-          html += '<div class="timeline-bar' + (ongoing ? ' ongoing' : '') + '" style="left:' + left + '%;width:' + width + '%;top:' + (8 + rowIdx * 32) + 'px;background:' + meta.color + ';" onclick="showSpanEventModal(\'' + ev.id + '\')" title="' + escHtml(tooltipText) + '"><span class="timeline-bar-label">' + escHtml(ev.title) + '</span></div>';
-        });
-      });
-      html += '</div>';
-    }
-    html += '</div>';
-  });
-
-  // ── 标签打点行：把 #内容标签（比如 #电影）按天打点显示在同一条时间轴上 ──
-  html += '<div class="timeline-tagrows-section">';
   var contentIdx = buildContentIndex();
-  (appData.timelineTagRows || []).forEach(function (tagName) {
-    var entries = contentIdx.filter(function (it) {
-      return it.type !== 'span' && (it.tags || []).indexOf(tagName) !== -1 && itemOverlapsRange(it, bounds);
-    });
-    html += '<div class="timeline-row-group" draggable="true" data-tag="' + escHtml(tagName) + '">';
-    html += '<div class="timeline-row-label" title="#' + escHtml(tagName) + '"><span class="timeline-drag-handle" draggable="false" title="拖拽排序">⠿</span><span class="timeline-row-icon timeline-tag-icon" draggable="false">#</span>' +
-      '<button class="timeline-tagrow-remove" draggable="false" onmousedown="event.stopPropagation()" onclick="event.stopPropagation();removeTimelineTagRow(\'' + tagName.replace(/'/g, "\\'") + '\')" title="移除这一行">✕</button></div>';
-    if (!entries.length) {
-      html += '<div class="timeline-dots-track"><div class="timeline-track-empty">这段时间没有记录</div></div>';
-    } else {
-      html += '<div class="timeline-dots-track">';
-      entries.forEach(function (it) {
-        var left = dateRatio(it.date, s, e) * 100;
-        var snippet = it.text.split(/\n/)[0].trim();
-        var tip = it.date + ' · ' + snippet;
-        html += '<div class="timeline-dot" style="left:' + left + '%;" title="' + escHtml(tip) + '"></div>';
-      });
-      html += '</div>';
+  getTimelineRowOrder().forEach(function (key) {
+    if (key.indexOf('cat:') === 0) {
+      html += renderCategoryRowHtml(key.slice(4), events, bounds, s, e);
+    } else if (key.indexOf('tag:') === 0) {
+      html += renderTagRowHtml(key.slice(4), contentIdx, bounds, s, e);
     }
-    html += '</div>';
   });
+
   html += '<div class="timeline-add-tagrow-wrap">' +
     '<button class="timeline-add-tagrow-btn" onclick="toggleAddTagRowMenu()">+ 添加标签行</button>' +
     '<div class="add-tagrow-menu" id="addTagRowMenu"></div>' +
     '</div>';
-  html += '</div>';
 
   bodyEl.innerHTML = html;
-  attachTimelineDragHandlers();
 }
 
-var _tlDragCat = null;
-var _tlDragTag = null;
+// ── 时间线行拖拽排序 / 点击（类别行 / 标签打点行统一处理）───────
+// 早前是一个专门的拖拽手柄图标，命中区域小、还占地方。现在把整个
+// 标题区域（图标+文字这一块）都作为拖拽起点，用一个位移阈值来区分
+// "点了一下"和"开始拖了"：按下时先不动，移动超过 6px 才算真正开始
+// 拖拽（避免手指按下时的轻微抖动被误判）；如果松手时全程都没超过
+// 这个阈值，就当作一次点击处理——类别行点击目前没有额外动作（颜色
+// 已经能直接点色块改），标签行点击会弹出"删除这一行"的小菜单（颜色
+// 同样直接点色块改，跟类别行对齐，不需要额外入口）。
+// 拖拽过程中不实时挪动真实 DOM（那样频繁触发重排，手感很卡）——只是
+// 切换高亮类，成本几乎为零，最终顺序只在松手那一刻计算并渲染一次。
+// 类别行和标签行是同一个父容器下的平级节点、共用同一份 data-key
+// （'cat:xxx' / 'tag:xxx'），所以可以互相插入。
+var _rowDrag = null; // { key, handle, row, parent, rows, order, targetIndex, pointerId, startX, startY, moved }
+var DRAG_MOVE_THRESHOLD = 6; // px
 
-function attachTimelineDragHandlers() {
-  document.querySelectorAll('.timeline-row-group[data-cat]').forEach(function (g) {
-    g.addEventListener('dragstart', function (e) {
-      _tlDragCat = g.dataset.cat;
-      g.classList.add('dragging');
-      if (e.dataTransfer) {
-        e.dataTransfer.effectAllowed = 'move';
-        // Firefox 要求 dragstart 时必须调用 setData，否则整个拖拽会被浏览器
-        // 静默中止（不报错，看起来像是"能拖但没反应"）。
-        e.dataTransfer.setData('text/plain', g.dataset.cat);
-      }
-    });
-    g.addEventListener('dragend', function () {
-      g.classList.remove('dragging');
-      document.querySelectorAll('.timeline-row-group.drag-over').forEach(function (el) {
-        el.classList.remove('drag-over');
-      });
-    });
-    g.addEventListener('dragenter', function (e) { e.preventDefault(); });
-    g.addEventListener('dragover', function (e) {
-      e.preventDefault();
-      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-      g.classList.add('drag-over');
-    });
-    g.addEventListener('dragleave', function () {
-      g.classList.remove('drag-over');
-    });
-    g.addEventListener('drop', function (e) {
-      e.preventDefault();
-      g.classList.remove('drag-over');
-      var targetCat = g.dataset.cat;
-      if (!_tlDragCat || _tlDragCat === targetCat) return;
-      var order = getCategoryOrder().slice();
-      var fromIdx = order.indexOf(_tlDragCat);
-      var toIdx = order.indexOf(targetCat);
-      if (fromIdx === -1 || toIdx === -1) return;
-      order.splice(fromIdx, 1);
-      order.splice(toIdx, 0, _tlDragCat);
-      appData.categoryOrder = order;
-      saveData();
-      _tlDragCat = null;
-      renderTimeline();
-    });
-  });
+function startRowDrag(e, key) {
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  // 颜色点是原生 <input type="color">，点它是要弹出系统取色器的，
+  // 不能被当成拖拽/点击的起点，直接放行走它自己的逻辑。
+  if (e.target && e.target.classList && e.target.classList.contains('timeline-color-swatch')) return;
 
-  document.querySelectorAll('.timeline-row-group[data-tag]').forEach(function (g) {
-    g.addEventListener('dragstart', function (e) {
-      _tlDragTag = g.dataset.tag;
-      g.classList.add('dragging');
-      if (e.dataTransfer) {
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', g.dataset.tag);
-      }
-    });
-    g.addEventListener('dragend', function () {
-      g.classList.remove('dragging');
-      document.querySelectorAll('.timeline-row-group.drag-over').forEach(function (el) {
-        el.classList.remove('drag-over');
-      });
-    });
-    g.addEventListener('dragenter', function (e) { e.preventDefault(); });
-    g.addEventListener('dragover', function (e) {
-      e.preventDefault();
-      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-      g.classList.add('drag-over');
-    });
-    g.addEventListener('dragleave', function () {
-      g.classList.remove('drag-over');
-    });
-    g.addEventListener('drop', function (e) {
-      e.preventDefault();
-      g.classList.remove('drag-over');
-      var targetTag = g.dataset.tag;
-      if (!_tlDragTag || _tlDragTag === targetTag) return;
-      var rows = (appData.timelineTagRows || []).slice();
-      var fromIdx = rows.indexOf(_tlDragTag);
-      var toIdx = rows.indexOf(targetTag);
-      if (fromIdx === -1 || toIdx === -1) return;
-      rows.splice(fromIdx, 1);
-      rows.splice(toIdx, 0, _tlDragTag);
-      appData.timelineTagRows = rows;
-      saveData();
-      _tlDragTag = null;
-      renderTimeline();
-    });
-  });
+  var handle = e.currentTarget;
+  var row = handle.closest('.timeline-row-group');
+  if (!row || !row.parentNode) return;
+  e.preventDefault();
+
+  var rows = Array.prototype.slice.call(
+    row.parentNode.querySelectorAll(':scope > .timeline-row-group[data-key]')
+  );
+  var order = rows.map(function (el) { return el.getAttribute('data-key'); });
+  var startIndex = order.indexOf(key);
+
+  _rowDrag = {
+    key: key, handle: handle, row: row, parent: row.parentNode,
+    rows: rows,                  // 拖拽开始时的行元素快照，过程中不会再变
+    order: order,                 // 与 rows 对应的 key 顺序，用来算最终结果
+    targetIndex: startIndex === -1 ? rows.length : startIndex, // 松手后预计插入的位置
+    pointerId: e.pointerId,
+    startX: e.clientX, startY: e.clientY,
+    moved: false
+  };
+
+  try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+  handle.addEventListener('pointermove', onRowDragMove);
+  handle.addEventListener('pointerup', endRowDrag);
+  handle.addEventListener('pointercancel', endRowDrag);
+}
+
+function onRowDragMove(e) {
+  if (!_rowDrag || e.pointerId !== _rowDrag.pointerId) return;
+  e.preventDefault();
+  var drag = _rowDrag;
+
+  if (!drag.moved) {
+    var dx = e.clientX - drag.startX, dy = e.clientY - drag.startY;
+    if (Math.sqrt(dx * dx + dy * dy) < DRAG_MOVE_THRESHOLD) return; // 还没到阈值，当作没动
+    drag.moved = true;
+  }
+
+  var y = e.clientY;
+  // 指针落在哪一行的上半区就插到那一行前面，落在最后一行下半区之后
+  // 就插到末尾——只是算一个目标下标，不挪 DOM。
+  var newTarget = drag.rows.length;
+  for (var i = 0; i < drag.rows.length; i++) {
+    var rect = drag.rows[i].getBoundingClientRect();
+    if (y < rect.top + rect.height / 2) { newTarget = i; break; }
+  }
+  if (newTarget === drag.targetIndex) return; // 没变化就不用重绘高亮
+
+  drag.targetIndex = newTarget;
+  drag.rows.forEach(function (r) { r.classList.remove('drag-target'); });
+  var highlightIdx = newTarget < drag.rows.length ? newTarget : drag.rows.length - 1;
+  var highlightRow = drag.rows[highlightIdx];
+  if (highlightRow && highlightRow !== drag.row) highlightRow.classList.add('drag-target');
+}
+
+function endRowDrag(e) {
+  if (!_rowDrag || e.pointerId !== _rowDrag.pointerId) return;
+  var drag = _rowDrag;
+  drag.handle.removeEventListener('pointermove', onRowDragMove);
+  drag.handle.removeEventListener('pointerup', endRowDrag);
+  drag.handle.removeEventListener('pointercancel', endRowDrag);
+  try { drag.handle.releasePointerCapture(drag.pointerId); } catch (err) {}
+  drag.rows.forEach(function (r) { r.classList.remove('drag-target'); });
+  _rowDrag = null;
+
+  if (!drag.moved) {
+    handleRowTap(drag.key, drag.row);
+    return;
+  }
+
+  var fromIdx = drag.order.indexOf(drag.key);
+  var newOrder = drag.order.slice();
+  if (fromIdx !== -1) {
+    newOrder.splice(fromIdx, 1);
+    var insertAt = drag.targetIndex;
+    if (fromIdx < insertAt) insertAt -= 1; // 抽走前面一项后，后面的下标要跟着减一
+    insertAt = Math.max(0, Math.min(insertAt, newOrder.length));
+    newOrder.splice(insertAt, 0, drag.key);
+  }
+
+  appData.timelineRowOrder = newOrder;
+  saveData();
+  renderTimeline();
+}
+
+// 点一下（没有产生拖拽位移）触发的操作：类别行目前没有额外动作
+// （颜色已经能直接点色块改，删除走别处的类别管理入口）；标签行弹出
+// 一个只有"删除这一行"的小菜单——颜色同样直接点色块改，跟类别行对齐。
+function handleRowTap(key, row) {
+  if (key.indexOf('tag:') !== 0) return;
+  var tagName = key.slice(4);
+  if (_tagRowMenuTagName === tagName) { closeTagRowMenu(); return; }
+  openTagRowMenu(tagName, row);
+}
+
+var _tagRowMenuTagName = null;
+
+function openTagRowMenu(tagName, row) {
+  closeTagRowMenu();
+  var label = row.querySelector('.timeline-row-label');
+  if (!label) return;
+  var menu = document.createElement('div');
+  menu.className = 'tagrow-menu open';
+  menu.innerHTML = '<button type="button" class="daytag-option" onclick="event.stopPropagation();removeTimelineTagRow(\'' +
+    tagName.replace(/'/g, "\\'") + '\');closeTagRowMenu();">🗑 删除这一行</button>';
+  label.appendChild(menu);
+  smartPositionMenu(menu);
+  _tagRowMenuTagName = tagName;
+  setTimeout(function () { document.addEventListener('click', closeTagRowMenuOutside); }, 0);
+}
+
+function closeTagRowMenuOutside(e) {
+  var menu = document.querySelector('.tagrow-menu');
+  if (menu && !menu.contains(e.target)) closeTagRowMenu();
+}
+
+function closeTagRowMenu() {
+  var menu = document.querySelector('.tagrow-menu');
+  if (menu) menu.remove();
+  _tagRowMenuTagName = null;
+  document.removeEventListener('click', closeTagRowMenuOutside);
+}
+
+// ── 跨度事件条的悬浮提示框 ─────────────────────────────────
+// 原生 title="" 只能显示浏览器自己那种纯文本气泡，没法把备注部分做成
+// 斜体、也没法控制标题和备注之间的间距，所以这里自己做一个：鼠标移
+// 入时创建一个真实的 DOM 节点、挂到 <body> 下（不挂在时间轴容器里，
+// 因为那个容器是 overflow:auto 的可滚动区域，挂在里面的话提示框一旦
+// 超出可视范围就会被裁掉），根据触发元素的位置摆放，移出时整个删掉。
+var _barTooltipEl = null;
+
+function showBarTooltip(e, title, note, rangeText) {
+  hideBarTooltip();
+  var el = document.createElement('div');
+  el.className = 'timeline-bar-tooltip';
+  var html = '<div class="tbt-line1">' + escHtml(title);
+  if (note) html += '<span class="tbt-note">' + escHtml(note) + '</span>';
+  html += '</div><div class="tbt-line2">' + escHtml(rangeText) + '</div>';
+  el.innerHTML = html;
+  document.body.appendChild(el);
+  positionBarTooltip(el, e.currentTarget);
+  _barTooltipEl = el;
+}
+
+function positionBarTooltip(el, anchor) {
+  var rect = anchor.getBoundingClientRect();
+  var tw = el.offsetWidth, th = el.offsetHeight;
+  var top = rect.top - th - 8;
+  if (top < 4) top = rect.bottom + 8; // 上面放不下就翻到下面
+  var left = rect.left;
+  var maxLeft = window.innerWidth - tw - 8;
+  if (left > maxLeft) left = Math.max(8, maxLeft);
+  el.style.top = top + 'px';
+  el.style.left = left + 'px';
+}
+
+function hideBarTooltip() {
+  if (_barTooltipEl) { _barTooltipEl.remove(); _barTooltipEl = null; }
 }
 
 // ── 时间线标签打点行 ───────────────────────────────────────
@@ -5030,10 +5244,12 @@ function exportJSON() {
     customCategories: appData.customCategories,
     categoryOrder: appData.categoryOrder,
     categoryColors: appData.categoryColors,
+    tagRowColors: appData.tagRowColors,
     categoryOverrides: appData.categoryOverrides,
     dayTagDefs: appData.dayTagDefs,
     dayTags: appData.dayTags,
     timelineTagRows: appData.timelineTagRows,
+    timelineRowOrder: appData.timelineRowOrder,
     todos:     appData.todos,
   };
   var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -5090,10 +5306,12 @@ function importJSON(evt) {
       if (data.customCategories) appData.customCategories = data.customCategories;
       if (data.categoryOrder) appData.categoryOrder = data.categoryOrder;
       if (data.categoryColors) appData.categoryColors = data.categoryColors;
+      if (data.tagRowColors) appData.tagRowColors = data.tagRowColors;
       if (data.categoryOverrides) appData.categoryOverrides = data.categoryOverrides;
       if (data.dayTagDefs) appData.dayTagDefs = data.dayTagDefs;
       if (data.dayTags) appData.dayTags = data.dayTags;
       if (data.timelineTagRows) appData.timelineTagRows = data.timelineTagRows;
+      if (data.timelineRowOrder) appData.timelineRowOrder = data.timelineRowOrder;
       if (data.todos)    appData.todos    = data.todos;
       saveData();
       render();

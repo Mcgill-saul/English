@@ -51,7 +51,7 @@
 #page-overview .kpi-pill.neg{background:#FFE4E0;color:#B91C1C}
 #page-overview .kpi-badge-circle{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  width:23px;height:23px;border-radius:50%;background:#ECFCCB;color:#4D7C0F;
+  width:23px;height:23px;border-radius:50%;background:#fff;color:#F4511E;
   font-size:10px;font-weight:800;line-height:1;flex-shrink:0;position:relative;
 }
 #page-overview .kpi-badge-circle::after{
@@ -66,14 +66,14 @@
 #page-overview .kpi-badge-circle .badge-unit{font-size:8px;font-weight:600;margin-top:2px;color:#5B8C1A}
 #page-overview #snap-drawdown{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 #page-overview .kpi-card-v.bento-hero{
-  background:linear-gradient(160deg,#2F6FED,#3D7EF5);border:none;box-shadow:0 8px 20px -6px rgba(47,111,237,.4);
+  background:linear-gradient(160deg,#FF6B35,#F4511E);border:none;box-shadow:0 8px 20px -6px rgba(244,81,30,.4);
   border-radius:24px;padding:26px 26px 22px;color:#fff;
 }
-#page-overview .kpi-card-v.bento-hero .kpi-v-label{color:rgba(255,255,255,.7)}
+#page-overview .kpi-card-v.bento-hero .kpi-v-label{color:rgba(255,255,255,.75);font-size:12px}
 #page-overview .kpi-card-v.bento-hero .kpi-v-val{color:#fff}
-#page-overview .kpi-card-v.bento-hero .kpi-v-sub{color:rgba(255,255,255,.8)}
-#page-overview .kpi-card-v.bento-hero .kpi-v-val.pos,#page-overview .kpi-card-v.bento-hero .kpi-v-sub.pos{color:#8CF2C7}
-#page-overview .kpi-card-v.bento-hero .kpi-v-val.neg,#page-overview .kpi-card-v.bento-hero .kpi-v-sub.neg{color:#FFB4A0}
+#page-overview .kpi-card-v.bento-hero .kpi-v-sub{color:rgba(255,255,255,.85)}
+#page-overview .kpi-card-v.bento-hero .kpi-v-val.pos,#page-overview .kpi-card-v.bento-hero .kpi-v-sub.pos{color:#4ADE80}
+#page-overview .kpi-card-v.bento-hero .kpi-v-val.neg,#page-overview .kpi-card-v.bento-hero .kpi-v-sub.neg{color:#FFD9D0}
 #page-overview .kpi-card-v.bento-hero hr{border:none;border-top:1px solid rgba(255,255,255,.2);margin:16px 0}
 
 /* 其余卡片：各自一个柔和粉彩底色，图标+标题文字同步换成对应色系的深一档，正文数字保持深灰(--text)不变，保证可读性 */
@@ -565,10 +565,7 @@ let _xirrCalcRows = _saved && _saved.XIRR_CALC_ROWS ? _saved.XIRR_CALC_ROWS : [[
 
         <div class="card bento-card bento-lilac bento-area-trend">
           <div class="card-header" style="align-items:flex-start">
-            <div>
-              <div class="card-title" style="margin-bottom:8px"><svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>市值趋势</div>
-              <div id="trend-headline-val" style="font-size:24px;font-weight:800;color:var(--text);line-height:1"></div>
-            </div>
+            <div class="card-title"><svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>市值趋势</div>
             <div style="display:flex;align-items:center;gap:10px">
               <div class="kpi-badge-circle" style="width:32px;height:32px;background:#DBEAFE" title="市值趋势">
                 <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#2F6FED" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
@@ -3456,32 +3453,32 @@ function renderOverview(){
     globalR=xirr(cf);
   }
   document.getElementById('kpi-grid').innerHTML=`
-    <div>
-      <span class="kpi-v-label">总市值</span>
-      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
-        <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
-          <span class="kpi-v-val">${fmtCNY(total)}</span>
-          <span class="kpi-v-sub">本金 ${fmtCNY(netCost)}</span>
-        </div>
-        <div class="kpi-badge-circle" data-tip="当前持有品种数">
-          ${[...new Set(PRODUCTS.map(p=>p.name))].length}
-        </div>
+    <div style="position:relative;text-align:center">
+      <div class="kpi-badge-circle" data-tip="当前持有品种数" style="position:absolute;top:-4px;right:-4px">
+        ${[...new Set(PRODUCTS.map(p=>p.name))].length}
       </div>
+      <div class="kpi-v-label">总市值</div>
+      <div class="kpi-v-val" style="font-size:30px;margin-top:6px">${fmtCNY(total)}</div>
     </div>
-    <div style="margin-top:16px">
-      <div class="kpi-v-label">浮动盈亏</div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <span class="kpi-pill ${gain>=0?'pos':'neg'}">${gain>=0?'+':''}${gainPct.toFixed(2)}%</span>
-        <span class="kpi-v-sub ${gain>=0?'pos':'neg'}" style="font-size:13px;font-weight:600">${gain>=0?'+':''}${fmtCNY(gain)}</span>
+    <div style="margin-top:26px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+      <div style="text-align:center">
+        <div class="kpi-v-label">本金</div>
+        <div class="kpi-v-sub" style="font-size:15px;font-weight:700;margin-top:4px;color:#fff">${fmtCNY(netCost)}</div>
       </div>
-    </div>
-    <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:space-between">
-      <span class="kpi-v-label" style="margin-bottom:0">全程 XIRR</span>
-      <span class="kpi-pill ${globalR&&globalR>=0?'pos':'neg'}">${globalR!=null?(globalR>=0?'+':'')+(globalR*100).toFixed(2)+'%':'N/A'}</span>
+      <div style="text-align:center">
+        <div class="kpi-v-label">浮动盈亏</div>
+        <div class="kpi-v-sub" style="font-size:15px;font-weight:700;margin-top:4px;color:#fff">${gain>=0?'+':''}${fmtCNY(gain)}</div>
+      </div>
+      <div style="text-align:center">
+        <div class="kpi-v-label">盈亏比例</div>
+        <div class="kpi-v-sub" style="font-size:15px;font-weight:700;margin-top:4px;color:#fff">${gain>=0?'+':''}${gainPct.toFixed(2)}%</div>
+      </div>
+      <div style="text-align:center">
+        <div class="kpi-v-label">全程 XIRR</div>
+        <div class="kpi-v-sub" style="font-size:15px;font-weight:700;margin-top:4px;color:#fff">${globalR!=null?(globalR>=0?'+':'')+(globalR*100).toFixed(2)+'%':'N/A'}</div>
+      </div>
     </div>
   `;
-  const trendHeadlineEl = document.getElementById('trend-headline-val');
-  if(trendHeadlineEl) trendHeadlineEl.textContent = fmtCNY(total);
   // global concentration summary (merged by name across all L1s)
   const mergedExp = _mergedProductExposure();
   const hhiG = calcHHI(mergedExp.map(([,v])=>v));
