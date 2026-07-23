@@ -965,6 +965,7 @@ const STORAGE_KEY_ACTIVE_PLAN = 'diet_calc_active_plan';
 const STORAGE_KEY_UNSAVED     = 'diet_calc_unsaved_changes';
 const STORAGE_KEY_BMR         = 'diet_calc_bmr';
 const STORAGE_KEY_FOOD_TYPES  = 'diet_calc_food_types';
+const STORAGE_KEY_COMPARE     = 'diet_calc_compare_state';
 
 // 通用 load/save 工厂
 function lsGet(key, fallback = null) {
@@ -976,6 +977,8 @@ function loadFoods()        { return lsGet(STORAGE_KEY_FOODS, []); }
 function saveFoods(v)       { lsSet(STORAGE_KEY_FOODS, v); gistAutoPush(); }
 function loadBmrData()      { return lsGet(STORAGE_KEY_BMR, null); }
 function saveBmrData(v)     { lsSet(STORAGE_KEY_BMR, v); gistAutoPush(); }
+function loadCompareState() { return lsGet(STORAGE_KEY_COMPARE, {}); }
+function saveCompareState(patch) { const cur = loadCompareState(); lsSet(STORAGE_KEY_COMPARE, Object.assign(cur, patch)); }
 function loadFoodTypes()    { return lsGet(STORAGE_KEY_FOOD_TYPES, []); }
 function saveFoodTypes(v)   { lsSet(STORAGE_KEY_FOOD_TYPES, [...new Set(v)]); gistAutoPush(); }
 function loadPlans()        { return lsGet(STORAGE_KEY_PLANS, {}); }
@@ -1828,6 +1831,17 @@ function loadCalCompareFoods() {
     opts += '<option value="' + escAttr(f.name) + '">' + escHtml(f.name) + '</option>';
   });
   selects.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = opts; });
+
+  // 恢复上次的选择和输入，避免切换页面后被清空
+  const state = loadCompareState();
+  if (state.calTarget !== undefined) document.getElementById('calTarget').value = state.calTarget;
+  if (state.foodSelectA) document.getElementById('foodSelectA').value = state.foodSelectA;
+  if (state.foodSelectB) document.getElementById('foodSelectB').value = state.foodSelectB;
+  if (state.gramFoodA) document.getElementById('gramFoodA').value = state.gramFoodA;
+  if (state.gramFoodB) document.getElementById('gramFoodB').value = state.gramFoodB;
+  if (state.gramWeightA !== undefined) document.getElementById('gramWeightA').value = state.gramWeightA;
+  if (state.gramWeightB !== undefined) document.getElementById('gramWeightB').value = state.gramWeightB;
+
   updateCalCompare();
   updateGramCompare();
 }
@@ -1840,6 +1854,8 @@ function updateCalCompare() {
 
   const foodA = nameA ? foods.find(f => f.name === nameA) : null;
   const foodB = nameB ? foods.find(f => f.name === nameB) : null;
+
+  saveCompareState({ calTarget: calTarget, foodSelectA: nameA, foodSelectB: nameB });
 
   function fmt(v) { return Math.round(v * 10) / 10; }
 
@@ -1874,6 +1890,8 @@ function updateGramCompare() {
 
   const foodA = nameA ? foods.find(f => f.name === nameA) : null;
   const foodB = nameB ? foods.find(f => f.name === nameB) : null;
+
+  saveCompareState({ gramFoodA: nameA, gramFoodB: nameB, gramWeightA: document.getElementById('gramWeightA').value, gramWeightB: document.getElementById('gramWeightB').value });
 
   function fmt(v) { return Math.round(v * 10) / 10; }
 
