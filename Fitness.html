@@ -910,7 +910,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   <!-- ══════════ RECORDS ══════════ -->
   <div id="page-records" style="display:none">
     <div class="search-row">
-      <input type="text" id="searchInput" placeholder="搜索备注、部位、路线…" oninput="renderRecords()" style="flex:1;min-width:160px">
+      <input type="text" id="searchInput" placeholder="搜索备注、部位、路线…" oninput="debouncedRenderRecords()" style="flex:1;min-width:160px">
       <select id="filterSport" onchange="renderRecords()">
         <option value="">全部类型</option>
         <option value="Run">Run</option>
@@ -1324,6 +1324,31 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
 <script>
 // ══════════════════════════════════════
+//  安全工具：HTML 转义
+// ══════════════════════════════════════
+// 所有来自用户输入的自由文本（备注、路线、装备名、自定义运动名等）
+// 在拼接进 innerHTML 之前都必须经过转义，避免导入数据 / Gist 同步等
+// 途径带入的恶意内容被当作 HTML/脚本执行。
+const _escMap={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+function escapeHtml(v){
+  if(v===null||v===undefined) return '';
+  return String(v).replace(/[&<>"']/g, ch=>_escMap[ch]);
+}
+
+// ══════════════════════════════════════
+//  性能工具：防抖
+// ══════════════════════════════════════
+// 用于搜索框等高频输入场景：停止输入 delay 毫秒后才真正执行，
+// 避免记录量较大时每敲一个字就重新过滤 + 重新渲染整个列表。
+function debounce(fn, delay){
+  let timer=null;
+  return function(...args){
+    clearTimeout(timer);
+    timer=setTimeout(()=>fn.apply(this,args), delay);
+  };
+}
+
+// ══════════════════════════════════════
 //  数据存储
 // ══════════════════════════════════════
 // =====================================================
@@ -1689,7 +1714,7 @@ function buildDevicePills(historical){
   const g=document.getElementById('r-device-group'); if(!g) return;
   const cur=(document.getElementById('r-devices').value||'').split(',').filter(Boolean);
   const all=[...new Set([...historical,...cur])];
-  g.innerHTML=all.map(d=>`<span class="pill${cur.includes(d)?' sel':''}" data-val="${d}" onclick="togglePill(this,'r-devices')">${d}</span>`).join('');
+  g.innerHTML=all.map(d=>`<span class="pill${cur.includes(d)?' sel':''}" data-val="${escapeHtml(d)}" onclick="togglePill(this,'r-devices')">${escapeHtml(d)}</span>`).join('');
 }
 function addDeviceFromInput(){
   const inp=document.getElementById('r-device-input');
@@ -1727,9 +1752,15 @@ let customSports = loadCustomSports();
 function renderCustomSportBtns(){
   const container = document.getElementById('custom-sport-btns');
   if(!container) return;
-  container.innerHTML = customSports.map(s=>
-    `<button class="sport-btn" onclick="setSport('${s}')" id="sb-${s}">${s}</button>`
-  ).join('');
+  container.innerHTML='';
+  customSports.forEach(s=>{
+    const btn=document.createElement('button');
+    btn.className='sport-btn';
+    btn.id='sb-'+s;
+    btn.textContent=s;
+    btn.addEventListener('click',()=>setSport(s));
+    container.appendChild(btn);
+  });
   // also add to PAGES/setSport logic
   customSports.forEach(s=>{
     if(!document.getElementById('sec-'+s)){
@@ -2039,6 +2070,7 @@ let currentPage=1;
 // =====================================================
 const PAGE_SIZE = 30;
 function renderRecords(){ currentPage=1; renderRecordPage(); }
+const debouncedRenderRecords = debounce(renderRecords, 200);
 function renderRecordPage(){
   const q=document.getElementById('searchInput').value.toLowerCase();
   const sport=document.getElementById('filterSport').value;
@@ -2069,10 +2101,10 @@ function renderRecordPage(){
     // 📱 手机端：卡片式布局
     document.getElementById('record-col-header').innerHTML='';
     list.innerHTML = page.map(r=>{
-      let badgeTxt = r.sport||'—';
-      if(r.sport==='Run'&&r.sub) badgeTxt+=' · '+r.sub;
-      if(r.sport==='Strength') badgeTxt+=' · '+(r.muscles||r.sub||'').split(',').join(' · ');
-      if(r.sport==='Hike'&&r.sub) badgeTxt+=' · '+r.sub;
+      let badgeTxt = escapeHtml(r.sport||'—');
+      if(r.sport==='Run'&&r.sub) badgeTxt+=' · '+escapeHtml(r.sub);
+      if(r.sport==='Strength') badgeTxt+=' · '+escapeHtml((r.muscles||r.sub||'').split(',').join(' · '));
+      if(r.sport==='Hike'&&r.sub) badgeTxt+=' · '+escapeHtml(r.sub);
 
       if(r.sport==='Run'){
         // 跑步记录：手机端固定 3 行字段顺序
@@ -2080,21 +2112,21 @@ function renderRecordPage(){
         // 第2行：步频 天气 路线 跑鞋 设备
         // 第3行：体感 身体感受 备注
         const row1=[], row2=[], row3=[];
-        if(r.period)  row1.push(`<span class="mobile-record-chip"><span class="k">时段</span> ${r.period}</span>`);
+        if(r.period)  row1.push(`<span class="mobile-record-chip"><span class="k">时段</span> ${escapeHtml(r.period)}</span>`);
         if(r.dist)    row1.push(`<span class="mobile-record-chip"><span class="k">距离</span> ${r.dist}km</span>`);
         if(r.pace)    row1.push(`<span class="mobile-record-chip"><span class="k">配速</span> ${fmtPace(r.pace)}</span>`);
-        if(r.hr)      row1.push(`<span class="mobile-record-chip"><span class="k">平均心率</span> ${r.hr}</span>`);
-        if(r.maxhr)   row1.push(`<span class="mobile-record-chip"><span class="k">最大心率</span> ${r.maxhr}</span>`);
+        if(r.hr)      row1.push(`<span class="mobile-record-chip"><span class="k">平均心率</span> ${escapeHtml(r.hr)}</span>`);
+        if(r.maxhr)   row1.push(`<span class="mobile-record-chip"><span class="k">最大心率</span> ${escapeHtml(r.maxhr)}</span>`);
 
-        if(r.cadence) row2.push(`<span class="mobile-record-chip"><span class="k">步频</span> ${r.cadence}</span>`);
-        if(r.weather) row2.push(`<span class="mobile-record-chip"><span class="k">天气</span> ${r.weather}</span>`);
-        if(r.route)   row2.push(`<span class="mobile-record-chip"><span class="k">路线</span> ${r.route}</span>`);
-        if(r.shoe)    row2.push(`<span class="mobile-record-chip"><span class="k">跑鞋</span> ${r.shoe}</span>`);
-        if(r.devices?.length) row2.push(`<span class="mobile-record-chip"><span class="k">设备</span> ${r.devices.join('/')}</span>`);
+        if(r.cadence) row2.push(`<span class="mobile-record-chip"><span class="k">步频</span> ${escapeHtml(r.cadence)}</span>`);
+        if(r.weather) row2.push(`<span class="mobile-record-chip"><span class="k">天气</span> ${escapeHtml(r.weather)}</span>`);
+        if(r.route)   row2.push(`<span class="mobile-record-chip"><span class="k">路线</span> ${escapeHtml(r.route)}</span>`);
+        if(r.shoe)    row2.push(`<span class="mobile-record-chip"><span class="k">跑鞋</span> ${escapeHtml(r.shoe)}</span>`);
+        if(r.devices?.length) row2.push(`<span class="mobile-record-chip"><span class="k">设备</span> ${escapeHtml(r.devices.join('/'))}</span>`);
 
-        if(r.feel) row3.push(`<span class="feel-badge">${r.feel}</span>`);
-        if(r.body) row3.push(`<span class="mobile-record-chip"><span class="k">身体感受</span> ${r.body}</span>`);
-        if(r.note) row3.push(`<span class="mobile-record-chip"><span class="k">备注</span> ${r.note}</span>`);
+        if(r.feel) row3.push(`<span class="feel-badge">${escapeHtml(r.feel)}</span>`);
+        if(r.body) row3.push(`<span class="mobile-record-chip"><span class="k">身体感受</span> ${escapeHtml(r.body)}</span>`);
+        if(r.note) row3.push(`<span class="mobile-record-chip"><span class="k">备注</span> ${escapeHtml(r.note)}</span>`);
 
         return `<div class="record-item" onclick="editRecord('${r.id}')">
           <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
@@ -2109,17 +2141,17 @@ function renderRecordPage(){
 
       const chips=[];
       if(r.sport==='Strength'){
-        if(r.feel)   chips.push(`<span class="feel-badge">${r.feel}</span>`);
+        if(r.feel)   chips.push(`<span class="feel-badge">${escapeHtml(r.feel)}</span>`);
       } else if(r.sport==='Jump Rope'){
-        if(r.jump_count) chips.push(`<span class="mobile-record-chip"><span class="k">个数</span> ${r.jump_count}</span>`);
-        if(r.hr)     chips.push(`<span class="mobile-record-chip"><span class="k">心率</span> ${r.hr}</span>`);
-        if(r.feel)   chips.push(`<span class="feel-badge">${r.feel}</span>`);
+        if(r.jump_count) chips.push(`<span class="mobile-record-chip"><span class="k">个数</span> ${escapeHtml(r.jump_count)}</span>`);
+        if(r.hr)     chips.push(`<span class="mobile-record-chip"><span class="k">心率</span> ${escapeHtml(r.hr)}</span>`);
+        if(r.feel)   chips.push(`<span class="feel-badge">${escapeHtml(r.feel)}</span>`);
       } else if(r.sport==='Hike'){
         if(r.steps)    chips.push(`<span class="mobile-record-chip"><span class="k">步数</span> ${r.steps.toLocaleString()}</span>`);
-        if(r.location) chips.push(`<span class="mobile-record-chip"><span class="k">地点</span> ${r.location}</span>`);
-        if(r.feel)     chips.push(`<span class="feel-badge">${r.feel}</span>`);
+        if(r.location) chips.push(`<span class="mobile-record-chip"><span class="k">地点</span> ${escapeHtml(r.location)}</span>`);
+        if(r.feel)     chips.push(`<span class="feel-badge">${escapeHtml(r.feel)}</span>`);
       } else {
-        if(r.feel)   chips.push(`<span class="feel-badge">${r.feel}</span>`);
+        if(r.feel)   chips.push(`<span class="feel-badge">${escapeHtml(r.feel)}</span>`);
       }
       const hasNote = r.note||r.body;
       return `<div class="record-item" onclick="editRecord('${r.id}')">
@@ -2128,7 +2160,7 @@ function renderRecordPage(){
           <span class="record-badge ${badgeClass(r.sport)}">${badgeTxt}</span>
         </div>
         ${chips.length?`<div class="mobile-record-meta">${chips.join('')}</div>`:''}
-        ${hasNote?`<div style="font-size:12px;color:var(--text3);font-style:italic">${[r.note,r.body].filter(Boolean).join(' · ')}</div>`:''}
+        ${hasNote?`<div style="font-size:12px;color:var(--text3);font-style:italic">${[r.note,r.body].filter(Boolean).map(escapeHtml).join(' · ')}</div>`:''}
       </div>`;
     }).join('');
   } else {
@@ -2161,13 +2193,13 @@ function renderRecordPage(){
     headerHtml += `<span class="rh" style="width:300px">备注</span>`;
     document.getElementById('record-col-header').innerHTML = headerHtml;
 
-    const em = v => v ? `<span>${v}</span>` : `<span class="rc-empty">—</span>`;
+    const em = v => v ? `<span>${escapeHtml(v)}</span>` : `<span class="rc-empty">—</span>`;
 
     list.innerHTML = page.map(r=>{
-      let badgeTxt = r.sport||'—';
-      if(r.sport==='Run'&&r.sub) badgeTxt+=' · '+r.sub;
-      if(r.sport==='Strength') badgeTxt+=' · '+(r.muscles||r.sub||'').split(',').join(' · ');
-      if(r.sport==='Hike'&&r.sub) badgeTxt+=' · '+r.sub;
+      let badgeTxt = escapeHtml(r.sport||'—');
+      if(r.sport==='Run'&&r.sub) badgeTxt+=' · '+escapeHtml(r.sub);
+      if(r.sport==='Strength') badgeTxt+=' · '+escapeHtml((r.muscles||r.sub||'').split(',').join(' · '));
+      if(r.sport==='Hike'&&r.sub) badgeTxt+=' · '+escapeHtml(r.sub);
       const isSelected = selectedIds.has(r.id);
       const clickAttr = batchMode ? '' : `onclick="editRecord('${r.id}')"`;
 
@@ -2187,11 +2219,11 @@ function renderRecordPage(){
       if(hasJump) cols += `<span class="rc rc-duration">${em(r.duration)}</span>`;
       if(hasJump) cols += `<span class="rc rc-jcount">${em(r.jump_count)}</span>`;
       if(hasJump) cols += `<span class="rc rc-jfreq">${r.jump_freq?r.jump_freq+'个/分':em('')}</span>`;
-      cols += `<span class="rc rc-feel">${r.feel?`<span class="feel-badge">${r.feel}</span>`:em('')}</span>`;
-      cols += `<span class="rc rc-body" title="${r.body||''}">${em(r.body)}</span>`;
+      cols += `<span class="rc rc-feel">${r.feel?`<span class="feel-badge">${escapeHtml(r.feel)}</span>`:em('')}</span>`;
+      cols += `<span class="rc rc-body" title="${escapeHtml(r.body||'')}">${em(r.body)}</span>`;
       if(hasHike) cols += `<span class="rc" style="width:80px">${r.steps?r.steps.toLocaleString()+'步':em('')}</span>`;
       if(hasHike) cols += `<span class="rc" style="width:120px">${em(r.location)}</span>`;
-      cols += `<span class="rc rc-note" title="${r.note||''}">${em(r.note)}</span>`;
+      cols += `<span class="rc rc-note" title="${escapeHtml(r.note||'')}">${em(r.note)}</span>`;
       cols += `<span class="rc-actions">
         <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();editRecord('${r.id}')">编辑</button>
         <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();delRecord('${r.id}')">删除</button>
@@ -2233,6 +2265,30 @@ function delRecord(id){
 // ══════════════════════════════════════
 const CI={};
 function dc(id){ if(CI[id]){CI[id].destroy();delete CI[id];} }
+
+// ── 性能优化：图表复用 ──────────────────────────────────
+// Chart.js 支持"原地更新"（替换 data/options 后调用 update()），
+// 比每次 destroy() 再 new Chart() 快很多、也没有重建时的闪烁。
+// 仅当图表类型（bar/line/doughnut...）不变时才能复用同一个实例，
+// 否则退回销毁重建。aux 用于挂载插件需要读取、但不属于
+// chart.data 的"外部数据"（例如 monthlyDistChart 的每月次数），
+// 避免插件闭包捕获到旧数据导致"原地更新"后显示过期数字。
+function upsertChart(id, canvas, config, aux){
+  if(!canvas) return null;
+  let chart = CI[id];
+  if(chart && chart.config.type === config.type){
+    chart.data = config.data;
+    if(config.options) chart.options = config.options;
+    chart.$aux = aux;
+    chart.update();
+  } else {
+    if(chart) chart.destroy();
+    chart = new Chart(canvas, config);
+    chart.$aux = aux;
+    CI[id] = chart;
+  }
+  return chart;
+}
 
 // 💾 Dashboard 自定义起始日期（用于总计卡片 / 月度构成柱状图）
 const LS_DASH_STAT_START='fitness_dash_stat_start';
@@ -2320,8 +2376,7 @@ function renderDashboard(){
   // 月度堆叠柱状图 + 白色数字标签（可选自定义起始月份，默认从最早记录开始）
   const months=getMonthRange(dashMonthlyStart);
   const types=['Strength','Run','Jump Rope','Badminton','Hike','Walk'];
-  dc('monthlyChart');
-  CI.monthlyChart=new Chart(document.getElementById('monthlyChart'),{type:'bar',
+  upsertChart('monthlyChart', document.getElementById('monthlyChart'), {type:'bar',
     data:{labels:months.map(m=>m.slice(2).replace('-','/')),
       datasets:types.map(t=>({
         label:t,
@@ -2372,8 +2427,7 @@ function renderDashboard(){
   // 训练类型占比甜甜圈 — 数据标签直接显示在图上
   const tc={};records.forEach(r=>{const s=r.sport||'其他';tc[s]=(tc[s]||0)+1;});
   const tcLabels=Object.keys(tc); const tcVals=Object.values(tc);
-  dc('typeChart');
-  CI.typeChart=new Chart(document.getElementById('typeChart'),{type:'doughnut',
+  upsertChart('typeChart', document.getElementById('typeChart'), {type:'doughnut',
     data:{labels:tcLabels,datasets:[{data:tcVals,backgroundColor:tcLabels.map(getSportColor),borderWidth:2,borderColor:'#fff',hoverOffset:4}]},
     options:{
       responsive:true,maintainAspectRatio:false,cutout:'48%',
@@ -2417,7 +2471,7 @@ function renderDashboard(){
   const legendWrap = document.getElementById('typeChart-legend');
   if(legendWrap){
     legendWrap.innerHTML = tcLabels.map((l,i)=>
-      `<span style="display:inline-flex;align-items:center;justify-content:center;padding:5px 14px;border-radius:20px;background:${getSportColor(l)};color:#fff;font-size:12px;font-weight:600;white-space:nowrap;min-width:52px">${l}</span>`
+      `<span style="display:inline-flex;align-items:center;justify-content:center;padding:5px 14px;border-radius:20px;background:${getSportColor(l)};color:#fff;font-size:12px;font-weight:600;white-space:nowrap;min-width:52px">${escapeHtml(l)}</span>`
     ).join('');
   }
 
@@ -2482,7 +2536,7 @@ function renderCycleCard(c, isActive){
   return `<div class="cycle-card${isActive?' active':''}">
     <div style="display:flex;flex-direction:column;gap:4px;min-width:160px">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:13px;font-weight:700;color:var(--text)">${c.label}</span>
+        <span style="font-size:13px;font-weight:700;color:var(--text)">${escapeHtml(c.label)}</span>
         ${statusBadge}
       </div>
       <div style="font-size:12px;color:var(--text3)">${c.start} — ${c.end||'至今'}</div>
@@ -2558,9 +2612,9 @@ function renderAnaerobic(){
   const PARTS_ORDER = ['Chest','Back','Legs','Delts','Core','Bis','Tris'];
   const mmLabels = PARTS_ORDER.filter(p=>mm[p]);
   const mmVals = mmLabels.map(p=>mm[p]);
-  dc('muscleChart');
+  if(!mmLabels.length){ dc('muscleChart'); }
   if(mmLabels.length){
-    CI.muscleChart = new Chart(document.getElementById('muscleChart'),{
+    upsertChart('muscleChart', document.getElementById('muscleChart'), {
       type:'doughnut',
       data:{
         labels:mmLabels,
@@ -2584,9 +2638,12 @@ function renderAnaerobic(){
           const showLabels = document.getElementById('ana-pie-labels')?.checked ?? true;
           if(!showLabels) return;
           const {ctx}=chart;
-          const total=mmVals.reduce((a,b)=>a+b,0);
+          // 注意：读取 chart.data（原地更新时会是最新数据），
+          // 不要闭包捕获外部的 mmVals，否则图表复用后会显示过期数字。
+          const vals = chart.data.datasets[0].data;
+          const total=vals.reduce((a,b)=>a+b,0);
           chart.getDatasetMeta(0).data.forEach((arc,i)=>{
-            const val=mmVals[i]; const pct=Math.round(val/total*100);
+            const val=vals[i]; const pct=Math.round(val/total*100);
             if(pct<5) return;
             const angle=(arc.startAngle+arc.endAngle)/2;
             const r=(arc.innerRadius+arc.outerRadius)/2;
@@ -2628,9 +2685,9 @@ function renderAnaerobic(){
     </span>`
   ).join('');
 
-  dc('yearlyChart');
+  if(!years.length){ dc('yearlyChart'); }
   if(years.length){
-    CI.yearlyChart = new Chart(document.getElementById('yearlyChart'),{
+    upsertChart('yearlyChart', document.getElementById('yearlyChart'),{
       type:'bar',
       data:{ labels:PARTS, datasets:yearlyDatasets },
       options:{
@@ -2663,8 +2720,7 @@ function renderAnaerobic(){
 
   // ── 月度频次 ──
   const months = getMonthRange();
-  dc('anaMonthlyChart');
-  CI.anaMonthlyChart = new Chart(document.getElementById('anaMonthlyChart'),{
+  upsertChart('anaMonthlyChart', document.getElementById('anaMonthlyChart'),{
     type:'line',
     data:{
       labels:months.map(m=>m.slice(2).replace('-','/')),
@@ -2790,7 +2846,7 @@ function renderRunCycleCard(c,isActive){
   const header=`<div class="cycle-card${isActive?' active':''}">
     <div style="display:flex;flex-direction:column;gap:4px;min-width:160px">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:13px;font-weight:700;color:var(--text)">${c.label}</span>${statusBadge}
+        <span style="font-size:13px;font-weight:700;color:var(--text)">${escapeHtml(c.label)}</span>${statusBadge}
       </div>
       <div style="font-size:12px;color:var(--text3)">${c.start} — ${c.end||'至今'}</div>
     </div>
@@ -2824,8 +2880,6 @@ function renderRunCycleCard(c,isActive){
 // ══════════════════════════════════════
 //  Hike 分析
 // ══════════════════════════════════════
-let _hikeDistChart = null;
-
 function renderHikeAnalysis(){
   const hikes = records.filter(r=>r.sport==='Hike').sort((a,b)=>a.date.localeCompare(b.date));
   const showHike = document.getElementById('hlt-hike')?.checked ?? true;
@@ -2842,7 +2896,6 @@ function renderHikeAnalysis(){
   const hikeData = allDates.map(d=>hikeMap[d]??null);
   const walkData = allDates.map(d=>walkMap[d]??null);
 
-  if(_hikeDistChart){ _hikeDistChart.destroy(); _hikeDistChart=null; }
   const ctx = document.getElementById('hikeDistChart');
   if(!ctx) return;
 
@@ -2868,7 +2921,7 @@ function renderHikeAnalysis(){
     fill:false, tension:0.3, spanGaps:false,
   });
 
-  _hikeDistChart = new Chart(ctx, {
+  upsertChart('hikeDistChart', ctx, {
     type:'line',
     data:{ labels, datasets },
     options:{
@@ -3013,13 +3066,15 @@ function renderRunAnalysis(){
     }).join('');
   }
 
-  dc('monthlyDistChart');
-  CI.monthlyDistChart=new Chart(document.getElementById('monthlyDistChart'),{
+  upsertChart('monthlyDistChart', document.getElementById('monthlyDistChart'),{
     type:'bar',
     data:{labels:months.map(m=>m.slice(2).replace('-','/')),datasets:[{data:mDist,backgroundColor:'#16a06a',borderRadius:4,hoverBackgroundColor:'#22d6a0'}]},
     options:CHART_OPT,
     plugins:[{id:'distBarLabels',afterDatasetsDraw(chart){
       const {ctx}=chart;
+      // 注意：次数数组通过 chart.$aux 传入（原地更新时会是最新值），
+      // 不要闭包捕获外部的 mCount，否则图表复用后会显示过期数字。
+      const counts = chart.$aux || [];
       chart.getDatasetMeta(0).data.forEach((bar,i)=>{
         const val=chart.data.datasets[0].data[i]; if(!val||val<1) return;
         const {x,y}=bar.getCenterPoint(); if((bar.height||0)<28) return;
@@ -3031,16 +3086,15 @@ function renderRunAnalysis(){
         ctx.fillText(val+'km', x, y-7);
         // 下行：次数
         ctx.font='10px system-ui';
-        ctx.fillText(mCount[i]+'次', x, y+7);
+        ctx.fillText((counts[i]||0)+'次', x, y+7);
         ctx.restore();
       });
     }}]
-  });
+  }, mCount);
 
   // 单次距离图
   const lbs=runs.map(r=>r.date.slice(5));
-  dc('distChart');
-  CI.distChart=new Chart(document.getElementById('distChart'),{type:'line',data:{labels:lbs,datasets:[lineDS(runs.map(r=>r.dist),'#16a06a')]},options:{...CHART_OPT,scales:{x:{...CHART_OPT.scales.x,ticks:{...CHART_OPT.scales.x.ticks,maxTicksLimit:9}},y:{...CHART_OPT.scales.y,min:0}}}});
+  upsertChart('distChart', document.getElementById('distChart'),{type:'line',data:{labels:lbs,datasets:[lineDS(runs.map(r=>r.dist),'#16a06a')]},options:{...CHART_OPT,scales:{x:{...CHART_OPT.scales.x,ticks:{...CHART_OPT.scales.x.ticks,maxTicksLimit:9}},y:{...CHART_OPT.scales.y,min:0}}}});
 
   // 筛选条件：训练类型 + 距离，自动从数据提取
   const subtypes=[...new Set(runs.map(r=>r.sub||'').filter(Boolean))];
@@ -3050,10 +3104,10 @@ function renderRunAnalysis(){
   const distEl=document.getElementById('filter-dist');
   // Only rebuild if pills don't exist yet (avoid resetting on re-render)
   if(!stEl.children.length){
-    stEl.innerHTML=['全部',...subtypes].map((s,i)=>`<span class="filter-pill${i===0?' on':''}" data-val="${s}" onclick="toggleFilterPill(this,'filter-subtype');renderCombinedChart()">${s||'无类型'}</span>`).join('');
+    stEl.innerHTML=['全部',...subtypes].map((s,i)=>`<span class="filter-pill${i===0?' on':''}" data-val="${escapeHtml(s)}" onclick="toggleFilterPill(this,'filter-subtype');renderCombinedChart()">${escapeHtml(s||'无类型')}</span>`).join('');
   }
   if(!distEl.children.length){
-    distEl.innerHTML=['全部',...dists.map(d=>d+'km')].map((s,i)=>`<span class="filter-pill${i===0?' on':''}" data-val="${s}" onclick="toggleFilterPill(this,'filter-dist');renderCombinedChart()">${s}</span>`).join('');
+    distEl.innerHTML=['全部',...dists.map(d=>d+'km')].map((s,i)=>`<span class="filter-pill${i===0?' on':''}" data-val="${escapeHtml(s)}" onclick="toggleFilterPill(this,'filter-dist');renderCombinedChart()">${escapeHtml(s)}</span>`).join('');
   }
 
   renderCombinedChart();
@@ -3542,15 +3596,13 @@ function renderCombinedChart(){
     };
   }
 
-  dc('combinedChart');
-  CI.combinedChart = new Chart(document.getElementById('combinedChart'), buildCombinedConfig(false));
+  upsertChart('combinedChart', document.getElementById('combinedChart'), buildCombinedConfig(false));
 
   // 横屏弹层打开时，同步刷新弹层里的图表
   const landscapeOverlay=document.getElementById('landscapeOverlay');
   const landscapeCanvas=document.getElementById('combinedChartLandscape');
   if(landscapeOverlay && landscapeCanvas && landscapeOverlay.style.display!=='none'){
-    dc('combinedChartLandscape');
-    CI.combinedChartLandscape = new Chart(landscapeCanvas, buildCombinedConfig(true));
+    upsertChart('combinedChartLandscape', landscapeCanvas, buildCombinedConfig(true));
   }
 }
 
