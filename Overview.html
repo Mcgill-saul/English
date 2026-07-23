@@ -2424,6 +2424,29 @@ function extractHashtags(text) {
   return tags;
 }
 
+// 笔记经常是当天流水账式地写好几行，某个 #标签 可能出现在中间或最
+// 后一行，而不是第一行。以前不管是甘特图标签行的悬浮提示、还是搜索
+// 结果的摘要，都是无脑取 text 的第一行，导致显示的内容跟当前关心的
+// 这个标签根本对不上。这个函数专门找"实际带着这个标签"的那一行：
+// tag 为空时退化成找第一处带任意 #标签 的行；两种情况都没找到（理论
+// 上不该发生，纯粹兜底）就回退成第一行。
+function extractTagLine(text, tag) {
+  var lines = String(text).split(/\n/);
+  var re;
+  if (tag) {
+    var escaped = String(tag).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // 后面加个负向前瞻，保证匹配到的是完整的标签本身，不是把 "#电影"
+    // 当成了 "#电影票" 的前缀误命中
+    re = new RegExp('#' + escaped + '(?![^\\s#，。,.!?！？;；\\n])');
+  } else {
+    re = new RegExp(TAG_SPLIT_RE.source);
+  }
+  for (var i = 0; i < lines.length; i++) {
+    if (re.test(lines[i])) return lines[i].trim();
+  }
+  return (lines[0] || '').trim();
+}
+
 // 「身体」和跨度事件类别名是系统自动生成的标签，不是笔记里手打的
 // #文字，改名只能改笔记正文，改不了这两种来源，所以不允许在这个
 // 面板里重命名，避免改了名字之后跟自动生成的部分对不上。
@@ -2813,7 +2836,9 @@ function renderSearchResults() {
       srcLabel = item.type === 'note' ? '笔记' : '运动记录';
       metaText = item.date + ' · ' + srcLabel;
     }
-    var snippet = item.text.split(/\n/)[0].trim();
+    var snippet = (item.type === 'note' && searchState.tag)
+      ? extractTagLine(item.text, searchState.tag)
+      : item.text.split(/\n/)[0].trim();
     html += '<div class="search-result-row" onclick="jumpToContentDate(\'' + item.date + '\')">' +
       '<span class="search-result-icon">' + icon + '</span>' +
       '<div style="flex:1;min-width:0;">' +
@@ -3182,7 +3207,7 @@ function renderTagRowHtml(tagName, contentIdx, bounds, s, e) {
     html += '<div class="timeline-dots-track">';
     entries.forEach(function (it) {
       var left = dateRatio(it.date, s, e) * 100;
-      var snippet = it.text.split(/\n/)[0].trim();
+      var snippet = extractTagLine(it.text, tagName);
       var tip = it.date + ' · ' + snippet;
       html += '<div class="timeline-dot" style="left:' + left + '%;background:' + color + ';" title="' + escHtml(tip) + '"></div>';
     });
