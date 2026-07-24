@@ -1557,7 +1557,7 @@ async function doPushGist(token, gistId, manual){
     const res = await fetch('https://api.github.com/gists/'+gistId,{
       method:'PATCH',
       headers:{Authorization:'token '+token,'Content-Type':'application/json'},
-      body: JSON.stringify({files:{[GIST_FILENAME]:{content:JSON.stringify({records, runCycles, anaCycles},null,2)}}})
+      body: JSON.stringify({files:{[GIST_FILENAME]:{content:JSON.stringify({records, runCycles, anaCycles, filterPrefs: collectFilterPrefs()},null,2)}}})
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
     const data = await res.json();
@@ -1629,10 +1629,12 @@ async function pullFromGist(manual){
         anaCycles = content.anaCycles;
         localStorage.setItem(LS_CYCLES, JSON.stringify(anaCycles));
       }
+      applyFilterPrefs(content.filterPrefs);
       // 刷新各页面
       renderDashboard();
       renderRunAnalysis();
       renderAnaerobic();
+      renderHikeAnalysis();
       renderCalendar();
     }
     if(data.updated_at) localStorage.setItem(LS_GIST_KNOWN_VERSION, data.updated_at);
@@ -2388,6 +2390,34 @@ const runCombinedStart = makeChartStartFilter('RunCombinedStart', 'fitness_run_c
 const runDistStart     = makeChartStartFilter('RunDistStart',     'fitness_run_dist_start',     'run-dist-start',     ()=>renderRunAnalysis());
 const anaMonthlyStart  = makeChartStartFilter('AnaMonthlyStart',  'fitness_ana_monthly_start',  'ana-monthly-start',  ()=>renderAnaerobic());
 const hikeStart        = makeChartStartFilter('HikeStart',        'fitness_hike_start',         'hike-start',         ()=>renderHikeAnalysis());
+
+// 💾 起始日期筛选器涉及的全部 localStorage key —— 供 Gist 云同步时一并打包，
+// 这样桌面端选的起始日期，手机端拉取同步后也能看到（不用重新选一遍）。
+const FILTER_PREF_KEYS = [
+  LS_DASH_STAT_START, LS_DASH_MONTHLY_START,
+  'fitness_run_mdist_start', 'fitness_run_combined_start', 'fitness_run_dist_start',
+  'fitness_ana_monthly_start', 'fitness_hike_start',
+];
+function collectFilterPrefs(){
+  const out = {};
+  FILTER_PREF_KEYS.forEach(k=>{ const v=localStorage.getItem(k); if(v) out[k]=v; });
+  return out;
+}
+function applyFilterPrefs(prefs){
+  if(!prefs || typeof prefs!=='object') return;
+  FILTER_PREF_KEYS.forEach(k=>{
+    const v = prefs[k];
+    if(v){ localStorage.setItem(k, v); } else { localStorage.removeItem(k); }
+  });
+  // 同步内存中的状态，不用刷新页面就能立即生效
+  dashStatStart = localStorage.getItem(LS_DASH_STAT_START) || '';
+  dashMonthlyStart = localStorage.getItem(LS_DASH_MONTHLY_START) || '';
+  runMDistStart.value    = localStorage.getItem('fitness_run_mdist_start') || '';
+  runCombinedStart.value = localStorage.getItem('fitness_run_combined_start') || '';
+  runDistStart.value     = localStorage.getItem('fitness_run_dist_start') || '';
+  anaMonthlyStart.value  = localStorage.getItem('fitness_ana_monthly_start') || '';
+  hikeStart.value        = localStorage.getItem('fitness_hike_start') || '';
+}
 
 // 💾 年度战报：可勾选/排除年份（默认全部包含）
 const LS_ANA_YEARLY_EXCLUDED = 'fitness_ana_yearly_excluded';
