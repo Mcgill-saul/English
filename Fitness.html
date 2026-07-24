@@ -396,7 +396,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .records-title{font-size:14px;font-weight:600;color:var(--text2);}
 .record-list{display:flex;flex-direction:column;gap:0;border:1.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;overflow-x:auto;}
 .record-list-header{display:flex;align-items:center;background:var(--bg3);border-bottom:1.5px solid var(--border);padding:7px 14px;white-space:nowrap;min-width:max-content;}
-.rh{flex-shrink:0;font-size:10.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;padding-right:12px;white-space:nowrap;text-align:center;}
+.rh{flex-shrink:0;font-size:10.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;padding-right:12px;white-space:nowrap;}
 
 .record-item{background:var(--bg2);border-bottom:1px solid var(--border);padding:9px 14px;display:flex;align-items:center;cursor:pointer;transition:background .1s;min-width:max-content;}
 .record-item:last-child{border-bottom:none;}
@@ -1247,9 +1247,9 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
     </div>
 
     <div class="data-section">
-      <h3>从 Excel 导入</h3>
-      <p style="font-size:13px;color:var(--text3);margin-bottom:4px">支持导入原始 Excel 文件（.xlsx），按固定表头自动映射字段</p>
-      <p style="font-size:12px;color:var(--text3);margin-bottom:10px">识别列：日期 / 运动类型 / 训练类型 / 时段 / 备注 / 距离/km / 运动时间 / 平均配速/km / 平均心率 / 最大心率 / 步频 / 个数 / 跳绳频率 / 设备 / 跑鞋（其余列自动忽略）</p>
+      <h3>导入数据</h3>
+      <p style="font-size:13px;color:var(--text3);margin-bottom:4px">支持导入「导出 JSON 备份」生成的 JSON 文件，或原始 Excel 文件（.xlsx），按固定表头自动映射字段</p>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:10px">Excel 识别列：日期 / 运动类型 / 训练类型 / 时段 / 备注 / 距离/km / 运动时间 / 平均配速/km / 平均心率 / 最大心率 / 步频 / 个数 / 跳绳频率 / 设备 / 跑鞋（其余列自动忽略）</p>
       <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px">
         <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text2);cursor:pointer">
           <input type="radio" name="importMode" value="merge" checked style="accent-color:var(--green)">
@@ -1261,6 +1261,8 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
         </label>
       </div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+        <input type="file" id="importJsonFile" accept=".json,application/json" style="display:none" onchange="importFromJson(event)">
+        <button class="btn btn-secondary" onclick="document.getElementById('importJsonFile').click()">选择 JSON 备份文件</button>
         <input type="file" id="importXlsxFile" accept=".xlsx,.xls" style="display:none" onchange="importFromExcel(event)">
         <button class="btn btn-secondary" onclick="document.getElementById('importXlsxFile').click()">选择 Excel 文件</button>
         <span id="import-status" style="font-size:13px;color:var(--text3)"></span>
@@ -3224,6 +3226,46 @@ function exportData(){
   const a=document.createElement('a'); a.href=URL.createObjectURL(b);
   a.download='fitness_'+localDateStr()+'.json'; a.click();
   showToast('已导出 JSON');
+}
+
+// ── JSON Import（与「导出 JSON 备份」的文件格式一一对应）──
+function importFromJson(e){
+  const file = e.target.files[0]; if(!file) return;
+  const status = document.getElementById('import-status');
+  status.textContent = '解析中…';
+
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try{
+      const parsed = JSON.parse(ev.target.result);
+      if(!Array.isArray(parsed)) throw new Error('JSON 格式不正确：应为记录数组（与"导出 JSON 备份"生成的文件格式一致）');
+      // 基本字段校验：至少要有 date 和 sport；缺失 id 的记录自动补一个，避免脏数据影响后续渲染
+      const cleaned = parsed
+        .filter(r=>r && typeof r==='object' && r.date && r.sport)
+        .map(r=>({...r, id: r.id || genId()}));
+      if(!cleaned.length){ status.textContent='未找到有效记录（每条记录至少需要 date 和 sport 字段）'; return; }
+
+      _pendingImport = cleaned;
+      const existing = new Set(records.map(r=>r.id));
+      const newCount = cleaned.filter(r=>!existing.has(r.id)).length;
+      const dupCount = cleaned.length - newCount;
+      const mode = document.querySelector('input[name="importMode"]:checked')?.value || 'merge';
+      const prev = document.getElementById('import-preview');
+      document.getElementById('import-preview-text').innerHTML =
+        `解析完成：共 <strong>${cleaned.length}</strong> 条记录` +
+        (cleaned.length!==parsed.length ? `（已跳过 ${parsed.length-cleaned.length} 条缺少必要字段的记录）` : '') + `<br>` +
+        (mode==='overwrite'
+          ? `覆盖模式：将替换现有全部 <strong>${records.length}</strong> 条记录`
+          : `合并模式：<strong>${newCount}</strong> 条新记录将导入，<strong>${dupCount}</strong> 条重复 ID 将跳过`);
+      prev.style.display = 'block';
+      status.textContent = '';
+    } catch(err){
+      status.textContent = '解析失败：' + err.message;
+      console.error(err);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
 }
 
 // ── Excel Import ──────────────────────────
