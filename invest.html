@@ -82,8 +82,15 @@
 #page-overview .bento-card.bento-peach,
 #page-overview .bento-card.bento-sky,
 #page-overview .bento-card.bento-butter,
-#page-overview .bento-card.bento-lilac,
 #page-overview .bento-card.bento-pink{background:var(--surface)}
+
+/* “第二主角”：市值趋势卡片，跟总市值同色系(橙)但淡很多，标题/图表颜色都跟着换成暖橙调，
+   跟主角(总市值,饱和橙实底)和普通配角(纯白)拉出三级层次，不是简单铺一层橙色底 */
+#page-overview .bento-card.bento-lilac{
+  background:linear-gradient(160deg,#FFF1E8,#FFFAF7);
+  box-shadow:0 3px 14px -6px rgba(244,81,30,.18);
+}
+#page-overview .bento-card.bento-lilac .card-title{color:#C2540E}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);font-size:14px;font-variant-numeric:tabular-nums;font-feature-settings:'tnum'}
 .sidebar{position:fixed;left:0;top:0;bottom:0;width:56px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:4px;z-index:100}
@@ -564,20 +571,15 @@ let _xirrCalcRows = _saved && _saved.XIRR_CALC_ROWS ? _saved.XIRR_CALC_ROWS : [[
         </div>
 
         <div class="card bento-card bento-lilac bento-area-trend">
-          <div class="card-header" style="align-items:flex-start">
+          <div class="card-header">
             <div class="card-title"><svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>市值趋势</div>
-            <div style="display:flex;align-items:center;gap:10px">
-              <div class="kpi-badge-circle" style="width:32px;height:32px;background:#DBEAFE" title="市值趋势">
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#2F6FED" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
-              </div>
-              <button class="btn btn-primary btn-sm" onclick="openSnapshotModal('total',0,null)"><svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-right:4px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>录入快照</button>
-            </div>
+            <button class="btn btn-sm" style="background:linear-gradient(160deg,#FF6B35,#F4511E);color:#fff;border:none" onclick="openSnapshotModal('total',0,null)"><svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-right:4px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>录入快照</button>
           </div>
           <div style="position:relative;height:260px;margin-top:6px"><canvas id="c-snap-total" width="771" height="280" style="box-sizing: border-box; height: 260px; width: 771px; cursor: default; display: block;"></canvas></div>
           <div id="snap-drawdown" style="margin-top:12px">
             <span style="font-size:11px;color:var(--text3)">历史峰值回撤</span>
-            <span id="snap-drawdown-val" class="kpi-pill pos">+0.00%</span>
-            <span id="snap-drawdown-sub" style="color:var(--text3);font-size:11px">峰值 2026-07-03</span>
+            <span id="snap-drawdown-val" style="font-weight:700;margin-left:6px" class="pos">+0.00%</span>
+            <span id="snap-drawdown-sub" style="color:var(--text3);margin-left:6px;font-size:11px">峰值 2026-07-03</span>
           </div>
         </div>
 
@@ -4720,8 +4722,8 @@ function renderSnapshotChart(mode, level, group){
   // gradient fill
   const ctx2d = canvas.getContext('2d');
   const grad = ctx2d.createLinearGradient(0,0,0,280);
-  grad.addColorStop(0,'rgba(47,111,237,0.20)');
-  grad.addColorStop(1,'rgba(47,111,237,0.01)');
+  grad.addColorStop(0,'rgba(244,81,30,0.20)');
+  grad.addColorStop(1,'rgba(244,81,30,0.01)');
 
   // Y axis formatter — no decimals, use 万/亿
   function fmtY(v){
@@ -4736,7 +4738,7 @@ function renderSnapshotChart(mode, level, group){
       labels,
       datasets:[{
         data: amounts,
-        borderColor:'#2F6FED',
+        borderColor:'#F4511E',
         backgroundColor: grad,
         borderWidth:2.5,
         fill:true,
@@ -4744,7 +4746,7 @@ function renderSnapshotChart(mode, level, group){
         pointStyle: pts.map(p=>p.src==='yearly'?'rect':'circle'),
         pointRadius: pts.map(p=>p.src==='yearly'?5:4),
         pointHoverRadius:6,
-        pointBackgroundColor: pts.map(p=>p.src==='yearly'?'#65A30D':'#2F6FED'),
+        pointBackgroundColor: pts.map(p=>p.src==='yearly'?'#0F6E56':'#F4511E'),
         pointBorderColor:'#fff',
         pointBorderWidth:1.5,
       }]
@@ -4822,7 +4824,7 @@ function renderSnapshotChart(mode, level, group){
     const dd = peakAmt>0 ? (lastAmt-peakAmt)/peakAmt*100 : 0;
     ddEl.style.display='';
     ddVal.textContent = (dd>=0?'+':'')+dd.toFixed(2)+'%';
-    ddVal.className = 'kpi-pill '+(dd>=0?'pos':'neg');
+    ddVal.className = dd>=0?'pos':'neg';
     ddSub.textContent = '峰值 '+labels[peakIdx];
   } else if(ddEl){
     ddEl.style.display='none';
