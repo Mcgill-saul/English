@@ -786,8 +786,16 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
         <div style="position:relative;height:240px"><canvas id="muscleChart"></canvas></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">月度无氧训练频次</div>
-        <div class="chart-sub">每月无氧训练次数趋势</div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <div>
+            <div class="chart-title">月度无氧训练频次</div>
+            <div class="chart-sub">每月无氧训练次数趋势</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <input type="date" id="ana-monthly-start" class="mini-date-input" onchange="onAnaMonthlyStartChange()" title="选择起始月份">
+            <span class="mini-reset-link" onclick="resetAnaMonthlyStart()" title="重置为最早日期">重置</span>
+          </div>
+        </div>
         <div style="position:relative;height:240px"><canvas id="anaMonthlyChart"></canvas></div>
       </div>
     </div>
@@ -797,9 +805,9 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">
         <div>
           <div class="chart-title">年度战报</div>
-          <div class="chart-sub">各部位各年度训练次数对比</div>
+          <div class="chart-sub">各部位各年度训练次数对比 · 点击年份可排除/恢复</div>
         </div>
-        <div id="ana-yearly-legend" style="display:flex;gap:12px;flex-wrap:wrap"></div>
+        <div id="ana-yearly-legend" style="display:flex;gap:8px;flex-wrap:wrap"></div>
       </div>
       <div style="position:relative;height:280px"><canvas id="yearlyChart"></canvas></div>
     </div>
@@ -818,6 +826,9 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
           <span style="font-size:11px;color:var(--text3)">显示：</span>
           <label class="line-toggle" id="hlt-hike-label" style="--c:#059669"><input type="checkbox" id="hlt-hike" checked onchange="renderHikeAnalysis()"><span>⛰ Hike</span></label>
           <label class="line-toggle" id="hlt-walk-label" style="--c:#6b9e8a"><input type="checkbox" id="hlt-walk" checked onchange="renderHikeAnalysis()"><span>🚶 Walk</span></label>
+          <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
+          <input type="date" id="hike-start" class="mini-date-input" onchange="onHikeStartChange()" title="选择起始日期">
+          <span class="mini-reset-link" onclick="resetHikeStart()" title="重置为最早日期">重置</span>
         </div>
       </div>
       <div style="position:relative;height:320px"><canvas id="hikeDistChart"></canvas></div>
@@ -856,8 +867,16 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
       <!-- 月度跑量 -->
       <div class="chart-card">
-        <div class="chart-title">月度跑量</div>
-        <div class="chart-sub">月度累计距离 (km)</div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <div>
+            <div class="chart-title">月度跑量</div>
+            <div class="chart-sub">月度累计距离 (km)</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <input type="date" id="run-mdist-start" class="mini-date-input" onchange="onRunMDistStartChange()" title="选择起始月份">
+            <span class="mini-reset-link" onclick="resetRunMDistStart()" title="重置为最早日期">重置</span>
+          </div>
+        </div>
         <div class="mdist-chart-wrap" style="position:relative;height:200px"><canvas id="monthlyDistChart"></canvas></div>
         <div class="mdist-list" id="monthlyDistList"></div>
       </div>
@@ -891,6 +910,13 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
             <div style="font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">距离</div>
             <div id="filter-dist" style="display:flex;gap:6px;flex-wrap:wrap"></div>
           </div>
+          <div>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">起始日期</div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="date" id="run-combined-start" class="mini-date-input" onchange="onRunCombinedStartChange()" title="选择起始日期">
+              <span class="mini-reset-link" onclick="resetRunCombinedStart()" title="重置为最早日期">重置</span>
+            </div>
+          </div>
         </div>
         <!-- 目标线提示 -->
         <div id="target-hint" style="display:none;margin-bottom:8px;font-size:12px;color:var(--text3);display:flex;gap:16px;flex-wrap:wrap"></div>
@@ -899,8 +925,16 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
       <!-- 单次距离 -->
       <div class="chart-card">
-        <div class="chart-title">单次距离</div>
-        <div class="chart-sub">每次跑步距离 (km)</div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <div>
+            <div class="chart-title">单次距离</div>
+            <div class="chart-sub">每次跑步距离 (km)</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <input type="date" id="run-dist-start" class="mini-date-input" onchange="onRunDistStartChange()" title="选择起始日期">
+            <span class="mini-reset-link" onclick="resetRunDistStart()" title="重置为最早日期">重置</span>
+          </div>
+        </div>
         <div style="position:relative;height:200px"><canvas id="distChart"></canvas></div>
       </div>
 
@@ -2321,6 +2355,47 @@ function resetDashMonthlyStart(){
   renderDashboard();
 }
 
+// 💾 各分析页图表的自定义起始日期（每张图独立，用法同 Dashboard）
+// 通用工厂：生成一对 on/reset 回调 + 读取当前值的 getter，减少重复代码。
+// name 用于生成全局函数名 on<Name>Change / reset<Name>，供 HTML onchange/onclick 直接调用。
+function makeChartStartFilter(name, lsKey, inputId, rerenderFn){
+  const state = { value: localStorage.getItem(lsKey) || '' };
+  window['on'+name+'Change'] = function(){
+    state.value = document.getElementById(inputId).value || '';
+    localStorage.setItem(lsKey, state.value);
+    rerenderFn();
+  };
+  window['reset'+name] = function(){
+    state.value = '';
+    localStorage.removeItem(lsKey);
+    rerenderFn();
+  };
+  return state;
+}
+// 同步某个起始日期 <input> 的 min/max/value/placeholder（在对应 render 函数里调用）
+function syncStartInput(inputId, state, earliest, latest){
+  const el = document.getElementById(inputId);
+  if(!el) return;
+  el.min = earliest; el.max = latest;
+  el.value = state.value || '';
+  el.placeholder = earliest;
+}
+
+const runMDistStart    = makeChartStartFilter('RunMDistStart',    'fitness_run_mdist_start',    'run-mdist-start',    ()=>renderRunAnalysis());
+const runCombinedStart = makeChartStartFilter('RunCombinedStart', 'fitness_run_combined_start', 'run-combined-start', ()=>renderCombinedChart());
+const runDistStart     = makeChartStartFilter('RunDistStart',     'fitness_run_dist_start',     'run-dist-start',     ()=>renderRunAnalysis());
+const anaMonthlyStart  = makeChartStartFilter('AnaMonthlyStart',  'fitness_ana_monthly_start',  'ana-monthly-start',  ()=>renderAnaerobic());
+const hikeStart        = makeChartStartFilter('HikeStart',        'fitness_hike_start',         'hike-start',         ()=>renderHikeAnalysis());
+
+// 💾 年度战报：可勾选/排除年份（默认全部包含）
+const LS_ANA_YEARLY_EXCLUDED = 'fitness_ana_yearly_excluded';
+let anaYearlyExcluded = new Set(JSON.parse(localStorage.getItem(LS_ANA_YEARLY_EXCLUDED) || '[]'));
+function toggleAnaYear(yr){
+  if(anaYearlyExcluded.has(yr)) anaYearlyExcluded.delete(yr); else anaYearlyExcluded.add(yr);
+  localStorage.setItem(LS_ANA_YEARLY_EXCLUDED, JSON.stringify([...anaYearlyExcluded]));
+  renderAnaerobic();
+}
+
 function getMonthRange(startDate){
   const all=records.filter(r=>r.date).map(r=>r.date.slice(0,7)).sort();
   if(!all.length) return [];
@@ -2658,14 +2733,16 @@ function renderAnaerobic(){
     });
   }
 
-  // ── 年度战报（分组柱状图）──
+  // ── 年度战报（分组柱状图，可点击图例排除某年）──
   const YEAR_COLORS = ['#3b7ef8','#16a06a','#d97706','#7c5cf6','#e04545'];
-  const years = [...new Set(ana.map(r=>r.date?.slice(0,4)).filter(Boolean))].sort();
+  const allYears = [...new Set(ana.map(r=>r.date?.slice(0,4)).filter(Boolean))].sort();
+  const years = allYears.filter(yr=>!anaYearlyExcluded.has(yr));
   const PARTS = ['Chest','Back','Legs','Delts','Core','Bis','Tris'];
   const PART_COLORS_YEARLY = { Chest:'#3b7ef8', Back:'#16a06a', Legs:'#d97706', Delts:'#7c5cf6', Core:'#e04545', Bis:'#059669', Tris:'#f0a843' };
 
   // 每年一个 dataset，每个部位一个 x 标签
-  const yearlyDatasets = years.map((yr,yi)=>{
+  const yearlyDatasets = years.map((yr)=>{
+    const yi = allYears.indexOf(yr);
     const yrAna = ana.filter(r=>r.date?.startsWith(yr));
     const partCounts = {};
     yrAna.forEach(r=>{ const m=primaryMuscle(r.muscles||r.sub||''); if(m) partCounts[m]=(partCounts[m]||0)+1; });
@@ -2677,13 +2754,16 @@ function renderAnaerobic(){
     };
   });
 
-  // 图例
+  // 图例（可点击：排除/恢复某一年）
   const legendEl = document.getElementById('ana-yearly-legend');
-  if(legendEl) legendEl.innerHTML = years.map((yr,yi)=>
-    `<span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)">
-      <span style="width:12px;height:12px;border-radius:2px;background:${YEAR_COLORS[yi]||'#9ba3b5'};flex-shrink:0"></span>${yr}年
-    </span>`
-  ).join('');
+  if(legendEl) legendEl.innerHTML = allYears.map((yr,yi)=>{
+    const excluded = anaYearlyExcluded.has(yr);
+    const color = YEAR_COLORS[yi]||'#9ba3b5';
+    return `<span onclick="toggleAnaYear('${yr}')" title="${excluded?'点击恢复':'点击排除'}"
+      style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;user-select:none;padding:3px 9px;border-radius:12px;border:1.5px solid ${excluded?'var(--border2)':color};color:${excluded?'var(--text3)':color};background:${excluded?'var(--bg3)':color+'18'};transition:all .15s;${excluded?'text-decoration:line-through;opacity:.6':''}">
+      <span style="width:10px;height:10px;border-radius:2px;background:${color};flex-shrink:0;opacity:${excluded?'.4':'1'}"></span>${yr}年
+    </span>`;
+  }).join('');
 
   if(!years.length){ dc('yearlyChart'); }
   if(years.length){
@@ -2718,8 +2798,13 @@ function renderAnaerobic(){
     });
   }
 
-  // ── 月度频次 ──
-  const months = getMonthRange();
+  // ── 月度频次（可自定义起始日期）──
+  const anaDates = ana.map(r=>r.date).sort();
+  const anaEarliest = anaDates.length?anaDates[0]:'';
+  const anaLatest = anaDates.length?anaDates[anaDates.length-1]:'';
+  syncStartInput('ana-monthly-start', anaMonthlyStart, anaEarliest, anaLatest);
+  const amStart = (anaMonthlyStart.value && anaMonthlyStart.value>=anaEarliest) ? anaMonthlyStart.value : '';
+  const months = getMonthRange(amStart);
   upsertChart('anaMonthlyChart', document.getElementById('anaMonthlyChart'),{
     type:'line',
     data:{
@@ -2885,10 +2970,17 @@ function renderHikeAnalysis(){
   const showHike = document.getElementById('hlt-hike')?.checked ?? true;
   const showWalk = document.getElementById('hlt-walk')?.checked ?? true;
 
-  const hikeRecs = hikes.filter(r=>r.sub!=='Walk');
-  const walkRecs = hikes.filter(r=>r.sub==='Walk');
+  const hikeDatesAll = hikes.map(r=>r.date).sort();
+  const hikeEarliest = hikeDatesAll.length?hikeDatesAll[0]:'';
+  const hikeLatest = hikeDatesAll.length?hikeDatesAll[hikeDatesAll.length-1]:'';
+  syncStartInput('hike-start', hikeStart, hikeEarliest, hikeLatest);
+  const hkStart = (hikeStart.value && hikeStart.value>=hikeEarliest) ? hikeStart.value : '';
+  const hikesInRange = hkStart ? hikes.filter(r=>r.date>=hkStart) : hikes;
 
-  const allDates = [...new Set(hikes.map(r=>r.date))].sort();
+  const hikeRecs = hikesInRange.filter(r=>r.sub!=='Walk');
+  const walkRecs = hikesInRange.filter(r=>r.sub==='Walk');
+
+  const allDates = [...new Set(hikesInRange.map(r=>r.date))].sort();
   const labels = allDates.map(d=>d.slice(5));
 
   const hikeMap = Object.fromEntries(hikeRecs.map(r=>[r.date, r.steps||0]));
@@ -3045,7 +3137,14 @@ function renderRunAnalysis(){
   } else { histWrap.style.display='none'; }
 
   // 趋势图表
-  const months=getMonthRange();
+  const runDatesAll = runs.map(r=>r.date).sort();
+  const runEarliest = runDatesAll.length?runDatesAll[0]:'';
+  const runLatest = runDatesAll.length?runDatesAll[runDatesAll.length-1]:'';
+
+  // 月度跑量：自定义起始月份
+  syncStartInput('run-mdist-start', runMDistStart, runEarliest, runLatest);
+  const mdStart = (runMDistStart.value && runMDistStart.value>=runEarliest) ? runMDistStart.value : '';
+  const months=getMonthRange(mdStart);
   const mDist=months.map(m=>runs.filter(r=>r.date.startsWith(m)).reduce((a,r)=>a+(r.dist||0),0));
   const mCount=months.map(m=>runs.filter(r=>r.date.startsWith(m)).length);
 
@@ -3092,9 +3191,13 @@ function renderRunAnalysis(){
     }}]
   }, mCount);
 
-  // 单次距离图
-  const lbs=runs.map(r=>r.date.slice(5));
-  upsertChart('distChart', document.getElementById('distChart'),{type:'line',data:{labels:lbs,datasets:[lineDS(runs.map(r=>r.dist),'#16a06a')]},options:{...CHART_OPT,scales:{x:{...CHART_OPT.scales.x,ticks:{...CHART_OPT.scales.x.ticks,maxTicksLimit:9}},y:{...CHART_OPT.scales.y,min:0}}}});
+  // 单次距离图：自定义起始日期
+  syncStartInput('run-dist-start', runDistStart, runEarliest, runLatest);
+  const distStart = (runDistStart.value && runDistStart.value>=runEarliest) ? runDistStart.value : '';
+  const runsForDist = distStart ? runs.filter(r=>r.date>=distStart) : runs;
+  const lbs=runsForDist.map(r=>r.date.slice(5));
+  upsertChart('distChart', document.getElementById('distChart'),{type:'line',data:{labels:lbs,datasets:[lineDS(runsForDist.map(r=>r.dist),'#16a06a')]},options:{...CHART_OPT,scales:{x:{...CHART_OPT.scales.x,ticks:{...CHART_OPT.scales.x.ticks,maxTicksLimit:9}},y:{...CHART_OPT.scales.y,min:0}}}});
+
 
   // 筛选条件：训练类型 + 距离，自动从数据提取
   const subtypes=[...new Set(runs.map(r=>r.sub||'').filter(Boolean))];
@@ -3454,14 +3557,23 @@ function toggleFilterPill(el, groupId){
 
 function getFilteredRuns(){
   const runs = records.filter(r=>r.sport==='Run').sort((a,b)=>a.date.localeCompare(b.date));
+
+  // 自定义起始日期（同步 input 的 min/max/value，并按此过滤）
+  const runDatesAll = runs.map(r=>r.date).sort();
+  const earliest = runDatesAll.length?runDatesAll[0]:'';
+  const latest = runDatesAll.length?runDatesAll[runDatesAll.length-1]:'';
+  syncStartInput('run-combined-start', runCombinedStart, earliest, latest);
+  const cStart = (runCombinedStart.value && runCombinedStart.value>=earliest) ? runCombinedStart.value : '';
+  const dateFiltered = cStart ? runs.filter(r=>r.date>=cStart) : runs;
+
   const stEl = document.getElementById('filter-subtype');
   const distEl = document.getElementById('filter-dist');
-  if(!stEl||!distEl) return runs;
+  if(!stEl||!distEl) return dateFiltered;
   const selSub = [...stEl.querySelectorAll('.filter-pill.on')].map(p=>p.dataset.val);
   const selDist = [...distEl.querySelectorAll('.filter-pill.on')].map(p=>p.dataset.val);
   const allSub = selSub.includes('全部');
   const allDist = selDist.includes('全部');
-  return runs.filter(r=>{
+  return dateFiltered.filter(r=>{
     const subOk = allSub || selSub.includes(r.sub||'');
     const distOk = allDist || selDist.includes((r.dist||'')+'km');
     return subOk && distOk;
