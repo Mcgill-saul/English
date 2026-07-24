@@ -396,7 +396,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .records-title{font-size:14px;font-weight:600;color:var(--text2);}
 .record-list{display:flex;flex-direction:column;gap:0;border:1.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;overflow-x:auto;}
 .record-list-header{display:flex;align-items:center;background:var(--bg3);border-bottom:1.5px solid var(--border);padding:7px 14px;white-space:nowrap;min-width:max-content;}
-.rh{flex-shrink:0;font-size:10.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;padding-right:12px;white-space:nowrap;}
+.rh{flex-shrink:0;font-size:10.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;padding-right:12px;white-space:nowrap;text-align:center;}
 
 .record-item{background:var(--bg2);border-bottom:1px solid var(--border);padding:9px 14px;display:flex;align-items:center;cursor:pointer;transition:background .1s;min-width:max-content;}
 .record-item:last-child{border-bottom:none;}
@@ -419,15 +419,15 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .rc-cadence{ width: 50px;  }  /* 步频列 */
 .rc-shoe   { width: 126px; }  /* 跑鞋列 */
 .rc-weather{ width: 54px;  }  /* 天气列 */
-.rc-route  { width: 100px; }  /* 路线列 */
-.rc-devices{ width: 100px; }  /* 设备列 */
-.rc-feel   { width: 54px;  }  /* 体感列 */
-.rc-body   { width: 300px; }  /* 身体感受列 */
-.rc-note   { width: 300px; color:var(--text3);font-style:italic; }  /* 备注列 */
+.rc-route  { width: 140px; }  /* 路线列 */
+.rc-devices{ width: 140px; }  /* 设备列 */
+.rc-feel   { width: 64px;  }  /* 体感列 */
+.rc-body   { width: 320px; }  /* 身体感受列 */
+.rc-note   { width: 320px; color:var(--text3);font-style:italic; }  /* 备注列 */
 .rc-muscles{ width: 110px; }  /* 无氧部位列 */
-.rc-duration{ width: 72px; }  /* 跳绳时长列 */
-.rc-jcount { width: 60px;  }  /* 跳绳个数列 */
-.rc-jfreq  { width: 74px;  }  /* 跳绳频率列 */
+.rc-duration{ width: 80px; }  /* 跳绳时长列 */
+.rc-jcount { width: 70px;  }  /* 跳绳个数列 */
+.rc-jfreq  { width: 84px;  }  /* 跳绳频率列 */
 .rc-empty  { color:var(--border2)!important; }  /* 空值「—」的颜色 */
 .rc-actions{flex-shrink:0;display:flex;gap:6px;opacity:0;transition:opacity .15s;margin-left:8px;}
 .record-item:hover .rc-actions{opacity:1;}
@@ -2214,17 +2214,17 @@ function renderRecordPage(){
     if(hasRun||hasJump) headerHtml += `<span class="rh" style="width:58px">最大心率</span>`;
     if(hasRun) headerHtml += `<span class="rh" style="width:50px">步频</span>`;
     if(hasRun) headerHtml += `<span class="rh" style="width:54px">天气</span>`;
-    if(hasRun) headerHtml += `<span class="rh" style="width:100px">路线</span>`;
+    if(hasRun) headerHtml += `<span class="rh" style="width:140px">路线</span>`;
     if(hasRun) headerHtml += `<span class="rh" style="width:126px">跑鞋</span>`;
-    if(hasRun) headerHtml += `<span class="rh" style="width:100px">设备</span>`;
-    if(hasJump) headerHtml += `<span class="rh" style="width:72px">时长</span>`;
-    if(hasJump) headerHtml += `<span class="rh" style="width:66px">个数</span>`;
-    if(hasJump) headerHtml += `<span class="rh" style="width:74px">频率</span>`;
-    headerHtml += `<span class="rh" style="width:54px">体感</span>`;
-    headerHtml += `<span class="rh" style="width:300px">身体感受</span>`;
-    if(hasHike) headerHtml += `<span class="rh" style="width:80px">步数</span>`;
-    if(hasHike) headerHtml += `<span class="rh" style="width:120px">地点</span>`;
-    headerHtml += `<span class="rh" style="width:300px">备注</span>`;
+    if(hasRun) headerHtml += `<span class="rh" style="width:140px">设备</span>`;
+    if(hasJump) headerHtml += `<span class="rh" style="width:80px">时长</span>`;
+    if(hasJump) headerHtml += `<span class="rh" style="width:70px">个数</span>`;
+    if(hasJump) headerHtml += `<span class="rh" style="width:84px">频率</span>`;
+    headerHtml += `<span class="rh" style="width:64px">体感</span>`;
+    headerHtml += `<span class="rh" style="width:320px">身体感受</span>`;
+    if(hasHike) headerHtml += `<span class="rh" style="width:90px">步数</span>`;
+    if(hasHike) headerHtml += `<span class="rh" style="width:150px">地点</span>`;
+    headerHtml += `<span class="rh" style="width:320px">备注</span>`;
     document.getElementById('record-col-header').innerHTML = headerHtml;
 
     const em = v => v ? `<span>${escapeHtml(v)}</span>` : `<span class="rc-empty">—</span>`;
@@ -2255,8 +2255,8 @@ function renderRecordPage(){
       if(hasJump) cols += `<span class="rc rc-jfreq">${r.jump_freq?r.jump_freq+'个/分':em('')}</span>`;
       cols += `<span class="rc rc-feel">${r.feel?`<span class="feel-badge">${escapeHtml(r.feel)}</span>`:em('')}</span>`;
       cols += `<span class="rc rc-body" title="${escapeHtml(r.body||'')}">${em(r.body)}</span>`;
-      if(hasHike) cols += `<span class="rc" style="width:80px">${r.steps?r.steps.toLocaleString()+'步':em('')}</span>`;
-      if(hasHike) cols += `<span class="rc" style="width:120px">${em(r.location)}</span>`;
+      if(hasHike) cols += `<span class="rc" style="width:90px">${r.steps?r.steps.toLocaleString()+'步':em('')}</span>`;
+      if(hasHike) cols += `<span class="rc" style="width:150px">${em(r.location)}</span>`;
       cols += `<span class="rc rc-note" title="${escapeHtml(r.note||'')}">${em(r.note)}</span>`;
       cols += `<span class="rc-actions">
         <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();editRecord('${r.id}')">编辑</button>
