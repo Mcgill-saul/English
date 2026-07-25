@@ -63,40 +63,80 @@
   --radius-lg: 12px;
   --shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
   --font: "PingFang SC","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
+
+  /* =====================================================
+     🔤 字号阶梯 —— 全局统一的 6 档正文字号 + 2 档特殊数字
+     原来内联样式里散落了 8/10/10.5/11/11.5/12/12.5/13/13.5/
+     14/15/16/19/20/22/24/40px 十几档，很多相邻档肉眼根本
+     分不出来，这里收敛成下面这些语义化的档位，改一处即可
+     全局生效。
+     ===================================================== */
+  --fs-micro:   8px;   /* 极小徽标（如日历热力图格子里的文字） */
+  --fs-xs:      11px;  /* 表格/meta信息/小徽章 */
+  --fs-sm:      13px;  /* 默认正文、次要文字（用得最多） */
+  --fs-base:    14px;  /* 卡片主文字、表单 label */
+  --fs-lg:      16px;  /* 小节/卡片标题 */
+  --fs-xl:      20px;  /* 页面级大标题 */
+  --fs-stat:    24px;  /* 统计数字（累计跑量/平均配速这类） */
+  --fs-display: 40px;  /* Dashboard 总计这种"英雄数字" */
+
+  /* =====================================================
+     📏 间距阶梯 —— 覆盖 gap / margin-top / margin-bottom
+     当前实际用到的全部数值。以数字命名（而非 xs/sm/lg 这种
+     语义名），因为间距本身需要的粒度比字号多，用数字更直白，
+     也不用纠结"这算小号还是中号"。
+     跟字号一样：这里没有合并相近的数值（比如 6px 和 7px），
+     只是把散落各处的裸数字统一成变量，不改变任何现有视觉效果；
+     以后新写样式时可以直接从这个列表里选，不用再随手编数字。
+     ===================================================== */
+  --space-2:  2px;
+  --space-3:  3px;
+  --space-4:  4px;
+  --space-5:  5px;
+  --space-6:  6px;
+  --space-7:  7px;
+  --space-8:  8px;
+  --space-10: 10px;
+  --space-12: 12px;
+  --space-14: 14px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-22: 22px;
+  --space-24: 24px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-html{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;overflow-x:hidden;}
+html{background:var(--bg);color:var(--text);font-family:var(--font);font-size:var(--fs-base);overflow-x:hidden;}
 body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
 /* topbar */
 .topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,0,0,0.06);}
-.topbar-title{font-size:15px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;}
+.topbar-title{font-size:var(--fs-base);font-weight:700;color:var(--text);display:flex;align-items:center;gap:var(--space-8);}
 .topbar-title .dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;}
-.topbar-actions{display:flex;gap:8px;}
+.topbar-actions{display:flex;gap:var(--space-8);}
 
 /* main */
 .main{max-width:none;margin:0;padding:1.5rem 2.5rem 0;}
 
 /* tabs */
 .tabs{display:flex;gap:0;margin-bottom:1.5rem;border-bottom:2px solid var(--border);align-items:center;}
-.tab{padding:10px 18px;font-size:13.5px;cursor:pointer;color:var(--text2);border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;font-family:var(--font);}
+.tab{padding:10px 18px;font-size:var(--fs-sm);cursor:pointer;color:var(--text2);border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;font-family:var(--font);}
 .tab:hover{color:var(--text);}
 .tab.active{color:var(--green);border-bottom-color:var(--green);font-weight:600;}
 .tab-spacer{flex:1;}
-#tab-add{margin-bottom:0;border-bottom:none;border-radius:20px;padding:7px 16px;background:var(--green);color:#fff;font-weight:600;margin-right:6px;font-size:13px;}
+#tab-add{margin-bottom:0;border-bottom:none;border-radius:20px;padding:7px 16px;background:var(--green);color:#fff;font-weight:600;margin-right:6px;font-size:var(--fs-sm);}
 #tab-add:hover{background:var(--green-dk);}
 #tab-add.active{background:var(--green-dk);color:#fff;border-bottom:none;}
-#tab-data{margin-bottom:0;border-bottom:none;border-radius:20px;padding:7px 16px;background:var(--bg3);color:var(--text2);border:1.5px solid var(--border2);font-size:13px;}
+#tab-data{margin-bottom:0;border-bottom:none;border-radius:20px;padding:7px 16px;background:var(--bg3);color:var(--text2);border:1.5px solid var(--border2);font-size:var(--fs-sm);}
 #tab-data:hover{color:var(--text);}
 #tab-data.active{background:var(--bg3);color:var(--text);border-color:var(--border2);border-bottom:1.5px solid var(--border2);}
 
 /* metrics */
-.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:1.5rem;}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--space-12);margin-bottom:1.5rem;}
 .metric{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;box-shadow:var(--shadow);}
-.metric-label{font-size:11px;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;}
-.metric-value{font-size:24px;font-weight:700;line-height:1;}
-.metric-unit{font-size:13px;font-weight:400;color:var(--text2);margin-left:2px;}
-.metric-sub{font-size:11px;color:var(--text3);margin-top:5px;}
+.metric-label{font-size:var(--fs-xs);color:var(--text3);margin-bottom:var(--space-8);text-transform:uppercase;letter-spacing:.06em;}
+.metric-value{font-size:var(--fs-stat);font-weight:700;line-height:1;}
+.metric-unit{font-size:var(--fs-sm);font-weight:400;color:var(--text2);margin-left:2px;}
+.metric-sub{font-size:var(--fs-xs);color:var(--text3);margin-top:var(--space-5);}
 .metric.green .metric-value{color:var(--green);}
 .metric.blue .metric-value{color:var(--blue);}
 .metric.amber .metric-value{color:var(--amber);}
@@ -104,27 +144,27 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .metric.purple .metric-value{color:var(--purple);}
 
 /* charts */
-.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:1.5rem;}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-14);margin-bottom:1.5rem;}
 .chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;box-shadow:var(--shadow);}
 .chart-card.full{grid-column:1/-1;}
-.chart-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px;}
-.chart-sub{font-size:12px;color:var(--text3);margin-bottom:14px;}
-.legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px;}
-.legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);}
+.chart-title{font-size:var(--fs-base);font-weight:600;color:var(--text);margin-bottom:var(--space-2);}
+.chart-sub{font-size:var(--fs-sm);color:var(--text3);margin-bottom:var(--space-14);}
+.legend{display:flex;flex-wrap:wrap;gap:var(--space-12);margin-bottom:var(--space-12);}
+.legend-item{display:flex;align-items:center;gap:var(--space-5);font-size:var(--fs-sm);color:var(--text2);}
 .legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
 
 /* ── FORM ── */
 .form-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px 28px 24px;margin-bottom:1.5rem;box-shadow:var(--shadow);}
-.form-card-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+.form-card-title{font-size:var(--fs-base);font-weight:700;color:var(--text);margin-bottom:var(--space-20);padding-bottom:14px;border-bottom:1px solid var(--border);}
 
 /* Sport selector row */
-.sport-selector{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;}
-.sport-btn{padding:7px 18px;border-radius:20px;font-size:13px;cursor:pointer;border:1.5px solid var(--border2);background:var(--bg3);color:var(--text2);transition:all .15s;font-family:var(--font);white-space:nowrap;}
+.sport-selector{display:flex;gap:var(--space-8);flex-wrap:wrap;margin-bottom:var(--space-24);}
+.sport-btn{padding:7px 18px;border-radius:20px;font-size:var(--fs-sm);cursor:pointer;border:1.5px solid var(--border2);background:var(--bg3);color:var(--text2);transition:all .15s;font-family:var(--font);white-space:nowrap;}
 .sport-btn:hover{border-color:var(--green);color:var(--green);}
 .sport-btn.active{border-color:var(--green);color:var(--green);background:var(--green-lt);font-weight:600;}
 
 /* Uniform field grid */
-.form-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+.form-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-16);}
 @media(max-width:900px){.form-grid{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:500px){.form-grid{grid-template-columns:1fr;}}
 
@@ -154,7 +194,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   /* ── 指标卡 → 2列 ── */
   .metrics{ grid-template-columns: repeat(2,1fr); gap: 8px; }
   .metric{ padding: 12px 14px; }
-  .metric-value{ font-size: 20px; }
+  .metric-value{ font-size:var(--fs-xl); }
 
   /* ── 表单 → 单列，字段高度更易点击 ── */
   .form-card{ padding: 14px; }
@@ -162,16 +202,16 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   .ff.span2,.ff.span4{ grid-column: 1 !important; }
   .ff input,.ff select{
     height: 46px;
-    font-size: 16px; /* 防止 iOS 自动缩放 */
+    font-size:var(--fs-lg); /* 防止 iOS 自动缩放 */
     padding: 10px 12px;
   }
-  .ff textarea{ font-size: 16px; min-height: 72px; }
-  .ff label{ font-size: 12px; }
+  .ff textarea{ font-size:var(--fs-lg); min-height: 72px; }
+  .ff label{ font-size:var(--fs-sm); }
 
   /* ── 运动类型选择器 ── */
   .sport-selector{ gap: 6px; }
-  .sport-btn{ padding: 7px 12px; font-size: 12.5px; }
-  .feel-pill,.pill{ padding: 7px 14px; font-size: 13px; }
+  .sport-btn{ padding: 7px 12px; font-size:var(--fs-sm); }
+  .feel-pill,.pill{ padding: 7px 14px; font-size:var(--fs-sm); }
 
   /* ── 全部记录 → 卡片式 ── */
   #record-col-header{ display: none; }
@@ -188,15 +228,15 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
   /* ── 搜索行 → 竖排 ── */
   .search-row{ flex-direction: column; gap: 8px; }
-  .search-row input,.search-row select{ width: 100%; font-size: 16px; }
+  .search-row input,.search-row select{ width: 100%; font-size:var(--fs-lg); }
 
   /* ── 总览数字卡片手机紧凑 ── */
   #dash-total{ font-size: 32px !important; }
-  #dash-date-range{ font-size: 11px !important; }
+  #dash-date-range{ font-size:var(--fs-xs) !important; }
   .cal-grid{ grid-template-columns: 1fr !important; }
   .cal-day{ height: 80px; }
   .cal-day-num-row{ padding: 2px 0 1px 4px; }
-  .cal-day-num{ font-size: 10px; }
+  .cal-day-num{ font-size:var(--fs-xs); }
   .cal-bar{ flex-basis: 11px; height: 11px; font-size: 7px; }
   .cal-bar-plus{ flex-basis: 10px; height: 10px; font-size: 7px; }
 
@@ -239,8 +279,8 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
   /* ── 数据管理 ── */
   .data-section{ padding: 14px; }
-  .mobile-record-meta{ display:flex; flex-wrap:wrap; gap:8px; font-size:12.5px; color:var(--text2); }
-  .mobile-record-chip{ display:inline-flex; align-items:center; gap:3px; }
+  .mobile-record-meta{ display:flex; flex-wrap:wrap; gap:var(--space-8); font-size:var(--fs-sm); color:var(--text2); }
+  .mobile-record-chip{ display:inline-flex; align-items:center; gap:var(--space-3); }
   /* 结构化数据行（时段/距离/心率等）：单行横向滚动，绝不换行撑成第二行 */
   .mobile-record-meta.meta-scroll{
     flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch;
@@ -248,7 +288,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   }
   .mobile-record-meta.meta-scroll::-webkit-scrollbar{ display:none; height:0; }
   .mobile-record-meta.meta-scroll .mobile-record-chip{ flex-shrink:0; white-space:nowrap; }
-  .mobile-record-chip .k{ color:var(--text3); font-size:11.5px; }
+  .mobile-record-chip .k{ color:var(--text3); font-size:var(--fs-xs); }
 }
 
 /* ── 手机顶部导航（替代顶部 tabs） ── */
@@ -295,14 +335,14 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 @media(min-width:769px){ .mobile-nav, #mobileMoreMenu { display: none !important; } }
 
 /* Uniform field */
-.ff{display:flex;flex-direction:column;gap:5px;}
-.ff label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;}
+.ff{display:flex;flex-direction:column;gap:var(--space-5);}
+.ff label{font-size:var(--fs-xs);font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;}
 .ff input,.ff select,.ff textarea{
   background:var(--bg3);
   border:1.5px solid var(--border);
   border-radius:var(--radius);
   color:var(--text);
-  font-size:13.5px;
+  font-size:var(--fs-sm);
   padding:9px 11px;
   font-family:var(--font);
   transition:border-color .15s;
@@ -323,7 +363,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   border:1.5px solid var(--border);
   border-radius:var(--radius);
   color:var(--text);
-  font-size:12px;
+  font-size:var(--fs-sm);
   padding:5px 7px;
   font-family:var(--font);
   height:30px;
@@ -331,7 +371,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 }
 .mini-date-input:focus{outline:none;border-color:var(--green);background:#fff;}
 .mini-reset-link{
-  font-size:11px;
+  font-size:var(--fs-xs);
   color:var(--text3);
   cursor:pointer;
   text-decoration:underline;
@@ -340,24 +380,24 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   user-select:none;
 }
 .mini-reset-link:hover{color:var(--green);}
-.mini-date-label{font-size:11px;color:var(--text3);white-space:nowrap;}
+.mini-date-label{font-size:var(--fs-xs);color:var(--text3);white-space:nowrap;}
 
 /* Checkbox pill */
-.check-row{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);}
+.check-row{display:flex;align-items:center;gap:var(--space-6);font-size:var(--fs-sm);color:var(--text2);}
 .check-row input[type=checkbox]{width:15px;height:15px;accent-color:var(--green);}
 
 /* Multi-select pill group */
-.pill-group{display:flex;flex-wrap:wrap;gap:7px;padding:8px 0;}
-.pill{padding:5px 13px;border-radius:14px;font-size:12.5px;cursor:pointer;border:1.5px solid var(--border2);background:var(--bg3);color:var(--text2);transition:all .15s;user-select:none;}
+.pill-group{display:flex;flex-wrap:wrap;gap:var(--space-7);padding:8px 0;}
+.pill{padding:5px 13px;border-radius:14px;font-size:var(--fs-sm);cursor:pointer;border:1.5px solid var(--border2);background:var(--bg3);color:var(--text2);transition:all .15s;user-select:none;}
 .pill:hover{border-color:var(--blue);}
 .pill.sel{border-color:var(--blue);color:var(--blue);background:var(--blue-lt);}
 
-.pill-add{padding:5px 13px;border-radius:14px;font-size:12.5px;cursor:pointer;border:1.5px dashed var(--border2);background:transparent;color:var(--text3);transition:all .15s;user-select:none;}
+.pill-add{padding:5px 13px;border-radius:14px;font-size:var(--fs-sm);cursor:pointer;border:1.5px dashed var(--border2);background:transparent;color:var(--text3);transition:all .15s;user-select:none;}
 .pill-add:hover{border-color:var(--blue);color:var(--blue);}
 .feel-chip{color:var(--amber)!important;font-weight:500;}
 .body-chip{color:var(--text3)!important;font-style:italic;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.feel-group{display:flex;gap:7px;flex-wrap:wrap;padding:6px 0;}
-.feel-pill{padding:5px 14px;border-radius:14px;font-size:12.5px;cursor:pointer;border:1.5px solid var(--border2);background:var(--bg3);color:var(--text2);transition:all .15s;user-select:none;}
+.feel-group{display:flex;gap:var(--space-7);flex-wrap:wrap;padding:6px 0;}
+.feel-pill{padding:5px 14px;border-radius:14px;font-size:var(--fs-sm);cursor:pointer;border:1.5px solid var(--border2);background:var(--bg3);color:var(--text2);transition:all .15s;user-select:none;}
 .feel-pill.sel-0{border-color:#22c55e;color:#16a34a;background:#f0fdf4;}
 .feel-pill.sel-1{border-color:#84cc16;color:#4d7c0f;background:#f7fee7;}
 .feel-pill.sel-2{border-color:#f59e0b;color:#b45309;background:#fffbeb;}
@@ -369,19 +409,19 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .combo-wrap input{width:100%;}
 
 /* form actions */
-.form-actions{display:flex;gap:10px;margin-top:22px;padding-top:18px;border-top:1px solid var(--border);}
+.form-actions{display:flex;gap:var(--space-10);margin-top:var(--space-22);padding-top:18px;border-top:1px solid var(--border);}
 
 /* Buttons */
-.btn{padding:9px 22px;border-radius:var(--radius);font-size:13.5px;font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:var(--font);}
+.btn{padding:9px 22px;border-radius:var(--radius);font-size:var(--fs-sm);font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:var(--font);}
 .btn-primary{background:var(--green);color:#fff;}
 .btn-primary:hover{background:var(--green-dk);}
 .btn-secondary{background:var(--bg3);color:var(--text2);border:1.5px solid var(--border2);}
 .btn-secondary:hover{color:var(--text);border-color:var(--border2);}
 .btn-danger{background:var(--coral-lt);color:var(--coral);border:1.5px solid #f9b0b0;}
 .btn-danger:hover{background:var(--coral);color:#fff;}
-.btn-sm{padding:5px 12px;font-size:12px;}
+.btn-sm{padding:5px 12px;font-size:var(--fs-sm);}
 .batch-toggle-btn{
-  padding:5px 12px;border-radius:var(--radius);font-size:12px;font-weight:600;
+  padding:5px 12px;border-radius:var(--radius);font-size:var(--fs-sm);font-weight:600;
   cursor:pointer;font-family:var(--font);transition:all .15s;
   background:var(--blue-lt);color:var(--blue-dk);border:1.5px solid #bfdbfe;
 }
@@ -389,14 +429,14 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .batch-toggle-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
 
 /* Records */
-.search-row{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
-.search-row input,.search-row select{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:13px;padding:8px 12px;font-family:var(--font);}
+.search-row{display:flex;gap:var(--space-10);margin-bottom:var(--space-14);flex-wrap:wrap;}
+.search-row input,.search-row select{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:var(--fs-sm);padding:8px 12px;font-family:var(--font);}
 .search-row input:focus,.search-row select:focus{outline:none;border-color:var(--green);}
-.records-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
-.records-title{font-size:14px;font-weight:600;color:var(--text2);}
+.records-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-10);}
+.records-title{font-size:var(--fs-base);font-weight:600;color:var(--text2);}
 .record-list{display:flex;flex-direction:column;gap:0;border:1.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;overflow-x:auto;}
 .record-list-header{display:flex;align-items:center;background:var(--bg3);border-bottom:1.5px solid var(--border);padding:7px 14px;white-space:nowrap;min-width:max-content;}
-.rh{flex-shrink:0;font-size:10.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;padding-right:12px;white-space:nowrap;}
+.rh{flex-shrink:0;font-size:var(--fs-xs);font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;padding-right:12px;white-space:nowrap;}
 
 .record-item{background:var(--bg2);border-bottom:1px solid var(--border);padding:9px 14px;display:flex;align-items:center;cursor:pointer;transition:background .1s;min-width:max-content;}
 .record-item:last-child{border-bottom:none;}
@@ -408,82 +448,93 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
    单位：px（像素），数字越大列越宽
    改完保存刷新页面即生效，列头宽度会自动跟着变
    ===================================================== */
-.rc{flex-shrink:0;padding-right:12px;font-size:12.5px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text2);}
-.rc-date   { width: 104px; color:var(--text);font-variant-numeric:tabular-nums;font-weight:500; } /* 日期列 */
-.rc-badge  { width: 160px; padding-right:10px; }  /* 运动类型列（含训练类型/部位） */
-.rc-period { width: 58px;  }  /* 时段列 */
-.rc-dist   { width: 66px;  }  /* 距离列 */
-.rc-pace   { width: 64px;  }  /* 配速列 */
-.rc-hr     { width: 54px;  }  /* 平均心率列 */
-.rc-maxhr  { width: 58px;  }  /* 最大心率列 */
-.rc-cadence{ width: 50px;  }  /* 步频列 */
-.rc-shoe   { width: 126px; }  /* 跑鞋列 */
-.rc-weather{ width: 54px;  }  /* 天气列 */
-.rc-route  { width: 140px; }  /* 路线列 */
-.rc-devices{ width: 140px; }  /* 设备列 */
-.rc-feel   { width: 64px;  }  /* 体感列 */
-.rc-body   { width: 320px; }  /* 身体感受列 */
-.rc-note   { width: 320px; color:var(--text3);font-style:italic; }  /* 备注列 */
-.rc-muscles{ width: 110px; }  /* 无氧部位列 */
-.rc-duration{ width: 80px; }  /* 跳绳时长列 */
-.rc-jcount { width: 70px;  }  /* 跳绳个数列 */
-.rc-jfreq  { width: 84px;  }  /* 跳绳频率列 */
+.rc{flex-shrink:0;padding-right:12px;font-size:var(--fs-sm);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--text2);}
+.rc-date   { color:var(--text);font-variant-numeric:tabular-nums;font-weight:500; } /* 日期列（宽度见 .col-date） */
+.rc-note   { color:var(--text3);font-style:italic; }  /* 备注列（宽度见 .col-note） */
 .rc-empty  { color:var(--border2)!important; }  /* 空值「—」的颜色 */
-.rc-actions{flex-shrink:0;display:flex;gap:6px;opacity:0;transition:opacity .15s;margin-left:8px;}
+.rc-actions{flex-shrink:0;display:flex;gap:var(--space-6);opacity:0;transition:opacity .15s;margin-left:8px;}
 .record-item:hover .rc-actions{opacity:1;}
+
+/* =====================================================
+   📏 记录表格 —— 列宽的唯一定义源
+   表头（.rh）和数据行（.rc）共用同一批 .col-* 类，
+   这样任何一列改宽度，只需要改这一处，表头和数据不会再走两条线
+   ===================================================== */
+.col-batch   { width: 42px;  }
+.col-date    { width: 104px; }
+.col-badge   { width: 300px; }
+.col-period  { width: 58px;  }
+.col-dist    { width: 66px;  }
+.col-pace    { width: 64px;  }
+.col-hr      { width: 54px;  }
+.col-maxhr   { width: 58px;  }
+.col-cadence { width: 50px;  }
+.col-weather { width: 54px;  }
+.col-route   { width: 140px; }
+.col-shoe    { width: 126px; }
+.col-devices { width: 140px; }
+.col-duration{ width: 80px;  }
+.col-jcount  { width: 70px;  }
+.col-jfreq   { width: 84px;  }
+.col-feel    { width: 64px;  }
+.col-body    { width: 320px; }
+.col-steps   { width: 90px;  }
+.col-location{ width: 150px; }
+.col-note    { width: 320px; }
+.rc-muscles{ width: 110px; }  /* 无氧部位列（同一站点独有，暂不复用） */
 
 /* =====================================================
    🏷️ 运动类型标签颜色
    格式：background（背景色）/ color（文字色）/ border（边框色）
    ===================================================== */
-.record-badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:12px;font-size:11.5px;font-weight:600;white-space:normal;}
+.record-badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:12px;font-size:var(--fs-xs);font-weight:600;white-space:normal;}
 .badge-run      { background:var(--green-lt); color:var(--green-dk); border:1px solid #a7f3d0; } /* 跑步标签 */
 .badge-ana      { background:var(--blue-lt);  color:var(--blue-dk);  border:1px solid #bfdbfe; } /* 无氧标签 */
 .badge-jump     { background:var(--amber-lt); color:var(--amber);    border:1px solid #fcd34d; } /* 跳绳标签 */
 .badge-badminton{ background:var(--purple-lt);color:var(--purple);   border:1px solid #c4b5fd; } /* 羽毛球标签 */
 .badge-walk,.badge-hike { background:var(--bg3); color:var(--text2); border:1px solid var(--border2); } /* 徒步/散步标签 */
-.feel-badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:600;background:var(--amber-lt);color:var(--amber);} /* 体感标签 */
+.feel-badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:var(--fs-xs);font-weight:600;background:var(--amber-lt);color:var(--amber);} /* 体感标签 */
 
 /* Batch select */
-.select-bar{display:none;align-items:center;gap:12px;padding:10px 14px;background:var(--blue-lt);border:1.5px solid #bfdbfe;border-radius:var(--radius);margin-bottom:10px;font-size:13px;}
+.select-bar{display:none;align-items:center;gap:var(--space-12);padding:10px 14px;background:var(--blue-lt);border:1.5px solid #bfdbfe;border-radius:var(--radius);margin-bottom:var(--space-10);font-size:var(--fs-sm);}
 .select-bar.show{display:flex;}
 .select-bar-count{color:var(--blue-dk);font-weight:600;flex:1;}
 .record-check{width:16px;height:16px;accent-color:var(--blue);cursor:pointer;flex-shrink:0;}
 .record-item-wrap{display:flex;align-items:center;gap:0;min-width:max-content;}
 .check-col{padding:0 10px 0 14px;flex-shrink:0;}
 
-.no-records{text-align:center;color:var(--text3);padding:3rem;font-size:14px;}
-.pagination{display:flex;gap:6px;justify-content:center;margin-top:1rem;flex-wrap:wrap;}
-.page-btn{padding:6px 12px;border-radius:6px;font-size:13px;cursor:pointer;border:1.5px solid var(--border);background:var(--bg2);color:var(--text2);transition:all .15s;}
+.no-records{text-align:center;color:var(--text3);padding:3rem;font-size:var(--fs-base);}
+.pagination{display:flex;gap:var(--space-6);justify-content:center;margin-top:1rem;flex-wrap:wrap;}
+.page-btn{padding:6px 12px;border-radius:6px;font-size:var(--fs-sm);cursor:pointer;border:1.5px solid var(--border);background:var(--bg2);color:var(--text2);transition:all .15s;}
 .page-btn.active{background:var(--green-lt);color:var(--green);border-color:var(--green);}
 .page-btn:hover:not(.active){color:var(--text);}
 
 /* Heatmap */
 /* Line toggle switches for combined chart */
-.line-toggle{display:flex;align-items:center;gap:5px;cursor:pointer;padding:4px 10px;border-radius:14px;border:1.5px solid var(--border2);background:var(--bg3);font-size:12px;color:var(--text2);transition:all .15s;user-select:none;}
+.line-toggle{display:flex;align-items:center;gap:var(--space-5);cursor:pointer;padding:4px 10px;border-radius:14px;border:1.5px solid var(--border2);background:var(--bg3);font-size:var(--fs-sm);color:var(--text2);transition:all .15s;user-select:none;}
 .line-toggle input{display:none;}
 .line-toggle:has(input:checked){border-color:var(--c);background:color-mix(in srgb,var(--c) 12%,white);color:var(--c);font-weight:600;}
 .line-toggle span::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:4px;opacity:.4;}
 .line-toggle:has(input:checked) span::before{opacity:1;}
-.filter-pill{padding:4px 11px;border-radius:12px;font-size:12px;cursor:pointer;border:1.5px solid var(--border2);background:var(--bg3);color:var(--text2);transition:all .15s;user-select:none;}
+.filter-pill{padding:4px 11px;border-radius:12px;font-size:var(--fs-sm);cursor:pointer;border:1.5px solid var(--border2);background:var(--bg3);color:var(--text2);transition:all .15s;user-select:none;}
 .filter-pill.on{border-color:var(--green);color:var(--green);background:var(--green-lt);font-weight:600;}
 
 .heatmap-wrap{overflow-x:auto;padding-bottom:4px;}
-.heatmap{display:flex;gap:3px;}
-.heatmap-col{display:flex;flex-direction:column;gap:3px;}
+.heatmap{display:flex;gap:var(--space-3);}
+.heatmap-col{display:flex;flex-direction:column;gap:var(--space-3);}
 .heatmap-cell{width:13px;height:13px;border-radius:2px;cursor:pointer;}
 
 /* ── Anaerobic: cycle cards ── */
-.cycle-card{background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.cycle-card{background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:var(--space-16);flex-wrap:wrap;}
 .cycle-card.active{border-color:var(--green);background:var(--green-lt);}
-.cycle-card-stats{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
-.cycle-stat{display:flex;flex-direction:column;gap:2px;min-width:80px;}
-.cycle-stat-val{font-size:22px;font-weight:700;color:var(--text);line-height:1;}
+.cycle-card-stats{display:flex;align-items:center;gap:var(--space-16);flex-wrap:wrap;}
+.cycle-stat{display:flex;flex-direction:column;gap:var(--space-2);min-width:80px;}
+.cycle-stat-val{font-size:var(--fs-stat);font-weight:700;color:var(--text);line-height:1;}
 .cycle-stat-val.green{color:var(--green);}
-.cycle-stat-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;}
+.cycle-stat-label{font-size:var(--fs-xs);color:var(--text3);text-transform:uppercase;letter-spacing:.04em;}
 .cycle-divider{width:1px;height:44px;background:var(--border);flex-shrink:0;}
-.cycle-actions{margin-left:auto;display:flex;gap:6px;}
-.cycle-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;}
+.cycle-actions{margin-left:auto;display:flex;gap:var(--space-6);}
+.cycle-label{font-size:var(--fs-sm);font-weight:600;color:var(--text2);margin-bottom:var(--space-6);}
 
 /* ── 横屏查看：全屏弹层，靠真实旋转手机变宽 ── */
 .landscape-overlay{
@@ -494,44 +545,44 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   display:flex; align-items:center; justify-content:space-between;
   padding:10px 14px; border-bottom:1px solid var(--border); flex-shrink:0;
 }
-.landscape-overlay .landscape-title{ font-size:13px; font-weight:600; color:var(--text2); }
-.landscape-overlay .landscape-hint{ font-size:11px; color:var(--text3); }
+.landscape-overlay .landscape-title{ font-size:var(--fs-sm); font-weight:600; color:var(--text2); }
+.landscape-overlay .landscape-hint{ font-size:var(--fs-xs); color:var(--text3); }
 .landscape-overlay .landscape-close{
   width:32px; height:32px; border-radius:50%;
   border:1.5px solid var(--border); background:var(--bg2); color:var(--text2);
-  display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center; font-size:var(--fs-lg); flex-shrink:0;
 }
 .landscape-overlay .landscape-canvas-wrap{ flex:1; position:relative; padding:8px 12px; min-height:0; }
 
 
 
 /* ── 月度跑量：手机端横向条形列表 ── */
-.mdist-list{flex-direction:column;gap:8px;}
-.mdist-row{display:flex;align-items:center;gap:8px;}
-.mdist-month{width:40px;font-size:11px;color:var(--text3);flex-shrink:0;}
+.mdist-list{flex-direction:column;gap:var(--space-8);}
+.mdist-row{display:flex;align-items:center;gap:var(--space-8);}
+.mdist-month{width:40px;font-size:var(--fs-xs);color:var(--text3);flex-shrink:0;}
 .mdist-bar-wrap{flex:1;height:22px;background:var(--bg3);border-radius:4px;overflow:hidden;min-width:0;position:relative;}
-.mdist-bar{height:100%;border-radius:4px;background:#16a06a;}
-.mdist-val{position:absolute;top:0;left:8px;bottom:0;display:flex;align-items:center;font-size:11px;color:#fff;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.35);}
+.mdist-bar{height:100%;border-radius:4px;background:var(--green);}
+.mdist-val{position:absolute;top:0;left:8px;bottom:0;display:flex;align-items:center;font-size:var(--fs-xs);color:#fff;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.35);}
 
 
 /* ── Anaerobic: yearly report ── */
-.yearly-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:12px;box-shadow:var(--shadow);}
-.yearly-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;}
-.yearly-sub{font-size:12px;color:var(--text3);margin-bottom:16px;}
-.yearly-bars{display:flex;flex-direction:column;gap:10px;}
-.yearly-bar-row{display:flex;align-items:center;gap:12px;}
-.yearly-bar-label{font-size:13px;color:var(--text2);width:40px;text-align:right;flex-shrink:0;}
+.yearly-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:var(--space-12);box-shadow:var(--shadow);}
+.yearly-title{font-size:var(--fs-base);font-weight:700;color:var(--text);margin-bottom:var(--space-4);}
+.yearly-sub{font-size:var(--fs-sm);color:var(--text3);margin-bottom:var(--space-16);}
+.yearly-bars{display:flex;flex-direction:column;gap:var(--space-10);}
+.yearly-bar-row{display:flex;align-items:center;gap:var(--space-12);}
+.yearly-bar-label{font-size:var(--fs-sm);color:var(--text2);width:40px;text-align:right;flex-shrink:0;}
 .yearly-bar-track{flex:1;height:22px;background:var(--bg3);border-radius:4px;overflow:hidden;position:relative;}
 .yearly-bar-fill{height:100%;border-radius:4px;background:var(--blue);transition:width .4s ease;display:flex;align-items:center;padding-left:8px;min-width:30px;}
-.yearly-bar-num{font-size:12px;font-weight:700;color:#fff;white-space:nowrap;}
-.yearly-bar-pct{font-size:12px;color:var(--text3);flex-shrink:0;width:36px;}
+.yearly-bar-num{font-size:var(--fs-sm);font-weight:700;color:#fff;white-space:nowrap;}
+.yearly-bar-pct{font-size:var(--fs-sm);color:var(--text3);flex-shrink:0;width:36px;}
 
 /* Data mgmt */
-.data-section{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:14px;box-shadow:var(--shadow);}
-.data-section h3{font-size:13px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+.data-section{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:var(--space-14);box-shadow:var(--shadow);}
+.data-section h3{font-size:var(--fs-sm);font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em;margin-bottom:var(--space-8);}
 
 /* Toast */
-.toast{position:fixed;bottom:2rem;right:2rem;background:var(--text);color:#fff;padding:12px 20px;border-radius:var(--radius);font-size:13.5px;z-index:400;opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none;}
+.toast{position:fixed;bottom:2rem;right:2rem;background:var(--text);color:#fff;padding:12px 20px;border-radius:var(--radius);font-size:var(--fs-sm);z-index:400;opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none;}
 .toast.show{opacity:1;transform:translateY(0);}
 
 /* Hidden sport sections */
@@ -541,10 +592,10 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
 /* ── Calendar ── */
 .cal-header{
-  display:flex;align-items:center;gap:16px;
+  display:flex;align-items:center;gap:var(--space-16);
   padding:10px 0; margin:0 0 14px;
 }
-.cal-year-label{font-size:19px;font-weight:700;color:var(--text);min-width:56px;text-align:center;letter-spacing:.2px;}
+.cal-year-label{font-size:var(--fs-lg);font-weight:700;color:var(--text);min-width:56px;text-align:center;letter-spacing:.2px;}
 .cal-year-btn{
   width:30px;height:30px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
@@ -563,7 +614,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   width:30px;height:30px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
   background:transparent;border:none;border-radius:50%;
-  color:var(--text3);font-size:19px;line-height:1;cursor:pointer;
+  color:var(--text3);font-size:var(--fs-lg);line-height:1;cursor:pointer;
   transition:background .15s,color .15s;
 }
 .cal-filter-btn:hover{background:var(--bg3);color:var(--text);}
@@ -573,8 +624,8 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-lg);
   box-shadow:var(--shadow); padding:10px 12px; min-width:172px; z-index:70;
 }
-.cal-filter-title{font-size:11.5px;font-weight:700;color:var(--text3);margin-bottom:8px;}
-.cal-filter-item{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text2);padding:5px 0;cursor:pointer;white-space:nowrap;}
+.cal-filter-title{font-size:var(--fs-xs);font-weight:700;color:var(--text3);margin-bottom:var(--space-8);}
+.cal-filter-item{display:flex;align-items:center;gap:var(--space-7);font-size:var(--fs-sm);color:var(--text2);padding:5px 0;cursor:pointer;white-space:nowrap;}
 .cal-filter-item input{margin:0;cursor:pointer;}
 .cal-leg-color{
   -webkit-appearance:none;appearance:none;
@@ -585,21 +636,21 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .cal-leg-color::-webkit-color-swatch-wrapper{padding:0;}
 .cal-leg-color::-webkit-color-swatch{border:none;border-radius:3px;}
 .cal-leg-color::-moz-color-swatch{border:none;border-radius:3px;}
-.cal-filter-actions{display:flex;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
-.cal-filter-actions button{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:11px;padding:5px 2px;cursor:pointer;}
+.cal-filter-actions{display:flex;gap:var(--space-8);margin-top:var(--space-8);padding-top:8px;border-top:1px solid var(--border);}
+.cal-filter-actions button{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-size:var(--fs-xs);padding:5px 2px;cursor:pointer;}
 .cal-filter-actions button:hover{color:var(--text);border-color:var(--green);}
 
 /* 12-month grid: 4 cols × 3 rows */
-.cal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+.cal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-16);}
 @media(max-width:1200px){.cal-grid{grid-template-columns:repeat(3,1fr);}}
 @media(max-width:800px){.cal-grid{grid-template-columns:repeat(2,1fr);}}
 
 /* Each month card */
 .cal-month{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;box-shadow:var(--shadow);min-width:0;overflow:hidden;}
-.cal-month-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;}
-.cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px;}
-.cal-wd{font-size:11px;color:var(--text3);text-align:center;padding:3px 0;font-weight:600;}
-.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-month-title{font-size:var(--fs-base);font-weight:700;color:var(--text);margin-bottom:var(--space-8);padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:var(--space-8);}
+.cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:var(--space-3);margin-bottom:var(--space-4);}
+.cal-wd{font-size:var(--fs-xs);color:var(--text3);text-align:center;padding:3px 0;font-weight:600;}
+.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:var(--space-3);}
 
 /* Day cell — 日期数字 + 固定色条槽位（无氧①/无氧②/跑步/其他①/其他②），格子高度固定按5条色条计算 */
 .cal-day{
@@ -622,14 +673,14 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   padding:3px 0 2px 5px;
   box-sizing:border-box;
 }
-.cal-day-num{font-size:11px;font-weight:700;color:var(--text2);line-height:1;}
+.cal-day-num{font-size:var(--fs-xs);font-weight:700;color:var(--text2);line-height:1;}
 .cal-day-num.is-empty{color:var(--text3);}
 
 .cal-day-bars{
   flex:1;
   min-width:0;
   display:flex;flex-direction:column;
-  gap:2px;
+  gap:var(--space-2);
   padding:0 3px 3px;
   box-sizing:border-box;
 }
@@ -639,7 +690,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   min-width:0;
   border-radius:3px;
   display:flex;align-items:center;justify-content:center;
-  font-size:8px;font-weight:600;color:rgba(255,255,255,0.95);
+  font-size:var(--fs-micro);font-weight:600;color:rgba(255,255,255,0.95);
   line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   padding:0 3px;box-sizing:border-box;
 }
@@ -647,7 +698,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .cal-bar-plus{
   flex:0 0 12px;height:12px;
   display:flex;align-items:center;justify-content:center;
-  font-size:8px;font-weight:700;color:var(--text3);
+  font-size:var(--fs-micro);font-weight:700;color:var(--text3);
   line-height:1;
 }
 
@@ -685,37 +736,37 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   <div id="page-dashboard">
 
     <!-- 第一行：左边（数字+饼图）+ 右边（热图）并排 -->
-    <div class="charts-grid" style="margin-bottom:14px">
+    <div class="charts-grid" style="margin-bottom:var(--space-14)">
 
       <!-- 左：总运动次数 + 饼图 同一卡片，横向三区域 -->
-      <div class="chart-card dash-stat-card" style="display:flex;align-items:center;gap:20px">
+      <div class="chart-card dash-stat-card" style="display:flex;align-items:center;gap:var(--space-20)">
         <!-- 数字区 -->
         <div style="flex-shrink:0;min-width:150px">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:var(--space-6);margin-bottom:var(--space-6);flex-wrap:wrap">
             <input type="date" id="dash-stat-start" class="mini-date-input" onchange="onDashStatStartChange()" title="选择统计起始日期">
             <span class="mini-reset-link" onclick="resetDashStatStart()" title="重置为最早日期">重置</span>
           </div>
-          <div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-variant-numeric:tabular-nums" id="dash-date-range">—</div>
-          <div style="display:flex;align-items:flex-end;gap:3px;line-height:1">
-            <div style="font-size:40px;font-weight:800;color:var(--green);font-variant-numeric:tabular-nums;line-height:1" id="dash-total">—</div>
-            <div style="font-size:12px;color:var(--text3);padding-bottom:5px;white-space:nowrap">次运动</div>
+          <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:var(--space-8);font-variant-numeric:tabular-nums" id="dash-date-range">—</div>
+          <div style="display:flex;align-items:flex-end;gap:var(--space-3);line-height:1">
+            <div style="font-size:var(--fs-display);font-weight:800;color:var(--green);font-variant-numeric:tabular-nums;line-height:1" id="dash-total">—</div>
+            <div style="font-size:var(--fs-sm);color:var(--text3);padding-bottom:5px;white-space:nowrap">次运动</div>
           </div>
-          <div style="font-size:13px;font-weight:600;color:var(--text2);margin-top:6px" id="dash-week-avg">—</div>
+          <div style="font-size:var(--fs-sm);font-weight:600;color:var(--text2);margin-top:var(--space-6)" id="dash-week-avg">—</div>
         </div>
         <!-- 竖向分割线 -->
         <div class="dash-stat-divider" style="width:1px;height:80px;background:var(--border);flex-shrink:0"></div>
         <!-- 饼图区域 -->
         <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-10)">
             <div>
               <div class="chart-title">运动类型占比</div>
               <div class="chart-sub">所有记录分布</div>
             </div>
-            <label class="line-toggle" style="--c:#16a06a"><input type="checkbox" id="dash-pie-labels" checked onchange="renderDashboard()"><span>显示数字</span></label>
+            <label class="line-toggle" style="--c:var(--green)"><input type="checkbox" id="dash-pie-labels" checked onchange="renderDashboard()"><span>显示数字</span></label>
           </div>
-          <div class="dash-pie-row" style="display:flex;align-items:center;gap:16px">
+          <div class="dash-pie-row" style="display:flex;align-items:center;gap:var(--space-16)">
             <div style="position:relative;flex:1;min-width:0;height:200px"><canvas id="typeChart"></canvas></div>
-            <div id="typeChart-legend" style="display:flex;flex-direction:column;gap:6px;flex-shrink:0"></div>
+            <div id="typeChart-legend" style="display:flex;flex-direction:column;gap:var(--space-6);flex-shrink:0"></div>
           </div>
         </div>
       </div>
@@ -724,28 +775,28 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
       <div class="chart-card">
         <div class="chart-title">运动热图</div>
         <div class="chart-sub">近12个月每日运动次数</div>
-        <div id="heatmap-container" style="margin-top:8px"></div>
+        <div id="heatmap-container" style="margin-top:var(--space-8)"></div>
       </div>
     </div>
 
     <!-- 第二行：月度运动构成独占一行 -->
     <div class="chart-card full" style="margin-bottom:1.5rem">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-8);flex-wrap:wrap">
         <div>
           <div class="chart-title">月度运动构成</div>
           <div class="chart-sub">每月各运动类型次数</div>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:var(--space-6);flex-wrap:wrap">
           <span class="mini-date-label">起始月份</span>
           <input type="date" id="dash-monthly-start" class="mini-date-input" onchange="onDashMonthlyStartChange()" title="选择起始月份">
           <span class="mini-reset-link" onclick="resetDashMonthlyStart()" title="重置为最早日期">重置</span>
         </div>
       </div>
       <div class="legend">
-        <div class="legend-item"><div class="legend-dot" id="legend-dot-Strength" style="background:#3b7ef8"></div>无氧</div>
-        <div class="legend-item"><div class="legend-dot" id="legend-dot-Run" style="background:#16a06a"></div>跑步</div>
-        <div class="legend-item"><div class="legend-dot" id="legend-dot-JumpRope" style="background:#d97706"></div>跳绳</div>
-        <div class="legend-item"><div class="legend-dot" id="legend-dot-Badminton" style="background:#7c5cf6"></div>羽毛球</div>
+        <div class="legend-item"><div class="legend-dot" id="legend-dot-Strength" style="background:var(--blue)"></div>无氧</div>
+        <div class="legend-item"><div class="legend-dot" id="legend-dot-Run" style="background:var(--green)"></div>跑步</div>
+        <div class="legend-item"><div class="legend-dot" id="legend-dot-JumpRope" style="background:var(--amber)"></div>跳绳</div>
+        <div class="legend-item"><div class="legend-dot" id="legend-dot-Badminton" style="background:var(--purple)"></div>羽毛球</div>
       </div>
       <div style="position:relative;height:220px"><canvas id="monthlyChart"></canvas></div>
     </div>
@@ -756,8 +807,8 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   <div id="page-anaerobic" style="display:none">
 
     <!-- 坚持周期 -->
-    <div class="chart-card full" style="margin-bottom:14px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div class="chart-card full" style="margin-bottom:var(--space-14)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-16)">
         <div>
           <div class="chart-title">无氧坚持周期</div>
           <div class="chart-sub">记录每个阶段的起止日期，统计坚持天数与训练频率</div>
@@ -767,31 +818,31 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
       <!-- 当前进行中 -->
       <div id="ana-cycle-active"></div>
       <!-- 历史折叠 -->
-      <div id="ana-cycle-history-wrap" style="margin-top:10px;display:none">
-        <button class="btn btn-secondary btn-sm" id="ana-cycle-toggle" onclick="toggleCycleHistory()" style="margin-bottom:10px">展开历史周期</button>
-        <div id="ana-cycle-history" style="display:none;flex-direction:column;gap:8px"></div>
+      <div id="ana-cycle-history-wrap" style="margin-top:var(--space-10);display:none">
+        <button class="btn btn-secondary btn-sm" id="ana-cycle-toggle" onclick="toggleCycleHistory()" style="margin-bottom:var(--space-10)">展开历史周期</button>
+        <div id="ana-cycle-history" style="display:none;flex-direction:column;gap:var(--space-8)"></div>
       </div>
     </div>
 
     <!-- 肌群分布 + 月度趋势 同一行 -->
-    <div class="charts-grid" style="margin-bottom:14px">
+    <div class="charts-grid" style="margin-bottom:var(--space-14)">
       <div class="chart-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-6)">
           <div>
             <div class="chart-title">肌群训练分布</div>
             <div class="chart-sub">各部位占比（复合日取第一个部位）</div>
           </div>
-          <label class="line-toggle" style="--c:#3b7ef8"><input type="checkbox" id="ana-pie-labels" checked onchange="renderAnaerobic()"><span>显示数字</span></label>
+          <label class="line-toggle" style="--c:var(--blue)"><input type="checkbox" id="ana-pie-labels" checked onchange="renderAnaerobic()"><span>显示数字</span></label>
         </div>
         <div style="position:relative;height:240px"><canvas id="muscleChart"></canvas></div>
       </div>
       <div class="chart-card">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-8);flex-wrap:wrap">
           <div>
             <div class="chart-title">月度无氧训练频次</div>
             <div class="chart-sub">每月无氧训练次数趋势</div>
           </div>
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:var(--space-6);flex-wrap:wrap">
             <input type="date" id="ana-monthly-start" class="mini-date-input" onchange="onAnaMonthlyStartChange()" title="选择起始月份">
             <span class="mini-reset-link" onclick="resetAnaMonthlyStart()" title="重置为最早日期">重置</span>
           </div>
@@ -801,13 +852,13 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
     </div>
 
     <!-- 年度战报：分组柱状图 -->
-    <div class="chart-card full" style="margin-bottom:14px">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">
+    <div class="chart-card full" style="margin-bottom:var(--space-14)">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:var(--space-4)">
         <div>
           <div class="chart-title">年度战报</div>
           <div class="chart-sub">各部位各年度训练次数对比 · 点击年份可排除/恢复</div>
         </div>
-        <div id="ana-yearly-legend" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+        <div id="ana-yearly-legend" style="display:flex;gap:var(--space-8);flex-wrap:wrap"></div>
       </div>
       <div style="position:relative;height:280px"><canvas id="yearlyChart"></canvas></div>
     </div>
@@ -816,14 +867,14 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   <!-- ══════════ HIKE ANALYSIS ══════════ -->
   <div id="page-hike" style="display:none">
     <div class="chart-card full" style="margin-bottom:1.5rem">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:var(--space-12);margin-bottom:var(--space-14)">
         <div>
           <div class="chart-title">步数趋势</div>
           <div class="chart-sub">每次步数记录</div>
         </div>
         <!-- 颜色图例开关 -->
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <span style="font-size:11px;color:var(--text3)">显示：</span>
+        <div style="display:flex;gap:var(--space-8);flex-wrap:wrap;align-items:center">
+          <span style="font-size:var(--fs-xs);color:var(--text3)">显示：</span>
           <label class="line-toggle" id="hlt-hike-label" style="--c:#059669"><input type="checkbox" id="hlt-hike" checked onchange="renderHikeAnalysis()"><span>⛰ Hike</span></label>
           <label class="line-toggle" id="hlt-walk-label" style="--c:#6b9e8a"><input type="checkbox" id="hlt-walk" checked onchange="renderHikeAnalysis()"><span>🚶 Walk</span></label>
           <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
@@ -839,14 +890,14 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   <div id="page-run" style="display:none">
 
     <!-- 全部跑步总数据 -->
-    <div class="chart-card full" style="margin-bottom:14px">
-      <div class="chart-title" style="margin-bottom:14px">全部记录</div>
+    <div class="chart-card full" style="margin-bottom:var(--space-14)">
+      <div class="chart-title" style="margin-bottom:var(--space-14)">全部记录</div>
       <div class="metrics" id="run-metrics-total" style="margin-bottom:0"></div>
     </div>
 
     <!-- 跑步周期 -->
-    <div class="chart-card full" style="margin-bottom:14px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div class="chart-card full" style="margin-bottom:var(--space-14)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-16)">
         <div>
           <div class="chart-title">跑步周期</div>
           <div class="chart-sub">记录每个阶段的起止日期，统计周期内跑步数据</div>
@@ -856,23 +907,23 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
       <!-- 当前进行中 -->
       <div id="run-cycle-active"></div>
       <!-- 历史折叠 -->
-      <div id="run-cycle-history-wrap" style="margin-top:10px;display:none">
-        <button class="btn btn-secondary btn-sm" id="run-cycle-toggle" onclick="toggleRunCycleHistory()" style="margin-bottom:10px">展开历史周期</button>
-        <div id="run-cycle-history" style="display:none;flex-direction:column;gap:12px"></div>
+      <div id="run-cycle-history-wrap" style="margin-top:var(--space-10);display:none">
+        <button class="btn btn-secondary btn-sm" id="run-cycle-toggle" onclick="toggleRunCycleHistory()" style="margin-bottom:var(--space-10)">展开历史周期</button>
+        <div id="run-cycle-history" style="display:none;flex-direction:column;gap:var(--space-12)"></div>
       </div>
     </div>
 
     <!-- 趋势图表（最下方） -->
-    <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:1.5rem;">
+    <div style="display:flex;flex-direction:column;gap:var(--space-14);margin-bottom:1.5rem;">
 
       <!-- 月度跑量 -->
       <div class="chart-card">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-8);flex-wrap:wrap">
           <div>
             <div class="chart-title">月度跑量</div>
             <div class="chart-sub">月度累计距离 (km)</div>
           </div>
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:var(--space-6);flex-wrap:wrap">
             <input type="date" id="run-mdist-start" class="mini-date-input" onchange="onRunMDistStartChange()" title="选择起始月份">
             <span class="mini-reset-link" onclick="resetRunMDistStart()" title="重置为最早日期">重置</span>
           </div>
@@ -883,54 +934,54 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
       <!-- 配速/心率/步频 合并图 -->
       <div class="chart-card">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:var(--space-12);margin-bottom:var(--space-14)">
           <div>
             <div class="chart-title">配速 / 心率 / 步频</div>
             <div class="chart-sub">多维度趋势，可按训练类型和距离筛选</div>
           </div>
           <!-- 线条开关 + 目标线设置 -->
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <span style="font-size:11px;color:var(--text3)">显示：</span>
-            <label class="line-toggle" style="--c:#3b7ef8"><input type="checkbox" id="lt-pace" checked onchange="renderCombinedChart()"><span>配速</span></label>
-            <label class="line-toggle" style="--c:#e04545"><input type="checkbox" id="lt-hr" checked onchange="renderCombinedChart()"><span>平均心率</span></label>
-            <label class="line-toggle" style="--c:#d97706"><input type="checkbox" id="lt-maxhr" checked onchange="renderCombinedChart()"><span>最大心率</span></label>
-            <label class="line-toggle" style="--c:#7c5cf6"><input type="checkbox" id="lt-cadence" onchange="renderCombinedChart()"><span>步频</span></label>
+          <div style="display:flex;gap:var(--space-8);flex-wrap:wrap;align-items:center">
+            <span style="font-size:var(--fs-xs);color:var(--text3)">显示：</span>
+            <label class="line-toggle" style="--c:var(--blue)"><input type="checkbox" id="lt-pace" checked onchange="renderCombinedChart()"><span>配速</span></label>
+            <label class="line-toggle" style="--c:var(--coral)"><input type="checkbox" id="lt-hr" checked onchange="renderCombinedChart()"><span>平均心率</span></label>
+            <label class="line-toggle" style="--c:var(--amber)"><input type="checkbox" id="lt-maxhr" checked onchange="renderCombinedChart()"><span>最大心率</span></label>
+            <label class="line-toggle" style="--c:var(--purple)"><input type="checkbox" id="lt-cadence" onchange="renderCombinedChart()"><span>步频</span></label>
             <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
-            <button class="btn btn-secondary btn-sm" onclick="openTargetModal()" style="font-size:11.5px">⚑ 目标线</button>
-            <button class="btn btn-secondary btn-sm landscape-btn" onclick="openLandscapeChart()" style="font-size:11.5px">⤢ 横屏查看</button>
+            <button class="btn btn-secondary btn-sm" onclick="openTargetModal()" style="font-size:var(--fs-xs)">⚑ 目标线</button>
+            <button class="btn btn-secondary btn-sm landscape-btn" onclick="openLandscapeChart()" style="font-size:var(--fs-xs)">⤢ 横屏查看</button>
           </div>
         </div>
         <!-- 筛选条件 -->
-        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;gap:var(--space-12);flex-wrap:wrap;margin-bottom:var(--space-14);padding-bottom:12px;border-bottom:1px solid var(--border)">
           <div>
-            <div style="font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">训练类型</div>
-            <div id="filter-subtype" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+            <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:var(--space-6);text-transform:uppercase;letter-spacing:.04em">训练类型</div>
+            <div id="filter-subtype" style="display:flex;gap:var(--space-6);flex-wrap:wrap"></div>
           </div>
           <div>
-            <div style="font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">距离</div>
-            <div id="filter-dist" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+            <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:var(--space-6);text-transform:uppercase;letter-spacing:.04em">距离</div>
+            <div id="filter-dist" style="display:flex;gap:var(--space-6);flex-wrap:wrap"></div>
           </div>
           <div>
-            <div style="font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">起始日期</div>
-            <div style="display:flex;align-items:center;gap:6px">
+            <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:var(--space-6);text-transform:uppercase;letter-spacing:.04em">起始日期</div>
+            <div style="display:flex;align-items:center;gap:var(--space-6)">
               <input type="date" id="run-combined-start" class="mini-date-input" onchange="onRunCombinedStartChange()" title="选择起始日期">
               <span class="mini-reset-link" onclick="resetRunCombinedStart()" title="重置为最早日期">重置</span>
             </div>
           </div>
         </div>
         <!-- 目标线提示 -->
-        <div id="target-hint" style="display:none;margin-bottom:8px;font-size:12px;color:var(--text3);display:flex;gap:16px;flex-wrap:wrap"></div>
+        <div id="target-hint" style="display:none;margin-bottom:var(--space-8);font-size:var(--fs-sm);color:var(--text3);display:flex;gap:var(--space-16);flex-wrap:wrap"></div>
         <div style="position:relative;height:380px"><canvas id="combinedChart"></canvas></div>
       </div>
 
       <!-- 单次距离 -->
       <div class="chart-card">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-8);flex-wrap:wrap">
           <div>
             <div class="chart-title">单次距离</div>
             <div class="chart-sub">每次跑步距离 (km)</div>
           </div>
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:var(--space-6);flex-wrap:wrap">
             <input type="date" id="run-dist-start" class="mini-date-input" onchange="onRunDistStartChange()" title="选择起始日期">
             <span class="mini-reset-link" onclick="resetRunDistStart()" title="重置为最早日期">重置</span>
           </div>
@@ -1032,8 +1083,8 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
             <datalist id="list-shoe"></datalist>
           </div>
           <div class="ff span4"><label>设备（可多选，自定义）</label>
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
-              <input list="list-device" id="r-device-input" placeholder="输入设备名称…" style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:13.5px;padding:8px 11px;height:38px;width:200px;font-family:var(--font);" onkeydown="if(event.key==='Enter'){event.preventDefault();addDeviceFromInput();}">
+            <div style="display:flex;align-items:center;gap:var(--space-8);flex-wrap:wrap;margin-bottom:var(--space-6)">
+              <input list="list-device" id="r-device-input" placeholder="输入设备名称…" style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:var(--fs-sm);padding:8px 11px;height:38px;width:200px;font-family:var(--font);" onkeydown="if(event.key==='Enter'){event.preventDefault();addDeviceFromInput();}">
               <datalist id="list-device"></datalist>
               <button type="button" class="btn btn-secondary btn-sm" onclick="addDeviceFromInput()">添加</button>
             </div>
@@ -1215,61 +1266,61 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
   <div id="page-data" style="display:none">
     <!-- Gist 云同步 -->
-    <div class="data-section" style="margin-bottom:14px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+    <div class="data-section" style="margin-bottom:var(--space-14)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-8)">
         <h3>☁ Gist 云同步</h3>
-        <span id="gist-connected-badge" style="display:none;font-size:11px;background:var(--green);color:#fff;padding:2px 8px;border-radius:10px;font-weight:600">已连接</span>
+        <span id="gist-connected-badge" style="display:none;font-size:var(--fs-xs);background:var(--green);color:#fff;padding:2px 8px;border-radius:10px;font-weight:600">已连接</span>
       </div>
-      <p style="font-size:13px;color:var(--text3);margin-bottom:10px;line-height:1.7">
+      <p style="font-size:var(--fs-sm);color:var(--text3);margin-bottom:var(--space-10);line-height:1.7">
         数据同步到 GitHub Gist，手机和电脑打开同一个文件都能读取最新数据。<br>
         <a href="https://github.com/settings/tokens/new?scopes=gist&description=Fitness+Sync" target="_blank" style="color:var(--green)">点这里生成 Token</a>（只勾选 gist 权限即可）
       </p>
-      <div style="display:flex;flex-direction:column;gap:12px;max-width:480px">
+      <div style="display:flex;flex-direction:column;gap:var(--space-12);max-width:480px">
         <div class="ff"><label>GitHub Token</label>
-          <input type="password" id="gistToken" placeholder="ghp_xxxxxxxxxxxx" style="font-family:monospace;font-size:13px">
+          <input type="password" id="gistToken" placeholder="ghp_xxxxxxxxxxxx" style="font-family:monospace;font-size:var(--fs-sm)">
         </div>
         <div class="ff"><label>Gist ID <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">（第一次留空，保存后自动生成）</span></label>
-          <input type="text" id="gistId" placeholder="留空则自动创建新 Gist" style="font-family:monospace;font-size:13px">
+          <input type="text" id="gistId" placeholder="留空则自动创建新 Gist" style="font-family:monospace;font-size:var(--fs-sm)">
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;gap:var(--space-8);flex-wrap:wrap">
           <button class="btn btn-primary" onclick="saveGistConfig()">保存配置</button>
           <button class="btn btn-secondary" onclick="pushToGist(true)">立即上传</button>
           <button class="btn btn-secondary" onclick="pullFromGist(true)">从云端拉取</button>
         </div>
-        <div id="gistStatus" style="font-size:13px;min-height:18px"></div>
+        <div id="gistStatus" style="font-size:var(--fs-sm);min-height:18px"></div>
       </div>
     </div>
     <div class="data-section">
       <h3>导出备份</h3>
-      <p style="font-size:13px;color:var(--text3);margin-bottom:4px">将所有记录导出为 JSON 文件，妥善保存即可保证数据安全</p>
-      <p style="font-size:12px;color:var(--text3);margin-bottom:12px">建议每次新增记录后导出一次，存到固定位置</p>
+      <p style="font-size:var(--fs-sm);color:var(--text3);margin-bottom:var(--space-4)">将所有记录导出为 JSON 文件，妥善保存即可保证数据安全</p>
+      <p style="font-size:var(--fs-sm);color:var(--text3);margin-bottom:var(--space-12)">建议每次新增记录后导出一次，存到固定位置</p>
       <button class="btn btn-secondary" onclick="exportData()">导出 JSON 备份</button>
     </div>
 
     <div class="data-section">
       <h3>导入数据</h3>
-      <p style="font-size:13px;color:var(--text3);margin-bottom:4px">支持导入「导出 JSON 备份」生成的 JSON 文件，或原始 Excel 文件（.xlsx），按固定表头自动映射字段</p>
-      <p style="font-size:12px;color:var(--text3);margin-bottom:10px">Excel 识别列：日期 / 运动类型 / 训练类型 / 时段 / 备注 / 距离/km / 运动时间 / 平均配速/km / 平均心率 / 最大心率 / 步频 / 个数 / 跳绳频率 / 设备 / 跑鞋（其余列自动忽略）</p>
-      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px">
-        <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text2);cursor:pointer">
+      <p style="font-size:var(--fs-sm);color:var(--text3);margin-bottom:var(--space-4)">支持导入「导出 JSON 备份」生成的 JSON 文件，或原始 Excel 文件（.xlsx），按固定表头自动映射字段</p>
+      <p style="font-size:var(--fs-sm);color:var(--text3);margin-bottom:var(--space-10)">Excel 识别列：日期 / 运动类型 / 训练类型 / 时段 / 备注 / 距离/km / 运动时间 / 平均配速/km / 平均心率 / 最大心率 / 步频 / 个数 / 跳绳频率 / 设备 / 跑鞋（其余列自动忽略）</p>
+      <div style="display:flex;align-items:center;gap:var(--space-16);flex-wrap:wrap;margin-bottom:var(--space-12)">
+        <label style="display:flex;align-items:center;gap:var(--space-7);font-size:var(--fs-sm);color:var(--text2);cursor:pointer">
           <input type="radio" name="importMode" value="merge" checked style="accent-color:var(--green)">
           合并模式（跳过重复 ID，保留已有记录）
         </label>
-        <label style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text2);cursor:pointer">
+        <label style="display:flex;align-items:center;gap:var(--space-7);font-size:var(--fs-sm);color:var(--text2);cursor:pointer">
           <input type="radio" name="importMode" value="overwrite" style="accent-color:var(--coral)">
           覆盖模式（清空现有数据，全量重新导入）
         </label>
       </div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+      <div style="display:flex;gap:var(--space-10);align-items:center;flex-wrap:wrap;margin-bottom:var(--space-10)">
         <input type="file" id="importJsonFile" accept=".json,application/json" style="display:none" onchange="importFromJson(event)">
         <button class="btn btn-secondary" onclick="document.getElementById('importJsonFile').click()">选择 JSON 备份文件</button>
         <input type="file" id="importXlsxFile" accept=".xlsx,.xls" style="display:none" onchange="importFromExcel(event)">
         <button class="btn btn-secondary" onclick="document.getElementById('importXlsxFile').click()">选择 Excel 文件</button>
-        <span id="import-status" style="font-size:13px;color:var(--text3)"></span>
+        <span id="import-status" style="font-size:var(--fs-sm);color:var(--text3)"></span>
       </div>
-      <div id="import-preview" style="display:none;margin-top:12px;">
-        <div id="import-preview-text" style="font-size:13px;color:var(--text2);margin-bottom:10px;line-height:1.8;padding:12px;background:var(--bg3);border-radius:var(--radius);border:1px solid var(--border)"></div>
-        <div style="display:flex;gap:10px">
+      <div id="import-preview" style="display:none;margin-top:var(--space-12);">
+        <div id="import-preview-text" style="font-size:var(--fs-sm);color:var(--text2);margin-bottom:var(--space-10);line-height:1.8;padding:12px;background:var(--bg3);border-radius:var(--radius);border:1px solid var(--border)"></div>
+        <div style="display:flex;gap:var(--space-10)">
           <button class="btn btn-primary" onclick="confirmImport()">确认导入</button>
           <button class="btn btn-secondary" onclick="cancelImport()">取消</button>
         </div>
@@ -1278,7 +1329,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
     <div class="data-section">
       <h3>数据概况</h3>
-      <div id="data-stats" style="font-size:13px;color:var(--text2);margin-top:8px;line-height:2.2"></div>
+      <div id="data-stats" style="font-size:var(--fs-sm);color:var(--text2);margin-top:var(--space-8);line-height:2.2"></div>
     </div>
   </div>
 </div><!-- /main -->
@@ -1320,28 +1371,28 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
 <!-- 📱 更多菜单（手机端，从底部导航向上展开） -->
 <div id="mobileMoreMenu" style="display:none;position:fixed;bottom:calc(56px + env(safe-area-inset-bottom));left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);z-index:199;padding:6px 0;box-shadow:0 -4px 20px rgba(0,0,0,0.1)">
-  <button onclick="showTab('hike');closeMobileMore()" style="display:flex;align-items:center;gap:12px;width:100%;padding:14px 20px;border:none;background:none;font-family:var(--font);font-size:14px;color:var(--text);cursor:pointer;text-align:left">🥾 Hike</button>
-  <button onclick="showTab('data');closeMobileMore()" style="display:flex;align-items:center;gap:12px;width:100%;padding:14px 20px;border:none;background:none;font-family:var(--font);font-size:14px;color:var(--text);cursor:pointer;text-align:left">🗂 Data</button>
+  <button onclick="showTab('hike');closeMobileMore()" style="display:flex;align-items:center;gap:var(--space-12);width:100%;padding:14px 20px;border:none;background:none;font-family:var(--font);font-size:var(--fs-base);color:var(--text);cursor:pointer;text-align:left">🥾 Hike</button>
+  <button onclick="showTab('data');closeMobileMore()" style="display:flex;align-items:center;gap:var(--space-12);width:100%;padding:14px 20px;border:none;background:none;font-family:var(--font);font-size:var(--fs-base);color:var(--text);cursor:pointer;text-align:left">🗂 Data</button>
 </div>
 
 
 <!-- 目标线设置 Modal -->
 <div id="targetModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:300;display:none;align-items:center;justify-content:center" onclick="if(event.target===this)closeTargetModal()">
   <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:28px;width:360px;box-shadow:var(--shadow)">
-    <div style="font-size:15px;font-weight:700;margin-bottom:20px;color:var(--text)">⚑ 目标线设置</div>
-    <div style="display:flex;flex-direction:column;gap:16px">
+    <div style="font-size:var(--fs-base);font-weight:700;margin-bottom:var(--space-20);color:var(--text)">⚑ 目标线设置</div>
+    <div style="display:flex;flex-direction:column;gap:var(--space-16)">
       <div class="ff">
         <label>配速目标 (分:秒，如 6:00)</label>
         <input type="text" id="target-pace-input" placeholder="6:00" pattern="\d+:\d{2}">
-        <div style="font-size:11px;color:var(--text3);margin-top:4px">留空则不显示目标线</div>
+        <div style="font-size:var(--fs-xs);color:var(--text3);margin-top:var(--space-4)">留空则不显示目标线</div>
       </div>
       <div class="ff">
         <label>平均心率目标 (bpm)</label>
         <input type="number" id="target-hr-input" placeholder="150" min="60" max="220">
-        <div style="font-size:11px;color:var(--text3);margin-top:4px">留空则不显示目标线</div>
+        <div style="font-size:var(--fs-xs);color:var(--text3);margin-top:var(--space-4)">留空则不显示目标线</div>
       </div>
     </div>
-    <div style="display:flex;gap:10px;margin-top:22px;justify-content:flex-end">
+    <div style="display:flex;gap:var(--space-10);margin-top:var(--space-22);justify-content:flex-end">
       <button class="btn btn-secondary" onclick="closeTargetModal()">取消</button>
       <button class="btn btn-primary" onclick="saveTargetLines()">保存</button>
     </div>
@@ -1365,6 +1416,25 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 // 所有来自用户输入的自由文本（备注、路线、装备名、自定义运动名等）
 // 在拼接进 innerHTML 之前都必须经过转义，避免导入数据 / Gist 同步等
 // 途径带入的恶意内容被当作 HTML/脚本执行。
+// ══════════════════════════════════════
+//  主题色读取（让图表颜色与 CSS 变量保持"单一数据源"）
+// ══════════════════════════════════════
+// Chart.js 和 <canvas> 绘图 API 拿不到 CSS 自定义属性，只能吃实际颜色值，
+// 所以这里在脚本启动时从 :root 读一次并缓存。之后 JS 里所有需要主题色
+// 的地方（图表配置、canvas 绘制、图例映射）都引用 THEME.xxx，不再各自
+// 硬编码十六进制——以后想统一改主题色，只改 CSS 变量这一处就行，
+// 图表颜色会自动跟着变，不用两头改、也不会漏改导致色值不一致。
+function cssVar(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+const THEME = {
+  green:  cssVar('--green')  || '#16a06a',
+  blue:   cssVar('--blue')   || '#3b7ef8',
+  amber:  cssVar('--amber')  || '#d97706',
+  coral:  cssVar('--coral')  || '#e04545',
+  purple: cssVar('--purple') || '#7c5cf6',
+};
+
 const _escMap={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
 function escapeHtml(v){
   if(v===null||v===undefined) return '';
@@ -1574,13 +1644,13 @@ function showGistConflictBanner(){
   if(document.getElementById('gistConflictBanner')) return;
   const banner = document.createElement('div');
   banner.id = 'gistConflictBanner';
-  banner.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:1200;background:#fff;border:1px solid #f59e0b;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.2);padding:14px 16px;max-width:340px;width:calc(100% - 32px);font-size:13px;line-height:1.6;color:#1f2937;';
+  banner.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:1200;background:#fff;border:1px solid #f59e0b;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.2);padding:14px 16px;max-width:340px;width:calc(100% - 32px);font-size:var(--fs-sm);line-height:1.6;color:#1f2937;';
   banner.innerHTML =
-    '<div style="margin-bottom:10px;">⚠️ 检测到云端有更新（可能来自其他设备），是否用本地数据覆盖云端？</div>' +
-    '<div style="display:flex;gap:8px;">' +
-      '<button onclick="resolveGistConflict(\'overwrite\')" style="flex:1;padding:8px 4px;background:#f59e0b;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">覆盖云端</button>' +
-      '<button onclick="resolveGistConflict(\'pull\')" style="flex:1;padding:8px 4px;background:#eef2ff;color:var(--green);border:1px solid var(--green);border-radius:6px;font-size:12px;cursor:pointer;">改用云端数据</button>' +
-      '<button onclick="resolveGistConflict(\'dismiss\')" style="flex:1;padding:8px 4px;background:#f3f4f6;color:#6b7280;border:none;border-radius:6px;font-size:12px;cursor:pointer;">稍后再说</button>' +
+    '<div style="margin-bottom:var(--space-10);">⚠️ 检测到云端有更新（可能来自其他设备），是否用本地数据覆盖云端？</div>' +
+    '<div style="display:flex;gap:var(--space-8);">' +
+      '<button onclick="resolveGistConflict(\'overwrite\')" style="flex:1;padding:8px 4px;background:#f59e0b;color:#fff;border:none;border-radius:6px;font-size:var(--fs-sm);cursor:pointer;">覆盖云端</button>' +
+      '<button onclick="resolveGistConflict(\'pull\')" style="flex:1;padding:8px 4px;background:#eef2ff;color:var(--green);border:1px solid var(--green);border-radius:6px;font-size:var(--fs-sm);cursor:pointer;">改用云端数据</button>' +
+      '<button onclick="resolveGistConflict(\'dismiss\')" style="flex:1;padding:8px 4px;background:#f3f4f6;color:#6b7280;border:none;border-radius:6px;font-size:var(--fs-sm);cursor:pointer;">稍后再说</button>' +
     '</div>';
   document.body.appendChild(banner);
 }
@@ -2168,7 +2238,7 @@ function renderRecordPage(){
 
         return `<div class="record-item" onclick="editRecord('${r.id}')">
           <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-            <span style="font-size:12px;color:var(--text3)">${r.date}</span>
+            <span style="font-size:var(--fs-sm);color:var(--text3)">${r.date}</span>
             <span class="record-badge ${badgeClass(r.sport)}">${badgeTxt}</span>
           </div>
           ${row1.length?`<div class="mobile-record-meta meta-scroll">${row1.join('')}</div>`:''}
@@ -2194,41 +2264,41 @@ function renderRecordPage(){
       const hasNote = r.note||r.body;
       return `<div class="record-item" onclick="editRecord('${r.id}')">
         <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-          <span style="font-size:12px;color:var(--text3)">${r.date}</span>
+          <span style="font-size:var(--fs-sm);color:var(--text3)">${r.date}</span>
           <span class="record-badge ${badgeClass(r.sport)}">${badgeTxt}</span>
         </div>
         ${chips.length?`<div class="mobile-record-meta">${chips.join('')}</div>`:''}
-        ${hasNote?`<div style="font-size:12px;color:var(--text3);font-style:italic">${[r.note,r.body].filter(Boolean).map(escapeHtml).join(' · ')}</div>`:''}
+        ${hasNote?`<div style="font-size:var(--fs-sm);color:var(--text3);font-style:italic">${[r.note,r.body].filter(Boolean).map(escapeHtml).join(' · ')}</div>`:''}
       </div>`;
     }).join('');
   } else {
     // Build column header based on sport mix in current page
     const sports=new Set(page.map(r=>r.sport));
     const hasRun=sports.has('Run'), hasAna=sports.has('Strength'), hasJump=sports.has('Jump Rope'), hasHike=sports.has('Hike');
-    const batchPad = batchMode ? '<span class="rh" style="width:42px"></span>' : '';
+    const batchPad = batchMode ? '<span class="rh col-batch"></span>' : '';
 
     // Header columns
     let headerHtml = batchPad;
-    headerHtml += `<span class="rh" style="width:104px">日期</span>`;
-    headerHtml += `<span class="rh" style="width:300px">运动类型</span>`;
-    if(hasRun||hasJump) headerHtml += `<span class="rh" style="width:58px">时段</span>`;
-    if(hasRun) headerHtml += `<span class="rh" style="width:66px">距离</span>`;
-    if(hasRun) headerHtml += `<span class="rh" style="width:64px">配速</span>`;
-    if(hasRun||hasJump) headerHtml += `<span class="rh" style="width:54px">平均心率</span>`;
-    if(hasRun||hasJump) headerHtml += `<span class="rh" style="width:58px">最大心率</span>`;
-    if(hasRun) headerHtml += `<span class="rh" style="width:50px">步频</span>`;
-    if(hasRun) headerHtml += `<span class="rh" style="width:54px">天气</span>`;
-    if(hasRun) headerHtml += `<span class="rh" style="width:140px">路线</span>`;
-    if(hasRun) headerHtml += `<span class="rh" style="width:126px">跑鞋</span>`;
-    if(hasRun) headerHtml += `<span class="rh" style="width:140px">设备</span>`;
-    if(hasJump) headerHtml += `<span class="rh" style="width:80px">时长</span>`;
-    if(hasJump) headerHtml += `<span class="rh" style="width:70px">个数</span>`;
-    if(hasJump) headerHtml += `<span class="rh" style="width:84px">频率</span>`;
-    headerHtml += `<span class="rh" style="width:64px">体感</span>`;
-    headerHtml += `<span class="rh" style="width:320px">身体感受</span>`;
-    if(hasHike) headerHtml += `<span class="rh" style="width:90px">步数</span>`;
-    if(hasHike) headerHtml += `<span class="rh" style="width:150px">地点</span>`;
-    headerHtml += `<span class="rh" style="width:320px">备注</span>`;
+    headerHtml += `<span class="rh col-date">日期</span>`;
+    headerHtml += `<span class="rh col-badge">运动类型</span>`;
+    if(hasRun||hasJump) headerHtml += `<span class="rh col-period">时段</span>`;
+    if(hasRun) headerHtml += `<span class="rh col-dist">距离</span>`;
+    if(hasRun) headerHtml += `<span class="rh col-pace">配速</span>`;
+    if(hasRun||hasJump) headerHtml += `<span class="rh col-hr">平均心率</span>`;
+    if(hasRun||hasJump) headerHtml += `<span class="rh col-maxhr">最大心率</span>`;
+    if(hasRun) headerHtml += `<span class="rh col-cadence">步频</span>`;
+    if(hasRun) headerHtml += `<span class="rh col-weather">天气</span>`;
+    if(hasRun) headerHtml += `<span class="rh col-route">路线</span>`;
+    if(hasRun) headerHtml += `<span class="rh col-shoe">跑鞋</span>`;
+    if(hasRun) headerHtml += `<span class="rh col-devices">设备</span>`;
+    if(hasJump) headerHtml += `<span class="rh col-duration">时长</span>`;
+    if(hasJump) headerHtml += `<span class="rh col-jcount">个数</span>`;
+    if(hasJump) headerHtml += `<span class="rh col-jfreq">频率</span>`;
+    headerHtml += `<span class="rh col-feel">体感</span>`;
+    headerHtml += `<span class="rh col-body">身体感受</span>`;
+    if(hasHike) headerHtml += `<span class="rh col-steps">步数</span>`;
+    if(hasHike) headerHtml += `<span class="rh col-location">地点</span>`;
+    headerHtml += `<span class="rh col-note">备注</span>`;
     document.getElementById('record-col-header').innerHTML = headerHtml;
 
     const em = v => v ? `<span>${escapeHtml(v)}</span>` : `<span class="rc-empty">—</span>`;
@@ -2242,26 +2312,26 @@ function renderRecordPage(){
       const clickAttr = batchMode ? '' : `onclick="editRecord('${r.id}')"`;
 
       let cols = '';
-      cols += `<span class="rc rc-date">${r.date}</span>`;
-      cols += `<span class="rc" style="width:300px;padding-right:10px;overflow:visible;white-space:normal"><span class="record-badge ${badgeClass(r.sport)}" title="${badgeTxt}">${badgeTxt}</span></span>`;
-      if(hasRun||hasJump) cols += `<span class="rc rc-period">${em(r.period||'')}</span>`;
-      if(hasRun)  cols += `<span class="rc rc-dist">${r.dist?r.dist+'km':em('')}</span>`;
-      if(hasRun)  cols += `<span class="rc rc-pace">${r.pace?fmtPace(r.pace):em('')}</span>`;
-      if(hasRun||hasJump) cols += `<span class="rc rc-hr">${em(r.hr)}</span>`;
-      if(hasRun||hasJump) cols += `<span class="rc rc-maxhr">${em(r.maxhr)}</span>`;
-      if(hasRun)  cols += `<span class="rc rc-cadence">${em(r.cadence)}</span>`;
-      if(hasRun)  cols += `<span class="rc rc-weather">${em(r.weather)}</span>`;
-      if(hasRun)  cols += `<span class="rc rc-route">${em(r.route)}</span>`;
-      if(hasRun)  cols += `<span class="rc rc-shoe">${em(r.shoe)}</span>`;
-      if(hasRun)  cols += `<span class="rc rc-devices">${em(r.devices?.length?r.devices.join('/'):null)}</span>`;
-      if(hasJump) cols += `<span class="rc rc-duration">${em(r.duration)}</span>`;
-      if(hasJump) cols += `<span class="rc rc-jcount">${em(r.jump_count)}</span>`;
-      if(hasJump) cols += `<span class="rc rc-jfreq">${r.jump_freq?r.jump_freq+'个/分':em('')}</span>`;
-      cols += `<span class="rc rc-feel">${r.feel?`<span class="feel-badge">${escapeHtml(r.feel)}</span>`:em('')}</span>`;
-      cols += `<span class="rc rc-body" title="${escapeHtml(r.body||'')}">${em(r.body)}</span>`;
-      if(hasHike) cols += `<span class="rc" style="width:90px">${r.steps?r.steps.toLocaleString()+'步':em('')}</span>`;
-      if(hasHike) cols += `<span class="rc" style="width:150px">${em(r.location)}</span>`;
-      cols += `<span class="rc rc-note" title="${escapeHtml(r.note||'')}">${em(r.note)}</span>`;
+      cols += `<span class="rc rc-date col-date">${r.date}</span>`;
+      cols += `<span class="rc col-badge" style="padding-right:10px;overflow:visible;white-space:normal"><span class="record-badge ${badgeClass(r.sport)}" title="${badgeTxt}">${badgeTxt}</span></span>`;
+      if(hasRun||hasJump) cols += `<span class="rc col-period">${em(r.period||'')}</span>`;
+      if(hasRun)  cols += `<span class="rc col-dist">${r.dist?r.dist+'km':em('')}</span>`;
+      if(hasRun)  cols += `<span class="rc col-pace">${r.pace?fmtPace(r.pace):em('')}</span>`;
+      if(hasRun||hasJump) cols += `<span class="rc col-hr">${em(r.hr)}</span>`;
+      if(hasRun||hasJump) cols += `<span class="rc col-maxhr">${em(r.maxhr)}</span>`;
+      if(hasRun)  cols += `<span class="rc col-cadence">${em(r.cadence)}</span>`;
+      if(hasRun)  cols += `<span class="rc col-weather">${em(r.weather)}</span>`;
+      if(hasRun)  cols += `<span class="rc col-route">${em(r.route)}</span>`;
+      if(hasRun)  cols += `<span class="rc col-shoe">${em(r.shoe)}</span>`;
+      if(hasRun)  cols += `<span class="rc col-devices">${em(r.devices?.length?r.devices.join('/'):null)}</span>`;
+      if(hasJump) cols += `<span class="rc col-duration">${em(r.duration)}</span>`;
+      if(hasJump) cols += `<span class="rc col-jcount">${em(r.jump_count)}</span>`;
+      if(hasJump) cols += `<span class="rc col-jfreq">${r.jump_freq?r.jump_freq+'个/分':em('')}</span>`;
+      cols += `<span class="rc col-feel">${r.feel?`<span class="feel-badge">${escapeHtml(r.feel)}</span>`:em('')}</span>`;
+      cols += `<span class="rc rc-body col-body" title="${escapeHtml(r.body||'')}">${em(r.body)}</span>`;
+      if(hasHike) cols += `<span class="rc col-steps">${r.steps?r.steps.toLocaleString()+'步':em('')}</span>`;
+      if(hasHike) cols += `<span class="rc col-location">${em(r.location)}</span>`;
+      cols += `<span class="rc rc-note col-note" title="${escapeHtml(r.note||'')}">${em(r.note)}</span>`;
       cols += `<span class="rc-actions">
         <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();editRecord('${r.id}')">编辑</button>
         <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();delRecord('${r.id}')">删除</button>
@@ -2578,7 +2648,7 @@ function renderDashboard(){
   const legendWrap = document.getElementById('typeChart-legend');
   if(legendWrap){
     legendWrap.innerHTML = tcLabels.map((l,i)=>
-      `<span style="display:inline-flex;align-items:center;justify-content:center;padding:5px 14px;border-radius:20px;background:${getSportColor(l)};color:#fff;font-size:12px;font-weight:600;white-space:nowrap;min-width:52px">${escapeHtml(l)}</span>`
+      `<span style="display:inline-flex;align-items:center;justify-content:center;padding:5px 14px;border-radius:20px;background:${getSportColor(l)};color:#fff;font-size:var(--fs-sm);font-weight:600;white-space:nowrap;min-width:52px">${escapeHtml(l)}</span>`
     ).join('');
   }
 
@@ -2638,15 +2708,15 @@ function renderCycleCard(c, isActive){
   const count = ana.filter(r=>r.date>=c.start && r.date<=endDate).length;
   const avgDays = count > 0 ? (totalDays / count).toFixed(1) : '—';
   const statusBadge = isActive
-    ? `<span style="font-size:11px;background:var(--green-lt);color:var(--green-dk);border:1px solid #a7f3d0;padding:2px 8px;border-radius:10px;font-weight:600">进行中</span>`
-    : `<span style="font-size:11px;background:var(--bg3);color:var(--text3);border:1px solid var(--border);padding:2px 8px;border-radius:10px">已结束</span>`;
+    ? `<span style="font-size:var(--fs-xs);background:var(--green-lt);color:var(--green-dk);border:1px solid #a7f3d0;padding:2px 8px;border-radius:10px;font-weight:600">进行中</span>`
+    : `<span style="font-size:var(--fs-xs);background:var(--bg3);color:var(--text3);border:1px solid var(--border);padding:2px 8px;border-radius:10px">已结束</span>`;
   return `<div class="cycle-card${isActive?' active':''}">
-    <div style="display:flex;flex-direction:column;gap:4px;min-width:160px">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:13px;font-weight:700;color:var(--text)">${escapeHtml(c.label)}</span>
+    <div style="display:flex;flex-direction:column;gap:var(--space-4);min-width:160px">
+      <div style="display:flex;align-items:center;gap:var(--space-8)">
+        <span style="font-size:var(--fs-sm);font-weight:700;color:var(--text)">${escapeHtml(c.label)}</span>
         ${statusBadge}
       </div>
-      <div style="font-size:12px;color:var(--text3)">${c.start} — ${c.end||'至今'}</div>
+      <div style="font-size:var(--fs-sm);color:var(--text3)">${c.start} — ${c.end||'至今'}</div>
     </div>
     <div class="cycle-card-stats">
       <div class="cycle-stat">
@@ -2695,7 +2765,7 @@ function renderAnaerobic(){
 
   const activeEl = document.getElementById('ana-cycle-active');
   if(active.length === 0){
-    activeEl.innerHTML = `<div style="color:var(--text3);font-size:13px;padding:12px 0">暂无进行中的周期，点右上角「+ 添加周期」开始记录</div>`;
+    activeEl.innerHTML = `<div style="color:var(--text3);font-size:var(--fs-sm);padding:12px 0">暂无进行中的周期，点右上角「+ 添加周期」开始记录</div>`;
   } else {
     activeEl.innerHTML = active.map(c=>renderCycleCard(c,true)).join('');
   }
@@ -2710,7 +2780,7 @@ function renderAnaerobic(){
   }
 
   // ── 肌群分布（饼图）──
-  const MUSCLE_COLORS = { Chest:'#3b7ef8', Back:'#16a06a', Legs:'#d97706', Delts:'#7c5cf6', Core:'#e04545', Bis:'#059669', Tris:'#f0a843' };
+  const MUSCLE_COLORS = { Chest:THEME.blue, Back:THEME.green, Legs:THEME.amber, Delts:THEME.purple, Core:THEME.coral, Bis:'#059669', Tris:'#f0a843' };
   const mm = {};
   ana.forEach(r=>{
     const m = primaryMuscle(r.muscles||r.sub||'');
@@ -2766,11 +2836,11 @@ function renderAnaerobic(){
   }
 
   // ── 年度战报（分组柱状图，可点击图例排除某年）──
-  const YEAR_COLORS = ['#3b7ef8','#16a06a','#d97706','#7c5cf6','#e04545'];
+  const YEAR_COLORS = [THEME.blue, THEME.green, THEME.amber, THEME.purple, THEME.coral];
   const allYears = [...new Set(ana.map(r=>r.date?.slice(0,4)).filter(Boolean))].sort();
   const years = allYears.filter(yr=>!anaYearlyExcluded.has(yr));
   const PARTS = ['Chest','Back','Legs','Delts','Core','Bis','Tris'];
-  const PART_COLORS_YEARLY = { Chest:'#3b7ef8', Back:'#16a06a', Legs:'#d97706', Delts:'#7c5cf6', Core:'#e04545', Bis:'#059669', Tris:'#f0a843' };
+  const PART_COLORS_YEARLY = { Chest:THEME.blue, Back:THEME.green, Legs:THEME.amber, Delts:THEME.purple, Core:THEME.coral, Bis:'#059669', Tris:'#f0a843' };
 
   // 每年一个 dataset，每个部位一个 x 标签
   const yearlyDatasets = years.map((yr)=>{
@@ -2792,7 +2862,7 @@ function renderAnaerobic(){
     const excluded = anaYearlyExcluded.has(yr);
     const color = YEAR_COLORS[yi]||'#9ba3b5';
     return `<span onclick="toggleAnaYear('${yr}')" title="${excluded?'点击恢复':'点击排除'}"
-      style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;user-select:none;padding:3px 9px;border-radius:12px;border:1.5px solid ${excluded?'var(--border2)':color};color:${excluded?'var(--text3)':color};background:${excluded?'var(--bg3)':color+'18'};transition:all .15s;${excluded?'text-decoration:line-through;opacity:.6':''}">
+      style="display:flex;align-items:center;gap:var(--space-5);font-size:var(--fs-sm);cursor:pointer;user-select:none;padding:3px 9px;border-radius:12px;border:1.5px solid ${excluded?'var(--border2)':color};color:${excluded?'var(--text3)':color};background:${excluded?'var(--bg3)':color+'18'};transition:all .15s;${excluded?'text-decoration:line-through;opacity:.6':''}">
       <span style="width:10px;height:10px;border-radius:2px;background:${color};flex-shrink:0;opacity:${excluded?'.4':'1'}"></span>${yr}年
     </span>`;
   }).join('');
@@ -2843,7 +2913,7 @@ function renderAnaerobic(){
       labels:months.map(m=>m.slice(2).replace('-','/')),
       datasets:[{
         data:months.map(m=>ana.filter(r=>r.date?.startsWith(m)).length),
-        borderColor:'#3b7ef8', backgroundColor:'rgba(59,126,248,0.08)',
+        borderColor:THEME.blue, backgroundColor:hexToRgba(THEME.blue,0.08),
         borderWidth:2, pointRadius:4, fill:true, tension:0.3
       }]
     },
@@ -2955,17 +3025,17 @@ function renderRunCycleCard(c,isActive){
   const today=localDateStr();
   const endDate=c.end||today;
   const statusBadge=isActive
-    ?`<span style="font-size:11px;background:var(--green-lt);color:var(--green-dk);border:1px solid #a7f3d0;padding:2px 8px;border-radius:10px;font-weight:600">进行中</span>`
-    :`<span style="font-size:11px;background:var(--bg3);color:var(--text3);border:1px solid var(--border);padding:2px 8px;border-radius:10px">已结束</span>`;
+    ?`<span style="font-size:var(--fs-xs);background:var(--green-lt);color:var(--green-dk);border:1px solid #a7f3d0;padding:2px 8px;border-radius:10px;font-weight:600">进行中</span>`
+    :`<span style="font-size:var(--fs-xs);background:var(--bg3);color:var(--text3);border:1px solid var(--border);padding:2px 8px;border-radius:10px">已结束</span>`;
 
   const avgDist=s.count>0?(s.totalDist/s.count).toFixed(1):'—';
   // cycle header card
   const header=`<div class="cycle-card${isActive?' active':''}">
-    <div style="display:flex;flex-direction:column;gap:4px;min-width:160px">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:13px;font-weight:700;color:var(--text)">${escapeHtml(c.label)}</span>${statusBadge}
+    <div style="display:flex;flex-direction:column;gap:var(--space-4);min-width:160px">
+      <div style="display:flex;align-items:center;gap:var(--space-8)">
+        <span style="font-size:var(--fs-sm);font-weight:700;color:var(--text)">${escapeHtml(c.label)}</span>${statusBadge}
       </div>
-      <div style="font-size:12px;color:var(--text3)">${c.start} — ${c.end||'至今'}</div>
+      <div style="font-size:var(--fs-sm);color:var(--text3)">${c.start} — ${c.end||'至今'}</div>
     </div>
     <div class="cycle-card-stats">
       <div class="cycle-stat"><span class="cycle-stat-val${isActive?' green':''}">${s.totalDays}</span><span class="cycle-stat-label">坚持天数</span></div>
@@ -2983,11 +3053,11 @@ function renderRunCycleCard(c,isActive){
   </div>`;
 
   // 4 metrics below the card
-  const metrics=`<div class="metrics" style="margin-top:10px;margin-bottom:0">
+  const metrics=`<div class="metrics" style="margin-top:var(--space-10);margin-bottom:0">
     <div class="metric green"><div class="metric-label">累计跑量</div><div class="metric-value">${s.totalDist.toFixed(1)}<span class="metric-unit"> km</span></div><div class="metric-sub">${s.count} 次</div></div>
-    <div class="metric blue"><div class="metric-label">平均配速</div><div class="metric-value" style="font-size:20px">${fmtPace(s.avgP)}</div></div>
+    <div class="metric blue"><div class="metric-label">平均配速</div><div class="metric-value" style="font-size:var(--fs-xl)">${fmtPace(s.avgP)}</div></div>
     <div class="metric amber"><div class="metric-label">平均心率</div><div class="metric-value">${s.avgHr||'—'}<span class="metric-unit">${s.avgHr?' bpm':''}</span></div></div>
-    <div class="metric coral"><div class="metric-label">最快配速</div><div class="metric-value" style="font-size:20px">${s.best?fmtPace(s.best):'—'}</div></div>
+    <div class="metric coral"><div class="metric-label">最快配速</div><div class="metric-value" style="font-size:var(--fs-xl)">${s.best?fmtPace(s.best):'—'}</div></div>
   </div>`;
 
   return header+metrics;
@@ -3078,12 +3148,12 @@ function renderRunAnalysis(){
   const maxDistCnt=distEntries.length?distEntries[0][1]:1;
   const distRows=distEntries.map(([km,cnt])=>{
     const pct=Math.round(cnt/maxDistCnt*100);
-    return `<div style="display:flex;align-items:center;gap:8px;margin-top:5px">
-      <span style="font-size:12px;color:var(--text2);width:36px;text-align:right;flex-shrink:0">${km}km</span>
+    return `<div style="display:flex;align-items:center;gap:var(--space-8);margin-top:var(--space-5)">
+      <span style="font-size:var(--fs-sm);color:var(--text2);width:36px;text-align:right;flex-shrink:0">${km}km</span>
       <div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">
         <div style="width:${pct}%;height:100%;background:var(--green);border-radius:3px"></div>
       </div>
-      <span style="font-size:12px;color:var(--text3);width:28px;flex-shrink:0">×${cnt}</span>
+      <span style="font-size:var(--fs-sm);color:var(--text3);width:28px;flex-shrink:0">×${cnt}</span>
     </div>`;
   }).join('');
 
@@ -3105,48 +3175,48 @@ function renderRunAnalysis(){
     const pct=Math.min(100,Math.round(stat.km/limit*100));
     const bar=pct>=90?'var(--coral)':pct>=70?'var(--amber)':'var(--green)';
     const warn=pct>=90?'⚠️ 接近退役':'';
-    return `<div style="display:flex;align-items:flex-end;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">
+    return `<div style="display:flex;align-items:flex-end;gap:var(--space-10);padding:7px 0;border-bottom:1px solid var(--border)">
       <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
-          <span style="font-size:13px;font-weight:600;color:var(--text)">${name}</span>
-          ${warn?`<span style="font-size:11px;color:var(--coral)">${warn}</span>`:''}
+        <div style="display:flex;align-items:center;gap:var(--space-6);margin-bottom:var(--space-5)">
+          <span style="font-size:var(--fs-sm);font-weight:600;color:var(--text)">${name}</span>
+          ${warn?`<span style="font-size:var(--fs-xs);color:var(--coral)">${warn}</span>`:''}
         </div>
-        <div style="display:flex;align-items:center;gap:8px">
+        <div style="display:flex;align-items:center;gap:var(--space-8)">
           <div style="flex:1;height:7px;background:var(--bg3);border-radius:4px;overflow:hidden">
             <div style="width:${pct}%;height:100%;background:${bar};border-radius:4px;transition:width .3s"></div>
           </div>
-          <span style="font-size:12px;color:var(--text2);white-space:nowrap;flex-shrink:0">${stat.km.toFixed(0)}km / ${limit}km</span>
+          <span style="font-size:var(--fs-sm);color:var(--text2);white-space:nowrap;flex-shrink:0">${stat.km.toFixed(0)}km / ${limit}km</span>
         </div>
       </div>
       <div style="text-align:right;flex-shrink:0">
-        <div style="font-size:11px;color:var(--text3)">${stat.cnt}次</div>
-        <div style="font-size:12px;font-weight:600;color:${bar}">${pct}%</div>
+        <div style="font-size:var(--fs-xs);color:var(--text3)">${stat.cnt}次</div>
+        <div style="font-size:var(--fs-sm);font-weight:600;color:${bar}">${pct}%</div>
       </div>
-      <button onclick="editShoeRetire('${name.replace(/'/g,"\\'")}',${limit})" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;color:var(--text2);cursor:pointer;flex-shrink:0">设置</button>
+      <button onclick="editShoeRetire('${name.replace(/'/g,"\\'")}',${limit})" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:var(--fs-xs);color:var(--text2);cursor:pointer;flex-shrink:0">设置</button>
     </div>`;
   }).join('');
 
   // 全部记录指标
   document.getElementById('run-metrics-total').innerHTML=`
     <div class="metric green"><div class="metric-label">累计跑量</div><div class="metric-value">${totalDist.toFixed(0)}<span class="metric-unit"> km</span></div><div class="metric-sub">${runs.length} 次</div></div>
-    <div class="metric blue"><div class="metric-label">平均配速</div><div class="metric-value" style="font-size:20px">${fmtPace(avgP)}</div></div>
+    <div class="metric blue"><div class="metric-label">平均配速</div><div class="metric-value" style="font-size:var(--fs-xl)">${fmtPace(avgP)}</div></div>
     <div class="metric amber"><div class="metric-label">平均心率</div><div class="metric-value">${avgHr||'—'}<span class="metric-unit">${avgHr?' bpm':''}</span></div></div>
-    <div class="metric coral"><div class="metric-label">最快配速</div><div class="metric-value" style="font-size:20px">${best===Infinity?'—':fmtPace(best)}</div></div>
+    <div class="metric coral"><div class="metric-label">最快配速</div><div class="metric-value" style="font-size:var(--fs-xl)">${best===Infinity?'—':fmtPace(best)}</div></div>
     <div class="metric" style="min-width:180px">
       <div class="metric-label">总次数</div>
       <div class="metric-value">${runs.length}</div>
-      <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+      <div style="margin-top:var(--space-8);padding-top:8px;border-top:1px solid var(--border)">
         <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.dist-arrow').style.transform=this.nextElementSibling.style.display==='none'?'rotate(0deg)':'rotate(180deg)'"
-          style="display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none">
-          <span style="font-size:11px;color:var(--text3)">距离分布</span>
-          <span class="dist-arrow" style="font-size:10px;color:var(--text3);transition:transform .2s;display:inline-block">▼</span>
+          style="display:flex;align-items:center;gap:var(--space-4);cursor:pointer;user-select:none">
+          <span style="font-size:var(--fs-xs);color:var(--text3)">距离分布</span>
+          <span class="dist-arrow" style="font-size:var(--fs-xs);color:var(--text3);transition:transform .2s;display:inline-block">▼</span>
         </div>
-        <div style="display:none;margin-top:6px">${distRows||'<span style="font-size:12px;color:var(--text3)">暂无数据</span>'}</div>
+        <div style="display:none;margin-top:var(--space-6)">${distRows||'<span style="font-size:var(--fs-sm);color:var(--text3)">暂无数据</span>'}</div>
       </div>
     </div>
     ${Object.keys(shoeMap).length?`
     <div class="metric metric-shoe" style="flex:2">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-10)">
         <div class="metric-label">跑鞋里程</div>
       </div>
       ${shoeRows}
@@ -3158,7 +3228,7 @@ function renderRunAnalysis(){
   const history=runCycles.filter(c=>c.end).sort((a,b)=>b.start.localeCompare(a.start));
   const activeEl=document.getElementById('run-cycle-active');
   activeEl.innerHTML=active.length===0
-    ?`<div style="color:var(--text3);font-size:13px;padding:12px 0">暂无进行中的周期，点右上角「+ 添加周期」开始记录</div>`
+    ?`<div style="color:var(--text3);font-size:var(--fs-sm);padding:12px 0">暂无进行中的周期，点右上角「+ 添加周期」开始记录</div>`
     :active.map(c=>renderRunCycleCard(c,true)).join('');
 
   const histWrap=document.getElementById('run-cycle-history-wrap');
@@ -3199,7 +3269,7 @@ function renderRunAnalysis(){
 
   upsertChart('monthlyDistChart', document.getElementById('monthlyDistChart'),{
     type:'bar',
-    data:{labels:months.map(m=>m.slice(2).replace('-','/')),datasets:[{data:mDist,backgroundColor:'#16a06a',borderRadius:4,hoverBackgroundColor:'#22d6a0'}]},
+    data:{labels:months.map(m=>m.slice(2).replace('-','/')),datasets:[{data:mDist,backgroundColor:THEME.green,borderRadius:4,hoverBackgroundColor:'#22d6a0'}]},
     options:CHART_OPT,
     plugins:[{id:'distBarLabels',afterDatasetsDraw(chart){
       const {ctx}=chart;
@@ -3228,7 +3298,7 @@ function renderRunAnalysis(){
   const distStart = (runDistStart.value && runDistStart.value>=runEarliest) ? runDistStart.value : '';
   const runsForDist = distStart ? runs.filter(r=>r.date>=distStart) : runs;
   const lbs=runsForDist.map(r=>r.date.slice(5));
-  upsertChart('distChart', document.getElementById('distChart'),{type:'line',data:{labels:lbs,datasets:[lineDS(runsForDist.map(r=>r.dist),'#16a06a')]},options:{...CHART_OPT,scales:{x:{...CHART_OPT.scales.x,ticks:{...CHART_OPT.scales.x.ticks,maxTicksLimit:9}},y:{...CHART_OPT.scales.y,min:0}}}});
+  upsertChart('distChart', document.getElementById('distChart'),{type:'line',data:{labels:lbs,datasets:[lineDS(runsForDist.map(r=>r.dist),THEME.green)]},options:{...CHART_OPT,scales:{x:{...CHART_OPT.scales.x,ticks:{...CHART_OPT.scales.x.ticks,maxTicksLimit:9}},y:{...CHART_OPT.scales.y,min:0}}}});
 
 
   // 筛选条件：训练类型 + 距离，自动从数据提取
@@ -3664,22 +3734,22 @@ function renderCombinedChart(){
 
   if(showPace) datasets.push({
     label:'配速', data: runs.map(r=>r.pace||null),
-    borderColor:'#3b7ef8', backgroundColor:'rgba(59,126,248,0.06)',
+    borderColor:THEME.blue, backgroundColor:hexToRgba(THEME.blue,0.06),
     borderWidth:2, pointRadius:3, fill:false, tension:0.3, yAxisID:'yPace', spanGaps:true,
   });
   if(showHr) datasets.push({
     label:'平均心率', data: runs.map(r=>r.hr||null),
-    borderColor:'#e04545', backgroundColor:'rgba(224,69,69,0.06)',
+    borderColor:THEME.coral, backgroundColor:hexToRgba(THEME.coral,0.06),
     borderWidth:2, pointRadius:3, fill:false, tension:0.3, yAxisID:'yHr', spanGaps:true,
   });
   if(showMaxHr) datasets.push({
     label:'最大心率', data: runs.map(r=>r.maxhr||null),
-    borderColor:'#d97706', borderWidth:1.5, borderDash:[4,3],
+    borderColor:THEME.amber, borderWidth:1.5, borderDash:[4,3],
     pointRadius:2, fill:false, tension:0.3, yAxisID:'yHr', spanGaps:true,
   });
   if(showCadence) datasets.push({
     label:'步频', data: runs.map(r=>r.cadence||null),
-    borderColor:'#7c5cf6', backgroundColor:'rgba(124,92,246,0.06)',
+    borderColor:THEME.purple, backgroundColor:hexToRgba(THEME.purple,0.06),
     borderWidth:2, pointRadius:3, fill:false, tension:0.3, yAxisID:'yHr', spanGaps:true,
   });
 
@@ -3693,11 +3763,11 @@ function renderCombinedChart(){
         const y = scales.yPace.getPixelForValue(runTargets.pace);
         if(y && !isNaN(y) && y>=top && y<=bottom){
           ctx.save();
-          ctx.strokeStyle='rgba(59,126,248,0.8)';
+          ctx.strokeStyle=hexToRgba(THEME.blue,0.8);
           ctx.lineWidth=1.5;
           ctx.setLineDash([6,4]);
           ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(right,y); ctx.stroke();
-          ctx.fillStyle='#3b7ef8'; ctx.font='bold 11px system-ui'; ctx.textAlign='right'; ctx.textBaseline='bottom';
+          ctx.fillStyle=THEME.blue; ctx.font='bold 11px system-ui'; ctx.textAlign='right'; ctx.textBaseline='bottom';
           ctx.fillText('目标 '+fmtPace(runTargets.pace), right-4, y-3);
           ctx.restore();
         }
@@ -3706,11 +3776,11 @@ function renderCombinedChart(){
         const y = scales.yHr.getPixelForValue(runTargets.hr);
         if(y && !isNaN(y) && y>=top && y<=bottom){
           ctx.save();
-          ctx.strokeStyle='rgba(224,69,69,0.8)';
+          ctx.strokeStyle=hexToRgba(THEME.coral,0.8);
           ctx.lineWidth=1.5;
           ctx.setLineDash([6,4]);
           ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(right,y); ctx.stroke();
-          ctx.fillStyle='#e04545'; ctx.font='bold 11px system-ui'; ctx.textAlign='left'; ctx.textBaseline='bottom';
+          ctx.fillStyle=THEME.coral; ctx.font='bold 11px system-ui'; ctx.textAlign='left'; ctx.textBaseline='bottom';
           ctx.fillText('目标 '+runTargets.hr+' bpm', left+4, y-3);
           ctx.restore();
         }
@@ -3722,8 +3792,8 @@ function renderCombinedChart(){
   const hint = document.getElementById('target-hint');
   if(hint){
     const parts=[];
-    if(runTargets.pace) parts.push(`<span style="color:#3b7ef8">⚑ 配速目标 ${fmtPace(runTargets.pace)}/km</span>`);
-    if(runTargets.hr) parts.push(`<span style="color:#e04545">⚑ 心率目标 ${runTargets.hr} bpm</span>`);
+    if(runTargets.pace) parts.push(`<span style="color:var(--blue)">⚑ 配速目标 ${fmtPace(runTargets.pace)}/km</span>`);
+    if(runTargets.hr) parts.push(`<span style="color:var(--coral)">⚑ 心率目标 ${runTargets.hr} bpm</span>`);
     hint.innerHTML=parts.join('<span style="color:var(--border2)"> · </span>');
     hint.style.display=parts.length?'flex':'none';
   }
@@ -3762,7 +3832,7 @@ function renderCombinedChart(){
             display: !!(showPace || runTargets.pace),
             grid:{color:'rgba(0,0,0,0.05)'},
             ticks:{
-              color:'#3b7ef8', font:{size:11},
+              color:THEME.blue, font:{size:11},
               callback: v => (showPace || runTargets.pace) ? fmtPace(v) : '',
             }
           },
@@ -3824,10 +3894,10 @@ let calYear = new Date().getFullYear();
 // 直接改引号里的颜色值即可，格式 #RRGGBB
 // =====================================================
 const SPORT_COLOR = {
-  Run:         '#16a06a',
-  Strength:    '#3b7ef8',
-  'Jump Rope': '#d97706',
-  Badminton:   '#7c5cf6',
+  Run:         THEME.green,
+  Strength:    THEME.blue,
+  'Jump Rope': THEME.amber,
+  Badminton:   THEME.purple,
   Hike:        '#059669',
   Walk:        '#6b9e8a',
 };
@@ -3851,10 +3921,10 @@ function sportPriority(s){ const i=SPORT_PRIORITY.indexOf(s); return i===-1?99:i
 // 每组对应一个筛选开关；Hike 和 Walk 共用同一个开关（对应图例 "Hike / Walk"）
 // =====================================================
 const CAL_FILTER_GROUPS = [
-  {key:'Run',        sports:['Run'],        defaultColor:'#16a06a'},
-  {key:'Strength',   sports:['Strength'],   defaultColor:'#3b7ef8'},
-  {key:'JumpRope',   sports:['Jump Rope'],  defaultColor:'#d97706'},
-  {key:'Badminton',  sports:['Badminton'],  defaultColor:'#7c5cf6'},
+  {key:'Run',        sports:['Run'],        defaultColor:THEME.green},
+  {key:'Strength',   sports:['Strength'],   defaultColor:THEME.blue},
+  {key:'JumpRope',   sports:['Jump Rope'],  defaultColor:THEME.amber},
+  {key:'Badminton',  sports:['Badminton'],  defaultColor:THEME.purple},
   {key:'HikeWalk',   sports:['Hike','Walk'],defaultColor:'#059669'},
 ];
 let calActiveGroups = new Set(CAL_FILTER_GROUPS.map(g=>g.key)); // 默认全部显示
@@ -4109,7 +4179,7 @@ function renderCalendar(){
     html+=`<div class="cal-month" id="cal-month-${m}">
       <div class="cal-month-title">
         <span>${MONTHS[m]}</span>
-        ${summary?`<span style="font-size:11px;color:var(--text3);font-weight:400;display:flex;align-items:center;gap:0;flex-wrap:wrap;justify-content:flex-end;min-width:0">${summary}</span>`:''}
+        ${summary?`<span style="font-size:var(--fs-xs);color:var(--text3);font-weight:400;display:flex;align-items:center;gap:0;flex-wrap:wrap;justify-content:flex-end;min-width:0">${summary}</span>`:''}
       </div>
       <div class="cal-weekdays">${WDS.map(d=>`<div class="cal-wd">${d}</div>`).join('')}</div>
       <div class="cal-days">`;
