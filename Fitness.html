@@ -271,7 +271,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   .dash-stat-divider { width: 100% !important; height: 1px !important; }
 
   /* ── 饼图+图例手机端改为上下排列，防止图例挤压画布 ── */
-  .dash-pie-row { flex-direction: column !important; gap: 10px !important; }
+  .dash-pie-row { flex-direction: column !important; justify-content: flex-start !important; gap: 10px !important; }
   .dash-pie-row #typeChart-legend { flex-shrink: 1 !important; flex-direction: row !important; flex-wrap: wrap !important; gap: 6px !important; justify-content: flex-start; margin-top: 0 !important; }
 
   /* ── 跑鞋里程卡占满整行，消除横向溢出 ── */
@@ -357,29 +357,34 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .ff.span2{grid-column:span 2;}
 .ff.span4{grid-column:1/-1;}
 
-/* Mini date-range picker (dashboard cards) */
+/* Mini date-range picker (dashboard cards) —— 药丸形输入框 + 圆形图标重置按钮 */
 .mini-date-input{
   background:var(--bg3);
-  border:1.5px solid var(--border);
-  border-radius:var(--radius);
+  border:1.5px solid transparent;
+  border-radius:20px;
   color:var(--text);
-  font-size:var(--fs-sm);
-  padding:5px 7px;
+  font-size:var(--fs-xs);
+  padding:5px 12px;
   font-family:var(--font);
   height:30px;
-  transition:border-color .15s;
+  transition:all .15s;
 }
-.mini-date-input:focus{outline:none;border-color:var(--green);background:#fff;}
+.mini-date-input:hover{background:var(--bg2);border-color:var(--border2);}
+.mini-date-input:focus{outline:none;border-color:var(--green);background:#fff;box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 15%,transparent);}
 .mini-reset-link{
-  font-size:var(--fs-xs);
+  display:inline-flex;align-items:center;justify-content:center;
+  width:28px;height:28px;
+  flex-shrink:0;
+  border-radius:50%;
+  background:var(--bg3);
   color:var(--text3);
+  font-size:14px;
+  line-height:1;
   cursor:pointer;
-  text-decoration:underline;
-  white-space:nowrap;
-  transition:color .15s;
   user-select:none;
+  transition:all .2s;
 }
-.mini-reset-link:hover{color:var(--green);}
+.mini-reset-link:hover{background:var(--coral);color:#fff;transform:rotate(-75deg);}
 .mini-date-label{font-size:var(--fs-xs);color:var(--text3);white-space:nowrap;}
 
 /* Checkbox pill */
@@ -516,13 +521,24 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .line-toggle:has(input:checked){border-color:var(--c);background:color-mix(in srgb,var(--c) 12%,white);color:var(--c);font-weight:600;}
 .line-toggle span::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:4px;opacity:.4;}
 .line-toggle:has(input:checked) span::before{opacity:1;}
+/* “显示数字”按钮专用尺寸修饰符——跟图例徽章（padding:5px 14px;radius:20px）对齐，
+   只用在这两处，不影响 Run/Hike 页其余 line-toggle 的原有尺寸 */
+.line-toggle-lg{height:30px;padding:0 14px;border-radius:20px;min-width:52px;justify-content:center;box-sizing:border-box;}
 .filter-pill{padding:4px 11px;border-radius:12px;font-size:var(--fs-sm);cursor:pointer;border:1.5px solid var(--border2);background:var(--bg3);color:var(--text2);transition:all .15s;user-select:none;}
 .filter-pill.on{border-color:var(--green);color:var(--green);background:var(--green-lt);font-weight:600;}
 
-.heatmap-wrap{overflow-x:auto;padding-bottom:4px;}
-.heatmap{display:flex;gap:var(--space-3);}
-.heatmap-col{display:flex;flex-direction:column;gap:var(--space-3);}
-.heatmap-cell{width:13px;height:13px;border-radius:2px;cursor:pointer;}
+/* 分类速览（Dashboard）—— 每种运动类型一行：图标 + 固定宽度名称 + 数据 + 相对占比色条 */
+.sport-summary-row{
+  display:flex;align-items:center;gap:var(--space-10);
+  padding:var(--space-8) 0;
+  font-size:var(--fs-sm);
+}
+.sport-summary-icon{font-size:var(--fs-lg);flex-shrink:0;width:22px;text-align:center;}
+.sport-summary-name{font-weight:600;color:var(--text);flex-shrink:0;width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sport-summary-stat{color:var(--text2);font-variant-numeric:tabular-nums;white-space:nowrap;flex-shrink:0;width:180px;}
+.sport-summary-extra{color:var(--text3);}
+.sport-summary-bar-wrap{flex:1;height:6px;border-radius:3px;background:var(--bg3);overflow:hidden;margin-left:var(--space-8);}
+.sport-summary-bar{height:100%;border-radius:3px;transition:width .3s ease;}
 
 /* ── Anaerobic: cycle cards ── */
 .cycle-card{background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:var(--space-16);flex-wrap:wrap;}
@@ -744,7 +760,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
         <div style="flex-shrink:0;min-width:150px">
           <div style="display:flex;align-items:center;gap:var(--space-6);margin-bottom:var(--space-6);flex-wrap:wrap">
             <input type="date" id="dash-stat-start" class="mini-date-input" onchange="onDashStatStartChange()" title="选择统计起始日期">
-            <span class="mini-reset-link" onclick="resetDashStatStart()" title="重置为最早日期">重置</span>
+            <span class="mini-reset-link" onclick="resetDashStatStart()" title="重置为最早日期">↺</span>
           </div>
           <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:var(--space-8);font-variant-numeric:tabular-nums" id="dash-date-range">—</div>
           <div style="display:flex;align-items:flex-end;gap:var(--space-3);line-height:1">
@@ -762,20 +778,20 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
               <div class="chart-title">运动类型占比</div>
               <div class="chart-sub">所有记录分布</div>
             </div>
-            <label class="line-toggle" style="--c:var(--green)"><input type="checkbox" id="dash-pie-labels" checked onchange="renderDashboard()"><span>显示数字</span></label>
+            <label class="line-toggle line-toggle-lg" style="--c:var(--green)"><input type="checkbox" id="dash-pie-labels" checked onchange="renderDashboard()"><span>显示数字</span></label>
           </div>
-          <div class="dash-pie-row" style="display:flex;align-items:center;gap:var(--space-16)">
-            <div style="position:relative;flex:1;min-width:0;height:200px"><canvas id="typeChart"></canvas></div>
+          <div class="dash-pie-row" style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-16)">
+            <div style="position:relative;flex-shrink:0;width:200px;height:200px"><canvas id="typeChart"></canvas></div>
             <div id="typeChart-legend" style="display:flex;flex-direction:column;gap:var(--space-6);flex-shrink:0"></div>
           </div>
         </div>
       </div>
 
-      <!-- 右：运动热图 -->
+      <!-- 右：分类速览 -->
       <div class="chart-card">
-        <div class="chart-title">运动热图</div>
-        <div class="chart-sub">近12个月每日运动次数</div>
-        <div id="heatmap-container" style="margin-top:var(--space-8)"></div>
+        <div class="chart-title">分类速览</div>
+        <div class="chart-sub">各运动类型次数与累计量</div>
+        <div id="sport-summary-list" style="margin-top:var(--space-10)"></div>
       </div>
     </div>
 
@@ -789,7 +805,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
         <div style="display:flex;align-items:center;gap:var(--space-6);flex-wrap:wrap">
           <span class="mini-date-label">起始月份</span>
           <input type="date" id="dash-monthly-start" class="mini-date-input" onchange="onDashMonthlyStartChange()" title="选择起始月份">
-          <span class="mini-reset-link" onclick="resetDashMonthlyStart()" title="重置为最早日期">重置</span>
+          <span class="mini-reset-link" onclick="resetDashMonthlyStart()" title="重置为最早日期">↺</span>
         </div>
       </div>
       <div class="legend">
@@ -832,7 +848,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
             <div class="chart-title">肌群训练分布</div>
             <div class="chart-sub">各部位占比（复合日取第一个部位）</div>
           </div>
-          <label class="line-toggle" style="--c:var(--blue)"><input type="checkbox" id="ana-pie-labels" checked onchange="renderAnaerobic()"><span>显示数字</span></label>
+          <label class="line-toggle line-toggle-lg" style="--c:var(--blue)"><input type="checkbox" id="ana-pie-labels" checked onchange="renderAnaerobic()"><span>显示数字</span></label>
         </div>
         <div style="position:relative;height:240px"><canvas id="muscleChart"></canvas></div>
       </div>
@@ -844,7 +860,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
           </div>
           <div style="display:flex;align-items:center;gap:var(--space-6);flex-wrap:wrap">
             <input type="date" id="ana-monthly-start" class="mini-date-input" onchange="onAnaMonthlyStartChange()" title="选择起始月份">
-            <span class="mini-reset-link" onclick="resetAnaMonthlyStart()" title="重置为最早日期">重置</span>
+            <span class="mini-reset-link" onclick="resetAnaMonthlyStart()" title="重置为最早日期">↺</span>
           </div>
         </div>
         <div style="position:relative;height:240px"><canvas id="anaMonthlyChart"></canvas></div>
@@ -879,7 +895,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
           <label class="line-toggle" id="hlt-walk-label" style="--c:#6b9e8a"><input type="checkbox" id="hlt-walk" checked onchange="renderHikeAnalysis()"><span>🚶 Walk</span></label>
           <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
           <input type="date" id="hike-start" class="mini-date-input" onchange="onHikeStartChange()" title="选择起始日期">
-          <span class="mini-reset-link" onclick="resetHikeStart()" title="重置为最早日期">重置</span>
+          <span class="mini-reset-link" onclick="resetHikeStart()" title="重置为最早日期">↺</span>
         </div>
       </div>
       <div style="position:relative;height:320px"><canvas id="hikeDistChart"></canvas></div>
@@ -925,7 +941,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
           </div>
           <div style="display:flex;align-items:center;gap:var(--space-6);flex-wrap:wrap">
             <input type="date" id="run-mdist-start" class="mini-date-input" onchange="onRunMDistStartChange()" title="选择起始月份">
-            <span class="mini-reset-link" onclick="resetRunMDistStart()" title="重置为最早日期">重置</span>
+            <span class="mini-reset-link" onclick="resetRunMDistStart()" title="重置为最早日期">↺</span>
           </div>
         </div>
         <div class="mdist-chart-wrap" style="position:relative;height:200px"><canvas id="monthlyDistChart"></canvas></div>
@@ -965,7 +981,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
             <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:var(--space-6);text-transform:uppercase;letter-spacing:.04em">起始日期</div>
             <div style="display:flex;align-items:center;gap:var(--space-6)">
               <input type="date" id="run-combined-start" class="mini-date-input" onchange="onRunCombinedStartChange()" title="选择起始日期">
-              <span class="mini-reset-link" onclick="resetRunCombinedStart()" title="重置为最早日期">重置</span>
+              <span class="mini-reset-link" onclick="resetRunCombinedStart()" title="重置为最早日期">↺</span>
             </div>
           </div>
         </div>
@@ -983,7 +999,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
           </div>
           <div style="display:flex;align-items:center;gap:var(--space-6);flex-wrap:wrap">
             <input type="date" id="run-dist-start" class="mini-date-input" onchange="onRunDistStartChange()" title="选择起始日期">
-            <span class="mini-reset-link" onclick="resetRunDistStart()" title="重置为最早日期">重置</span>
+            <span class="mini-reset-link" onclick="resetRunDistStart()" title="重置为最早日期">↺</span>
           </div>
         </div>
         <div style="position:relative;height:200px"><canvas id="distChart"></canvas></div>
@@ -2648,11 +2664,11 @@ function renderDashboard(){
   const legendWrap = document.getElementById('typeChart-legend');
   if(legendWrap){
     legendWrap.innerHTML = tcLabels.map((l,i)=>
-      `<span style="display:inline-flex;align-items:center;justify-content:center;padding:5px 14px;border-radius:20px;background:${getSportColor(l)};color:#fff;font-size:var(--fs-sm);font-weight:600;white-space:nowrap;min-width:52px">${escapeHtml(l)}</span>`
+      `<span style="display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 14px;border-radius:20px;background:${getSportColor(l)};color:#fff;font-size:var(--fs-sm);font-weight:600;white-space:nowrap;min-width:52px;box-sizing:border-box">${escapeHtml(l)}</span>`
     ).join('');
   }
 
-  renderHeatmap();
+  renderSportSummary();
 }
 
 // ══════════════════════════════════════
@@ -2921,33 +2937,52 @@ function renderAnaerobic(){
   });
 }
 
-function renderHeatmap(){
-  const el=document.getElementById('heatmap-container');
-  const today=new Date(); today.setHours(0,0,0,0);
-  const isMobile = window.innerWidth <= 768;
-  const start=new Date(today);
-  if(isMobile){
-    start.setMonth(start.getMonth()-3);
-  } else {
-    start.setFullYear(start.getFullYear()-1);
-  }
-  start.setDate(start.getDate()-start.getDay());
-  const cmap={};records.filter(r=>r.date).forEach(r=>cmap[r.date]=(cmap[r.date]||0)+1);
-  const weeks=[]; let d=new Date(start);
-  while(d<=today){ const w=[]; for(let i=0;i<7;i++){w.push(new Date(d));d.setDate(d.getDate()+1);} weeks.push(w); }
-  const colors=['#f0f2f5','#bbf7e0','#6ee7c0','#22d6a0','#16a06a'];
-  let h='<div class="heatmap-wrap"><div class="heatmap">';
-  weeks.forEach(wk=>{
-    h+='<div class="heatmap-col">';
-    wk.forEach(dd=>{
-      const k=localDateStr(dd); const c=cmap[k]||0;
-      const ci=c===0?0:c===1?1:c===2?2:c<=3?3:4;
-      h+=`<div class="heatmap-cell" style="background:${colors[ci]};border:1px solid #e3e6ed" title="${k}${c?' · '+c+'次':''}"></div>`;
-    });
-    h+='</div>';
-  });
-  h+='</div></div>';
-  el.innerHTML=h;
+// 分类速览：图标 / 顺序（固定类型在前，自定义运动按出现顺序追加在后）
+const SPORT_ICONS = { Run:'🏃', Strength:'💪', 'Jump Rope':'🪢', Badminton:'🏸', Hike:'⛰' };
+const SPORT_ORDER  = ['Run','Strength','Jump Rope','Badminton','Hike'];
+
+// 大数字用"万"简化显示，比如 48000 -> 4.8万
+function fmtBigNum(n){
+  if(n>=10000) return (n/10000).toFixed(1).replace(/\.0$/,'')+'万';
+  return Math.round(n).toLocaleString();
+}
+
+function renderSportSummary(){
+  const el = document.getElementById('sport-summary-list');
+  if(!el) return;
+  const bySport = {};
+  records.forEach(r=>{ const s=r.sport||'其他'; (bySport[s]=bySport[s]||[]).push(r); });
+  const ordered = [...SPORT_ORDER.filter(s=>bySport[s]), ...Object.keys(bySport).filter(s=>!SPORT_ORDER.includes(s))];
+
+  if(!ordered.length){ el.innerHTML='<div class="no-records" style="padding:var(--space-20) 0">暂无记录</div>'; return; }
+
+  const maxCount = Math.max(...ordered.map(s=>bySport[s].length));
+
+  el.innerHTML = ordered.map(sport=>{
+    const list = bySport[sport];
+    const count = list.length;
+    const icon = SPORT_ICONS[sport] || '🔹';
+    let extra = '';
+    // 每种类型展示自己"最有代表性"的一个累计量，不是每种类型都有——
+    // 没有天然累计指标（比如 Strength 练部位、Badminton 没有距离/步数）的就只显示次数
+    if(sport==='Run'){
+      const totalKm = list.reduce((s,r)=>s+(Number(r.dist)||0),0);
+      if(totalKm>0) extra = `累计 ${totalKm%1===0?totalKm:totalKm.toFixed(1)}km`;
+    } else if(sport==='Hike'){
+      const totalSteps = list.reduce((s,r)=>s+(Number(r.steps)||0),0);
+      if(totalSteps>0) extra = `累计 ${fmtBigNum(totalSteps)}步`;
+    } else if(sport==='Jump Rope'){
+      const totalJumps = list.reduce((s,r)=>s+(Number(r.jump_count)||0),0);
+      if(totalJumps>0) extra = `累计 ${fmtBigNum(totalJumps)}个`;
+    }
+    const barPct = maxCount>0 ? Math.max((count/maxCount)*100, 3) : 0; // 至少留 3% 让色条可见
+    return `<div class="sport-summary-row">
+      <span class="sport-summary-icon">${icon}</span>
+      <span class="sport-summary-name">${escapeHtml(sport)}</span>
+      <span class="sport-summary-stat">${count} 次${extra?`<span class="sport-summary-extra"> · ${extra}</span>`:''}</span>
+      <span class="sport-summary-bar-wrap"><span class="sport-summary-bar" style="width:${barPct}%;background:${getSportColor(sport)}"></span></span>
+    </div>`;
+  }).join('');
 }
 
 // ══════════════════════════════════════
