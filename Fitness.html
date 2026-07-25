@@ -521,9 +521,9 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .line-toggle:has(input:checked){border-color:var(--c);background:color-mix(in srgb,var(--c) 12%,white);color:var(--c);font-weight:600;}
 .line-toggle span::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:4px;opacity:.4;}
 .line-toggle:has(input:checked) span::before{opacity:1;}
-/* “显示数字”按钮专用尺寸修饰符——跟图例徽章（padding:5px 14px;radius:20px）对齐，
-   只用在这两处，不影响 Run/Hike 页其余 line-toggle 的原有尺寸 */
-.line-toggle-lg{height:30px;padding:0 14px;border-radius:20px;min-width:52px;justify-content:center;box-sizing:border-box;}
+/* 统一的 30px 药丸尺寸——"显示数字"按钮和图例徽章共用同一条规则（而不是
+   两处各自维护一份"看起来一样"的样式），保证渲染出来物理上不可能有偏差 */
+.pill-30{height:30px;padding:0 14px;border-radius:20px;min-width:52px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;}
 .filter-pill{padding:4px 11px;border-radius:12px;font-size:var(--fs-sm);cursor:pointer;border:1.5px solid var(--border2);background:var(--bg3);color:var(--text2);transition:all .15s;user-select:none;}
 .filter-pill.on{border-color:var(--green);color:var(--green);background:var(--green-lt);font-weight:600;}
 
@@ -538,7 +538,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .sport-summary-stat{color:var(--text2);font-variant-numeric:tabular-nums;white-space:nowrap;flex-shrink:0;width:180px;}
 .sport-summary-extra{color:var(--text3);}
 .sport-summary-bar-wrap{flex:1;height:6px;border-radius:3px;background:var(--bg3);overflow:hidden;margin-left:var(--space-8);}
-.sport-summary-bar{height:100%;border-radius:3px;transition:width .3s ease;}
+.sport-summary-bar{display:inline-block;height:100%;border-radius:3px;transition:width .3s ease;}
 
 /* ── Anaerobic: cycle cards ── */
 .cycle-card{background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:var(--space-16);flex-wrap:wrap;}
@@ -778,7 +778,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
               <div class="chart-title">运动类型占比</div>
               <div class="chart-sub">所有记录分布</div>
             </div>
-            <label class="line-toggle line-toggle-lg" style="--c:var(--green)"><input type="checkbox" id="dash-pie-labels" checked onchange="renderDashboard()"><span>显示数字</span></label>
+            <label class="line-toggle pill-30" style="--c:var(--green)"><input type="checkbox" id="dash-pie-labels" checked onchange="renderDashboard()"><span>显示数字</span></label>
           </div>
           <div class="dash-pie-row" style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-16)">
             <div style="position:relative;flex-shrink:0;width:200px;height:200px"><canvas id="typeChart"></canvas></div>
@@ -848,7 +848,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
             <div class="chart-title">肌群训练分布</div>
             <div class="chart-sub">各部位占比（复合日取第一个部位）</div>
           </div>
-          <label class="line-toggle line-toggle-lg" style="--c:var(--blue)"><input type="checkbox" id="ana-pie-labels" checked onchange="renderAnaerobic()"><span>显示数字</span></label>
+          <label class="line-toggle pill-30" style="--c:var(--blue)"><input type="checkbox" id="ana-pie-labels" checked onchange="renderAnaerobic()"><span>显示数字</span></label>
         </div>
         <div style="position:relative;height:240px"><canvas id="muscleChart"></canvas></div>
       </div>
@@ -2664,7 +2664,7 @@ function renderDashboard(){
   const legendWrap = document.getElementById('typeChart-legend');
   if(legendWrap){
     legendWrap.innerHTML = tcLabels.map((l,i)=>
-      `<span style="display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 14px;border-radius:20px;background:${getSportColor(l)};color:#fff;font-size:var(--fs-sm);font-weight:600;white-space:nowrap;min-width:52px;box-sizing:border-box">${escapeHtml(l)}</span>`
+      `<span class="pill-30" style="background:${getSportColor(l)};color:#fff;font-size:var(--fs-sm);font-weight:600;white-space:nowrap">${escapeHtml(l)}</span>`
     ).join('');
   }
 
