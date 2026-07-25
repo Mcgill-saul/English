@@ -135,6 +135,13 @@ body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;backgr
 .donut-num{font-size:20px;font-weight:700;color:var(--text)}
 .donut-lbl{font-size:10px;color:var(--text3)}
 .legend{display:flex;flex-direction:column;gap:6px}
+/* 横向条形图（三级组合等类别较多的场景用，替代圆环），之前只写了JS结构没配CSS，条形轨道/填充都是不可见的 */
+.bar-list{display:flex;flex-direction:column;gap:9px}
+.bar-row{display:flex;align-items:center;gap:8px}
+.bar-row-label{display:flex;align-items:center;gap:6px;width:76px;flex-shrink:0;font-size:11px;color:var(--text2)}
+.bar-row-track{flex:1;height:7px;background:var(--surface2);border-radius:4px;overflow:hidden;min-width:0}
+.bar-row-fill{height:100%;border-radius:4px}
+.bar-row-pct{width:50px;flex-shrink:0;text-align:right;font-size:12px;font-weight:700;color:var(--text)}
 .legend-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}
 .leg{display:flex;align-items:center;justify-content:space-between;font-size:12px}
 .leg-l{display:flex;align-items:center;gap:6px;color:var(--text2);overflow:hidden}
@@ -560,14 +567,15 @@ let _xirrCalcRows = _saved && _saved.XIRR_CALC_ROWS ? _saved.XIRR_CALC_ROWS : [[
 
         <div class="card bento-card bento-sky bento-area-l5">
           <div class="card-header"><div class="card-title"><svg viewBox="0 0 24 24"><path d="M21.21 15.89A9 9 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>五级组合</div></div>
-          <div class="donut-wrap"><canvas id="c-l5" role="img" aria-label="五级组合分布" width="130" height="130" style="display: block; box-sizing: border-box; height: 130px; width: 130px;"></canvas><div class="donut-center"><div class="donut-num" id="l5-n">4</div><div class="donut-lbl">个五级</div></div></div>
-          <div class="legend" id="leg-l5" data-dynamic=""></div>
+          <div style="display:flex;align-items:center;gap:18px">
+            <div class="donut-wrap" style="margin:0;flex-shrink:0"><canvas id="c-l5" role="img" aria-label="五级组合分布" width="130" height="130" style="display: block; box-sizing: border-box; height: 130px; width: 130px;"></canvas><div class="donut-center"><div class="donut-num" id="l5-n">4</div><div class="donut-lbl">个五级</div></div></div>
+            <div class="legend" id="leg-l5" style="flex:1;min-width:0" data-dynamic=""></div>
+          </div>
         </div>
 
         <div class="card bento-card bento-butter bento-area-l3">
-          <div class="card-header"><div class="card-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>三级组合</div></div>
-          <div class="donut-wrap"><canvas id="c-l3" role="img" aria-label="三级组合分布" width="130" height="130" style="display: block; box-sizing: border-box; height: 130px; width: 130px;"></canvas><div class="donut-center"><div class="donut-num" id="l3-n">8</div><div class="donut-lbl">个三级</div></div></div>
-          <div class="legend legend-grid" id="leg-l3" data-dynamic=""></div>
+          <div class="card-header"><div class="card-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>三级组合<span style="font-weight:400;color:var(--text3);font-size:11px;margin-left:6px">共 <span id="l3-n">8</span> 个</span></div></div>
+          <div class="bar-list" id="leg-l3" data-dynamic=""></div>
         </div>
 
         <div class="card bento-card bento-lilac bento-area-trend">
@@ -585,8 +593,10 @@ let _xirrCalcRows = _saved && _saved.XIRR_CALC_ROWS ? _saved.XIRR_CALC_ROWS : [[
 
         <div class="card bento-card bento-pink bento-area-mkt">
           <div class="card-header"><div class="card-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>市场分布</div></div>
-          <div class="donut-wrap"><canvas id="c-mkt" role="img" aria-label="市场分布" width="130" height="130" style="display: block; box-sizing: border-box; height: 130px; width: 130px;"></canvas></div>
-          <div style="display:flex;flex-direction:column;gap:4px;margin-top:10px" id="mkt-leg" data-dynamic=""></div>
+          <div style="display:flex;align-items:center;gap:18px">
+            <div class="donut-wrap" style="margin:0;flex-shrink:0"><canvas id="c-mkt" role="img" aria-label="市场分布" width="130" height="130" style="display: block; box-sizing: border-box; height: 130px; width: 130px;"></canvas><div class="donut-center"><div class="donut-num" id="mkt-n">3</div><div class="donut-lbl">个市场</div></div></div>
+            <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:0" id="mkt-leg" data-dynamic=""></div>
+          </div>
         </div>
       </div>
     </div>
@@ -3523,13 +3533,18 @@ function renderOverview(){
   document.getElementById('leg-l5').innerHTML=l5k.map((k,i)=>`<div class="leg"><div class="leg-l"><div class="leg-dot" style="background:${PALETTE[i%10]}"></div>${k}</div><div class="leg-v">${(l5m[k]/total*100).toFixed(2)}%</div></div>`).join('');
   if(chartL5)chartL5.destroy();
   chartL5=new Chart(document.getElementById('c-l5'),{type:'doughnut',data:{labels:l5k,datasets:[{data:l5k.map(k=>l5m[k]),backgroundColor:l5k.map((_,i)=>PALETTE[i%10]),borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.label}: ${(c.parsed/total*100).toFixed(2)}%`}}}}});
-  // l3 donut
+  // l3 bar list（类别较多，改用横向条形图，比圆环更容易一眼看出大小排序，不用去认颜色对应）
   const l3m={};PRODUCTS.forEach(p=>{const k=p.l3||'未分配';if(!l3m[k])l3m[k]=0;l3m[k]+=toCNY(p.amount,p.ccy)});
   const l3k=Object.keys(l3m);
   document.getElementById('l3-n').textContent=l3k.length;
-  document.getElementById('leg-l3').innerHTML=l3k.map((k,i)=>`<div class="leg"><div class="leg-l"><div class="leg-dot" style="background:${PALETTE[i%10]}"></div><span style="overflow:hidden;text-overflow:ellipsis">${k}</span></div><div class="leg-v">${(l3m[k]/total*100).toFixed(2)}%</div></div>`).join('');
-  if(chartL3)chartL3.destroy();
-  chartL3=new Chart(document.getElementById('c-l3'),{type:'doughnut',data:{labels:l3k,datasets:[{data:l3k.map(k=>l3m[k]),backgroundColor:l3k.map((_,i)=>PALETTE[i%10]),borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.label}: ${(c.parsed/total*100).toFixed(2)}%`}}}}});
+  const l3Sorted = l3k.map((k,i)=>({k,i,pct:total>0?l3m[k]/total*100:0})).sort((a,b)=>b.pct-a.pct);
+  const l3Max = Math.max(...l3Sorted.map(r=>r.pct), 1);
+  document.getElementById('leg-l3').innerHTML = l3Sorted.map(({k,i,pct})=>`
+    <div class="bar-row">
+      <div class="bar-row-label"><span class="leg-dot" style="background:${PALETTE[i%10]}"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${k}</span></div>
+      <div class="bar-row-track"><div class="bar-row-fill" style="width:${(pct/l3Max*100).toFixed(1)}%;background:${PALETTE[i%10]}"></div></div>
+      <div class="bar-row-pct">${pct.toFixed(2)}%</div>
+    </div>`).join('');
   // xirr overview — 使用 _globalYearlyStats 与组合看板一致逻辑
   const yearlyStats=_globalYearlyStats();
   const xirrD=yearlyStats.filter(d=>d.openAvailable&&d.rate!=null).map(d=>({yr:String(d.year),r:d.rate}));
@@ -3539,6 +3554,7 @@ function renderOverview(){
   // market
   const mm={};PRODUCTS.forEach(p=>{if(!mm[p.market])mm[p.market]=0;mm[p.market]+=toCNY(p.amount,p.ccy)});
   const mk=Object.keys(mm);
+  document.getElementById('mkt-n').textContent=mk.length;
   if(chartMkt)chartMkt.destroy();
   chartMkt=new Chart(document.getElementById('c-mkt'),{type:'doughnut',data:{labels:mk,datasets:[{data:mk.map(k=>parseFloat((mm[k]/total*100).toFixed(2))),backgroundColor:mk.map((_,i)=>PALETTE[i%10]),borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.label}: ${c.parsed}%`}}}}});
   document.getElementById('mkt-leg').innerHTML=mk.map((k,i)=>`<div class="leg"><div class="leg-l"><div class="leg-dot" style="background:${PALETTE[i%10]}"></div><span style="overflow:hidden;text-overflow:ellipsis">${k}</span></div><div class="leg-v">${(mm[k]/total*100).toFixed(2)}%</div></div>`).join('');
