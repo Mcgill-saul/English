@@ -232,7 +232,6 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
   /* ── 总览数字卡片手机紧凑 ── */
   #dash-total{ font-size: 32px !important; }
-  #dash-date-range{ font-size:var(--fs-xs) !important; }
   .cal-grid{ grid-template-columns: 1fr !important; }
   .cal-day{ height: 80px; }
   .cal-day-num-row{ padding: 2px 0 1px 4px; }
@@ -387,6 +386,37 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .mini-reset-link:hover{background:var(--coral);color:#fff;transform:rotate(-75deg);}
 .mini-date-label{font-size:var(--fs-xs);color:var(--text3);white-space:nowrap;}
 
+/* 文字风格日期选择器——专用于总计卡片：去掉药丸造型的背景/内边距，
+   让它跟下面"282 次运动 / 周均"这些纯文字数字在同一条左边线上对齐，
+   不再有药丸内边距造成的偏移 */
+.mini-date-input-plain{
+  background:transparent;
+  border:none;
+  padding:0;
+  height:auto;
+  color:var(--text2);
+  font-size:var(--fs-xs);
+  font-family:var(--font);
+  font-variant-numeric:tabular-nums;
+  cursor:pointer;
+}
+.mini-date-input-plain:hover{color:var(--green);}
+.mini-date-input-plain:focus{outline:none;color:var(--green);}
+.mini-reset-link-plain{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:18px;height:18px;
+  flex-shrink:0;
+  border-radius:50%;
+  color:var(--text3);
+  opacity:.45;
+  font-size:12px;
+  line-height:1;
+  cursor:pointer;
+  user-select:none;
+  transition:all .2s;
+}
+.mini-reset-link-plain:hover{opacity:1;background:var(--coral);color:#fff;transform:rotate(-75deg);}
+
 /* Checkbox pill */
 .check-row{display:flex;align-items:center;gap:var(--space-6);font-size:var(--fs-sm);color:var(--text2);}
 .check-row input[type=checkbox]{width:15px;height:15px;accent-color:var(--green);}
@@ -523,7 +553,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .line-toggle:has(input:checked) span::before{opacity:1;}
 /* 统一的 30px 药丸尺寸——"显示数字"按钮和图例徽章共用同一条规则（而不是
    两处各自维护一份"看起来一样"的样式），保证渲染出来物理上不可能有偏差 */
-.pill-30{height:30px;padding:0 14px;border-radius:20px;min-width:52px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;}
+.pill-30{height:30px;width:100px;padding:0 10px;border-radius:20px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .filter-pill{padding:4px 11px;border-radius:12px;font-size:var(--fs-sm);cursor:pointer;border:1.5px solid var(--border2);background:var(--bg3);color:var(--text2);transition:all .15s;user-select:none;}
 .filter-pill.on{border-color:var(--green);color:var(--green);background:var(--green-lt);font-weight:600;}
 
@@ -537,8 +567,8 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .sport-summary-name{font-weight:600;color:var(--text);flex-shrink:0;width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .sport-summary-stat{color:var(--text2);font-variant-numeric:tabular-nums;white-space:nowrap;flex-shrink:0;width:180px;}
 .sport-summary-extra{color:var(--text3);}
-.sport-summary-bar-wrap{flex:1;height:6px;border-radius:3px;background:var(--bg3);overflow:hidden;margin-left:var(--space-8);}
-.sport-summary-bar{display:inline-block;height:100%;border-radius:3px;transition:width .3s ease;}
+.sport-summary-bar-wrap{position:relative;flex:1;height:6px;border-radius:3px;background:var(--bg3);overflow:hidden;margin-left:var(--space-8);}
+.sport-summary-bar{position:absolute;top:0;left:0;bottom:0;border-radius:3px;transition:width .3s ease;}
 
 /* ── Anaerobic: cycle cards ── */
 .cycle-card{background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:var(--space-16);flex-wrap:wrap;}
@@ -738,8 +768,8 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 <div class="main">
   <div class="tabs">
     <button class="tab active" onclick="showTab('dashboard')" id="tab-dashboard">Dashboard</button>
-    <button class="tab" onclick="showTab('run')" id="tab-run">Run</button>
     <button class="tab" onclick="showTab('anaerobic')" id="tab-anaerobic">Strength</button>
+    <button class="tab" onclick="showTab('run')" id="tab-run">Run</button>
     <button class="tab" onclick="showTab('hike')" id="tab-hike">Hike</button>
     <button class="tab" onclick="showTab('records')" id="tab-records">Records</button>
     <button class="tab" onclick="showTab('calendar')" id="tab-calendar">Calendar</button>
@@ -758,11 +788,11 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
       <div class="chart-card dash-stat-card" style="display:flex;align-items:center;gap:var(--space-20)">
         <!-- 数字区 -->
         <div style="flex-shrink:0;min-width:150px">
-          <div style="display:flex;align-items:center;gap:var(--space-6);margin-bottom:var(--space-6);flex-wrap:wrap">
-            <input type="date" id="dash-stat-start" class="mini-date-input" onchange="onDashStatStartChange()" title="选择统计起始日期">
-            <span class="mini-reset-link" onclick="resetDashStatStart()" title="重置为最早日期">↺</span>
+          <div style="display:flex;align-items:center;gap:4px;margin-bottom:var(--space-6);flex-wrap:wrap">
+            <input type="date" id="dash-stat-start" class="mini-date-input-plain" onchange="onDashStatStartChange()" title="选择统计起始日期">
+            <span style="font-size:var(--fs-xs);color:var(--text3)">至今</span>
+            <span class="mini-reset-link-plain" onclick="resetDashStatStart()" title="重置为最早日期">↺</span>
           </div>
-          <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:var(--space-8);font-variant-numeric:tabular-nums" id="dash-date-range">—</div>
           <div style="display:flex;align-items:flex-end;gap:var(--space-3);line-height:1">
             <div style="font-size:var(--fs-display);font-weight:800;color:var(--green);font-variant-numeric:tabular-nums;line-height:1" id="dash-total">—</div>
             <div style="font-size:var(--fs-sm);color:var(--text3);padding-bottom:5px;white-space:nowrap">次运动</div>
@@ -804,8 +834,8 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
         </div>
         <div style="display:flex;align-items:center;gap:var(--space-6);flex-wrap:wrap">
           <span class="mini-date-label">起始月份</span>
-          <input type="date" id="dash-monthly-start" class="mini-date-input" onchange="onDashMonthlyStartChange()" title="选择起始月份">
-          <span class="mini-reset-link" onclick="resetDashMonthlyStart()" title="重置为最早日期">↺</span>
+          <input type="date" id="dash-monthly-start" class="mini-date-input-plain" onchange="onDashMonthlyStartChange()" title="选择起始月份">
+          <span class="mini-reset-link-plain" onclick="resetDashMonthlyStart()" title="重置为最早日期">↺</span>
         </div>
       </div>
       <div class="legend">
@@ -859,8 +889,8 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
             <div class="chart-sub">每月无氧训练次数趋势</div>
           </div>
           <div style="display:flex;align-items:center;gap:var(--space-6);flex-wrap:wrap">
-            <input type="date" id="ana-monthly-start" class="mini-date-input" onchange="onAnaMonthlyStartChange()" title="选择起始月份">
-            <span class="mini-reset-link" onclick="resetAnaMonthlyStart()" title="重置为最早日期">↺</span>
+            <input type="date" id="ana-monthly-start" class="mini-date-input-plain" onchange="onAnaMonthlyStartChange()" title="选择起始月份">
+            <span class="mini-reset-link-plain" onclick="resetAnaMonthlyStart()" title="重置为最早日期">↺</span>
           </div>
         </div>
         <div style="position:relative;height:240px"><canvas id="anaMonthlyChart"></canvas></div>
@@ -894,8 +924,8 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
           <label class="line-toggle" id="hlt-hike-label" style="--c:#059669"><input type="checkbox" id="hlt-hike" checked onchange="renderHikeAnalysis()"><span>⛰ Hike</span></label>
           <label class="line-toggle" id="hlt-walk-label" style="--c:#6b9e8a"><input type="checkbox" id="hlt-walk" checked onchange="renderHikeAnalysis()"><span>🚶 Walk</span></label>
           <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
-          <input type="date" id="hike-start" class="mini-date-input" onchange="onHikeStartChange()" title="选择起始日期">
-          <span class="mini-reset-link" onclick="resetHikeStart()" title="重置为最早日期">↺</span>
+          <input type="date" id="hike-start" class="mini-date-input-plain" onchange="onHikeStartChange()" title="选择起始日期">
+          <span class="mini-reset-link-plain" onclick="resetHikeStart()" title="重置为最早日期">↺</span>
         </div>
       </div>
       <div style="position:relative;height:320px"><canvas id="hikeDistChart"></canvas></div>
@@ -940,8 +970,8 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
             <div class="chart-sub">月度累计距离 (km)</div>
           </div>
           <div style="display:flex;align-items:center;gap:var(--space-6);flex-wrap:wrap">
-            <input type="date" id="run-mdist-start" class="mini-date-input" onchange="onRunMDistStartChange()" title="选择起始月份">
-            <span class="mini-reset-link" onclick="resetRunMDistStart()" title="重置为最早日期">↺</span>
+            <input type="date" id="run-mdist-start" class="mini-date-input-plain" onchange="onRunMDistStartChange()" title="选择起始月份">
+            <span class="mini-reset-link-plain" onclick="resetRunMDistStart()" title="重置为最早日期">↺</span>
           </div>
         </div>
         <div class="mdist-chart-wrap" style="position:relative;height:200px"><canvas id="monthlyDistChart"></canvas></div>
@@ -980,8 +1010,8 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
           <div>
             <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:var(--space-6);text-transform:uppercase;letter-spacing:.04em">起始日期</div>
             <div style="display:flex;align-items:center;gap:var(--space-6)">
-              <input type="date" id="run-combined-start" class="mini-date-input" onchange="onRunCombinedStartChange()" title="选择起始日期">
-              <span class="mini-reset-link" onclick="resetRunCombinedStart()" title="重置为最早日期">↺</span>
+              <input type="date" id="run-combined-start" class="mini-date-input-plain" onchange="onRunCombinedStartChange()" title="选择起始日期">
+              <span class="mini-reset-link-plain" onclick="resetRunCombinedStart()" title="重置为最早日期">↺</span>
             </div>
           </div>
         </div>
@@ -998,8 +1028,8 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
             <div class="chart-sub">每次跑步距离 (km)</div>
           </div>
           <div style="display:flex;align-items:center;gap:var(--space-6);flex-wrap:wrap">
-            <input type="date" id="run-dist-start" class="mini-date-input" onchange="onRunDistStartChange()" title="选择起始日期">
-            <span class="mini-reset-link" onclick="resetRunDistStart()" title="重置为最早日期">↺</span>
+            <input type="date" id="run-dist-start" class="mini-date-input-plain" onchange="onRunDistStartChange()" title="选择起始日期">
+            <span class="mini-reset-link-plain" onclick="resetRunDistStart()" title="重置为最早日期">↺</span>
           </div>
         </div>
         <div style="position:relative;height:200px"><canvas id="distChart"></canvas></div>
@@ -1359,13 +1389,13 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
     Dashboard
   </button>
-  <button class="mobile-nav-item" id="mnav-run" onclick="showTab('run')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 4a1 1 0 1 0 2 0 1 1 0 0 0-2 0"/><path d="M7.5 17l2-5 3 3 2-4 2 4"/><path d="M5 20l4-8 2 3 3-6 3 3 2-3"/></svg>
-    Run
-  </button>
   <button class="mobile-nav-item" id="mnav-anaerobic" onclick="showTab('anaerobic')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="9" width="3" height="6" rx="1"/><rect x="4" y="7" width="2" height="10" rx="1"/><line x1="6" y1="12" x2="18" y2="12"/><rect x="18" y="7" width="2" height="10" rx="1"/><rect x="20" y="9" width="3" height="6" rx="1"/></svg>
     Strength
+  </button>
+  <button class="mobile-nav-item" id="mnav-run" onclick="showTab('run')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 4a1 1 0 1 0 2 0 1 1 0 0 0-2 0"/><path d="M7.5 17l2-5 3 3 2-4 2 4"/><path d="M5 20l4-8 2 3 3-6 3 3 2-3"/></svg>
+    Run
   </button>
   <button class="mobile-nav-item" id="mnav-records" onclick="showTab('records')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
@@ -2467,7 +2497,7 @@ function syncStartInput(inputId, state, earliest, latest){
   const el = document.getElementById(inputId);
   if(!el) return;
   el.min = earliest; el.max = latest;
-  el.value = state.value || '';
+  el.value = state.value || earliest;
   el.placeholder = earliest;
 }
 
@@ -2551,19 +2581,17 @@ function renderDashboard(){
   // 起始日期输入框：同步 min/max/value（不允许早于最早记录，不允许晚于最新记录）
   const statInput=document.getElementById('dash-stat-start');
   const monthlyInput=document.getElementById('dash-monthly-start');
-  if(statInput){ statInput.min=earliest; statInput.max=latest; statInput.value=dashStatStart||''; statInput.placeholder=earliest; }
-  if(monthlyInput){ monthlyInput.min=earliest; monthlyInput.max=latest; monthlyInput.value=dashMonthlyStart||''; monthlyInput.placeholder=earliest; }
+  if(statInput){ statInput.min=earliest; statInput.max=latest; statInput.value=dashStatStart||earliest; statInput.placeholder=earliest; }
+  if(monthlyInput){ monthlyInput.min=earliest; monthlyInput.max=latest; monthlyInput.value=dashMonthlyStart||earliest; monthlyInput.placeholder=earliest; }
 
   // 统计卡片：若选择了起始日期（且不早于最早记录），只统计该日期起（含当天）的记录
   const statStart = (dashStatStart && dashStatStart>=earliest) ? dashStatStart : '';
   const recs = statStart ? records.filter(r=>r.date && r.date>=statStart) : records;
   const dates=recs.filter(r=>r.date).map(r=>r.date).sort();
   const total=recs.length;
-  const firstDate=statStart || (dates.length>0?dates[0]:'—');
   const weekAvg=dates.length>1?((total/weeksBetween(dates[0],dates[dates.length-1])).toFixed(1)):(total===1?'1.0':'—');
 
   document.getElementById('dash-total').textContent=total;
-  document.getElementById('dash-date-range').textContent= firstDate && firstDate!=='—' ? `${firstDate} 至今` : '—';
   document.getElementById('dash-week-avg').textContent= weekAvg!=='—' ? `周均 ${weekAvg} 次` : '—';
 
   // 月度堆叠柱状图 + 白色数字标签（可选自定义起始月份，默认从最早记录开始）
@@ -2619,7 +2647,7 @@ function renderDashboard(){
 
   // 训练类型占比甜甜圈 — 数据标签直接显示在图上
   const tc={};records.forEach(r=>{const s=r.sport||'其他';tc[s]=(tc[s]||0)+1;});
-  const tcLabels=Object.keys(tc); const tcVals=Object.values(tc);
+  const tcLabels=getSportDisplayOrder(tc); const tcVals=tcLabels.map(l=>tc[l]);
   upsertChart('typeChart', document.getElementById('typeChart'), {type:'doughnut',
     data:{labels:tcLabels,datasets:[{data:tcVals,backgroundColor:tcLabels.map(getSportColor),borderWidth:2,borderColor:'#fff',hoverOffset:4}]},
     options:{
@@ -2939,7 +2967,16 @@ function renderAnaerobic(){
 
 // 分类速览：图标 / 顺序（固定类型在前，自定义运动按出现顺序追加在后）
 const SPORT_ICONS = { Run:'🏃', Strength:'💪', 'Jump Rope':'🪢', Badminton:'🏸', Hike:'⛰' };
-const SPORT_ORDER  = ['Run','Strength','Jump Rope','Badminton','Hike'];
+
+// 运动类型统一排序规则（图例 / 分类速览共用同一套逻辑，保证两处顺序一致）：
+// Strength 固定第一，Run 固定第二，其余按次数从多到少排。
+// 只有实际有记录的类型才会出现，不会展示 0 次的空类型。
+const DASH_SPORT_PRIORITY = ['Strength','Run'];
+function getSportDisplayOrder(counts){
+  const sports = Object.keys(counts);
+  const rest = sports.filter(s=>!DASH_SPORT_PRIORITY.includes(s)).sort((a,b)=>counts[b]-counts[a]);
+  return [...DASH_SPORT_PRIORITY.filter(s=>sports.includes(s)), ...rest];
+}
 
 // 大数字用"万"简化显示，比如 48000 -> 4.8万
 function fmtBigNum(n){
@@ -2952,7 +2989,8 @@ function renderSportSummary(){
   if(!el) return;
   const bySport = {};
   records.forEach(r=>{ const s=r.sport||'其他'; (bySport[s]=bySport[s]||[]).push(r); });
-  const ordered = [...SPORT_ORDER.filter(s=>bySport[s]), ...Object.keys(bySport).filter(s=>!SPORT_ORDER.includes(s))];
+  const counts = {}; Object.keys(bySport).forEach(s=>{ counts[s]=bySport[s].length; });
+  const ordered = getSportDisplayOrder(counts);
 
   if(!ordered.length){ el.innerHTML='<div class="no-records" style="padding:var(--space-20) 0">暂无记录</div>'; return; }
 
@@ -2980,7 +3018,7 @@ function renderSportSummary(){
       <span class="sport-summary-icon">${icon}</span>
       <span class="sport-summary-name">${escapeHtml(sport)}</span>
       <span class="sport-summary-stat">${count} 次${extra?`<span class="sport-summary-extra"> · ${extra}</span>`:''}</span>
-      <span class="sport-summary-bar-wrap"><span class="sport-summary-bar" style="width:${barPct}%;background:${getSportColor(sport)}"></span></span>
+      <div class="sport-summary-bar-wrap"><div class="sport-summary-bar" style="width:${barPct}%;background:${getSportColor(sport)}"></div></div>
     </div>`;
   }).join('');
 }
