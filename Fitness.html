@@ -1103,10 +1103,10 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
             </select>
           </div>
           <div class="ff"><label>训练类型</label>
-            <select id="r-sub">
-              <option value="">— 选择 —</option>
+            <input list="list-sub" id="r-sub" placeholder="输入或选择，如：有氧筑基">
+            <datalist id="list-sub">
               <option>有氧筑基</option><option>节奏跑</option><option>间歇跑</option><option>LSD</option><option>恢复跑</option>
-            </select>
+            </datalist>
           </div>
           <div class="ff"><label>距离 (km)</label><input type="number" id="r-dist" step="0.1" min="0" placeholder="5.0" oninput="calcPace()"></div>
           <div class="ff"><label>运动时间 (h:mm:ss)</label><input type="text" id="r-duration" placeholder="0:30:00" oninput="validateDur(this);calcPace()"></div>
@@ -1852,11 +1852,13 @@ function refreshHistoryLists(){
   const routes=[...new Set(records.filter(r=>r.route).map(r=>r.route))];
   const devices=[...new Set(records.flatMap(r=>r.devices||[]))];
   const hikeLocations=[...new Set(records.filter(r=>r.sport==='Hike'&&r.location).map(r=>r.location))];
+  const runSubs=[...new Set(records.filter(r=>r.sport==='Run'&&r.sub).map(r=>r.sub))];
   fillDatalist('list-shoe',shoes);
   fillDatalist('list-weather',[...new Set(['晴','多云','小雨','大雨',...weathers])]);
   fillDatalist('list-route',routes);
   fillDatalist('list-device',devices);
   fillDatalist('list-hike-location',hikeLocations);
+  fillDatalist('list-sub',[...new Set(['有氧筑基','节奏跑','间歇跑','LSD','恢复跑',...runSubs])]);
   buildDevicePills(devices);
 }
 function fillDatalist(id,vals){
