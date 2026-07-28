@@ -22,21 +22,27 @@
      推荐取色工具：https://www.google.com/search?q=color+picker
      ===================================================== */
 
-  /* 页面背景色 */
-  --bg:      #f7f8fa;   /* 最外层底色（浅灰） */
+  /* 页面背景色 —— 暖调中性色，替代纯冷灰 */
+  --bg:      #FAF8F5;   /* 最外层底色（暖白灰） */
   --bg2:     #ffffff;   /* 卡片/列表背景（纯白） */
-  --bg3:     #f0f2f5;   /* 输入框/表头背景（灰白） */
+  --bg3:     #F5F1EC;   /* 输入框/表头背景（暖灰白） */
 
   /* 边框颜色 */
-  --border:  #e3e6ed;   /* 普通边框 */
-  --border2: #c9cfd9;   /* 较深边框 / 空值占位符颜色 */
+  --border:  #EAE4DC;   /* 普通边框 */
+  --border2: #D6CCBF;   /* 较深边框 / 空值占位符颜色 */
 
   /* 文字颜色 */
-  --text:    #1a1d24;   /* 主文字（近黑） */
-  --text2:   #5a6278;   /* 次要文字（灰） */
-  --text3:   #9ba3b5;   /* 弱提示文字（浅灰） */
+  --text:    #241F1A;   /* 主文字（暖近黑） */
+  --text2:   #6B6259;   /* 次要文字（暖灰） */
+  --text3:   #A39A8C;   /* 弱提示文字（暖浅灰） */
 
-  /* 绿色系 —— 跑步标签 / 主按钮 / 高亮 */
+  /* 品牌强调色 —— 沿用绿色作为全站唯一的"主强调"（英雄数字/主按钮/激活态），
+     直接引用下方 --green 系列变量，改绿色深浅只需改那一处，这里自动跟着变 */
+  --brand:    var(--green);
+  --brand-lt: var(--green-lt);
+  --brand-dk: var(--green-dk);
+
+  /* 绿色系 —— 跑步标签 / 品牌主色 */
   --green:   #16a06a;   /* 主绿色 */
   --green-lt:#e8f8f2;   /* 浅绿背景 */
   --green-dk:#0d6644;   /* 深绿文字 */
@@ -58,10 +64,10 @@
   --purple:  #7c5cf6;   /* 主紫色 */
   --purple-lt:#f0ecff;  /* 浅紫背景 */
 
-  /* 圆角 / 阴影（一般不需要改） */
-  --radius:  8px;
-  --radius-lg: 12px;
-  --shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+  /* 圆角 / 阴影 —— 更大圆角、更柔和的暖调环境阴影 */
+  --radius:  10px;
+  --radius-lg: 16px;
+  --shadow: 0 1px 3px rgba(40,28,15,0.05), 0 8px 24px rgba(40,28,15,0.07);
   --font: "PingFang SC","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
 
   /* =====================================================
@@ -78,7 +84,16 @@
   --fs-lg:      16px;  /* 小节/卡片标题 */
   --fs-xl:      20px;  /* 页面级大标题 */
   --fs-stat:    24px;  /* 统计数字（累计跑量/平均配速这类） */
-  --fs-display: 40px;  /* Dashboard 总计这种"英雄数字" */
+  --fs-display:    40px;  /* 英雄数字·大号：全场最核心的数字（如"累计训练"的 282） */
+  --fs-display-sm: 28px;  /* 英雄数字·小号：同一类数字，重要性稍低（本周训练/连续周数） */
+
+  /* 图标尺寸阶梯 —— 专门给 emoji / 符号类图标用，跟上面的文字字号阶梯分开管理。
+     图标是"形状"不是"文字"，同样的像素值视觉大小感受跟文字不一样，混用一套
+     容易出现"图标显得过大/过小"，所以单独建一套，以后新加的图标也统一从这里挑 */
+  --icon-xs: 12px;  /* 极小图标（迷你重置按钮↺这类次要操作） */
+  --icon-sm: 15px;  /* 默认图标（侧边栏导航、分类速览、成就徽章这类） */
+  --icon-md: 18px;  /* 中等图标（弹层关闭按钮、日历翻页箭头这类） */
+  --icon-lg: 22px;  /* 大图标（需要强调的独立图标） */
 
   /* =====================================================
      📏 间距阶梯 —— 覆盖 gap / margin-top / margin-bottom
@@ -108,27 +123,30 @@
 html{background:var(--bg);color:var(--text);font-family:var(--font);font-size:var(--fs-base);overflow-x:hidden;}
 body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
-/* topbar */
-.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,0,0,0.06);}
-.topbar-title{font-size:var(--fs-base);font-weight:700;color:var(--text);display:flex;align-items:center;gap:var(--space-8);}
-.topbar-title .dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;}
-.topbar-actions{display:flex;gap:var(--space-8);}
+/* app shell：左侧竖直导航栏 + 右侧内容区 */
+.app-shell{display:flex;align-items:stretch;min-height:100vh;}
+.sidebar{width:216px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:22px 14px;position:sticky;top:0;align-self:flex-start;height:100vh;overflow-y:auto;}
+.sidebar-brand{display:flex;align-items:center;gap:var(--space-8);font-size:var(--fs-base);font-weight:700;color:var(--text);padding:0 10px;margin-bottom:26px;}
+.sidebar-brand .dot{width:8px;height:8px;border-radius:50%;background:var(--brand);display:inline-block;flex-shrink:0;}
+.sidebar-nav{display:flex;flex-direction:column;gap:2px;}
+.side-tab{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:none;background:none;font-size:var(--fs-sm);color:var(--text2);cursor:pointer;text-align:left;font-family:var(--font);transition:all .15s;width:100%;}
+.side-tab:hover{background:var(--bg3);color:var(--text);}
+.side-tab.active{background:var(--brand-lt);color:var(--brand-dk);font-weight:600;}
+.side-tab-icon{font-size:var(--icon-sm);flex-shrink:0;width:20px;text-align:center;}
+.sidebar-spacer{flex:1;}
+.side-add-btn{width:100%;padding:10px 12px;border-radius:10px;border:none;background:var(--brand);color:#fff;font-weight:600;font-size:var(--fs-sm);cursor:pointer;margin-bottom:8px;font-family:var(--font);transition:background .15s;}
+.side-add-btn:hover{background:var(--brand-dk);}
+.side-add-btn.active{background:var(--brand-dk);}
+.side-tab-data{border-top:1px solid var(--border);padding-top:12px;margin-top:2px;}
 
-/* main */
-.main{max-width:none;margin:0;padding:1.5rem 2.5rem 0;}
+/* main：main 本身就是 app-shell 的 flex 子元素；内容加最大宽度，超宽屏不会被拉得过散 */
+.main{flex:1;min-width:0;padding:1.75rem 2.75rem 0;}
 
-/* tabs */
-.tabs{display:flex;gap:0;margin-bottom:1.5rem;border-bottom:2px solid var(--border);align-items:center;}
-.tab{padding:10px 18px;font-size:var(--fs-sm);cursor:pointer;color:var(--text2);border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;font-family:var(--font);}
-.tab:hover{color:var(--text);}
-.tab.active{color:var(--green);border-bottom-color:var(--green);font-weight:600;}
-.tab-spacer{flex:1;}
-#tab-add{margin-bottom:0;border-bottom:none;border-radius:20px;padding:7px 16px;background:var(--green);color:#fff;font-weight:600;margin-right:6px;font-size:var(--fs-sm);}
-#tab-add:hover{background:var(--green-dk);}
-#tab-add.active{background:var(--green-dk);color:#fff;border-bottom:none;}
-#tab-data{margin-bottom:0;border-bottom:none;border-radius:20px;padding:7px 16px;background:var(--bg3);color:var(--text2);border:1.5px solid var(--border2);font-size:var(--fs-sm);}
-#tab-data:hover{color:var(--text);}
-#tab-data.active{background:var(--bg3);color:var(--text);border-color:var(--border2);border-bottom:1.5px solid var(--border2);}
+@media(max-width:768px){
+  .sidebar{display:none;}
+  .app-shell{display:block;}
+}
+
 
 /* metrics */
 .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--space-12);margin-bottom:1.5rem;}
@@ -145,13 +163,18 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
 /* charts */
 .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-14);margin-bottom:1.5rem;}
+/* Dashboard 主体：第〇行(速览)和第一行(模块卡)共享同一套 4 列轨道(auto auto 1fr 1fr)，
+   跨 2 列的元素(近7天条 / 累计训练窄卡)宽度精确对齐另一行的另外两张卡片之和 */
+.dash-grid{display:grid;grid-template-columns:auto auto 1fr 1fr;gap:var(--space-14);margin-bottom:1.5rem;}
+.dash-grid .span2{grid-column:span 2;}
+@media(max-width:1100px){.dash-grid{grid-template-columns:1fr 1fr;}.dash-grid .span2{grid-column:1/-1;}}
 .chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;box-shadow:var(--shadow);}
 .chart-card.full{grid-column:1/-1;}
-.chart-title{font-size:var(--fs-base);font-weight:600;color:var(--text);margin-bottom:var(--space-2);}
-.chart-sub{font-size:var(--fs-sm);color:var(--text3);margin-bottom:var(--space-14);}
-.legend{display:flex;flex-wrap:wrap;gap:var(--space-12);margin-bottom:var(--space-12);}
-.legend-item{display:flex;align-items:center;gap:var(--space-5);font-size:var(--fs-sm);color:var(--text2);}
-.legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+.chart-title{font-size:var(--fs-base);font-weight:700;color:var(--text);margin-bottom:var(--space-3);}
+.chart-sub{font-size:var(--fs-xs);color:var(--text3);margin-bottom:var(--space-14);}
+.legend{display:flex;flex-wrap:wrap;gap:var(--space-8);margin-bottom:var(--space-14);}
+.legend-item{display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-xs);font-weight:600;padding:4px 10px 4px 8px;border-radius:12px;}
+.legend-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 
 /* ── FORM ── */
 .form-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px 28px 24px;margin-bottom:1.5rem;box-shadow:var(--shadow);}
@@ -189,6 +212,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
   /* ── 图表网格 → 单列 ── */
   .charts-grid{ grid-template-columns: 1fr !important; }
+  .dash-grid{ grid-template-columns: 1fr !important; }
   .chart-card.full{ grid-column: 1 !important; }
 
   /* ── 指标卡 → 2列 ── */
@@ -264,14 +288,6 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
   /* ── 横屏查看按钮：手机端显示 ── */
   .landscape-btn{ display: inline-flex; }
-
-  /* ── 总览左卡片（次数+饼图）手机端纵向堆叠 ── */
-  .dash-stat-card { flex-direction: column !important; align-items: stretch !important; }
-  .dash-stat-divider { width: 100% !important; height: 1px !important; }
-
-  /* ── 饼图+图例手机端改为上下排列，防止图例挤压画布 ── */
-  .dash-pie-row { flex-direction: column !important; justify-content: flex-start !important; gap: 10px !important; }
-  .dash-pie-row #typeChart-legend { flex-shrink: 1 !important; flex-direction: row !important; flex-wrap: wrap !important; gap: 6px !important; justify-content: flex-start; margin-top: 0 !important; }
 
   /* ── 跑鞋里程卡占满整行，消除横向溢出 ── */
   .metric-shoe { grid-column: 1 / -1 !important; min-width: 0 !important; }
@@ -349,41 +365,16 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   height:38px;
 }
 .ff textarea{height:auto;min-height:64px;resize:vertical;}
-.ff input:focus,.ff select:focus,.ff textarea:focus{outline:none;border-color:var(--green);background:#fff;}
+.ff input:focus,.ff select:focus,.ff textarea:focus{outline:none;border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px var(--brand-lt);}
+.ff input[type="date"]::-webkit-calendar-picker-indicator{opacity:.5;cursor:pointer;transition:opacity .15s;}
+.ff input[type="date"]:hover::-webkit-calendar-picker-indicator,
+.ff input[type="date"]:focus::-webkit-calendar-picker-indicator{opacity:1;}
 .ff input::placeholder{color:var(--text3);}
 .ff input[readonly]{color:var(--text2);background:var(--bg3);cursor:default;}
 .ff select option{background:#fff;color:var(--text);}
 .ff.span2{grid-column:span 2;}
 .ff.span4{grid-column:1/-1;}
 
-/* Mini date-range picker (dashboard cards) —— 药丸形输入框 + 圆形图标重置按钮 */
-.mini-date-input{
-  background:var(--bg3);
-  border:1.5px solid transparent;
-  border-radius:20px;
-  color:var(--text);
-  font-size:var(--fs-xs);
-  padding:5px 12px;
-  font-family:var(--font);
-  height:30px;
-  transition:all .15s;
-}
-.mini-date-input:hover{background:var(--bg2);border-color:var(--border2);}
-.mini-date-input:focus{outline:none;border-color:var(--green);background:#fff;box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 15%,transparent);}
-.mini-reset-link{
-  display:inline-flex;align-items:center;justify-content:center;
-  width:28px;height:28px;
-  flex-shrink:0;
-  border-radius:50%;
-  background:var(--bg3);
-  color:var(--text3);
-  font-size:14px;
-  line-height:1;
-  cursor:pointer;
-  user-select:none;
-  transition:all .2s;
-}
-.mini-reset-link:hover{background:var(--coral);color:#fff;transform:rotate(-75deg);}
 .mini-date-label{font-size:var(--fs-xs);color:var(--text3);white-space:nowrap;}
 
 /* 文字风格日期选择器——专用于总计卡片：去掉药丸造型的背景/内边距，
@@ -392,16 +383,32 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .mini-date-input-plain{
   background:transparent;
   border:none;
-  padding:0;
+  padding:2px 5px;
+  margin:-2px -5px;
+  border-radius:var(--radius);
   height:auto;
   color:var(--text2);
   font-size:var(--fs-xs);
   font-family:var(--font);
   font-variant-numeric:tabular-nums;
   cursor:pointer;
+  transition:background .15s,color .15s,box-shadow .15s;
 }
-.mini-date-input-plain:hover{color:var(--green);}
-.mini-date-input-plain:focus{outline:none;color:var(--green);}
+.mini-date-input-plain:hover{color:var(--brand-dk);background:var(--brand-lt);}
+.mini-date-input-plain:focus{outline:none;color:var(--brand-dk);background:var(--brand-lt);box-shadow:0 0 0 3px var(--brand-lt);}
+.mini-date-input-plain::-webkit-calendar-picker-indicator{
+  -webkit-appearance:none;appearance:none;
+  width:13px;height:13px;
+  background-color:var(--text3);
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cline x1='16' y1='3' x2='16' y2='7'/%3E%3Cline x1='8' y1='3' x2='8' y2='7'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E");
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cline x1='16' y1='3' x2='16' y2='7'/%3E%3Cline x1='8' y1='3' x2='8' y2='7'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E");
+  -webkit-mask-size:contain;mask-size:contain;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+  -webkit-mask-position:center;mask-position:center;
+  cursor:pointer;opacity:.6;transition:opacity .15s,background-color .15s;
+}
+.mini-date-input-plain:hover::-webkit-calendar-picker-indicator,
+.mini-date-input-plain:focus::-webkit-calendar-picker-indicator{opacity:1;background-color:var(--brand-dk);}
 .mini-reset-link-plain{
   display:inline-flex;align-items:center;justify-content:center;
   width:18px;height:18px;
@@ -409,7 +416,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   border-radius:50%;
   color:var(--text3);
   opacity:.45;
-  font-size:12px;
+  font-size:var(--icon-xs);
   line-height:1;
   cursor:pointer;
   user-select:none;
@@ -546,7 +553,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
 /* Heatmap */
 /* Line toggle switches for combined chart */
-.line-toggle{display:flex;align-items:center;gap:var(--space-5);cursor:pointer;padding:4px 10px;border-radius:14px;border:1.5px solid var(--border2);background:var(--bg3);font-size:var(--fs-sm);color:var(--text2);transition:all .15s;user-select:none;}
+.line-toggle{--c:var(--brand);display:flex;align-items:center;gap:var(--space-5);cursor:pointer;padding:4px 10px;border-radius:14px;border:1.5px solid var(--border2);background:var(--bg3);font-size:var(--fs-sm);color:var(--text2);transition:all .15s;user-select:none;}
 .line-toggle input{display:none;}
 .line-toggle:has(input:checked){border-color:var(--c);background:color-mix(in srgb,var(--c) 12%,white);color:var(--c);font-weight:600;}
 .line-toggle span::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:4px;opacity:.4;}
@@ -557,13 +564,29 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .filter-pill{padding:4px 11px;border-radius:12px;font-size:var(--fs-sm);cursor:pointer;border:1.5px solid var(--border2);background:var(--bg3);color:var(--text2);transition:all .15s;user-select:none;}
 .filter-pill.on{border-color:var(--green);color:var(--green);background:var(--green-lt);font-weight:600;}
 
+/* Dashboard 顶部：本周速览 + 同比趋势 + 连续周数 + 7天色块条（网格轨道已并入 .dash-grid） */
+.dash-overview-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:16px 22px;min-width:150px;}
+.dash-overview-label{font-size:var(--fs-xs);color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
+.dash-overview-value{font-size:var(--fs-display-sm);font-weight:800;color:var(--text);line-height:1;font-variant-numeric:tabular-nums;}
+.dash-overview-trend{font-size:var(--fs-xs);margin-top:7px;min-height:15px;}
+.dash-badges{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;min-height:26px;align-items:center;}
+.dash-badge{width:26px;height:26px;border-radius:50%;background:var(--brand-lt);display:flex;align-items:center;justify-content:center;font-size:var(--icon-sm);cursor:default;}
+.dash-overview-strip-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:16px 22px;display:flex;flex-direction:column;}
+.week-strip{display:flex;gap:8px;flex:1;align-items:stretch;margin-top:6px;}
+.week-strip-day{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;}
+.week-strip-bar{width:100%;flex:1;min-height:40px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;padding:3px;}
+.week-strip-sport-in{font-size:var(--fs-sm);font-weight:700;color:#fff;text-align:center;line-height:1.2;word-break:break-word;text-shadow:0 1px 2px rgba(0,0,0,.18);}
+.week-strip-day.is-today .week-strip-bar{box-shadow:0 0 0 2px var(--brand) inset;}
+.week-strip-label{font-size:var(--fs-xs);color:var(--text3);}
+.week-strip-day.is-today .week-strip-label{color:var(--brand-dk);font-weight:700;}
+
 /* 分类速览（Dashboard）—— 每种运动类型一行：图标 + 固定宽度名称 + 数据 + 相对占比色条 */
 .sport-summary-row{
   display:flex;align-items:center;gap:var(--space-10);
   padding:var(--space-8) 0;
   font-size:var(--fs-sm);
 }
-.sport-summary-icon{font-size:var(--fs-lg);flex-shrink:0;width:22px;text-align:center;}
+.sport-summary-icon{font-size:var(--icon-sm);flex-shrink:0;width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;}
 .sport-summary-name{font-weight:600;color:var(--text);flex-shrink:0;width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .sport-summary-stat{color:var(--text2);font-variant-numeric:tabular-nums;white-space:nowrap;flex-shrink:0;width:180px;}
 .sport-summary-extra{color:var(--text3);}
@@ -760,64 +783,70 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 </head>
 <body>
 
-<div class="topbar">
-  <div class="topbar-title"><span class="dot"></span>Fitness Log</div>
-  
-</div>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><span class="dot"></span>Fitness Log</div>
+    <nav class="sidebar-nav">
+      <button class="side-tab active" onclick="showTab('dashboard')" id="tab-dashboard"><span class="side-tab-icon">📊</span>Dashboard</button>
+      <button class="side-tab" onclick="showTab('anaerobic')" id="tab-anaerobic"><span class="side-tab-icon">💪</span>Strength</button>
+      <button class="side-tab" onclick="showTab('run')" id="tab-run"><span class="side-tab-icon">🏃</span>Run</button>
+      <button class="side-tab" onclick="showTab('hike')" id="tab-hike"><span class="side-tab-icon">⛰</span>Hike</button>
+      <button class="side-tab" onclick="showTab('records')" id="tab-records"><span class="side-tab-icon">📋</span>Records</button>
+      <button class="side-tab" onclick="showTab('calendar')" id="tab-calendar"><span class="side-tab-icon">🗓</span>Calendar</button>
+    </nav>
+    <div class="sidebar-spacer"></div>
+    <button class="side-add-btn" onclick="showTab('add')" id="tab-add">＋ Add Record</button>
+    <button class="side-tab side-tab-data" onclick="showTab('data')" id="tab-data"><span class="side-tab-icon">⚙️</span>Data</button>
+  </aside>
 
 <div class="main">
-  <div class="tabs">
-    <button class="tab active" onclick="showTab('dashboard')" id="tab-dashboard">Dashboard</button>
-    <button class="tab" onclick="showTab('anaerobic')" id="tab-anaerobic">Strength</button>
-    <button class="tab" onclick="showTab('run')" id="tab-run">Run</button>
-    <button class="tab" onclick="showTab('hike')" id="tab-hike">Hike</button>
-    <button class="tab" onclick="showTab('records')" id="tab-records">Records</button>
-    <button class="tab" onclick="showTab('calendar')" id="tab-calendar">Calendar</button>
-    <div class="tab-spacer"></div>
-    <button class="tab" onclick="showTab('add')" id="tab-add">＋ Add</button>
-    <button class="tab" onclick="showTab('data')" id="tab-data">Data</button>
-  </div>
 
   <!-- ══════════ DASHBOARD ══════════ -->
   <div id="page-dashboard">
 
-    <!-- 第一行：左边（数字+饼图）+ 右边（热图）并排 -->
-    <div class="charts-grid" style="margin-bottom:var(--space-14)">
+    <!-- 主页顶部区：统一用一套 4 列网格(auto auto 1fr 1fr)，第〇行和第一行共享列轨道，
+         这样"近7天"条和"累计训练"窄卡都跨 2 列，宽度分别精确等于上方/下方另外两张小卡之和，
+         不用手动猜测像素、屏幕缩放也不会错位 -->
+    <div class="dash-grid">
 
-      <!-- 左：总运动次数 + 饼图 同一卡片，横向三区域 -->
-      <div class="chart-card dash-stat-card" style="display:flex;align-items:center;gap:var(--space-20)">
-        <!-- 数字区 -->
-        <div style="flex-shrink:0;min-width:150px">
-          <div style="display:flex;align-items:center;gap:4px;margin-bottom:var(--space-6);flex-wrap:wrap">
-            <input type="date" id="dash-stat-start" class="mini-date-input-plain" onchange="onDashStatStartChange()" title="选择统计起始日期">
-            <span style="font-size:var(--fs-xs);color:var(--text3)">至今</span>
-            <span class="mini-reset-link-plain" onclick="resetDashStatStart()" title="重置为最早日期">↺</span>
-          </div>
+      <!-- 第〇行：本周速览 + 同比趋势 + 连续周数 + 7天色块条 -->
+      <div class="dash-overview-card">
+        <div class="dash-overview-label">本周训练</div>
+        <div class="dash-overview-value" id="dash-week-count">—</div>
+        <div class="dash-overview-trend" id="dash-week-trend"></div>
+      </div>
+      <div class="dash-overview-card">
+        <div class="dash-overview-label">连续周数</div>
+        <div class="dash-overview-value" id="dash-streak">—</div>
+        <div class="dash-badges" id="dash-badges"></div>
+      </div>
+      <div class="dash-overview-strip-card span2">
+        <div class="dash-overview-label">近 7 天</div>
+        <div class="week-strip" id="dash-week-strip"></div>
+      </div>
+
+      <!-- 第一行：累计训练（窄卡，宽度=上方两张小卡之和）+ 类型占比 + 分类速览 -->
+      <div class="chart-card span2" style="display:flex;flex-direction:column;height:100%;position:relative">
+        <div style="display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;font-size:var(--fs-xs);color:var(--text3)">
+          <input type="date" id="dash-stat-start" class="mini-date-input-plain" onchange="onDashStatStartChange()" title="选择统计起始日期">
+          <span class="mini-reset-link-plain" onclick="resetDashStatStart()" title="重置为最早日期">↺</span>
+          <span>至今</span>
+        </div>
+        <div style="position:absolute;left:0;right:0;bottom:50%;margin-bottom:4px;display:flex;justify-content:center">
           <div style="display:flex;align-items:flex-end;gap:var(--space-3);line-height:1">
-            <div style="font-size:var(--fs-display);font-weight:800;color:var(--green);font-variant-numeric:tabular-nums;line-height:1" id="dash-total">—</div>
+            <div style="font-size:var(--fs-display);font-weight:800;color:var(--brand);font-variant-numeric:tabular-nums;line-height:1" id="dash-total">—</div>
             <div style="font-size:var(--fs-sm);color:var(--text3);padding-bottom:5px;white-space:nowrap">次运动</div>
           </div>
-          <div style="font-size:var(--fs-sm);font-weight:600;color:var(--text2);margin-top:var(--space-6)" id="dash-week-avg">—</div>
         </div>
-        <!-- 竖向分割线 -->
-        <div class="dash-stat-divider" style="width:1px;height:80px;background:var(--border);flex-shrink:0"></div>
-        <!-- 饼图区域 -->
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-10)">
-            <div>
-              <div class="chart-title">运动类型占比</div>
-              <div class="chart-sub">所有记录分布</div>
-            </div>
-            <label class="line-toggle pill-30" style="--c:var(--green)"><input type="checkbox" id="dash-pie-labels" checked onchange="renderDashboard()"><span>显示数字</span></label>
-          </div>
-          <div class="dash-pie-row" style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-16)">
-            <div style="position:relative;flex-shrink:0;width:200px;height:200px"><canvas id="typeChart"></canvas></div>
-            <div id="typeChart-legend" style="display:flex;flex-direction:column;gap:var(--space-6);flex-shrink:0"></div>
-          </div>
+        <div style="position:absolute;left:0;right:0;top:50%;margin-top:4px;text-align:center">
+          <div style="font-size:var(--fs-sm);font-weight:600;color:var(--text2)" id="dash-week-avg">—</div>
         </div>
       </div>
 
-      <!-- 右：分类速览 -->
+      <!-- 卡片 2：运动类型占比（整卡结构由 renderDonutCard 模板统一生成，见 JS） -->
+      <div class="chart-card" id="dash-donut-card"></div>
+
+      <!-- 卡片 3：分类速览 -->
       <div class="chart-card">
         <div class="chart-title">分类速览</div>
         <div class="chart-sub">各运动类型次数与累计量</div>
@@ -826,26 +855,8 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
     </div>
 
     <!-- 第二行：月度运动构成独占一行 -->
-    <div class="chart-card full" style="margin-bottom:1.5rem">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-8);flex-wrap:wrap">
-        <div>
-          <div class="chart-title">月度运动构成</div>
-          <div class="chart-sub">每月各运动类型次数</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:var(--space-6);flex-wrap:wrap">
-          <span class="mini-date-label">起始月份</span>
-          <input type="date" id="dash-monthly-start" class="mini-date-input-plain" onchange="onDashMonthlyStartChange()" title="选择起始月份">
-          <span class="mini-reset-link-plain" onclick="resetDashMonthlyStart()" title="重置为最早日期">↺</span>
-        </div>
-      </div>
-      <div class="legend">
-        <div class="legend-item"><div class="legend-dot" id="legend-dot-Strength" style="background:var(--blue)"></div>无氧</div>
-        <div class="legend-item"><div class="legend-dot" id="legend-dot-Run" style="background:var(--green)"></div>跑步</div>
-        <div class="legend-item"><div class="legend-dot" id="legend-dot-JumpRope" style="background:var(--amber)"></div>跳绳</div>
-        <div class="legend-item"><div class="legend-dot" id="legend-dot-Badminton" style="background:var(--purple)"></div>羽毛球</div>
-      </div>
-      <div style="position:relative;height:220px"><canvas id="monthlyChart"></canvas></div>
-    </div>
+    <!-- 月度运动构成（整卡外壳由 renderMonthlyBarCard 模板统一生成，见 JS） -->
+    <div class="chart-card full" style="margin-bottom:1.5rem" id="dash-monthly-card"></div>
 
   </div>
 
@@ -872,16 +883,8 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
     <!-- 肌群分布 + 月度趋势 同一行 -->
     <div class="charts-grid" style="margin-bottom:var(--space-14)">
-      <div class="chart-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-6)">
-          <div>
-            <div class="chart-title">肌群训练分布</div>
-            <div class="chart-sub">各部位占比（复合日取第一个部位）</div>
-          </div>
-          <label class="line-toggle pill-30" style="--c:var(--blue)"><input type="checkbox" id="ana-pie-labels" checked onchange="renderAnaerobic()"><span>显示数字</span></label>
-        </div>
-        <div style="position:relative;height:240px"><canvas id="muscleChart"></canvas></div>
-      </div>
+      <!-- 肌群训练分布（整卡结构由 renderDonutCard 模板统一生成，见 JS） -->
+      <div class="chart-card" id="ana-donut-card"></div>
       <div class="chart-card">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-8);flex-wrap:wrap">
           <div>
@@ -963,20 +966,8 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
     <div style="display:flex;flex-direction:column;gap:var(--space-14);margin-bottom:1.5rem;">
 
       <!-- 月度跑量 -->
-      <div class="chart-card">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-8);flex-wrap:wrap">
-          <div>
-            <div class="chart-title">月度跑量</div>
-            <div class="chart-sub">月度累计距离 (km)</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:var(--space-6);flex-wrap:wrap">
-            <input type="date" id="run-mdist-start" class="mini-date-input-plain" onchange="onRunMDistStartChange()" title="选择起始月份">
-            <span class="mini-reset-link-plain" onclick="resetRunMDistStart()" title="重置为最早日期">↺</span>
-          </div>
-        </div>
-        <div class="mdist-chart-wrap" style="position:relative;height:200px"><canvas id="monthlyDistChart"></canvas></div>
-        <div class="mdist-list" id="monthlyDistList"></div>
-      </div>
+      <!-- 月度跑量（整卡外壳由 renderMonthlyBarCard 模板统一生成，见 JS） -->
+      <div class="chart-card" id="run-mdist-card"></div>
 
       <!-- 配速/心率/步频 合并图 -->
       <div class="chart-card">
@@ -1379,6 +1370,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
     </div>
   </div>
 </div><!-- /main -->
+</div><!-- /app-shell -->
 
 <div class="toast" id="toast"></div>
 
@@ -1479,6 +1471,7 @@ const THEME = {
   amber:  cssVar('--amber')  || '#d97706',
   coral:  cssVar('--coral')  || '#e04545',
   purple: cssVar('--purple') || '#7c5cf6',
+  brand:  cssVar('--brand')  || '#16a06a',
 };
 
 const _escMap={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
@@ -1591,6 +1584,198 @@ function hexToRgba(hex, alpha){
   if(!m) return `rgba(155,163,181,${alpha})`;
   const r=parseInt(m[1],16), g=parseInt(m[2],16), b=parseInt(m[3],16);
   return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// ══════════════════════════════════════
+//  真正共享的图表模板（不是"照抄同一套写法"，是同一份函数被多处调用；
+//  以后想统一调整视觉，改这里一处，所有用到的图表自动跟着变）
+// ══════════════════════════════════════
+
+// 模板 1a：整张「甜甜圈图卡片」的外壳——标题行/开关位置/canvas容器尺寸/图例容器
+// 全部由这里统一生成，调用方只传文字内容和数据，不能单独改某一处布局。
+// 外壳只在容器第一次渲染时生成一次（用 dataset.built 标记），避免每次刷新数据都
+// 重建 DOM 导致"显示数字"开关的勾选状态被强制重置。
+function renderDonutCard({containerId, title, subtitle, chartId, legendId, toggleId, onToggle, labels, values, colorFn, unit='次', toggleColor='var(--brand)'}){
+  const host = document.getElementById(containerId);
+  if(host && !host.dataset.built){
+    host.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-10)">
+        <div>
+          <div class="chart-title">${escapeHtml(title)}</div>
+          <div class="chart-sub">${escapeHtml(subtitle)}</div>
+        </div>
+        <label class="line-toggle pill-30" style="width:auto;padding:0 8px"><input type="checkbox" id="${toggleId}" checked onchange="${onToggle}"><span>显示数字</span></label>
+      </div>
+      <div style="position:relative;width:100%;max-width:190px;height:190px;margin:0 auto"><canvas id="${chartId}"></canvas></div>
+      <div id="${legendId}" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:var(--space-12)"></div>
+    `;
+    host.dataset.built = '1';
+  }
+  renderPillDonut({chartId, legendId, toggleId, labels, values, colorFn, unit, toggleColor});
+}
+
+// 模板 1b：甜甜圈图数据部分（canvas 配置 + 扇区数字 + 下方胶囊图例内容）——
+// 只负责"画图"，不管外壳布局，被 renderDonutCard 内部调用
+function renderPillDonut({chartId, legendId, toggleId, labels, values, colorFn, unit='次', toggleColor='var(--brand)'}){
+  // 开关颜色也归模板管：HTML 里不再单独写 --c，统一由这里设置，
+  // 保证"这个开关该是什么颜色"只有一条决策路径，不会散落在各个 tab 里各写各的
+  const toggleLabel = document.getElementById(toggleId)?.closest('.line-toggle');
+  if(toggleLabel) toggleLabel.style.setProperty('--c', toggleColor);
+  if(!labels.length){
+    dc(chartId);
+    const lw=document.getElementById(legendId); if(lw) lw.innerHTML='';
+    return;
+  }
+  upsertChart(chartId, document.getElementById(chartId), {
+    type:'doughnut',
+    data:{labels, datasets:[{data:values, backgroundColor:labels.map(colorFn), borderWidth:2, borderColor:'#fff', hoverOffset:6}]},
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'48%',
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>{
+          const val=ctx.parsed; const sum=ctx.dataset.data.reduce((a,b)=>a+b,0);
+          return ` ${ctx.label}：${val} ${unit} (${Math.round(val/sum*100)}%)`;
+        }}}
+      }
+    },
+    plugins:[{
+      id:'pillDonutLabels',
+      afterDatasetDraw(chart){
+        const showLabels = document.getElementById(toggleId)?.checked ?? true;
+        if(!showLabels) return;
+        const {ctx,data}=chart;
+        const ds=chart.getDatasetMeta(0).data;
+        const total=data.datasets[0].data.reduce((a,b)=>a+b,0);
+        ds.forEach((arc,i)=>{
+          const val=data.datasets[0].data[i];
+          const pct=Math.round(val/total*100);
+          if(pct<6) return;
+          const angle=(arc.startAngle+arc.endAngle)/2;
+          const r=(arc.innerRadius+arc.outerRadius)/2;
+          const x=arc.x+Math.cos(angle)*r, y=arc.y+Math.sin(angle)*r;
+          ctx.save(); ctx.fillStyle='rgba(255,255,255,0.95)'; ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.font='bold 12px system-ui'; ctx.fillText(`${val}${unit}`, x, y-6);
+          ctx.font='10px system-ui'; ctx.fillText(`${pct}%`, x, y+7);
+          ctx.restore();
+        });
+      }
+    }]
+  });
+  const legendWrap = document.getElementById(legendId);
+  if(legendWrap){
+    legendWrap.innerHTML = labels.map(l=>
+      `<span class="pill-30" style="background:${colorFn(l)};color:#fff;font-size:var(--fs-sm);font-weight:600;white-space:nowrap">${escapeHtml(l)}</span>`
+    ).join('');
+  }
+}
+
+// 模板 2：柱状图「历史均值」色带 + 虚线参照线（主页「月度运动构成」/ Run「月度里程」共用）。
+// getTotals 是个函数（不是数组），每次绘制时重新取值，保证图表数据原地更新后参照线也跟着刷新。
+// 返回两个插件：色带画在柱子下方(beforeDatasetsDraw)，虚线+文字画在柱子上方(afterDraw)保证不被遮住。
+function makeAvgBandPlugin(getTotals, unit){
+  return [{
+    id:'avgBand',
+    beforeDatasetsDraw(chart){
+      const totals = getTotals();
+      const nonZero = totals.filter(t=>t>0);
+      if(!nonZero.length) return;
+      const avg = nonZero.reduce((a,b)=>a+b,0)/nonZero.length;
+      const {ctx, chartArea, scales:{y}} = chart;
+      if(!chartArea) return;
+      const yPos = y.getPixelForValue(avg);
+      const top = Math.max(yPos, chartArea.top);
+      ctx.save();
+      ctx.fillStyle = hexToRgba(THEME.brand, 0.06);
+      ctx.fillRect(chartArea.left, chartArea.top, chartArea.right-chartArea.left, top-chartArea.top);
+      ctx.restore();
+    }
+  },{
+    id:'avgLine',
+    afterDraw(chart){
+      const totals = getTotals();
+      const nonZero = totals.filter(t=>t>0);
+      if(!nonZero.length) return;
+      const avg = nonZero.reduce((a,b)=>a+b,0)/nonZero.length;
+      const {ctx, chartArea, scales:{y}} = chart;
+      const yPos = y.getPixelForValue(avg);
+      if(yPos<chartArea.top || yPos>chartArea.bottom) return;
+      ctx.save();
+      ctx.setLineDash([4,4]);
+      ctx.strokeStyle='rgba(36,31,26,0.32)';
+      ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.moveTo(chartArea.left, yPos);
+      ctx.lineTo(chartArea.right, yPos);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='rgba(36,31,26,0.55)';
+      ctx.font='10px system-ui';
+      ctx.textAlign='right';
+      ctx.fillText(`月均 ${avg.toFixed(1)}${unit}`, chartArea.right-2, yPos-5);
+      ctx.restore();
+    }
+  }];
+}
+
+// 模板 2a：整张「月度柱状图卡片」外壳——标题行/日期筛选器位置/canvas容器/图例容器（可选）
+// 统一生成。图例的具体内容不在这里管——因为「月度运动构成」是多类型堆叠、需要图例，
+// 「月度里程」是单一数值、不需要图例，两边数据结构差太多硬塞一个函数反而难维护；
+// 折中方案：容器"有没有、放哪"由模板决定，容器"里面填什么"留给调用方各自负责。
+function renderMonthlyBarCard({containerId, title, subtitle, chartId, startInputId, onStartChange, resetOnClick, legendId, chartWrapClass='', extraHtml=''}){
+  const host = document.getElementById(containerId);
+  if(host && !host.dataset.built){
+    host.innerHTML = `
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-8);flex-wrap:wrap">
+        <div>
+          <div class="chart-title">${escapeHtml(title)}</div>
+          <div class="chart-sub">${escapeHtml(subtitle)}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:var(--space-6);flex-wrap:wrap">
+          <span class="mini-date-label">起始月份</span>
+          <input type="date" id="${startInputId}" class="mini-date-input-plain" onchange="${onStartChange}" title="选择起始月份">
+          <span class="mini-reset-link-plain" onclick="${resetOnClick}" title="重置为最早日期">↺</span>
+        </div>
+      </div>
+      ${legendId ? `<div class="legend" id="${legendId}"></div>` : ''}
+      <div class="${chartWrapClass}" style="position:relative;height:220px;margin-top:${legendId?'0':'var(--space-10)'}"><canvas id="${chartId}"></canvas></div>
+      ${extraHtml}
+    `;
+    host.dataset.built = '1';
+  }
+}
+
+// 模板 2b：柱状图「白字数值标签」工厂函数——formatFn 决定文字内容，
+// 返回字符串就画一行居中，返回 {top,bottom} 就画两行（用于「里程+次数」这种双数值场景）
+function makeBarValueLabelPlugin(formatFn, minHeight=16){
+  return {id:'barValueLabels', afterDatasetsDraw(chart){
+    const {ctx}=chart;
+    chart.data.datasets.forEach((ds,di)=>{
+      const meta=chart.getDatasetMeta(di);
+      if(meta.hidden) return;
+      meta.data.forEach((bar,i)=>{
+        const val=ds.data[i];
+        if(val==null||val<1) return;
+        if((bar.height||0)<minHeight) return;
+        const text = formatFn(val,i,di,chart);
+        if(!text) return;
+        const {x,y}=bar.getCenterPoint();
+        ctx.save();
+        ctx.fillStyle='rgba(255,255,255,0.95)';
+        ctx.textAlign='center';
+        if(text && typeof text==='object'){
+          ctx.font='bold 11px system-ui'; ctx.textBaseline='middle';
+          ctx.fillText(text.top, x, y-7);
+          ctx.font='10px system-ui';
+          ctx.fillText(text.bottom, x, y+7);
+        }else{
+          ctx.font='bold 11px system-ui'; ctx.textBaseline='middle';
+          ctx.fillText(String(text), x, y);
+        }
+        ctx.restore();
+      });
+    });
+  }};
 }
 
 // ══════════════════════════════════════
@@ -2581,10 +2766,10 @@ function renderDashboard(){
   const latest=allDates.length>0?allDates[allDates.length-1]:'';
 
   // 起始日期输入框：同步 min/max/value（不允许早于最早记录，不允许晚于最新记录）
+  // 注：dash-monthly-start 这个输入框现在由 renderMonthlyBarCard 动态生成，
+  // 这里执行时它还不存在，它的 min/max/value 挪到下面调用完模板之后再设置
   const statInput=document.getElementById('dash-stat-start');
-  const monthlyInput=document.getElementById('dash-monthly-start');
   if(statInput){ statInput.min=earliest; statInput.max=latest; statInput.value=dashStatStart||earliest; statInput.placeholder=earliest; }
-  if(monthlyInput){ monthlyInput.min=earliest; monthlyInput.max=latest; monthlyInput.value=dashMonthlyStart||earliest; monthlyInput.placeholder=earliest; }
 
   // 统计卡片：若选择了起始日期（且不早于最早记录），只统计该日期起（含当天）的记录
   const statStart = (dashStatStart && dashStatStart>=earliest) ? dashStatStart : '';
@@ -2599,6 +2784,23 @@ function renderDashboard(){
   // 月度堆叠柱状图 + 白色数字标签（可选自定义起始月份，默认从最早记录开始）
   const months=getMonthRange(dashMonthlyStart);
   const types=['Strength','Run','Jump Rope','Badminton','Hike','Walk'];
+  renderMonthlyBarCard({
+    containerId:'dash-monthly-card', title:'月度运动构成', subtitle:'每月各运动类型次数',
+    chartId:'monthlyChart', startInputId:'dash-monthly-start', onStartChange:'onDashMonthlyStartChange()', resetOnClick:'resetDashMonthlyStart()',
+    legendId:'dash-monthly-legend'
+  });
+  // 图例内容：id 特意保留跟以前一样（legend-dot-Strength 等），因为 syncSportColorUI()
+  // 会直接按这几个固定 id 去改小圆点颜色，是「颜色设置」功能的联动点，不能改名
+  const monthlyLegendEl = document.getElementById('dash-monthly-legend');
+  if(monthlyLegendEl){
+    monthlyLegendEl.innerHTML = `
+      <div class="legend-item" style="background:var(--blue-lt);color:var(--blue-dk)"><div class="legend-dot" id="legend-dot-Strength" style="background:var(--blue)"></div>无氧</div>
+      <div class="legend-item" style="background:var(--green-lt);color:var(--green-dk)"><div class="legend-dot" id="legend-dot-Run" style="background:var(--green)"></div>跑步</div>
+      <div class="legend-item" style="background:var(--amber-lt);color:var(--amber)"><div class="legend-dot" id="legend-dot-JumpRope" style="background:var(--amber)"></div>跳绳</div>
+      <div class="legend-item" style="background:var(--purple-lt);color:var(--purple)"><div class="legend-dot" id="legend-dot-Badminton" style="background:var(--purple)"></div>羽毛球</div>`;
+  }
+  const monthlyInput = document.getElementById('dash-monthly-start');
+  if(monthlyInput){ monthlyInput.min=earliest; monthlyInput.max=latest; monthlyInput.value=dashMonthlyStart||earliest; monthlyInput.placeholder=earliest; }
   upsertChart('monthlyChart', document.getElementById('monthlyChart'), {type:'bar',
     data:{labels:months.map(m=>m.slice(2).replace('-','/')),
       datasets:types.map(t=>({
@@ -2619,86 +2821,106 @@ function renderDashboard(){
         y:{...CHART_OPT.scales.y,stacked:true}
       }
     },
-    plugins:[{
-      id:'barLabels',
-      afterDatasetsDraw(chart){
-        const {ctx}=chart;
-        chart.data.datasets.forEach((ds,di)=>{
-          const meta=chart.getDatasetMeta(di);
-          if(meta.hidden) return;
-          meta.data.forEach((bar,i)=>{
-            const val=ds.data[i];
-            if(!val||val<1) return;
-            // 用几何中心，确保数字在色块正中
-            const {x,y}=bar.getCenterPoint();
-            // 色块高度不够时跳过（避免文字溢出）
-            const h=bar.height||0;
-            if(h<16) return;
-            ctx.save();
-            ctx.fillStyle='rgba(255,255,255,0.95)';
-            ctx.font='bold 11px system-ui';
-            ctx.textAlign='center';
-            ctx.textBaseline='middle';
-            ctx.fillText(val, x, y);
-            ctx.restore();
-          });
-        });
-      }
-    }]
+    plugins:[
+      ...makeAvgBandPlugin(()=>months.map(m=>records.filter(r=>r.date?.startsWith(m)).length), '次'),
+      makeBarValueLabelPlugin(val=>String(val), 16)
+    ]
   });
 
-  // 训练类型占比甜甜圈 — 数据标签直接显示在图上
+  // 训练类型占比甜甜圈 — 调用共享模板（跟 Anaerobic「肌群训练分布」共用同一份函数）
   const tc={};records.forEach(r=>{const s=r.sport||'其他';tc[s]=(tc[s]||0)+1;});
   const tcLabels=getSportDisplayOrder(tc); const tcVals=tcLabels.map(l=>tc[l]);
-  upsertChart('typeChart', document.getElementById('typeChart'), {type:'doughnut',
-    data:{labels:tcLabels,datasets:[{data:tcVals,backgroundColor:tcLabels.map(getSportColor),borderWidth:2,borderColor:'#fff',hoverOffset:4}]},
-    options:{
-      responsive:true,maintainAspectRatio:false,cutout:'48%',
-      plugins:{
-        legend:{display:false},
-        tooltip:{callbacks:{label:ctx=>{
-          const val=ctx.parsed; const sum=ctx.dataset.data.reduce((a,b)=>a+b,0);
-          return ` ${ctx.label}：${val} 次 (${Math.round(val/sum*100)}%)`;
-        }}}
-      }
-    },
-    plugins:[{
-      id:'pieLabels',
-      afterDatasetDraw(chart){
-        const showLabels = document.getElementById('dash-pie-labels')?.checked ?? true;
-        if(!showLabels) return;
-        const {ctx,data}=chart;
-        const ds=chart.getDatasetMeta(0).data;
-        const total=data.datasets[0].data.reduce((a,b)=>a+b,0);
-        ds.forEach((arc,i)=>{
-          const val=data.datasets[0].data[i];
-          const pct=Math.round(val/total*100);
-          if(pct<6) return;
-          const angle=(arc.startAngle+arc.endAngle)/2;
-          const r=(arc.innerRadius+arc.outerRadius)/2;
-          const x=arc.x+Math.cos(angle)*r;
-          const y=arc.y+Math.sin(angle)*r;
-          ctx.save();
-          ctx.fillStyle='rgba(255,255,255,0.95)';
-          ctx.textAlign='center'; ctx.textBaseline='middle';
-          ctx.font='bold 12px system-ui';
-          ctx.fillText(`${val}次`, x, y-6);
-          ctx.font='10px system-ui';
-          ctx.fillText(`${pct}%`, x, y+7);
-          ctx.restore();
-        });
-      }
-    }]
-  });
-  // 自定义 HTML 图例：右侧竖排 pill（仿无氧分析样式）
-  const legendWrap = document.getElementById('typeChart-legend');
-  if(legendWrap){
-    legendWrap.innerHTML = tcLabels.map((l,i)=>
-      `<span class="pill-30" style="background:${getSportColor(l)};color:#fff;font-size:var(--fs-sm);font-weight:600;white-space:nowrap">${escapeHtml(l)}</span>`
-    ).join('');
-  }
+  renderDonutCard({containerId:'dash-donut-card', title:'类型占比', subtitle:'所有记录分布', chartId:'typeChart', legendId:'typeChart-legend', toggleId:'dash-pie-labels', onToggle:'renderDashboard()', labels:tcLabels, values:tcVals, colorFn:getSportColor, toggleColor:'var(--brand)'});
 
   renderSportSummary();
+  renderDashboardOverview();
+}
+
+// 本周速览 + 同比趋势 + 连续周数 + 7天色块条（融合 Strava「大数字+趋势」与高驰「周历条」的模式，
+// 所有数值都基于已有的 records 数据算出来，不编造任何没有底层数据支撑的"评分"）
+function getWeekRange(offsetWeeks){
+  const now = new Date();
+  const day = now.getDay(); // 0=周日..6=周六
+  const diffToMonday = (day===0 ? -6 : 1-day);
+  const monday = new Date(now); monday.setDate(now.getDate()+diffToMonday+offsetWeeks*7); monday.setHours(0,0,0,0);
+  const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
+  return { start: localDateStr(monday), end: localDateStr(sunday) };
+}
+function renderDashboardOverview(){
+  // 本周 vs 上周 次数对比
+  const thisWeek = getWeekRange(0), lastWeek = getWeekRange(-1);
+  const thisCount = records.filter(r=>r.date && r.date>=thisWeek.start && r.date<=thisWeek.end).length;
+  const lastCount = records.filter(r=>r.date && r.date>=lastWeek.start && r.date<=lastWeek.end).length;
+  const diff = thisCount - lastCount;
+  const countEl = document.getElementById('dash-week-count');
+  if(countEl) countEl.textContent = thisCount;
+  const trendEl = document.getElementById('dash-week-trend');
+  if(trendEl){
+    if(thisCount===0 && lastCount===0){ trendEl.innerHTML = '<span style="color:var(--text3)">暂无记录</span>'; }
+    else{
+      const arrow = diff>0?'↑':diff<0?'↓':'→';
+      const color = diff>0?'var(--green)':diff<0?'var(--coral)':'var(--text3)';
+      trendEl.innerHTML = `<span style="color:${color};font-weight:700">${arrow} ${diff>0?'+':''}${diff}</span><span style="color:var(--text3)"> 较上周</span>`;
+    }
+  }
+
+  // 连续训练周数：从本周往前数，只要当周（周一~周日）至少有一次记录就继续；
+  // 颗粒度从"天"换成"周"，不再要求天天练，只要求每周别断
+  const weekHasRecord = (offset)=>{
+    const wr = getWeekRange(offset);
+    return records.some(r=>r.date && r.date>=wr.start && r.date<=wr.end);
+  };
+  // 连续训练周数：从"上一个已完成的自然周"开始往前查（本周还在进行中，
+  // 可能只是还没来得及记录，不该被当成"断了"，所以不参与判断起点）
+  let streak=0, wOffset=-1;
+  while(weekHasRecord(wOffset)){ streak++; wOffset--; }
+  const streakEl = document.getElementById('dash-streak');
+  if(streakEl) streakEl.textContent = streak;
+
+  // 成就徽章：连续训练周数 + 累计次数里程碑，都是可验证的真实数据
+  const badges=[];
+  if(streak>=3)  badges.push({icon:'🔥',label:'连续 3 周以上'});
+  if(streak>=8)  badges.push({icon:'⚡',label:'连续 8 周以上'});
+  if(streak>=26) badges.push({icon:'👑',label:'连续 26 周以上'});
+  if(records.length>=50)  badges.push({icon:'🥉',label:'累计 50 次里程碑'});
+  if(records.length>=100) badges.push({icon:'🥈',label:'累计 100 次里程碑'});
+  if(records.length>=300) badges.push({icon:'🥇',label:'累计 300 次里程碑'});
+  const badgeEl = document.getElementById('dash-badges');
+  if(badgeEl){
+    badgeEl.innerHTML = badges.length
+      ? badges.map(b=>`<span class="dash-badge" title="${escapeHtml(b.label)}">${b.icon}</span>`).join('')
+      : '<span style="font-size:var(--fs-xs);color:var(--text3)">继续加油，解锁第一个成就</span>';
+  }
+
+  // 近 7 天色块条：今天在最右，每天取当天第一条记录的运动类型上色
+  const stripEl = document.getElementById('dash-week-strip');
+  if(stripEl){
+    let html='';
+    for(let i=6;i>=0;i--){
+      const dt=new Date(); dt.setDate(dt.getDate()-i);
+      const ds=localDateStr(dt);
+      const dayRecs=records.filter(r=>r.date===ds);
+      const label=['日','一','二','三','四','五','六'][dt.getDay()];
+      const isToday = i===0;
+      const bg = dayRecs.length>0 ? getSportColor(dayRecs[0].sport||'其他') : 'var(--bg3)';
+      const title = dayRecs.length>0 ? dayRecs.map(r=>r.sport).join('、') : '未训练';
+      let sportText = '';
+      if(dayRecs.length>0){
+        const first = dayRecs[0];
+        if(first.sport==='Strength'){
+          const muscles = (first.muscles||first.sub||'').split(',').map(s=>s.trim()).filter(Boolean);
+          sportText = escapeHtml(muscles.length ? muscles.join(' & ') : 'Strength');
+        } else {
+          sportText = escapeHtml(first.sport);
+        }
+      }
+      html+=`<div class="week-strip-day${isToday?' is-today':''}" title="${escapeHtml(title)}">
+        <div class="week-strip-bar" style="background:${bg}">${sportText?`<span class="week-strip-sport-in">${sportText}</span>`:''}</div>
+        <div class="week-strip-label">${label}</div>
+      </div>`;
+    }
+    stripEl.innerHTML = html;
+  }
 }
 
 // ══════════════════════════════════════
@@ -2835,51 +3057,7 @@ function renderAnaerobic(){
   const PARTS_ORDER = ['Chest','Back','Legs','Delts','Core','Bis','Tris'];
   const mmLabels = PARTS_ORDER.filter(p=>mm[p]);
   const mmVals = mmLabels.map(p=>mm[p]);
-  if(!mmLabels.length){ dc('muscleChart'); }
-  if(mmLabels.length){
-    upsertChart('muscleChart', document.getElementById('muscleChart'), {
-      type:'doughnut',
-      data:{
-        labels:mmLabels,
-        datasets:[{
-          data:mmVals,
-          backgroundColor:mmLabels.map(k=>MUSCLE_COLORS[k]||'#9ba3b5'),
-          borderWidth:0, hoverOffset:6,
-        }]
-      },
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        cutout:'55%',
-        plugins:{
-          legend:{position:'right', labels:{color:'#5a6278',font:{size:12},padding:12,boxWidth:12}},
-          tooltip:{callbacks:{label:ctx=>` ${ctx.label} ${ctx.parsed} 次 (${Math.round(ctx.parsed/mmVals.reduce((a,b)=>a+b,0)*100)}%)`}}
-        }
-      },
-      plugins:[{
-        id:'anaPieLabels',
-        afterDatasetDraw(chart){
-          const showLabels = document.getElementById('ana-pie-labels')?.checked ?? true;
-          if(!showLabels) return;
-          const {ctx}=chart;
-          // 注意：读取 chart.data（原地更新时会是最新数据），
-          // 不要闭包捕获外部的 mmVals，否则图表复用后会显示过期数字。
-          const vals = chart.data.datasets[0].data;
-          const total=vals.reduce((a,b)=>a+b,0);
-          chart.getDatasetMeta(0).data.forEach((arc,i)=>{
-            const val=vals[i]; const pct=Math.round(val/total*100);
-            if(pct<5) return;
-            const angle=(arc.startAngle+arc.endAngle)/2;
-            const r=(arc.innerRadius+arc.outerRadius)/2;
-            const x=arc.x+Math.cos(angle)*r; const y=arc.y+Math.sin(angle)*r;
-            ctx.save(); ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle';
-            ctx.font='bold 12px system-ui'; ctx.fillText(`${val}次`, x, y-7);
-            ctx.font='11px system-ui'; ctx.fillText(`${pct}%`, x, y+7);
-            ctx.restore();
-          });
-        }
-      }]
-    });
-  }
+  renderDonutCard({containerId:'ana-donut-card', title:'肌群训练分布', subtitle:'各部位占比（复合日取第一个部位）', chartId:'muscleChart', legendId:'muscleChart-legend', toggleId:'ana-pie-labels', onToggle:'renderAnaerobic()', labels:mmLabels, values:mmVals, colorFn:l=>MUSCLE_COLORS[l]||'#9ba3b5', toggleColor:'var(--blue)'});
 
   // ── 年度战报（分组柱状图，可点击图例排除某年）──
   const YEAR_COLORS = [THEME.blue, THEME.green, THEME.amber, THEME.purple, THEME.coral];
@@ -3017,7 +3195,7 @@ function renderSportSummary(){
     }
     const barPct = maxCount>0 ? Math.max((count/maxCount)*100, 3) : 0; // 至少留 3% 让色条可见
     return `<div class="sport-summary-row">
-      <span class="sport-summary-icon">${icon}</span>
+      <span class="sport-summary-icon" style="background:${hexToRgba(getSportColor(sport),0.14)}">${icon}</span>
       <span class="sport-summary-name">${escapeHtml(sport)}</span>
       <span class="sport-summary-stat">${count} 次${extra?`<span class="sport-summary-extra"> · ${extra}</span>`:''}</span>
       <div class="sport-summary-bar-wrap"><div class="sport-summary-bar" style="width:${barPct}%;background:${getSportColor(sport)}"></div></div>
@@ -3319,6 +3497,11 @@ function renderRunAnalysis(){
   const runLatest = runDatesAll.length?runDatesAll[runDatesAll.length-1]:'';
 
   // 月度跑量：自定义起始月份
+  renderMonthlyBarCard({
+    containerId:'run-mdist-card', title:'月度跑量', subtitle:'月度累计距离 (km)',
+    chartId:'monthlyDistChart', startInputId:'run-mdist-start', onStartChange:'onRunMDistStartChange()', resetOnClick:'resetRunMDistStart()',
+    chartWrapClass:'mdist-chart-wrap', extraHtml:'<div class="mdist-list" id="monthlyDistList"></div>'
+  });
   syncStartInput('run-mdist-start', runMDistStart, runEarliest, runLatest);
   const mdStart = (runMDistStart.value && runMDistStart.value>=runEarliest) ? runMDistStart.value : '';
   const months=getMonthRange(mdStart);
@@ -3346,26 +3529,13 @@ function renderRunAnalysis(){
     type:'bar',
     data:{labels:months.map(m=>m.slice(2).replace('-','/')),datasets:[{data:mDist,backgroundColor:THEME.green,borderRadius:4,hoverBackgroundColor:'#22d6a0'}]},
     options:CHART_OPT,
-    plugins:[{id:'distBarLabels',afterDatasetsDraw(chart){
-      const {ctx}=chart;
-      // 注意：次数数组通过 chart.$aux 传入（原地更新时会是最新值），
-      // 不要闭包捕获外部的 mCount，否则图表复用后会显示过期数字。
-      const counts = chart.$aux || [];
-      chart.getDatasetMeta(0).data.forEach((bar,i)=>{
-        const val=chart.data.datasets[0].data[i]; if(!val||val<1) return;
-        const {x,y}=bar.getCenterPoint(); if((bar.height||0)<28) return;
-        ctx.save();
-        ctx.fillStyle='rgba(255,255,255,0.95)';
-        ctx.textAlign='center';
-        // 上行：距离 + km
-        ctx.font='bold 11px system-ui'; ctx.textBaseline='middle';
-        ctx.fillText(val+'km', x, y-7);
-        // 下行：次数
-        ctx.font='10px system-ui';
-        ctx.fillText((counts[i]||0)+'次', x, y+7);
-        ctx.restore();
-      });
-    }}]
+    plugins:[
+      ...makeAvgBandPlugin(()=>mDist, 'km'),
+      makeBarValueLabelPlugin((val,i,di,chart)=>{
+        const counts = chart.$aux || [];
+        return {top: val+'km', bottom: (counts[i]||0)+'次'};
+      }, 28)
+    ]
   }, mCount);
 
   // 单次距离图：自定义起始日期
