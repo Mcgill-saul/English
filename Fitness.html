@@ -263,34 +263,22 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   .cal-bar{ flex-basis: 11px; height: 11px; font-size: 7px; }
   .cal-bar-plus{ flex-basis: 10px; height: 10px; font-size: 7px; }
 
-  /* ── 跑步/无氧周期卡片：手机端改为竖排布局 ── */
-  .cycle-card{
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
+  /* ── 跑步/无氧周期卡片：手机端统计数字改两列网格，网格容器强制单列（用 !important
+     压过桌面端内联设置的固定列宽，避免横向溢出） ── */
+  .cycle-grid{ grid-template-columns:1fr !important; }
   .cycle-divider{ display: none; }
-  .cycle-card > div[style*="min-width:160px"]{ min-width: 0 !important; }
   .cycle-card-stats{
     display: grid;
     grid-template-columns: repeat(2,1fr);
     gap: 10px;
   }
   .cycle-card-stats .cycle-stat{ min-width: 0; }
-  .cycle-actions{
-    margin-left: 0 !important;
-    justify-content: flex-end;
-  }
-
   /* ── 月度跑量：手机端用横向条形列表替代柱状图 ── */
   .mdist-chart-wrap{ display: none; }
   .mdist-list{ display: flex; }
 
   /* ── 横屏查看按钮：手机端显示 ── */
   .landscape-btn{ display: inline-flex; }
-
-  /* ── 跑鞋里程卡占满整行，消除横向溢出 ── */
-  .metric-shoe { grid-column: 1 / -1 !important; min-width: 0 !important; }
 
   /* ── 数据管理 ── */
   .data-section{ padding: 14px; }
@@ -593,17 +581,49 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .sport-summary-bar-wrap{position:relative;flex:1;height:6px;border-radius:3px;background:var(--bg3);overflow:hidden;margin-left:var(--space-8);}
 .sport-summary-bar{position:absolute;top:0;left:0;bottom:0;border-radius:3px;transition:width .3s ease;}
 
-/* ── Anaerobic: cycle cards ── */
-.cycle-card{background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:var(--space-16);flex-wrap:wrap;}
-.cycle-card.active{border-color:var(--green);background:var(--green-lt);}
-.cycle-card-stats{display:flex;align-items:center;gap:var(--space-16);flex-wrap:wrap;}
-.cycle-stat{display:flex;flex-direction:column;gap:var(--space-2);min-width:80px;}
-.cycle-stat-val{font-size:var(--fs-stat);font-weight:700;color:var(--text);line-height:1;}
-.cycle-stat-val.green{color:var(--green);}
-.cycle-stat-label{font-size:var(--fs-xs);color:var(--text3);text-transform:uppercase;letter-spacing:.04em;}
-.cycle-divider{width:1px;height:44px;background:var(--border);flex-shrink:0;}
-.cycle-actions{margin-left:auto;display:flex;gap:var(--space-6);}
+/* ── 周期卡片：紧凑独立卡片 + 网格布局（无氧/跑步共用），
+   不再是撑满整行的横条，多个周期存在时并排成网格，不会出现中间大片空白 ── */
+.cycle-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:var(--space-12);}
+.cycle-card{background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;display:flex;flex-direction:column;gap:var(--space-12);}
+.cycle-card.active{border-color:var(--cycle-accent,var(--green));background:var(--cycle-accent-lt,var(--green-lt));}
+.cycle-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-8);}
+.cycle-card-stats{display:flex;align-items:center;gap:var(--space-10);}
+.cycle-stat{display:flex;flex-direction:column;gap:var(--space-2);min-width:0;flex:1;}
+.cycle-stat-val{font-size:var(--fs-stat);font-weight:700;color:var(--text);line-height:1;white-space:nowrap;}
+.cycle-stat-label{font-size:var(--fs-xs);color:var(--text3);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}
+.cycle-divider{width:1px;height:36px;background:var(--border);flex-shrink:0;}
+.cycle-extra{border-top:1px solid var(--border);padding-top:var(--space-12);}
 .cycle-label{font-size:var(--fs-sm);font-weight:600;color:var(--text2);margin-bottom:var(--space-6);}
+
+/* 「进行中」+「历史周期」左右布局：桌面端历史周期展开后长在右侧独立面板里，
+   不是往下顶开页面；移动端（跟全站同一个 768px 断点）自动切回上下堆叠，
+   跟手机上"点了往下展开"的直觉一致 */
+.cycle-layout{display:flex;gap:var(--space-16);align-items:stretch;}
+.cycle-history-panel{flex:0 0 360px;min-width:0;border-left:1px solid var(--border);padding-left:var(--space-16);}
+@media(max-width:768px){
+  .cycle-layout{flex-direction:column;}
+  .cycle-history-panel{flex:none;width:100%;border-left:none;border-top:1px solid var(--border);padding-left:0;padding-top:var(--space-14);margin-top:var(--space-4);}
+}
+
+/* 周期卡片的「⋮」操作菜单——跟日历筛选菜单是同一套视觉模式 */
+.cycle-menu-wrap{position:relative;flex-shrink:0;}
+.cycle-menu-btn{
+  width:26px;height:26px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:transparent;border:none;border-radius:50%;
+  color:var(--text3);font-size:var(--fs-lg);line-height:1;cursor:pointer;
+  transition:background .15s,color .15s;
+}
+.cycle-menu-btn:hover,.cycle-menu-btn.active{background:var(--bg2);color:var(--text);}
+.cycle-menu-panel{
+  position:absolute; top:calc(100% + 4px); right:0;
+  background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius);
+  box-shadow:var(--shadow); min-width:88px; z-index:20; overflow:hidden;
+}
+.cycle-menu-item{padding:8px 14px;font-size:var(--fs-sm);color:var(--text2);cursor:pointer;white-space:nowrap;}
+.cycle-menu-item:hover{background:var(--bg3);}
+.cycle-menu-item.danger{color:var(--coral);}
+.cycle-menu-item.danger:hover{background:var(--coral-lt);}
 
 /* ── 横屏查看：全屏弹层，靠真实旋转手机变宽 ── */
 .landscape-overlay{
@@ -865,19 +885,23 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
     <!-- 坚持周期 -->
     <div class="chart-card full" style="margin-bottom:var(--space-14)">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-16)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-16);flex-wrap:wrap;gap:var(--space-8)">
         <div>
           <div class="chart-title">无氧坚持周期</div>
           <div class="chart-sub">记录每个阶段的起止日期，统计坚持天数与训练频率</div>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="addCycle()">＋ 添加周期</button>
+        <div style="display:flex;gap:var(--space-8)">
+          <button class="btn btn-secondary btn-sm" id="ana-cycle-toggle" onclick="toggleCycleHistory()" style="display:none">查看历史周期</button>
+          <button class="btn btn-secondary btn-sm" onclick="addCycle()">＋ 添加周期</button>
+        </div>
       </div>
-      <!-- 当前进行中 -->
-      <div id="ana-cycle-active"></div>
-      <!-- 历史折叠 -->
-      <div id="ana-cycle-history-wrap" style="margin-top:var(--space-10);display:none">
-        <button class="btn btn-secondary btn-sm" id="ana-cycle-toggle" onclick="toggleCycleHistory()" style="margin-bottom:var(--space-10)">展开历史周期</button>
-        <div id="ana-cycle-history" style="display:none;flex-direction:column;gap:var(--space-8)"></div>
+      <div class="cycle-layout">
+        <!-- 当前进行中 -->
+        <div id="ana-cycle-active" class="cycle-grid" style="grid-template-columns:repeat(auto-fill,340px);flex:0 0 auto"></div>
+        <!-- 历史周期（桌面端紧贴在进行中右侧，移动端自动切回下方） -->
+        <div id="ana-cycle-history-wrap" class="cycle-history-panel" style="display:none">
+          <div id="ana-cycle-history" class="cycle-grid" style="display:none"></div>
+        </div>
       </div>
     </div>
 
@@ -885,19 +909,8 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
     <div class="charts-grid" style="margin-bottom:var(--space-14)">
       <!-- 肌群训练分布（整卡结构由 renderDonutCard 模板统一生成，见 JS） -->
       <div class="chart-card" id="ana-donut-card"></div>
-      <div class="chart-card">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-8);flex-wrap:wrap">
-          <div>
-            <div class="chart-title">月度无氧训练频次</div>
-            <div class="chart-sub">每月无氧训练次数趋势</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:var(--space-6);flex-wrap:wrap">
-            <input type="date" id="ana-monthly-start" class="mini-date-input-plain" onchange="onAnaMonthlyStartChange()" title="选择起始月份">
-            <span class="mini-reset-link-plain" onclick="resetAnaMonthlyStart()" title="重置为最早日期">↺</span>
-          </div>
-        </div>
-        <div style="position:relative;height:240px"><canvas id="anaMonthlyChart"></canvas></div>
-      </div>
+      <!-- 月度无氧训练频次（整卡外壳由 renderLineChartCard 模板统一生成，见 JS） -->
+      <div class="chart-card" id="ana-monthly-line-card"></div>
     </div>
 
     <!-- 年度战报：分组柱状图 -->
@@ -915,50 +928,58 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
   <!-- ══════════ HIKE ANALYSIS ══════════ -->
   <div id="page-hike" style="display:none">
-    <div class="chart-card full" style="margin-bottom:1.5rem">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:var(--space-12);margin-bottom:var(--space-14)">
-        <div>
-          <div class="chart-title">步数趋势</div>
-          <div class="chart-sub">每次步数记录</div>
-        </div>
-        <!-- 颜色图例开关 -->
-        <div style="display:flex;gap:var(--space-8);flex-wrap:wrap;align-items:center">
-          <span style="font-size:var(--fs-xs);color:var(--text3)">显示：</span>
-          <label class="line-toggle" id="hlt-hike-label" style="--c:#059669"><input type="checkbox" id="hlt-hike" checked onchange="renderHikeAnalysis()"><span>⛰ Hike</span></label>
-          <label class="line-toggle" id="hlt-walk-label" style="--c:#6b9e8a"><input type="checkbox" id="hlt-walk" checked onchange="renderHikeAnalysis()"><span>🚶 Walk</span></label>
-          <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
-          <input type="date" id="hike-start" class="mini-date-input-plain" onchange="onHikeStartChange()" title="选择起始日期">
-          <span class="mini-reset-link-plain" onclick="resetHikeStart()" title="重置为最早日期">↺</span>
-        </div>
-      </div>
-      <div style="position:relative;height:320px"><canvas id="hikeDistChart"></canvas></div>
-    </div>
+    <!-- 步数趋势（整卡外壳由 renderLineChartCard 模板统一生成，见 JS） -->
+    <div class="chart-card full" style="margin-bottom:1.5rem" id="hike-dist-line-card"></div>
   </div>
 
   <!-- ══════════ RUN ANALYSIS ══════════ -->
   <div id="page-run" style="display:none">
 
-    <!-- 全部跑步总数据 -->
+    <!-- 跑步总览 -->
     <div class="chart-card full" style="margin-bottom:var(--space-14)">
-      <div class="chart-title" style="margin-bottom:var(--space-14)">全部记录</div>
+      <div class="chart-title" style="margin-bottom:var(--space-14)">跑步总览</div>
       <div class="metrics" id="run-metrics-total" style="margin-bottom:0"></div>
+    </div>
+
+    <!-- 距离分布 + 跑鞋里程：并排两列，跑鞋没数据时距离分布自动撑满整行 -->
+    <div class="charts-grid" style="margin-bottom:var(--space-14)">
+      <div class="chart-card" id="run-dist-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-8);flex-wrap:wrap">
+          <div>
+            <div class="chart-title" style="margin-bottom:2px">距离分布</div>
+            <div class="chart-sub" style="margin-bottom:0">各距离出现次数</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="run-dist-toggle" onclick="toggleRunDistBreakdown()">展开</button>
+        </div>
+        <div id="run-dist-breakdown" style="display:none;margin-top:var(--space-14)"></div>
+      </div>
+
+      <!-- 跑鞋里程（没有跑鞋数据时整卡隐藏，左边的距离分布会自动撑满整行） -->
+      <div class="chart-card" id="run-shoe-card" style="display:none">
+        <div class="chart-title" style="margin-bottom:var(--space-12)">跑鞋里程</div>
+        <div id="run-shoe-list"></div>
+      </div>
     </div>
 
     <!-- 跑步周期 -->
     <div class="chart-card full" style="margin-bottom:var(--space-14)">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-16)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-16);flex-wrap:wrap;gap:var(--space-8)">
         <div>
           <div class="chart-title">跑步周期</div>
           <div class="chart-sub">记录每个阶段的起止日期，统计周期内跑步数据</div>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="addRunCycle()">＋ 添加周期</button>
+        <div style="display:flex;gap:var(--space-8)">
+          <button class="btn btn-secondary btn-sm" id="run-cycle-toggle" onclick="toggleRunCycleHistory()" style="display:none">查看历史周期</button>
+          <button class="btn btn-secondary btn-sm" onclick="addRunCycle()">＋ 添加周期</button>
+        </div>
       </div>
-      <!-- 当前进行中 -->
-      <div id="run-cycle-active"></div>
-      <!-- 历史折叠 -->
-      <div id="run-cycle-history-wrap" style="margin-top:var(--space-10);display:none">
-        <button class="btn btn-secondary btn-sm" id="run-cycle-toggle" onclick="toggleRunCycleHistory()" style="margin-bottom:var(--space-10)">展开历史周期</button>
-        <div id="run-cycle-history" style="display:none;flex-direction:column;gap:var(--space-12)"></div>
+      <div class="cycle-layout">
+        <!-- 当前进行中 -->
+        <div id="run-cycle-active" class="cycle-grid" style="grid-template-columns:repeat(auto-fill,340px);flex:0 0 auto"></div>
+        <!-- 历史周期（桌面端紧贴在进行中右侧，移动端自动切回下方） -->
+        <div id="run-cycle-history-wrap" class="cycle-history-panel" style="display:none">
+          <div id="run-cycle-history" class="cycle-grid" style="display:none"></div>
+        </div>
       </div>
     </div>
 
@@ -1011,20 +1032,8 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
         <div style="position:relative;height:380px"><canvas id="combinedChart"></canvas></div>
       </div>
 
-      <!-- 单次距离 -->
-      <div class="chart-card">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-8);flex-wrap:wrap">
-          <div>
-            <div class="chart-title">单次距离</div>
-            <div class="chart-sub">每次跑步距离 (km)</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:var(--space-6);flex-wrap:wrap">
-            <input type="date" id="run-dist-start" class="mini-date-input-plain" onchange="onRunDistStartChange()" title="选择起始日期">
-            <span class="mini-reset-link-plain" onclick="resetRunDistStart()" title="重置为最早日期">↺</span>
-          </div>
-        </div>
-        <div style="position:relative;height:200px"><canvas id="distChart"></canvas></div>
-      </div>
+      <!-- 单次距离（整卡外壳由 renderLineChartCard 模板统一生成，见 JS） -->
+      <div class="chart-card" id="run-dist-line-card"></div>
 
     </div>
   </div>
@@ -1776,6 +1785,31 @@ function makeBarValueLabelPlugin(formatFn, minHeight=16){
       });
     });
   }};
+}
+
+// 模板 4：整张「折线图卡片」外壳——标题行/日期筛选器位置(含"起始日期"标签)/canvas容器，
+// 统一生成，思路跟 renderMonthlyBarCard 一样。以 Anaerobic「月度无氧训练频次」为参照实例，
+// 之前这类卡片的日期选择器前面没有文字标签，跟柱状图模板（"起始月份"）不一致，这里补上。
+function renderLineChartCard({containerId, title, subtitle, chartId, startInputId, onStartChange, resetOnClick, extraControlsHtml='', chartHeight=220}){
+  const host = document.getElementById(containerId);
+  if(host && !host.dataset.built){
+    host.innerHTML = `
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-8);flex-wrap:wrap">
+        <div>
+          <div class="chart-title">${escapeHtml(title)}</div>
+          <div class="chart-sub">${escapeHtml(subtitle)}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:var(--space-6);flex-wrap:wrap">
+          ${extraControlsHtml}
+          <span class="mini-date-label">起始日期</span>
+          <input type="date" id="${startInputId}" class="mini-date-input-plain" onchange="${onStartChange}" title="选择起始日期">
+          <span class="mini-reset-link-plain" onclick="${resetOnClick}" title="重置为最早日期">↺</span>
+        </div>
+      </div>
+      <div style="position:relative;height:${chartHeight}px;margin-top:var(--space-10)"><canvas id="${chartId}"></canvas></div>
+    `;
+    host.dataset.built = '1';
+  }
 }
 
 // ══════════════════════════════════════
@@ -2756,8 +2790,19 @@ const CHART_OPT={
     y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#9ba3b5',font:{size:11}}}
   }
 };
-function lineDS(data,color){
-  return {data,borderColor:color,backgroundColor:color+'18',borderWidth:2,pointRadius:3,fill:true,tension:0.3};
+// 折线图数据集模板——统一点样式（实心圆点、统一半径），三张折线图卡片
+// （Run单次距离/无氧月度频次/Hike步数趋势）都调用这一份，不再各写各的点大小。
+// opts 支持按需覆盖：fill(是否填充面积，Hike双系列要设false避免两个面积重叠)、
+// spanGaps(有缺失日期时是否连线)、label(图例用，Hike双系列需要区分)
+function lineDS(data,color,opts={}){
+  const {radius=4, fill=true, spanGaps=true, tension=0.3, label} = opts;
+  return {
+    ...(label?{label}:{}),
+    data, borderColor:color, backgroundColor:hexToRgba(color,0.1),
+    borderWidth:2, pointRadius:radius, pointHoverRadius:radius+2,
+    pointBackgroundColor:color, pointBorderColor:color,
+    fill, tension, spanGaps,
+  };
 }
 
 function renderDashboard(){
@@ -2962,11 +3007,67 @@ function deleteCycle(id){
 let cycleHistoryOpen = false;
 function toggleCycleHistory(){
   cycleHistoryOpen = !cycleHistoryOpen;
-  document.getElementById('ana-cycle-history').style.display = cycleHistoryOpen ? 'flex' : 'none';
-  document.getElementById('ana-cycle-toggle').textContent = cycleHistoryOpen ? '收起历史周期' : '展开历史周期';
+  document.getElementById('ana-cycle-history-wrap').style.display = cycleHistoryOpen ? '' : 'none';
+  document.getElementById('ana-cycle-history').style.display = cycleHistoryOpen ? 'grid' : 'none';
+  document.getElementById('ana-cycle-toggle').textContent = cycleHistoryOpen ? '收起历史周期' : '查看历史周期';
 }
 
-function renderCycleCard(c, isActive){
+// 模板 3：整张「周期卡片」——身份信息/状态徽章/日期/统计数字/操作按钮/可选额外内容区块，
+// 无氧和跑步共用同一份函数。跑步比无氧多一段"额外统计数据"（累计跑量/配速等），
+// 通过 extraContentHtml 传入；不传就是无氧那种只有基础统计的简洁版本。
+// accent 系列参数：跟随各 tab 自己的运动类型语义色（Run=绿/Strength=蓝），
+// 不再写死绿色——不然无氧页面里"进行中"这种状态色会跟 Strength 自己的蓝不一致。
+function renderCycleCard({id, label, isActive, startDate, endDate, stats, onEdit, onDelete, extraContentHtml='', accent='var(--green)', accentLt='var(--green-lt)', accentDk='var(--green-dk)'}){
+  const statusBadge = isActive
+    ? `<span style="font-size:var(--fs-xs);background:${accentLt};color:${accentDk};border:1px solid ${accent};padding:2px 8px;border-radius:10px;font-weight:600">进行中</span>`
+    : `<span style="font-size:var(--fs-xs);background:var(--bg3);color:var(--text3);border:1px solid var(--border);padding:2px 8px;border-radius:10px">已结束</span>`;
+  const statsHtml = stats.map((s,i)=>`${i>0?'<div class="cycle-divider"></div>':''}
+      <div class="cycle-stat"><span class="cycle-stat-val"${s.highlight?` style="color:${accent}"`:''}>${s.val}</span><span class="cycle-stat-label">${escapeHtml(s.label)}</span></div>`).join('');
+  return `<div class="cycle-card${isActive?' active':''}" ${isActive?`style="--cycle-accent:${accent};--cycle-accent-lt:${accentLt}"`:''}>
+    <div class="cycle-card-header">
+      <div style="display:flex;flex-direction:column;gap:var(--space-4);min-width:0">
+        <div style="display:flex;align-items:center;gap:var(--space-8);flex-wrap:wrap">
+          <span style="font-size:var(--fs-sm);font-weight:700;color:var(--text)">${escapeHtml(label)}</span>${statusBadge}
+        </div>
+        <div style="font-size:var(--fs-sm);color:var(--text3)">${startDate} — ${endDate||'至今'}</div>
+      </div>
+      <div class="cycle-menu-wrap">
+        <span class="cycle-menu-btn" onclick="toggleCycleMenu(event,'cyclemenu-${id}')" title="操作">&#8942;</span>
+        <div class="cycle-menu-panel" id="cyclemenu-${id}" style="display:none">
+          <div class="cycle-menu-item" onclick="closeCycleMenus();${onEdit}">编辑</div>
+          <div class="cycle-menu-item danger" onclick="closeCycleMenus();${onDelete}">删除</div>
+        </div>
+      </div>
+    </div>
+    <div class="cycle-card-stats">${statsHtml}</div>
+    ${extraContentHtml?`<div class="cycle-extra">${extraContentHtml}</div>`:''}
+  </div>`;
+}
+
+// 周期卡片「⋮」操作菜单：支持任意数量的卡片各自独立开关，
+// 打开一个会自动关闭其它已打开的（同一时间只显示一个）
+function toggleCycleMenu(e, menuId){
+  e && e.stopPropagation();
+  document.querySelectorAll('.cycle-menu-panel').forEach(p=>{
+    if(p.id!==menuId) p.style.display='none';
+  });
+  const panel = document.getElementById(menuId);
+  if(!panel) return;
+  const open = panel.style.display === 'none';
+  panel.style.display = open ? 'block' : 'none';
+}
+function closeCycleMenus(){
+  document.querySelectorAll('.cycle-menu-panel').forEach(p=>p.style.display='none');
+}
+document.addEventListener('click', function(e){
+  document.querySelectorAll('.cycle-menu-panel').forEach(panel=>{
+    if(panel.style.display==='none') return;
+    if(panel.contains(e.target)) return;
+    panel.style.display='none';
+  });
+});
+
+function renderCycleCard_ana(c, isActive){
   const ana = records.filter(r=>r.sport==='Strength');
   const today = localDateStr();
   const endDate = c.end || today;
@@ -2975,38 +3076,16 @@ function renderCycleCard(c, isActive){
   // count anaerobic sessions within this cycle
   const count = ana.filter(r=>r.date>=c.start && r.date<=endDate).length;
   const avgDays = count > 0 ? (totalDays / count).toFixed(1) : '—';
-  const statusBadge = isActive
-    ? `<span style="font-size:var(--fs-xs);background:var(--green-lt);color:var(--green-dk);border:1px solid #a7f3d0;padding:2px 8px;border-radius:10px;font-weight:600">进行中</span>`
-    : `<span style="font-size:var(--fs-xs);background:var(--bg3);color:var(--text3);border:1px solid var(--border);padding:2px 8px;border-radius:10px">已结束</span>`;
-  return `<div class="cycle-card${isActive?' active':''}">
-    <div style="display:flex;flex-direction:column;gap:var(--space-4);min-width:160px">
-      <div style="display:flex;align-items:center;gap:var(--space-8)">
-        <span style="font-size:var(--fs-sm);font-weight:700;color:var(--text)">${escapeHtml(c.label)}</span>
-        ${statusBadge}
-      </div>
-      <div style="font-size:var(--fs-sm);color:var(--text3)">${c.start} — ${c.end||'至今'}</div>
-    </div>
-    <div class="cycle-card-stats">
-      <div class="cycle-stat">
-        <span class="cycle-stat-val${isActive?' green':''}">${totalDays}</span>
-        <span class="cycle-stat-label">坚持天数</span>
-      </div>
-      <div class="cycle-divider"></div>
-      <div class="cycle-stat">
-        <span class="cycle-stat-val">${count}</span>
-        <span class="cycle-stat-label">训练次数</span>
-      </div>
-      <div class="cycle-divider"></div>
-      <div class="cycle-stat">
-        <span class="cycle-stat-val">${avgDays}</span>
-        <span class="cycle-stat-label">平均天/次</span>
-      </div>
-    </div>
-    <div class="cycle-actions">
-      <button class="btn btn-secondary btn-sm" onclick="editCycle('${c.id}')">编辑</button>
-      <button class="btn btn-danger btn-sm" onclick="deleteCycle('${c.id}')">删除</button>
-    </div>
-  </div>`;
+  return renderCycleCard({
+    id:c.id, label:c.label, isActive, startDate:c.start, endDate:c.end,
+    onEdit:`editCycle('${c.id}')`, onDelete:`deleteCycle('${c.id}')`,
+    accent:'var(--blue)', accentLt:'var(--blue-lt)', accentDk:'var(--blue-dk)',
+    stats:[
+      {val:totalDays, label:'坚持天数', highlight:isActive},
+      {val:count, label:'训练次数'},
+      {val:avgDays, label:'平均天/次'},
+    ]
+  });
 }
 
 // ── muscle group parser: take FIRST part only ──
@@ -3035,16 +3114,19 @@ function renderAnaerobic(){
   if(active.length === 0){
     activeEl.innerHTML = `<div style="color:var(--text3);font-size:var(--fs-sm);padding:12px 0">暂无进行中的周期，点右上角「+ 添加周期」开始记录</div>`;
   } else {
-    activeEl.innerHTML = active.map(c=>renderCycleCard(c,true)).join('');
+    activeEl.innerHTML = active.map(c=>renderCycleCard_ana(c,true)).join('');
   }
 
   const histWrap = document.getElementById('ana-cycle-history-wrap');
+  const histToggleBtn = document.getElementById('ana-cycle-toggle');
   const histEl = document.getElementById('ana-cycle-history');
   if(history.length > 0){
-    histWrap.style.display = '';
-    histEl.innerHTML = history.map(c=>renderCycleCard(c,false)).join('');
+    histToggleBtn.style.display = '';
+    histEl.innerHTML = history.map(c=>renderCycleCard_ana(c,false)).join('');
   } else {
+    histToggleBtn.style.display = 'none';
     histWrap.style.display = 'none';
+    cycleHistoryOpen = false;
   }
 
   // ── 肌群分布（饼图）──
@@ -3125,6 +3207,10 @@ function renderAnaerobic(){
   }
 
   // ── 月度频次（可自定义起始日期）──
+  renderLineChartCard({
+    containerId:'ana-monthly-line-card', title:'月度无氧训练频次', subtitle:'每月无氧训练次数趋势',
+    chartId:'anaMonthlyChart', startInputId:'ana-monthly-start', onStartChange:'onAnaMonthlyStartChange()', resetOnClick:'resetAnaMonthlyStart()'
+  });
   const anaDates = ana.map(r=>r.date).sort();
   const anaEarliest = anaDates.length?anaDates[0]:'';
   const anaLatest = anaDates.length?anaDates[anaDates.length-1]:'';
@@ -3135,11 +3221,7 @@ function renderAnaerobic(){
     type:'line',
     data:{
       labels:months.map(m=>m.slice(2).replace('-','/')),
-      datasets:[{
-        data:months.map(m=>ana.filter(r=>r.date?.startsWith(m)).length),
-        borderColor:THEME.blue, backgroundColor:hexToRgba(THEME.blue,0.08),
-        borderWidth:2, pointRadius:4, fill:true, tension:0.3
-      }]
+      datasets:[lineDS(months.map(m=>ana.filter(r=>r.date?.startsWith(m)).length), THEME.blue)]
     },
     options:{...CHART_OPT, plugins:{legend:{display:false}}}
   });
@@ -3254,10 +3336,18 @@ function deleteRunCycle(id){
   saveRunCycles(runCycles); renderRunAnalysis();
 }
 let runCycleHistoryOpen=false;
+let runDistBreakdownOpen = false;
+function toggleRunDistBreakdown(){
+  runDistBreakdownOpen = !runDistBreakdownOpen;
+  document.getElementById('run-dist-breakdown').style.display = runDistBreakdownOpen ? 'block' : 'none';
+  document.getElementById('run-dist-toggle').textContent = runDistBreakdownOpen ? '收起' : '展开';
+}
+
 function toggleRunCycleHistory(){
   runCycleHistoryOpen=!runCycleHistoryOpen;
-  document.getElementById('run-cycle-history').style.display=runCycleHistoryOpen?'flex':'none';
-  document.getElementById('run-cycle-toggle').textContent=runCycleHistoryOpen?'收起历史周期':'展开历史周期';
+  document.getElementById('run-cycle-history-wrap').style.display=runCycleHistoryOpen?'':'none';
+  document.getElementById('run-cycle-history').style.display=runCycleHistoryOpen?'grid':'none';
+  document.getElementById('run-cycle-toggle').textContent=runCycleHistoryOpen?'收起历史周期':'查看历史周期';
 }
 
 function runCycleStats(c){
@@ -3275,45 +3365,25 @@ function runCycleStats(c){
 
 function renderRunCycleCard(c,isActive){
   const s=runCycleStats(c);
-  const today=localDateStr();
-  const endDate=c.end||today;
-  const statusBadge=isActive
-    ?`<span style="font-size:var(--fs-xs);background:var(--green-lt);color:var(--green-dk);border:1px solid #a7f3d0;padding:2px 8px;border-radius:10px;font-weight:600">进行中</span>`
-    :`<span style="font-size:var(--fs-xs);background:var(--bg3);color:var(--text3);border:1px solid var(--border);padding:2px 8px;border-radius:10px">已结束</span>`;
-
   const avgDist=s.count>0?(s.totalDist/s.count).toFixed(1):'—';
-  // cycle header card
-  const header=`<div class="cycle-card${isActive?' active':''}">
-    <div style="display:flex;flex-direction:column;gap:var(--space-4);min-width:160px">
-      <div style="display:flex;align-items:center;gap:var(--space-8)">
-        <span style="font-size:var(--fs-sm);font-weight:700;color:var(--text)">${escapeHtml(c.label)}</span>${statusBadge}
-      </div>
-      <div style="font-size:var(--fs-sm);color:var(--text3)">${c.start} — ${c.end||'至今'}</div>
-    </div>
-    <div class="cycle-card-stats">
-      <div class="cycle-stat"><span class="cycle-stat-val${isActive?' green':''}">${s.totalDays}</span><span class="cycle-stat-label">坚持天数</span></div>
-      <div class="cycle-divider"></div>
-      <div class="cycle-stat"><span class="cycle-stat-val">${s.count}</span><span class="cycle-stat-label">训练次数</span></div>
-      <div class="cycle-divider"></div>
-      <div class="cycle-stat"><span class="cycle-stat-val">${s.avgDays}</span><span class="cycle-stat-label">平均天/次</span></div>
-      <div class="cycle-divider"></div>
-      <div class="cycle-stat"><span class="cycle-stat-val">${avgDist}</span><span class="cycle-stat-label">平均公里/次</span></div>
-    </div>
-    <div class="cycle-actions">
-      <button class="btn btn-secondary btn-sm" onclick="editRunCycle('${c.id}')">编辑</button>
-      <button class="btn btn-danger btn-sm" onclick="deleteRunCycle('${c.id}')">删除</button>
-    </div>
-  </div>`;
-
-  // 4 metrics below the card
-  const metrics=`<div class="metrics" style="margin-top:var(--space-10);margin-bottom:0">
+  const extraContentHtml = `<div class="metrics" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr));margin-bottom:0">
     <div class="metric green"><div class="metric-label">累计跑量</div><div class="metric-value">${s.totalDist.toFixed(1)}<span class="metric-unit"> km</span></div><div class="metric-sub">${s.count} 次</div></div>
     <div class="metric blue"><div class="metric-label">平均配速</div><div class="metric-value" style="font-size:var(--fs-xl)">${fmtPace(s.avgP)}</div></div>
     <div class="metric amber"><div class="metric-label">平均心率</div><div class="metric-value">${s.avgHr||'—'}<span class="metric-unit">${s.avgHr?' bpm':''}</span></div></div>
     <div class="metric coral"><div class="metric-label">最快配速</div><div class="metric-value" style="font-size:var(--fs-xl)">${s.best?fmtPace(s.best):'—'}</div></div>
   </div>`;
-
-  return header+metrics;
+  return renderCycleCard({
+    id:c.id, label:c.label, isActive, startDate:c.start, endDate:c.end,
+    onEdit:`editRunCycle('${c.id}')`, onDelete:`deleteRunCycle('${c.id}')`,
+    accent:'var(--green)', accentLt:'var(--green-lt)', accentDk:'var(--green-dk)',
+    stats:[
+      {val:s.totalDays, label:'坚持天数', highlight:isActive},
+      {val:s.count, label:'训练次数'},
+      {val:s.avgDays, label:'平均天/次'},
+      {val:avgDist, label:'平均公里/次'},
+    ],
+    extraContentHtml
+  });
 }
 
 
@@ -3321,6 +3391,17 @@ function renderRunCycleCard(c,isActive){
 //  Hike 分析
 // ══════════════════════════════════════
 function renderHikeAnalysis(){
+  renderLineChartCard({
+    containerId:'hike-dist-line-card', title:'步数趋势', subtitle:'每次步数记录',
+    chartId:'hikeDistChart', startInputId:'hike-start', onStartChange:'onHikeStartChange()', resetOnClick:'resetHikeStart()',
+    chartHeight:320,
+    extraControlsHtml:`
+      <span style="font-size:var(--fs-xs);color:var(--text3)">显示：</span>
+      <label class="line-toggle" id="hlt-hike-label" style="--c:${getSportColor('Hike')}"><input type="checkbox" id="hlt-hike" checked onchange="renderHikeAnalysis()"><span>⛰ Hike</span></label>
+      <label class="line-toggle" id="hlt-walk-label" style="--c:${getSportColor('Walk')}"><input type="checkbox" id="hlt-walk" checked onchange="renderHikeAnalysis()"><span>🚶 Walk</span></label>
+      <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
+    `
+  });
   const hikes = records.filter(r=>r.sport==='Hike').sort((a,b)=>a.date.localeCompare(b.date));
   const showHike = document.getElementById('hlt-hike')?.checked ?? true;
   const showWalk = document.getElementById('hlt-walk')?.checked ?? true;
@@ -3347,26 +3428,8 @@ function renderHikeAnalysis(){
   if(!ctx) return;
 
   const datasets = [];
-  if(showHike) datasets.push({
-    label:'⛰ Hike',
-    data: hikeData,
-    borderColor:getSportColor('Hike'),
-    backgroundColor:hexToRgba(getSportColor('Hike'),0.10),
-    borderWidth:2,
-    pointBackgroundColor:getSportColor('Hike'),
-    pointRadius:5, pointHoverRadius:7,
-    fill:false, tension:0.3, spanGaps:false,
-  });
-  if(showWalk) datasets.push({
-    label:'🚶 Walk',
-    data: walkData,
-    borderColor:getSportColor('Walk'),
-    backgroundColor:hexToRgba(getSportColor('Walk'),0.10),
-    borderWidth:2,
-    pointBackgroundColor:getSportColor('Walk'),
-    pointRadius:5, pointHoverRadius:7,
-    fill:false, tension:0.3, spanGaps:false,
-  });
+  if(showHike) datasets.push(lineDS(hikeData, getSportColor('Hike'), {radius:5, fill:false, spanGaps:false, label:'⛰ Hike'}));
+  if(showWalk) datasets.push(lineDS(walkData, getSportColor('Walk'), {radius:5, fill:false, spanGaps:false, label:'🚶 Walk'}));
 
   upsertChart('hikeDistChart', ctx, {
     type:'line',
@@ -3449,32 +3512,60 @@ function renderRunAnalysis(){
     </div>`;
   }).join('');
 
-  // 全部记录指标
+  // 跑步总览指标：4 张核心数字卡加图标徽章（跟 Dashboard 视觉语言一致）+ 总次数
   document.getElementById('run-metrics-total').innerHTML=`
-    <div class="metric green"><div class="metric-label">累计跑量</div><div class="metric-value">${totalDist.toFixed(0)}<span class="metric-unit"> km</span></div><div class="metric-sub">${runs.length} 次</div></div>
-    <div class="metric blue"><div class="metric-label">平均配速</div><div class="metric-value" style="font-size:var(--fs-xl)">${fmtPace(avgP)}</div></div>
-    <div class="metric amber"><div class="metric-label">平均心率</div><div class="metric-value">${avgHr||'—'}<span class="metric-unit">${avgHr?' bpm':''}</span></div></div>
-    <div class="metric coral"><div class="metric-label">最快配速</div><div class="metric-value" style="font-size:var(--fs-xl)">${best===Infinity?'—':fmtPace(best)}</div></div>
-    <div class="metric" style="min-width:180px">
-      <div class="metric-label">总次数</div>
-      <div class="metric-value">${runs.length}</div>
-      <div style="margin-top:var(--space-8);padding-top:8px;border-top:1px solid var(--border)">
-        <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.dist-arrow').style.transform=this.nextElementSibling.style.display==='none'?'rotate(0deg)':'rotate(180deg)'"
-          style="display:flex;align-items:center;gap:var(--space-4);cursor:pointer;user-select:none">
-          <span style="font-size:var(--fs-xs);color:var(--text3)">距离分布</span>
-          <span class="dist-arrow" style="font-size:var(--fs-xs);color:var(--text3);transition:transform .2s;display:inline-block">▼</span>
-        </div>
-        <div style="display:none;margin-top:var(--space-6)">${distRows||'<span style="font-size:var(--fs-sm);color:var(--text3)">暂无数据</span>'}</div>
+    <div class="metric green">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
+        <span style="width:26px;height:26px;border-radius:8px;background:var(--green-lt);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">🏃</span>
+        <span class="metric-label" style="margin-bottom:0">累计跑量</span>
       </div>
+      <div class="metric-value">${totalDist.toFixed(0)}<span class="metric-unit"> km</span></div>
+      <div class="metric-sub">${runs.length} 次</div>
     </div>
-    ${Object.keys(shoeMap).length?`
-    <div class="metric metric-shoe" style="flex:2">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-10)">
-        <div class="metric-label">跑鞋里程</div>
+    <div class="metric blue">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
+        <span style="width:26px;height:26px;border-radius:8px;background:var(--blue-lt);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">⏱️</span>
+        <span class="metric-label" style="margin-bottom:0">平均配速</span>
       </div>
-      ${shoeRows}
-    </div>`:''}
+      <div class="metric-value" style="font-size:var(--fs-xl)">${fmtPace(avgP)}</div>
+    </div>
+    <div class="metric amber">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
+        <span style="width:26px;height:26px;border-radius:8px;background:var(--amber-lt);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">❤️</span>
+        <span class="metric-label" style="margin-bottom:0">平均心率</span>
+      </div>
+      <div class="metric-value">${avgHr||'—'}<span class="metric-unit">${avgHr?' bpm':''}</span></div>
+    </div>
+    <div class="metric coral">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
+        <span style="width:26px;height:26px;border-radius:8px;background:var(--coral-lt);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">⚡</span>
+        <span class="metric-label" style="margin-bottom:0">最快配速</span>
+      </div>
+      <div class="metric-value" style="font-size:var(--fs-xl)">${best===Infinity?'—':fmtPace(best)}</div>
+    </div>
+    <div class="metric">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
+        <span style="width:26px;height:26px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">🔢</span>
+        <span class="metric-label" style="margin-bottom:0">总次数</span>
+      </div>
+      <div class="metric-value">${runs.length}</div>
+    </div>
   `;
+
+  // 距离分布：独立卡片，展开/收起入口更明显（不再是嵌套在数字卡里的小箭头）
+  document.getElementById('run-dist-breakdown').innerHTML = distRows||'<span style="font-size:var(--fs-sm);color:var(--text3)">暂无数据</span>';
+
+  // 跑鞋里程：独立卡片，没有跑鞋数据时整卡隐藏，左边距离分布自动撑满整行
+  const shoeCard = document.getElementById('run-shoe-card');
+  const distCard = document.getElementById('run-dist-card');
+  if(Object.keys(shoeMap).length){
+    shoeCard.style.display = '';
+    distCard.style.gridColumn = '';
+    document.getElementById('run-shoe-list').innerHTML = shoeRows;
+  } else {
+    shoeCard.style.display = 'none';
+    distCard.style.gridColumn = '1 / -1';
+  }
 
   // 跑步周期
   const active=runCycles.filter(c=>!c.end);
@@ -3485,11 +3576,16 @@ function renderRunAnalysis(){
     :active.map(c=>renderRunCycleCard(c,true)).join('');
 
   const histWrap=document.getElementById('run-cycle-history-wrap');
+  const histToggleBtn=document.getElementById('run-cycle-toggle');
   const histEl=document.getElementById('run-cycle-history');
   if(history.length>0){
-    histWrap.style.display='';
+    histToggleBtn.style.display='';
     histEl.innerHTML=history.map(c=>renderRunCycleCard(c,false)).join('');
-  } else { histWrap.style.display='none'; }
+  } else {
+    histToggleBtn.style.display='none';
+    histWrap.style.display='none';
+    runCycleHistoryOpen=false;
+  }
 
   // 趋势图表
   const runDatesAll = runs.map(r=>r.date).sort();
@@ -3539,6 +3635,10 @@ function renderRunAnalysis(){
   }, mCount);
 
   // 单次距离图：自定义起始日期
+  renderLineChartCard({
+    containerId:'run-dist-line-card', title:'单次距离', subtitle:'每次跑步距离 (km)',
+    chartId:'distChart', startInputId:'run-dist-start', onStartChange:'onRunDistStartChange()', resetOnClick:'resetRunDistStart()'
+  });
   syncStartInput('run-dist-start', runDistStart, runEarliest, runLatest);
   const distStart = (runDistStart.value && runDistStart.value>=runEarliest) ? runDistStart.value : '';
   const runsForDist = distStart ? runs.filter(r=>r.date>=distStart) : runs;
