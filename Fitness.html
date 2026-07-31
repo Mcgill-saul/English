@@ -285,6 +285,13 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   .week-strip-sport-full{ display: none !important; }
   .week-strip-sport-abbr{ display: inline !important; }
   .week-strip-run-mobile{ display: flex !important; }
+  /* 角标手机端整体缩小；Run 在桌面端是胶囊，手机端强制变成正圆形，
+     跟其他类型的字母圆标保持一致的形状语言 */
+  .week-strip-extra-circle{ width:12px !important; height:12px !important; font-size:7px !important; top:4px !important; }
+  .week-strip-extra-pill{
+    width:12px !important; height:12px !important; padding:0 !important;
+    border-radius:50% !important; font-size:7px !important; top:4px !important;
+  }
   .cal-grid{ grid-template-columns: 1fr !important; }
   .cal-day{ height: 80px; }
   .cal-day-num-row{ padding: 2px 0 1px 4px; }
@@ -602,7 +609,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .week-strip{display:flex;gap:8px;flex:1;align-items:stretch;margin-top:6px;}
 .week-strip-day{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;min-width:0;}
 .week-strip-bar{width:100%;flex:1;min-height:40px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;padding:3px;position:relative;}
-.week-strip-extra-badge{position:absolute;top:5px;width:8px;height:8px;border-radius:50%;box-shadow:0 1px 2px rgba(0,0,0,.2);}
+.week-strip-extra-circle{position:absolute;top:5px;width:16px;height:16px;border-radius:50%;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;line-height:1;}
 .week-strip-extra-pill{position:absolute;top:5px;height:16px;padding:0 6px;border-radius:8px;border:1.5px solid #fff;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;white-space:nowrap;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.2);}
 .week-strip-run-mobile{display:none;flex-direction:column;align-items:center;gap:1px;}
 .week-strip-sport-in{font-size:var(--fs-sm);font-weight:700;color:#fff;text-align:center;line-height:1.2;word-break:break-word;text-shadow:0 1px 2px rgba(0,0,0,.18);}
@@ -3011,8 +3018,9 @@ function renderDashboardOverview(){
           badgeOffset += 42;
           return html;
         }
-        const html = `<span class="week-strip-extra-badge" style="background:${color};right:${badgeOffset}px"></span>`;
-        badgeOffset += 12;
+        const letter = escapeHtml(sp.charAt(0).toUpperCase());
+        const html = `<span class="week-strip-extra-circle" style="background:${color};right:${badgeOffset}px">${letter}</span>`;
+        badgeOffset += 20;
         return html;
       }).join('');
       let sportText = '';
