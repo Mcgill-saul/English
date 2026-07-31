@@ -221,7 +221,14 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   .dash-grid{ grid-template-columns: 1fr 1fr !important; }
   #dash-donut-card, #dash-summary-card{ grid-column: 1 / -1 !important; }
   /* 累计训练卡：手机端内容偏空、高度太矮，加个最小高度撑起来 */
-  .chart-card.span2{ min-height: 170px; }
+  /* 累计训练卡：手机端放弃桌面端那套"绝对定位+50%分割"技巧（那个技巧必须靠一个
+     明确的高度撑起来，不然内容就会挤在顶部留一堆空白）。改成让日期行/数字/周均
+     三行都回到正常文档流，父层用 flex 居中——卡片有多高内容就跟着多高，
+     三行始终整体居中，不会凭空多出底部留白。 */
+  .chart-card.span2{ justify-content:center; }
+  .dash-total-block, .dash-avg-block{ position:static !important; margin:0 !important; }
+  .dash-total-block{ margin-top:8px !important; }
+  .dash-avg-block{ margin-top:4px !important; }
 
   /* ── 分类速览：图标/名称/统计文字都是固定像素宽度，手机屏幕装不下会横向溢出，
      改成两行——第一行图标+名称+统计（自动收缩/截断），第二行进度条独占一行 ── */
@@ -272,6 +279,12 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
   /* ── 总览数字卡片手机紧凑 ── */
   #dash-total{ font-size: 32px !important; }
+  /* 近7天色块内文字：手机端屏幕太小，字号调小；无氧多部位时改显示缩写（首字），
+     不然容易显示不全 */
+  .week-strip-sport-in{ font-size: 9px !important; }
+  .week-strip-sport-full{ display: none; }
+  .week-strip-sport-abbr{ display: inline; }
+  .week-strip-run-mobile{ display: flex; }
   .cal-grid{ grid-template-columns: 1fr !important; }
   .cal-day{ height: 80px; }
   .cal-day-num-row{ padding: 2px 0 1px 4px; }
@@ -294,7 +307,16 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   .mdist-chart-wrap{ display: none; }
   .mdist-list{ display: flex; }
 
-  /* ── 横屏查看按钮：手机端显示 ── */
+  /* 迷你日期选择器的自定义日历图标（-webkit-mask-image 那套）在不少移动端浏览器
+     渲染不出来，会显示一片空白（功能不受影响，纯粹是图标看不见）。手机端直接放弃
+     自定义图标，恢复浏览器原生渲染，保证图标一定看得见。 */
+  .mini-date-input-plain::-webkit-calendar-picker-indicator{
+    -webkit-appearance:auto;
+    -webkit-mask-image:none; mask-image:none;
+    background-color:transparent;
+    width:auto; height:auto;
+    opacity:.6;
+  }
   .landscape-btn{ display: inline-flex; }
 
   /* ── 数据管理 ── */
@@ -579,8 +601,12 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .dash-overview-strip-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:16px 22px;display:flex;flex-direction:column;}
 .week-strip{display:flex;gap:8px;flex:1;align-items:stretch;margin-top:6px;}
 .week-strip-day{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;min-width:0;}
-.week-strip-bar{width:100%;flex:1;min-height:40px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;padding:3px;}
+.week-strip-bar{width:100%;flex:1;min-height:40px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;padding:3px;position:relative;}
+.week-strip-extra-badge{position:absolute;top:-3px;width:9px;height:9px;border-radius:50%;border:1.5px solid var(--bg2);box-sizing:content-box;}
+.week-strip-extra-pill{position:absolute;top:-4px;height:13px;padding:0 4px;border-radius:7px;border:1.5px solid var(--bg2);box-sizing:content-box;display:flex;align-items:center;justify-content:center;color:#fff;font-size:8px;font-weight:700;white-space:nowrap;line-height:1;}
+.week-strip-run-mobile{display:none;flex-direction:column;align-items:center;gap:1px;}
 .week-strip-sport-in{font-size:var(--fs-sm);font-weight:700;color:#fff;text-align:center;line-height:1.2;word-break:break-word;text-shadow:0 1px 2px rgba(0,0,0,.18);}
+.week-strip-sport-abbr{display:none;}
 .week-strip-day.is-today .week-strip-bar{box-shadow:0 0 0 2px var(--brand) inset;}
 .week-strip-label{font-size:var(--fs-xs);color:var(--text3);}
 .week-strip-day.is-today .week-strip-label{color:var(--brand-dk);font-weight:700;}
@@ -871,13 +897,13 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
           <span class="mini-reset-link-plain" onclick="resetDashStatStart()" title="重置为最早日期">↺</span>
           <span>至今</span>
         </div>
-        <div style="position:absolute;left:0;right:0;bottom:50%;margin-bottom:4px;display:flex;justify-content:center">
+        <div class="dash-total-block" style="position:absolute;left:0;right:0;bottom:50%;margin-bottom:4px;display:flex;justify-content:center">
           <div style="display:flex;align-items:flex-end;gap:var(--space-3);line-height:1">
             <div style="font-size:var(--fs-display);font-weight:800;color:var(--brand);font-variant-numeric:tabular-nums;line-height:1" id="dash-total">—</div>
             <div style="font-size:var(--fs-sm);color:var(--text3);padding-bottom:5px;white-space:nowrap">次运动</div>
           </div>
         </div>
-        <div style="position:absolute;left:0;right:0;top:50%;margin-top:4px;text-align:center">
+        <div class="dash-avg-block" style="position:absolute;left:0;right:0;top:50%;margin-top:4px;text-align:center">
           <div style="font-size:var(--fs-sm);font-weight:600;color:var(--text2)" id="dash-week-avg">—</div>
         </div>
       </div>
@@ -2969,18 +2995,53 @@ function renderDashboardOverview(){
       const isToday = i===0;
       const bg = dayRecs.length>0 ? getSportColor(dayRecs[0].sport||'其他') : 'var(--bg3)';
       const title = dayRecs.length>0 ? dayRecs.map(r=>r.sport).join('、') : '未训练';
+      // 跨类型多次训练（比如早上无氧、晚上跑步）：主色块还是用第一条记录的颜色/文字，
+      // 之外出现过的、不同的运动类型，各用一个角标标在色块右上角——
+      // 同类型多练几次（同一部位/同一运动）基本不会发生，不特殊处理。
+      // 其中"跑步"信息量更值得一眼看到，角标做成带数据的胶囊；其它类型还是纯色点。
+      const dayTypes = dayRecs.length>0 ? [...new Set(dayRecs.map(r=>r.sport))] : [];
+      let badgeOffset = 2;
+      const extraBadges = dayTypes.slice(1,3).map(sp=>{
+        const rec = dayRecs.find(r=>r.sport===sp);
+        const color = getSportColor(sp);
+        if(sp==='Run'){
+          const bits=[]; if(rec.dist) bits.push(rec.dist+'k'); if(rec.hr) bits.push(rec.hr);
+          const runFull = escapeHtml(bits.join('·')||'Run');
+          const html = `<span class="week-strip-extra-pill" style="background:${color};right:${badgeOffset}px"><span class="week-strip-sport-full">${runFull}</span><span class="week-strip-sport-abbr">R</span></span>`;
+          badgeOffset += 34;
+          return html;
+        }
+        const html = `<span class="week-strip-extra-badge" style="background:${color};right:${badgeOffset}px"></span>`;
+        badgeOffset += 8;
+        return html;
+      }).join('');
       let sportText = '';
       if(dayRecs.length>0){
         const first = dayRecs[0];
         if(first.sport==='Strength'){
           const muscles = (first.muscles||first.sub||'').split(',').map(s=>s.trim()).filter(Boolean);
-          sportText = escapeHtml(muscles.length ? muscles.join(' & ') : 'Strength');
+          if(muscles.length){
+            const full = escapeHtml(muscles.join(' & '));
+            // 手机端屏幕太窄，多个部位全称容易显示不全：超过1个部位时，
+            // 缩写版只取每个部位的首字（" & "连接符保持不变），桌面端还是显示全称
+            const abbr = muscles.length>1 ? escapeHtml(muscles.map(m=>m.charAt(0)).join(' & ')) : full;
+            sportText = `<span class="week-strip-sport-full">${full}</span><span class="week-strip-sport-abbr">${abbr}</span>`;
+          } else {
+            sportText = escapeHtml('Strength');
+          }
+        } else if(first.sport==='Run'){
+          // 跑步：桌面端显示"距离·心率"（跟日历 tab 的 Run 格式一致），
+          // 手机端改成上下两行（距离在上，心率在下），而不是硬挤成一行
+          const bits=[]; if(first.dist) bits.push(first.dist+'k'); if(first.hr) bits.push(first.hr);
+          const runFull = escapeHtml(bits.join('·')||'Run');
+          const runLines = `${first.dist?`<span>${escapeHtml(first.dist+'k')}</span>`:''}${first.hr?`<span>${escapeHtml(String(first.hr))}</span>`:''}`;
+          sportText = `<span class="week-strip-sport-full">${runFull}</span><span class="week-strip-run-mobile">${runLines||'Run'}</span>`;
         } else {
           sportText = escapeHtml(first.sport);
         }
       }
       html+=`<div class="week-strip-day${isToday?' is-today':''}" title="${escapeHtml(title)}">
-        <div class="week-strip-bar" style="background:${bg}">${sportText?`<span class="week-strip-sport-in">${sportText}</span>`:''}</div>
+        <div class="week-strip-bar" style="background:${bg}">${sportText?`<span class="week-strip-sport-in">${sportText}</span>`:''}${extraBadges}</div>
         <div class="week-strip-label">${label}</div>
       </div>`;
     }
