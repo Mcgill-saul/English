@@ -163,12 +163,14 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
 /* charts */
 .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-14);margin-bottom:1.5rem;}
+.charts-grid > *{min-width:0;}
 /* Dashboard 主体：第〇行(速览)和第一行(模块卡)共享同一套 4 列轨道(auto auto 1fr 1fr)，
    跨 2 列的元素(近7天条 / 累计训练窄卡)宽度精确对齐另一行的另外两张卡片之和 */
 .dash-grid{display:grid;grid-template-columns:auto auto 1fr 1fr;gap:var(--space-14);margin-bottom:1.5rem;}
+.dash-grid > *{min-width:0;}
 .dash-grid .span2{grid-column:span 2;}
 @media(max-width:1100px){.dash-grid{grid-template-columns:1fr 1fr;}.dash-grid .span2{grid-column:1/-1;}}
-.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;box-shadow:var(--shadow);}
+.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;box-shadow:var(--shadow);min-width:0;}
 .chart-card.full{grid-column:1/-1;}
 .chart-title{font-size:var(--fs-base);font-weight:700;color:var(--text);margin-bottom:var(--space-3);}
 .chart-sub{font-size:var(--fs-xs);color:var(--text3);margin-bottom:var(--space-14);}
@@ -213,7 +215,20 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   /* ── 图表网格 → 单列 ── */
   .charts-grid{ grid-template-columns: 1fr !important; }
   #run-overview-card, #run-dist-card, #run-shoe-card{ grid-column: 1 !important; grid-row: auto !important; }
-  .dash-grid{ grid-template-columns: 1fr !important; }
+  /* ── 主页网格 → 手机端改两列：本周训练+连续周数并排显示；
+     "近7天""累计训练"本来就是 span2 会自动撑满；"类型占比""分类速览"
+     不是 span2，手动强制它们也撑满整行，不然会跟着两列排版被拆成并排 ── */
+  .dash-grid{ grid-template-columns: 1fr 1fr !important; }
+  #dash-donut-card, #dash-summary-card{ grid-column: 1 / -1 !important; }
+  /* 累计训练卡：手机端内容偏空、高度太矮，加个最小高度撑起来 */
+  .chart-card.span2{ min-height: 170px; }
+
+  /* ── 分类速览：图标/名称/统计文字都是固定像素宽度，手机屏幕装不下会横向溢出，
+     改成两行——第一行图标+名称+统计（自动收缩/截断），第二行进度条独占一行 ── */
+  .sport-summary-row{ flex-wrap: wrap; row-gap: 4px; }
+  .sport-summary-name{ width: auto; flex: 1; min-width: 0; }
+  .sport-summary-stat{ width: auto; flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: var(--fs-xs); }
+  .sport-summary-bar-wrap{ flex-basis: 100%; margin-left: 40px; margin-top: 2px; }
   .chart-card.full{ grid-column: 1 !important; }
 
   /* ── 指标卡 → 2列 ── */
@@ -563,7 +578,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .dash-badge{width:26px;height:26px;border-radius:50%;background:var(--brand-lt);display:flex;align-items:center;justify-content:center;font-size:var(--icon-sm);cursor:default;}
 .dash-overview-strip-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:16px 22px;display:flex;flex-direction:column;}
 .week-strip{display:flex;gap:8px;flex:1;align-items:stretch;margin-top:6px;}
-.week-strip-day{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;}
+.week-strip-day{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;min-width:0;}
 .week-strip-bar{width:100%;flex:1;min-height:40px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;padding:3px;}
 .week-strip-sport-in{font-size:var(--fs-sm);font-weight:700;color:#fff;text-align:center;line-height:1.2;word-break:break-word;text-shadow:0 1px 2px rgba(0,0,0,.18);}
 .week-strip-day.is-today .week-strip-bar{box-shadow:0 0 0 2px var(--brand) inset;}
@@ -586,6 +601,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 /* ── 周期卡片：紧凑独立卡片 + 网格布局（无氧/跑步共用），
    不再是撑满整行的横条，多个周期存在时并排成网格，不会出现中间大片空白 ── */
 .cycle-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:var(--space-12);}
+.cycle-grid > *{min-width:0;}
 .cycle-card{background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;display:flex;flex-direction:column;gap:var(--space-12);}
 .cycle-card.active{border-color:var(--cycle-accent,var(--green));background:var(--cycle-accent-lt,var(--green-lt));}
 .cycle-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-8);}
@@ -870,7 +886,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
       <div class="chart-card" id="dash-donut-card"></div>
 
       <!-- 卡片 3：分类速览 -->
-      <div class="chart-card">
+      <div class="chart-card" id="dash-summary-card">
         <div class="chart-title">分类速览</div>
         <div class="chart-sub">各运动类型次数与累计量</div>
         <div id="sport-summary-list" style="margin-top:var(--space-10)"></div>
