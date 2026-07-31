@@ -282,9 +282,9 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   /* 近7天色块内文字：手机端屏幕太小，字号调小；无氧多部位时改显示缩写（首字），
      不然容易显示不全 */
   .week-strip-sport-in{ font-size: 9px !important; }
-  .week-strip-sport-full{ display: none; }
-  .week-strip-sport-abbr{ display: inline; }
-  .week-strip-run-mobile{ display: flex; }
+  .week-strip-sport-full{ display: none !important; }
+  .week-strip-sport-abbr{ display: inline !important; }
+  .week-strip-run-mobile{ display: flex !important; }
   .cal-grid{ grid-template-columns: 1fr !important; }
   .cal-day{ height: 80px; }
   .cal-day-num-row{ padding: 2px 0 1px 4px; }
@@ -602,8 +602,8 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .week-strip{display:flex;gap:8px;flex:1;align-items:stretch;margin-top:6px;}
 .week-strip-day{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;min-width:0;}
 .week-strip-bar{width:100%;flex:1;min-height:40px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;padding:3px;position:relative;}
-.week-strip-extra-badge{position:absolute;top:-3px;width:9px;height:9px;border-radius:50%;border:1.5px solid var(--bg2);box-sizing:content-box;}
-.week-strip-extra-pill{position:absolute;top:-4px;height:13px;padding:0 4px;border-radius:7px;border:1.5px solid var(--bg2);box-sizing:content-box;display:flex;align-items:center;justify-content:center;color:#fff;font-size:8px;font-weight:700;white-space:nowrap;line-height:1;}
+.week-strip-extra-badge{position:absolute;top:5px;width:8px;height:8px;border-radius:50%;box-shadow:0 1px 2px rgba(0,0,0,.2);}
+.week-strip-extra-pill{position:absolute;top:5px;height:16px;padding:0 6px;border-radius:8px;border:1.5px solid #fff;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;white-space:nowrap;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.2);}
 .week-strip-run-mobile{display:none;flex-direction:column;align-items:center;gap:1px;}
 .week-strip-sport-in{font-size:var(--fs-sm);font-weight:700;color:#fff;text-align:center;line-height:1.2;word-break:break-word;text-shadow:0 1px 2px rgba(0,0,0,.18);}
 .week-strip-sport-abbr{display:none;}
@@ -3000,7 +3000,7 @@ function renderDashboardOverview(){
       // 同类型多练几次（同一部位/同一运动）基本不会发生，不特殊处理。
       // 其中"跑步"信息量更值得一眼看到，角标做成带数据的胶囊；其它类型还是纯色点。
       const dayTypes = dayRecs.length>0 ? [...new Set(dayRecs.map(r=>r.sport))] : [];
-      let badgeOffset = 2;
+      let badgeOffset = 6;
       const extraBadges = dayTypes.slice(1,3).map(sp=>{
         const rec = dayRecs.find(r=>r.sport===sp);
         const color = getSportColor(sp);
@@ -3008,11 +3008,11 @@ function renderDashboardOverview(){
           const bits=[]; if(rec.dist) bits.push(rec.dist+'k'); if(rec.hr) bits.push(rec.hr);
           const runFull = escapeHtml(bits.join('·')||'Run');
           const html = `<span class="week-strip-extra-pill" style="background:${color};right:${badgeOffset}px"><span class="week-strip-sport-full">${runFull}</span><span class="week-strip-sport-abbr">R</span></span>`;
-          badgeOffset += 34;
+          badgeOffset += 42;
           return html;
         }
         const html = `<span class="week-strip-extra-badge" style="background:${color};right:${badgeOffset}px"></span>`;
-        badgeOffset += 8;
+        badgeOffset += 12;
         return html;
       }).join('');
       let sportText = '';
@@ -3030,9 +3030,9 @@ function renderDashboardOverview(){
             sportText = escapeHtml('Strength');
           }
         } else if(first.sport==='Run'){
-          // 跑步：桌面端显示"距离·心率"（跟日历 tab 的 Run 格式一致），
-          // 手机端改成上下两行（距离在上，心率在下），而不是硬挤成一行
-          const bits=[]; if(first.dist) bits.push(first.dist+'k'); if(first.hr) bits.push(first.hr);
+          // 跑步：桌面端显示"距离·心率"，单位显示全（km / bpm），
+          // 跟额外角标那个精简版（5k·142）区分开；手机端改成上下两行
+          const bits=[]; if(first.dist) bits.push(first.dist+'km'); if(first.hr) bits.push(first.hr+'bpm');
           const runFull = escapeHtml(bits.join('·')||'Run');
           const runLines = `${first.dist?`<span>${escapeHtml(first.dist+'k')}</span>`:''}${first.hr?`<span>${escapeHtml(String(first.hr))}</span>`:''}`;
           sportText = `<span class="week-strip-sport-full">${runFull}</span><span class="week-strip-run-mobile">${runLines||'Run'}</span>`;
