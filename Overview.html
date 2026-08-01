@@ -1182,16 +1182,9 @@
   .media-card:hover { border-color: var(--text-muted); }
   .media-card-cover {
     height: 100px; display: flex; align-items: center; justify-content: center;
-    font-size: 24px; position: relative;
+    font-size: 24px;
   }
   .media-card-cover img { width: 100%; height: 100%; object-fit: cover; }
-  .media-card-notes-btn {
-    position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; padding: 0;
-    border-radius: 50%; background: rgba(255,255,255,.88); border: 1px solid rgba(0,0,0,.08);
-    color: var(--text-dim); cursor: pointer; display: flex; align-items: center; justify-content: center;
-  }
-  .media-card-notes-btn svg { width: 11px; height: 11px; display: block; }
-  .media-card-notes-btn.has-notes { background: var(--blue); border-color: var(--blue); color: #fff; }
   .media-card-body { padding: 8px 10px 10px; }
   .media-card-title { font-size: 12.5px; font-weight: 600; color: var(--text); line-height: 1.3; }
   .media-card-meta { font-size: 10.5px; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; gap: 5px; }
@@ -3265,13 +3258,8 @@ function renderMediaGridHtml(grouped) {
       var cover = ev.coverUrl
         ? '<img src="' + escHtml(ev.coverUrl) + '" alt="">'
         : '<span>' + meta.icon + '</span>';
-      var notesBtnClass = 'media-card-notes-btn' + (hasMediaNotes(ev) ? ' has-notes' : '');
       html += '<div class="media-card" style="border-left-color:' + meta.color + ';" onclick="showSpanEventModal(\'' + ev.id + '\')">' +
-        '<div class="media-card-cover" style="background:' + meta.color + '22;color:' + meta.color + ';">' + cover +
-          '<button type="button" class="' + notesBtnClass + '" title="笔记" onclick="event.stopPropagation();showMediaNotesModal(\'' + ev.id + '\')">' +
-            '<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 16l1-4 9-9 3 3-9 9-4 1z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/></svg>' +
-          '</button>' +
-        '</div>' +
+        '<div class="media-card-cover" style="background:' + meta.color + '22;color:' + meta.color + ';">' + cover + '</div>' +
         '<div class="media-card-body">' +
           '<div class="media-card-title">' + escHtml(ev.title) + '</div>' +
           '<div class="media-card-meta"><span>' + mediaDateRangeCompact(ev) + '</span>' + mediaRatingDotsHtml(ev.rating) + '</div>' +
@@ -4094,104 +4082,6 @@ function showSpanEventModal(id, presetCategory) {
     renderTimeline();
     render();
     if (typeof selDate !== 'undefined' && selDate) renderFitnessBodyLine(selDate);
-  };
-  btnRow.appendChild(saveBtn);
-
-  sheet.appendChild(btnRow);
-  overlay.appendChild(sheet);
-  document.body.appendChild(overlay);
-}
-
-// ── 媒体笔记：摘抄 / 人物时间线 / 随笔，跟跨度事件的表单分开，
-//    给长文写作留足空间。只依附在对应的媒体记录下，不单独浏览。
-function getMediaNotes(ev) {
-  if (ev.notes) return ev.notes;
-  // 兼容早期版本里可能存在的单字段 longNote，自动搬进"随笔"
-  if (ev.longNote) return { excerpts: '', timeline: '', freeform: ev.longNote };
-  return { excerpts: '', timeline: '', freeform: '' };
-}
-
-function hasMediaNotes(ev) {
-  var n = getMediaNotes(ev);
-  return !!((n.excerpts && n.excerpts.trim()) || (n.timeline && n.timeline.trim()) || (n.freeform && n.freeform.trim()));
-}
-
-function showMediaNotesModal(id) {
-  var ev = (appData.spanEvents || []).find(function (e) { return e.id === id; });
-  if (!ev) return;
-  var notes = getMediaNotes(ev);
-
-  var overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.addEventListener('click', function () { overlay.remove(); });
-
-  var sheet = document.createElement('div');
-  sheet.className = 'modal-sheet';
-  sheet.style.maxWidth = '440px';
-  sheet.addEventListener('click', function (e) { e.stopPropagation(); });
-
-  var title = document.createElement('h3');
-  title.textContent = '《' + ev.title + '》笔记';
-  sheet.appendChild(title);
-
-  function field(labelText, hint, inputEl) {
-    var wrap = document.createElement('div');
-    wrap.style.cssText = 'margin-bottom:14px;';
-    var lab = document.createElement('div');
-    lab.style.cssText = 'font-size:11.5px;color:var(--text-muted);margin-bottom:5px;';
-    lab.textContent = labelText;
-    wrap.appendChild(lab);
-    wrap.appendChild(inputEl);
-    if (hint) {
-      var hintEl = document.createElement('div');
-      hintEl.style.cssText = 'font-size:10.5px;color:var(--text-muted);margin-top:4px;';
-      hintEl.textContent = hint;
-      wrap.appendChild(hintEl);
-    }
-    sheet.appendChild(wrap);
-    return wrap;
-  }
-
-  function notesArea(placeholder, value) {
-    var ta = document.createElement('textarea');
-    ta.className = 'input-box';
-    ta.style.cssText = 'width:100%;min-height:110px;resize:vertical;';
-    ta.placeholder = placeholder;
-    if (value) ta.value = value;
-    return ta;
-  }
-
-  var excerptsInput = notesArea('摘抄原文、喜欢的句子……', notes.excerpts);
-  field('摘抄', '', excerptsInput);
-
-  var timelineInput = notesArea('梳理人物关系、事件先后顺序……', notes.timeline);
-  field('人物时间线', '', timelineInput);
-
-  var freeformInput = notesArea('随便写点什么', notes.freeform);
-  field('随笔', '', freeformInput);
-
-  var btnRow = document.createElement('div');
-  btnRow.style.cssText = 'display:flex;gap:8px;margin-top:6px;';
-
-  var cancelBtn = document.createElement('button');
-  cancelBtn.className = 'mbtn mbtn-outline';
-  cancelBtn.textContent = '取消';
-  cancelBtn.onclick = function () { overlay.remove(); };
-  btnRow.appendChild(cancelBtn);
-
-  var saveBtn = document.createElement('button');
-  saveBtn.className = 'mbtn mbtn-primary';
-  saveBtn.textContent = '保存';
-  saveBtn.onclick = function () {
-    ev.notes = {
-      excerpts: excerptsInput.value.trim(),
-      timeline: timelineInput.value.trim(),
-      freeform: freeformInput.value.trim()
-    };
-    delete ev.longNote; // 迁移掉旧字段
-    addOrUpdateSpanEvent(ev);
-    overlay.remove();
-    renderMediaBody();
   };
   btnRow.appendChild(saveBtn);
 
