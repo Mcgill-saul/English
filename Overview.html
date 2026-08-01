@@ -1156,6 +1156,13 @@
     border-bottom: 1px solid var(--border-lt); flex-shrink: 0; flex-wrap: wrap;
   }
   .media-view-toggle { display: flex; gap: 4px; background: var(--surface2); padding: 3px; border-radius: var(--radius-sm); flex-shrink: 0; }
+  .media-toolbar-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .media-order-btn {
+    font-size: 11.5px; font-weight: 600; padding: 6px 12px; border-radius: var(--radius-xs);
+    border: 1px solid var(--border); background: var(--surface); color: var(--text-dim);
+    cursor: pointer; font-family: inherit; flex-shrink: 0;
+  }
+  .media-order-btn:hover { color: var(--text); }
   .media-toggle-btn {
     border: none; background: transparent; color: var(--text-muted);
     font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: var(--radius-xs);
@@ -2197,9 +2204,12 @@
     <button class="timeline-add-btn" style="margin-left:auto;" onclick="addMediaEvent()">+ 添加</button>
   </div>
   <div class="media-toolbar">
-    <div class="media-view-toggle">
-      <button type="button" class="media-toggle-btn active" id="mediaModeListBtn" onclick="setMediaViewMode('list')">时间轴</button>
-      <button type="button" class="media-toggle-btn" id="mediaModeGridBtn" onclick="setMediaViewMode('grid')">网格</button>
+    <div class="media-toolbar-left">
+      <div class="media-view-toggle">
+        <button type="button" class="media-toggle-btn active" id="mediaModeListBtn" onclick="setMediaViewMode('list')">时间轴</button>
+        <button type="button" class="media-toggle-btn" id="mediaModeGridBtn" onclick="setMediaViewMode('grid')">网格</button>
+      </div>
+      <button type="button" class="media-order-btn" id="mediaYearOrderBtn" onclick="toggleMediaYearOrder()">年份 新→旧</button>
     </div>
     <div class="media-filter-chips" id="mediaFilterChips"></div>
   </div>
@@ -3158,11 +3168,14 @@ function closeTimelineView() {
 
 // ── 媒体视图：电视剧 / 书籍 / 小说的专属浏览页 ──────────────
 var mediaViewMode = 'list'; // 'list' | 'grid'
-var mediaActiveFilter = 'all'; // 'all' | 'tv' | 'book' | 'novel'
+var mediaActiveFilter = 'all'; // 'all' | 具体类别id
+var mediaListYearOrder = 'desc'; // 时间轴 tab 的年份顺序，跟网格各自独立
+var mediaGridYearOrder = 'desc'; // 网格 tab 的年份顺序
 
 function openMediaView() {
   document.getElementById('mediaView').classList.add('open');
   renderMediaFilterChips();
+  renderMediaYearOrderBtn();
   renderMediaBody();
 }
 function closeMediaView() {
@@ -3179,6 +3192,7 @@ function setMediaViewMode(mode) {
   mediaViewMode = mode;
   document.getElementById('mediaModeListBtn').classList.toggle('active', mode === 'list');
   document.getElementById('mediaModeGridBtn').classList.toggle('active', mode === 'grid');
+  renderMediaYearOrderBtn();
   renderMediaBody();
 }
 
@@ -3186,6 +3200,22 @@ function setMediaFilter(cat) {
   mediaActiveFilter = cat;
   renderMediaFilterChips();
   renderMediaBody();
+}
+
+function getCurrentMediaYearOrder() {
+  return mediaViewMode === 'grid' ? mediaGridYearOrder : mediaListYearOrder;
+}
+function toggleMediaYearOrder() {
+  if (mediaViewMode === 'grid') mediaGridYearOrder = mediaGridYearOrder === 'desc' ? 'asc' : 'desc';
+  else mediaListYearOrder = mediaListYearOrder === 'desc' ? 'asc' : 'desc';
+  renderMediaYearOrderBtn();
+  renderMediaBody();
+}
+function renderMediaYearOrderBtn() {
+  var btn = document.getElementById('mediaYearOrderBtn');
+  if (!btn) return;
+  var order = getCurrentMediaYearOrder();
+  btn.textContent = order === 'desc' ? '年份 新→旧' : '年份 旧→新';
 }
 
 function renderMediaFilterChips() {
@@ -3204,12 +3234,35 @@ function renderMediaFilterChips() {
 function getMediaEvents() {
   var list = (appData.spanEvents || []).filter(function (ev) { return isMediaCategory(ev.category); });
   if (mediaActiveFilter !== 'all') list = list.filter(function (ev) { return ev.category === mediaActiveFilter; });
-  return list.sort(function (a, b) { return b.start < a.start ? -1 : (b.start > a.start ? 1 : 0); });
+  return list;
+}
+
+// 按年份分组：年份顺序按 order 升/降排列，年份内部固定按日期升序
+// （1月→12月），这条内部顺序不受 order 影响，两个视图共享这个规则。
+function buildMediaYearGroups(events, order) {
+  var groups = {};
+  events.forEach(function (ev) {
+    var y = ev.start.slice(0, 4);
+    (groups[y] = groups[y] || []).push(ev);
+  });
+  var years = Object.keys(groups).sort(function (a, b) {
+    return order === 'asc' ? (a < b ? -1 : 1) : (a > b ? -1 : 1);
+  });
+  years.forEach(function (y) {
+    groups[y].sort(function (a, b) { return a.start < b.start ? -1 : (a.start > b.start ? 1 : 0); });
+  });
+  return { years: years, groups: groups };
 }
 
 function mediaDateRangeLabel(ev) {
   if (!ev.end || ev.end === ev.start) return ev.start;
   return ev.start + ' ~ ' + ev.end;
+}
+
+function mediaDateRangeCompact(ev) {
+  function compact(d) { var p = d.split('-'); return parseInt(p[1], 10) + '/' + parseInt(p[2], 10); }
+  if (!ev.end || ev.end === ev.start) return compact(ev.start);
+  return compact(ev.start) + '–' + compact(ev.end);
 }
 
 function mediaRatingDotsHtml(rating) {
@@ -3230,47 +3283,49 @@ function renderMediaBody() {
     body.innerHTML = '<div class="media-empty">还没有记录，点右上角"+ 添加"开始记吧</div>';
     return;
   }
-  body.innerHTML = mediaViewMode === 'grid' ? renderMediaGridHtml(events) : renderMediaListHtml(events);
+  var order = getCurrentMediaYearOrder();
+  var grouped = buildMediaYearGroups(events, order);
+  body.innerHTML = mediaViewMode === 'grid' ? renderMediaGridHtml(grouped) : renderMediaListHtml(grouped);
 }
 
-function renderMediaListHtml(events) {
+function renderMediaListHtml(grouped) {
   var html = '';
-  var lastYear = null;
-  events.forEach(function (ev) {
-    var year = ev.start.slice(0, 4);
-    if (year !== lastYear) {
-      html += '<div class="media-year-divider">' + year + '</div>';
-      lastYear = year;
-    }
-    var meta = getCategoryMeta(ev.category);
-    html += '<div class="media-item" style="border-left-color:' + meta.color + ';" onclick="showSpanEventModal(\'' + ev.id + '\')">' +
-      '<div style="flex:1;">' +
-        '<div class="media-item-title">' + escHtml(ev.title) + '</div>' +
-        '<div class="media-item-meta">' + mediaDateRangeLabel(ev) + (ev.note ? ' · ' + escHtml(ev.note) : '') + '</div>' +
-        (ev.tags && ev.tags.length ? '<div class="media-item-tags">' + ev.tags.map(function (t) { return '<span class="media-item-tag">' + escHtml(t) + '</span>'; }).join('') + '</div>' : '') +
-      '</div>' +
-      mediaRatingDotsHtml(ev.rating) +
-    '</div>';
+  grouped.years.forEach(function (year) {
+    html += '<div class="media-year-divider">' + year + '</div>';
+    grouped.groups[year].forEach(function (ev) {
+      var meta = getCategoryMeta(ev.category);
+      html += '<div class="media-item" style="border-left-color:' + meta.color + ';" onclick="showSpanEventModal(\'' + ev.id + '\')">' +
+        '<div style="flex:1;">' +
+          '<div class="media-item-title">' + escHtml(ev.title) + '</div>' +
+          '<div class="media-item-meta">' + mediaDateRangeLabel(ev) + (ev.note ? ' · ' + escHtml(ev.note) : '') + '</div>' +
+          (ev.tags && ev.tags.length ? '<div class="media-item-tags">' + ev.tags.map(function (t) { return '<span class="media-item-tag">' + escHtml(t) + '</span>'; }).join('') + '</div>' : '') +
+        '</div>' +
+        mediaRatingDotsHtml(ev.rating) +
+      '</div>';
+    });
   });
   return html;
 }
 
-function renderMediaGridHtml(events) {
-  var html = '<div class="media-grid">';
-  events.forEach(function (ev) {
-    var meta = getCategoryMeta(ev.category);
-    var cover = ev.coverUrl
-      ? '<img src="' + escHtml(ev.coverUrl) + '" alt="">'
-      : '<span>' + meta.icon + '</span>';
-    html += '<div class="media-card" onclick="showSpanEventModal(\'' + ev.id + '\')">' +
-      '<div class="media-card-cover" style="background:' + meta.color + '22;color:' + meta.color + ';">' + cover + '</div>' +
-      '<div class="media-card-body">' +
-        '<div class="media-card-title">' + escHtml(ev.title) + '</div>' +
-        '<div class="media-card-meta">' + ev.start.slice(0, 7) + (ev.rating ? ' · ' + '★'.repeat(ev.rating) : '') + '</div>' +
-      '</div>' +
-    '</div>';
+function renderMediaGridHtml(grouped) {
+  var html = '';
+  grouped.years.forEach(function (year) {
+    html += '<div class="media-year-divider">' + year + '</div><div class="media-grid">';
+    grouped.groups[year].forEach(function (ev) {
+      var meta = getCategoryMeta(ev.category);
+      var cover = ev.coverUrl
+        ? '<img src="' + escHtml(ev.coverUrl) + '" alt="">'
+        : '<span>' + meta.icon + '</span>';
+      html += '<div class="media-card" onclick="showSpanEventModal(\'' + ev.id + '\')">' +
+        '<div class="media-card-cover" style="background:' + meta.color + '22;color:' + meta.color + ';">' + cover + '</div>' +
+        '<div class="media-card-body">' +
+          '<div class="media-card-title">' + escHtml(ev.title) + '</div>' +
+          '<div class="media-card-meta"><span>' + mediaDateRangeCompact(ev) + '</span>' + mediaRatingDotsHtml(ev.rating) + '</div>' +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div>';
   });
-  html += '</div>';
   return html;
 }
 
