@@ -1155,7 +1155,6 @@
     gap: 12px; padding: 12px 22px; background: var(--surface);
     border-bottom: 1px solid var(--border-lt); flex-shrink: 0; flex-wrap: wrap;
   }
-  .media-view-toggle { display: flex; gap: 4px; background: var(--surface2); padding: 3px; border-radius: var(--radius-sm); flex-shrink: 0; }
   .media-toolbar-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .media-order-btn {
     font-size: 11.5px; font-weight: 600; padding: 6px 12px; border-radius: var(--radius-xs);
@@ -1163,12 +1162,6 @@
     cursor: pointer; font-family: inherit; flex-shrink: 0;
   }
   .media-order-btn:hover { color: var(--text); }
-  .media-toggle-btn {
-    border: none; background: transparent; color: var(--text-muted);
-    font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: var(--radius-xs);
-    cursor: pointer; font-family: inherit;
-  }
-  .media-toggle-btn.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-xs); }
   .media-filter-chips { display: flex; gap: 6px; flex-wrap: wrap; }
   .media-filter-chip {
     font-size: 11.5px; font-weight: 600; padding: 5px 12px; border-radius: 20px;
@@ -1179,24 +1172,13 @@
 
   .media-year-divider { font-size: 13px; font-weight: 700; color: var(--text-muted); margin: 18px 2px 8px; }
   .media-year-divider:first-child { margin-top: 0; }
-  .media-item {
-    display: flex; gap: 12px; align-items: flex-start;
-    padding: 11px 13px; background: var(--surface); border: 1px solid var(--border);
-    border-left: 3px solid var(--blue); border-radius: var(--radius-sm);
-    margin-bottom: 8px; cursor: pointer;
-  }
-  .media-item:hover { border-color: var(--text-muted); }
-  .media-item-title { font-size: 14px; font-weight: 600; color: var(--text); }
-  .media-item-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
-  .media-item-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
-  .media-item-tag { font-size: 10.5px; padding: 2px 8px; border-radius: 20px; background: var(--surface2); color: var(--text-dim); }
   .media-rating-dots { display: flex; gap: 2px; flex-shrink: 0; margin-top: 2px; }
   .media-rating-dots span { width: 6px; height: 6px; border-radius: 50%; display: block; }
 
   .media-empty { text-align: center; color: var(--text-muted); font-size: 13px; padding: 60px 20px; }
 
   .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
-  .media-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; cursor: pointer; }
+  .media-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; cursor: pointer; }
   .media-card:hover { border-color: var(--text-muted); }
   .media-card-cover {
     height: 100px; display: flex; align-items: center; justify-content: center;
@@ -2205,10 +2187,6 @@
   </div>
   <div class="media-toolbar">
     <div class="media-toolbar-left">
-      <div class="media-view-toggle">
-        <button type="button" class="media-toggle-btn active" id="mediaModeListBtn" onclick="setMediaViewMode('list')">时间轴</button>
-        <button type="button" class="media-toggle-btn" id="mediaModeGridBtn" onclick="setMediaViewMode('grid')">网格</button>
-      </div>
       <button type="button" class="media-order-btn" id="mediaYearOrderBtn" onclick="toggleMediaYearOrder()">年份 新→旧</button>
     </div>
     <div class="media-filter-chips" id="mediaFilterChips"></div>
@@ -3166,11 +3144,9 @@ function closeTimelineView() {
   document.getElementById('timelineView').classList.remove('open');
 }
 
-// ── 媒体视图：电视剧 / 书籍 / 小说的专属浏览页 ──────────────
-var mediaViewMode = 'list'; // 'list' | 'grid'
+// ── 媒体视图：电视剧 / 书籍 / 小说的专属浏览页（网格卡片墙）──
 var mediaActiveFilter = 'all'; // 'all' | 具体类别id
-var mediaListYearOrder = 'desc'; // 时间轴 tab 的年份顺序，跟网格各自独立
-var mediaGridYearOrder = 'desc'; // 网格 tab 的年份顺序
+var mediaYearOrder = 'desc'; // 年份顺序，年份内部固定按日期升序（1月→12月）
 
 function openMediaView() {
   document.getElementById('mediaView').classList.add('open');
@@ -3188,14 +3164,6 @@ function addMediaEvent() {
   showSpanEventModal(null, preset);
 }
 
-function setMediaViewMode(mode) {
-  mediaViewMode = mode;
-  document.getElementById('mediaModeListBtn').classList.toggle('active', mode === 'list');
-  document.getElementById('mediaModeGridBtn').classList.toggle('active', mode === 'grid');
-  renderMediaYearOrderBtn();
-  renderMediaBody();
-}
-
 function setMediaFilter(cat) {
   mediaActiveFilter = cat;
   renderMediaFilterChips();
@@ -3203,11 +3171,10 @@ function setMediaFilter(cat) {
 }
 
 function getCurrentMediaYearOrder() {
-  return mediaViewMode === 'grid' ? mediaGridYearOrder : mediaListYearOrder;
+  return mediaYearOrder;
 }
 function toggleMediaYearOrder() {
-  if (mediaViewMode === 'grid') mediaGridYearOrder = mediaGridYearOrder === 'desc' ? 'asc' : 'desc';
-  else mediaListYearOrder = mediaListYearOrder === 'desc' ? 'asc' : 'desc';
+  mediaYearOrder = mediaYearOrder === 'desc' ? 'asc' : 'desc';
   renderMediaYearOrderBtn();
   renderMediaBody();
 }
@@ -3254,11 +3221,6 @@ function buildMediaYearGroups(events, order) {
   return { years: years, groups: groups };
 }
 
-function mediaDateRangeLabel(ev) {
-  if (!ev.end || ev.end === ev.start) return ev.start;
-  return ev.start + ' ~ ' + ev.end;
-}
-
 function mediaDateRangeCompact(ev) {
   function compact(d) { var p = d.split('-'); return parseInt(p[1], 10) + '/' + parseInt(p[2], 10); }
   if (!ev.end || ev.end === ev.start) return compact(ev.start);
@@ -3283,28 +3245,8 @@ function renderMediaBody() {
     body.innerHTML = '<div class="media-empty">还没有记录，点右上角"+ 添加"开始记吧</div>';
     return;
   }
-  var order = getCurrentMediaYearOrder();
-  var grouped = buildMediaYearGroups(events, order);
-  body.innerHTML = mediaViewMode === 'grid' ? renderMediaGridHtml(grouped) : renderMediaListHtml(grouped);
-}
-
-function renderMediaListHtml(grouped) {
-  var html = '';
-  grouped.years.forEach(function (year) {
-    html += '<div class="media-year-divider">' + year + '</div>';
-    grouped.groups[year].forEach(function (ev) {
-      var meta = getCategoryMeta(ev.category);
-      html += '<div class="media-item" style="border-left-color:' + meta.color + ';" onclick="showSpanEventModal(\'' + ev.id + '\')">' +
-        '<div style="flex:1;">' +
-          '<div class="media-item-title">' + escHtml(ev.title) + '</div>' +
-          '<div class="media-item-meta">' + mediaDateRangeLabel(ev) + (ev.note ? ' · ' + escHtml(ev.note) : '') + '</div>' +
-          (ev.tags && ev.tags.length ? '<div class="media-item-tags">' + ev.tags.map(function (t) { return '<span class="media-item-tag">' + escHtml(t) + '</span>'; }).join('') + '</div>' : '') +
-        '</div>' +
-        mediaRatingDotsHtml(ev.rating) +
-      '</div>';
-    });
-  });
-  return html;
+  var grouped = buildMediaYearGroups(events, getCurrentMediaYearOrder());
+  body.innerHTML = renderMediaGridHtml(grouped);
 }
 
 function renderMediaGridHtml(grouped) {
@@ -3316,7 +3258,7 @@ function renderMediaGridHtml(grouped) {
       var cover = ev.coverUrl
         ? '<img src="' + escHtml(ev.coverUrl) + '" alt="">'
         : '<span>' + meta.icon + '</span>';
-      html += '<div class="media-card" onclick="showSpanEventModal(\'' + ev.id + '\')">' +
+      html += '<div class="media-card" style="border-left-color:' + meta.color + ';" onclick="showSpanEventModal(\'' + ev.id + '\')">' +
         '<div class="media-card-cover" style="background:' + meta.color + '22;color:' + meta.color + ';">' + cover + '</div>' +
         '<div class="media-card-body">' +
           '<div class="media-card-title">' + escHtml(ev.title) + '</div>' +
