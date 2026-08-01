@@ -1188,6 +1188,8 @@
   .media-card-body { padding: 8px 10px 10px; }
   .media-card-title { font-size: 12.5px; font-weight: 600; color: var(--text); line-height: 1.3; }
   .media-card-meta { font-size: 10.5px; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; gap: 5px; }
+  .media-card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .media-card-tag { font-size: 9.5px; padding: 1px 7px; border-radius: 20px; background: var(--surface2); color: var(--text-dim); }
 
   .timeline-axis-row {
     display: flex;
@@ -2189,6 +2191,7 @@
     <div class="media-toolbar-left">
       <button type="button" class="media-order-btn" id="mediaYearOrderBtn" onclick="toggleMediaYearOrder()">年份 新→旧</button>
       <div class="media-filter-chips" id="mediaRegionChips" style="display:none;"></div>
+      <div class="media-filter-chips" id="mediaTagChips" style="display:none;"></div>
     </div>
     <div class="media-filter-chips" id="mediaFilterChips"></div>
   </div>
@@ -2559,9 +2562,7 @@ var CUSTOM_CATEGORY_ICON = '📌';
 //    都能被认出来，不会跟你已有的自定义类别产生重复项。
 var MEDIA_CATEGORY_LABELS = ['电视剧', '书籍', '小说'];
 function isMediaCategory(catId) { return MEDIA_CATEGORY_LABELS.indexOf(getCategoryMeta(catId).label) !== -1; }
-function isTvCategory(catId) { return getCategoryMeta(catId).label === '电视剧'; }
 function getMediaCategoryIds() { return getCategoryOrder().filter(isMediaCategory); }
-var TV_REGION_OPTIONS = ['大陆剧', '港台剧', '日剧', '韩剧', '美剧', '英剧', '其他'];
 
 function getCategoryMeta(catId) {
   var base;
@@ -3149,13 +3150,15 @@ function closeTimelineView() {
 
 // ── 媒体视图：电视剧 / 书籍 / 小说的专属浏览页（网格卡片墙）──
 var mediaActiveFilter = 'all'; // 'all' | 具体类别id
-var mediaRegionFilter = 'all'; // 'all' | TV_REGION_OPTIONS 中的一个，仅在筛选到电视剧时生效
+var mediaRegionFilter = 'all'; // 'all' | 你自己填过的某个地区文字
+var mediaTagFilter = null; // null(全部) | 你自己填过的某个标签文字
 var mediaYearOrder = 'desc'; // 年份顺序，年份内部固定按日期升序（1月→12月）
 
 function openMediaView() {
   document.getElementById('mediaView').classList.add('open');
   renderMediaFilterChips();
   renderMediaRegionChips();
+  renderMediaTagChips();
   renderMediaYearOrderBtn();
   renderMediaBody();
 }
@@ -3171,15 +3174,23 @@ function addMediaEvent() {
 
 function setMediaFilter(cat) {
   mediaActiveFilter = cat;
-  mediaRegionFilter = 'all'; // 切换类别筛选时重置地区筛选，避免漏筛非电视剧内容
+  mediaRegionFilter = 'all'; // 切换类别筛选时重置地区/标签筛选，避免选项跟当前类别对不上
+  mediaTagFilter = null;
   renderMediaFilterChips();
   renderMediaRegionChips();
+  renderMediaTagChips();
   renderMediaBody();
 }
 
 function setMediaRegionFilter(region) {
   mediaRegionFilter = region;
   renderMediaRegionChips();
+  renderMediaBody();
+}
+
+function setMediaTagFilter(tag) {
+  mediaTagFilter = (mediaTagFilter === tag) ? null : tag;
+  renderMediaTagChips();
   renderMediaBody();
 }
 
@@ -3207,32 +3218,66 @@ function renderMediaFilterChips() {
   }));
   wrap.innerHTML = chips.map(function (c) {
     return '<button type="button" class="media-filter-chip' + (mediaActiveFilter === c.id ? ' active' : '') +
-      '" onclick="setMediaFilter(\'' + c.id + '\')">' + escHtml(c.label) + '</button>';
+      '" onclick="setMediaFilter(\'' + escJsStr(c.id) + '\')">' + escHtml(c.label) + '</button>';
   }).join('');
 }
 
-// 地区筛选只在当前类别筛选恰好是"电视剧"时才显示，因为其它类别没有这个字段
+// 所有媒体记录（不限类别），给弹窗里的地区输入框做联想建议用
+function getAllMediaEvents() {
+  return (appData.spanEvents || []).filter(function (ev) { return isMediaCategory(ev.category); });
+}
+
+// 只按当前"类别"筛选，不算地区/标签——用来计算地区/标签筛选栏里
+// 到底该列出哪些选项（选项永远基于类别范围，不受已选的地区/标签影响）
+function getMediaEventsByCategory() {
+  var list = getAllMediaEvents();
+  if (mediaActiveFilter !== 'all') list = list.filter(function (ev) { return ev.category === mediaActiveFilter; });
+  return list;
+}
+
+// 取某个字段（地区是单值，标签是数组）在一批记录里出现过的所有不同取值
+function getDistinctMediaValues(events, field) {
+  var set = {};
+  events.forEach(function (ev) {
+    if (field === 'tags') {
+      (ev.tags || []).forEach(function (t) { if (t) set[t] = true; });
+    } else if (ev[field]) {
+      set[ev[field]] = true;
+    }
+  });
+  return Object.keys(set).sort();
+}
+
 function renderMediaRegionChips() {
   var wrap = document.getElementById('mediaRegionChips');
   if (!wrap) return;
-  if (mediaActiveFilter !== 'tv') {
-    wrap.style.display = 'none';
-    wrap.innerHTML = '';
-    return;
-  }
+  var regions = getDistinctMediaValues(getMediaEventsByCategory(), 'region');
+  if (!regions.length) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
   wrap.style.display = 'flex';
-  var chips = ['all'].concat(TV_REGION_OPTIONS);
+  var chips = ['all'].concat(regions);
   wrap.innerHTML = chips.map(function (r) {
     var label = r === 'all' ? '全部地区' : r;
     return '<button type="button" class="media-filter-chip' + (mediaRegionFilter === r ? ' active' : '') +
-      '" onclick="setMediaRegionFilter(\'' + r + '\')">' + escHtml(label) + '</button>';
+      '" onclick="setMediaRegionFilter(\'' + escJsStr(r) + '\')">' + escHtml(label) + '</button>';
+  }).join('');
+}
+
+function renderMediaTagChips() {
+  var wrap = document.getElementById('mediaTagChips');
+  if (!wrap) return;
+  var tags = getDistinctMediaValues(getMediaEventsByCategory(), 'tags');
+  if (!tags.length) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
+  wrap.style.display = 'flex';
+  wrap.innerHTML = tags.map(function (t) {
+    return '<button type="button" class="media-filter-chip' + (mediaTagFilter === t ? ' active' : '') +
+      '" onclick="setMediaTagFilter(\'' + escJsStr(t) + '\')">#' + escHtml(t) + '</button>';
   }).join('');
 }
 
 function getMediaEvents() {
-  var list = (appData.spanEvents || []).filter(function (ev) { return isMediaCategory(ev.category); });
-  if (mediaActiveFilter !== 'all') list = list.filter(function (ev) { return ev.category === mediaActiveFilter; });
-  if (mediaActiveFilter === 'tv' && mediaRegionFilter !== 'all') list = list.filter(function (ev) { return ev.region === mediaRegionFilter; });
+  var list = getMediaEventsByCategory();
+  if (mediaRegionFilter !== 'all') list = list.filter(function (ev) { return ev.region === mediaRegionFilter; });
+  if (mediaTagFilter) list = list.filter(function (ev) { return ev.tags && ev.tags.indexOf(mediaTagFilter) !== -1; });
   return list;
 }
 
@@ -3290,11 +3335,12 @@ function renderMediaGridHtml(grouped) {
       var cover = ev.coverUrl
         ? '<img src="' + escHtml(ev.coverUrl) + '" alt="">'
         : '<span>' + meta.icon + '</span>';
-      html += '<div class="media-card" style="border-left-color:' + meta.color + ';" onclick="showSpanEventModal(\'' + ev.id + '\')">' +
+      html += '<div class="media-card" style="border-left-color:' + meta.color + ';" onclick="showSpanEventModal(\'' + escJsStr(ev.id) + '\')">' +
         '<div class="media-card-cover" style="background:' + meta.color + '22;color:' + meta.color + ';">' + cover + '</div>' +
         '<div class="media-card-body">' +
           '<div class="media-card-title">' + escHtml(ev.title) + '</div>' +
           '<div class="media-card-meta"><span>' + mediaDateRangeCompact(ev) + '</span>' + mediaRatingDotsHtml(ev.rating) + '</div>' +
+          (ev.tags && ev.tags.length ? '<div class="media-card-tags">' + ev.tags.map(function (t) { return '<span class="media-card-tag">' + escHtml(t) + '</span>'; }).join('') + '</div>' : '') +
         '</div>' +
       '</div>';
     });
@@ -4042,20 +4088,22 @@ function showSpanEventModal(id, presetCategory) {
   renderRatingDots();
   mediaField('评分（可不填）', ratingRow);
 
-  var regionSel = document.createElement('select');
-  regionSel.className = 'input-box';
-  var regionBlankOpt = document.createElement('option');
-  regionBlankOpt.value = '';
-  regionBlankOpt.textContent = '不选';
-  regionSel.appendChild(regionBlankOpt);
-  TV_REGION_OPTIONS.forEach(function (r) {
-    var opt = document.createElement('option');
-    opt.value = r;
-    opt.textContent = r;
-    regionSel.appendChild(opt);
-  });
-  if (editing && editing.region) regionSel.value = editing.region;
-  var regionFieldWrap = mediaField('地区（可不填，仅电视剧）', regionSel);
+  var regionInput = document.createElement('input');
+  regionInput.type = 'text';
+  regionInput.className = 'input-box';
+  regionInput.placeholder = '想怎么写都行，比如 大陆 / 港台 / 日本 / 欧美…';
+  regionInput.setAttribute('list', 'mediaRegionSuggestions');
+  if (editing && editing.region) regionInput.value = editing.region;
+  mediaField('地区（可不填）', regionInput);
+
+  var regionDatalist = document.getElementById('mediaRegionSuggestions');
+  if (!regionDatalist) {
+    regionDatalist = document.createElement('datalist');
+    regionDatalist.id = 'mediaRegionSuggestions';
+    document.body.appendChild(regionDatalist);
+  }
+  regionDatalist.innerHTML = getDistinctMediaValues(getAllMediaEvents(), 'region')
+    .map(function (r) { return '<option value="' + escHtml(r) + '"></option>'; }).join('');
 
   var tagsInput = document.createElement('input');
   tagsInput.type = 'text';
@@ -4073,7 +4121,6 @@ function showSpanEventModal(id, presetCategory) {
 
   function updateMediaFieldsVisibility() {
     mediaFieldsWrap.style.display = isMediaCategory(catSel.value) ? 'block' : 'none';
-    regionFieldWrap.style.display = isTvCategory(catSel.value) ? 'block' : 'none';
   }
   updateMediaFieldsVisibility();
 
@@ -4121,11 +4168,9 @@ function showSpanEventModal(id, presetCategory) {
     };
     if (isMediaCategory(catSel.value)) {
       ev.rating = ratingVal || undefined;
+      ev.region = regionInput.value.trim() || undefined;
       ev.tags = tagsInput.value.split(',').map(function (t) { return t.trim(); }).filter(Boolean);
       ev.coverUrl = coverInput.value.trim() || undefined;
-    }
-    if (isTvCategory(catSel.value)) {
-      ev.region = regionSel.value || undefined;
     }
     addOrUpdateSpanEvent(ev);
     overlay.remove();
