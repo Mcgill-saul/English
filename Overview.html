@@ -1149,6 +1149,57 @@
   }
   .timeline-body { flex: 1; overflow: auto; padding: 22px; }
 
+  /* ── 媒体视图 ─────────────────────────────────────────── */
+  .media-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 12px 22px; background: var(--surface);
+    border-bottom: 1px solid var(--border-lt); flex-shrink: 0; flex-wrap: wrap;
+  }
+  .media-view-toggle { display: flex; gap: 4px; background: var(--surface2); padding: 3px; border-radius: var(--radius-sm); flex-shrink: 0; }
+  .media-toggle-btn {
+    border: none; background: transparent; color: var(--text-muted);
+    font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: var(--radius-xs);
+    cursor: pointer; font-family: inherit;
+  }
+  .media-toggle-btn.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-xs); }
+  .media-filter-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .media-filter-chip {
+    font-size: 11.5px; font-weight: 600; padding: 5px 12px; border-radius: 20px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--text-dim);
+    cursor: pointer; font-family: inherit;
+  }
+  .media-filter-chip.active { background: var(--text); border-color: var(--text); color: #fff; }
+
+  .media-year-divider { font-size: 13px; font-weight: 700; color: var(--text-muted); margin: 18px 2px 8px; }
+  .media-year-divider:first-child { margin-top: 0; }
+  .media-item {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 11px 13px; background: var(--surface); border: 1px solid var(--border);
+    border-left: 3px solid var(--blue); border-radius: var(--radius-sm);
+    margin-bottom: 8px; cursor: pointer;
+  }
+  .media-item:hover { border-color: var(--text-muted); }
+  .media-item-title { font-size: 14px; font-weight: 600; color: var(--text); }
+  .media-item-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+  .media-item-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+  .media-item-tag { font-size: 10.5px; padding: 2px 8px; border-radius: 20px; background: var(--surface2); color: var(--text-dim); }
+  .media-rating-dots { display: flex; gap: 2px; flex-shrink: 0; margin-top: 2px; }
+  .media-rating-dots span { width: 6px; height: 6px; border-radius: 50%; display: block; }
+
+  .media-empty { text-align: center; color: var(--text-muted); font-size: 13px; padding: 60px 20px; }
+
+  .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+  .media-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; cursor: pointer; }
+  .media-card:hover { border-color: var(--text-muted); }
+  .media-card-cover {
+    height: 100px; display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+  }
+  .media-card-cover img { width: 100%; height: 100%; object-fit: cover; }
+  .media-card-body { padding: 8px 10px 10px; }
+  .media-card-title { font-size: 12.5px; font-weight: 600; color: var(--text); line-height: 1.3; }
+  .media-card-meta { font-size: 10.5px; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; gap: 5px; }
+
   .timeline-axis-row {
     display: flex;
     align-items: flex-end;
@@ -2033,6 +2084,13 @@
         <circle cx="17" cy="15" r="1.6" fill="currentColor"/>
       </svg>
     </button>
+    <button class="icon-btn" id="mediaBtn" onclick="openMediaView()" title="媒体">
+      <svg width="15" height="15" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;flex-shrink:0;">
+        <path d="M3 4.5C3 3.67 3.67 3 4.5 3H9V17H4.5C3.67 17 3 16.33 3 15.5V4.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M9 3H15.5C16.33 3 17 3.67 17 4.5V15.5C17 16.33 16.33 17 15.5 17H9" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M5.6 6.5H6.6M5.6 9.5H6.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      </svg>
+    </button>
     <button class="icon-btn" id="searchBtn" onclick="openSearchDrawer()" title="搜索">
       <svg width="15" height="15" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;flex-shrink:0;">
         <circle cx="8.5" cy="8.5" r="6" stroke="currentColor" stroke-width="1.5"/>
@@ -2125,6 +2183,27 @@
     <button class="timeline-add-btn" onclick="showSpanEventModal()">+ 添加事件</button>
   </div>
   <div class="timeline-body" id="timelineBody"></div>
+</div>
+
+<!-- Media full-screen view: 电视剧 / 书籍 / 小说 的专属浏览页 -->
+<div class="timeline-view" id="mediaView">
+  <div class="timeline-header">
+    <button class="timeline-back" onclick="closeMediaView()" title="返回">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12.5 4.5L6 10l6.5 5.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <div class="timeline-title">媒体</div>
+    <button class="timeline-add-btn" style="margin-left:auto;" onclick="addMediaEvent()">+ 添加</button>
+  </div>
+  <div class="media-toolbar">
+    <div class="media-view-toggle">
+      <button type="button" class="media-toggle-btn active" id="mediaModeListBtn" onclick="setMediaViewMode('list')">时间轴</button>
+      <button type="button" class="media-toggle-btn" id="mediaModeGridBtn" onclick="setMediaViewMode('grid')">网格</button>
+    </div>
+    <div class="media-filter-chips" id="mediaFilterChips"></div>
+  </div>
+  <div class="timeline-body" id="mediaBody"></div>
 </div>
 
 <!-- Todo sidebar: fixed-positioned so it floats in the leftover
@@ -2485,6 +2564,13 @@ var SPAN_CATEGORIES = {
 };
 var SPAN_CATEGORY_ORDER = ['travel', 'game', 'tv'];
 var CUSTOM_CATEGORY_ICON = '📌';
+
+// ── "媒体"类别：按标签文字识别（电视剧/书籍/小说），而不是写死 ID，
+//    这样无论是内置的 tv，还是你自己用"新建类别"建的书籍/小说，
+//    都能被认出来，不会跟你已有的自定义类别产生重复项。
+var MEDIA_CATEGORY_LABELS = ['电视剧', '书籍', '小说'];
+function isMediaCategory(catId) { return MEDIA_CATEGORY_LABELS.indexOf(getCategoryMeta(catId).label) !== -1; }
+function getMediaCategoryIds() { return getCategoryOrder().filter(isMediaCategory); }
 
 function getCategoryMeta(catId) {
   var base;
@@ -3070,6 +3156,124 @@ function closeTimelineView() {
   document.getElementById('timelineView').classList.remove('open');
 }
 
+// ── 媒体视图：电视剧 / 书籍 / 小说的专属浏览页 ──────────────
+var mediaViewMode = 'list'; // 'list' | 'grid'
+var mediaActiveFilter = 'all'; // 'all' | 'tv' | 'book' | 'novel'
+
+function openMediaView() {
+  document.getElementById('mediaView').classList.add('open');
+  renderMediaFilterChips();
+  renderMediaBody();
+}
+function closeMediaView() {
+  document.getElementById('mediaView').classList.remove('open');
+}
+
+function addMediaEvent() {
+  var ids = getMediaCategoryIds();
+  var preset = mediaActiveFilter !== 'all' ? mediaActiveFilter : (ids[0] || 'tv');
+  showSpanEventModal(null, preset);
+}
+
+function setMediaViewMode(mode) {
+  mediaViewMode = mode;
+  document.getElementById('mediaModeListBtn').classList.toggle('active', mode === 'list');
+  document.getElementById('mediaModeGridBtn').classList.toggle('active', mode === 'grid');
+  renderMediaBody();
+}
+
+function setMediaFilter(cat) {
+  mediaActiveFilter = cat;
+  renderMediaFilterChips();
+  renderMediaBody();
+}
+
+function renderMediaFilterChips() {
+  var wrap = document.getElementById('mediaFilterChips');
+  if (!wrap) return;
+  var chips = [{ id: 'all', label: '全部' }].concat(getMediaCategoryIds().map(function (c) {
+    var meta = getCategoryMeta(c);
+    return { id: c, label: meta.icon + ' ' + meta.label };
+  }));
+  wrap.innerHTML = chips.map(function (c) {
+    return '<button type="button" class="media-filter-chip' + (mediaActiveFilter === c.id ? ' active' : '') +
+      '" onclick="setMediaFilter(\'' + c.id + '\')">' + escHtml(c.label) + '</button>';
+  }).join('');
+}
+
+function getMediaEvents() {
+  var list = (appData.spanEvents || []).filter(function (ev) { return isMediaCategory(ev.category); });
+  if (mediaActiveFilter !== 'all') list = list.filter(function (ev) { return ev.category === mediaActiveFilter; });
+  return list.sort(function (a, b) { return b.start < a.start ? -1 : (b.start > a.start ? 1 : 0); });
+}
+
+function mediaDateRangeLabel(ev) {
+  if (!ev.end || ev.end === ev.start) return ev.start;
+  return ev.start + ' ~ ' + ev.end;
+}
+
+function mediaRatingDotsHtml(rating) {
+  if (!rating) return '';
+  var html = '<div class="media-rating-dots">';
+  for (var i = 1; i <= 5; i++) {
+    html += '<span style="background:' + (i <= rating ? 'var(--blue)' : 'var(--blue-bd)') + ';"></span>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderMediaBody() {
+  var body = document.getElementById('mediaBody');
+  if (!body) return;
+  var events = getMediaEvents();
+  if (!events.length) {
+    body.innerHTML = '<div class="media-empty">还没有记录，点右上角"+ 添加"开始记吧</div>';
+    return;
+  }
+  body.innerHTML = mediaViewMode === 'grid' ? renderMediaGridHtml(events) : renderMediaListHtml(events);
+}
+
+function renderMediaListHtml(events) {
+  var html = '';
+  var lastYear = null;
+  events.forEach(function (ev) {
+    var year = ev.start.slice(0, 4);
+    if (year !== lastYear) {
+      html += '<div class="media-year-divider">' + year + '</div>';
+      lastYear = year;
+    }
+    var meta = getCategoryMeta(ev.category);
+    html += '<div class="media-item" style="border-left-color:' + meta.color + ';" onclick="showSpanEventModal(\'' + ev.id + '\')">' +
+      '<div style="flex:1;">' +
+        '<div class="media-item-title">' + escHtml(ev.title) + '</div>' +
+        '<div class="media-item-meta">' + mediaDateRangeLabel(ev) + (ev.note ? ' · ' + escHtml(ev.note) : '') + '</div>' +
+        (ev.tags && ev.tags.length ? '<div class="media-item-tags">' + ev.tags.map(function (t) { return '<span class="media-item-tag">' + escHtml(t) + '</span>'; }).join('') + '</div>' : '') +
+      '</div>' +
+      mediaRatingDotsHtml(ev.rating) +
+    '</div>';
+  });
+  return html;
+}
+
+function renderMediaGridHtml(events) {
+  var html = '<div class="media-grid">';
+  events.forEach(function (ev) {
+    var meta = getCategoryMeta(ev.category);
+    var cover = ev.coverUrl
+      ? '<img src="' + escHtml(ev.coverUrl) + '" alt="">'
+      : '<span>' + meta.icon + '</span>';
+    html += '<div class="media-card" onclick="showSpanEventModal(\'' + ev.id + '\')">' +
+      '<div class="media-card-cover" style="background:' + meta.color + '22;color:' + meta.color + ';">' + cover + '</div>' +
+      '<div class="media-card-body">' +
+        '<div class="media-card-title">' + escHtml(ev.title) + '</div>' +
+        '<div class="media-card-meta">' + ev.start.slice(0, 7) + (ev.rating ? ' · ' + '★'.repeat(ev.rating) : '') + '</div>' +
+      '</div>' +
+    '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
 function dateRatio(dateStr, s, e) {
   var d = new Date(dateStr).getTime();
   var sT = new Date(s).getTime();
@@ -3486,7 +3690,7 @@ function removeTimelineTagRow(tagName) {
   renderTimeline();
 }
 
-function showSpanEventModal(id) {
+function showSpanEventModal(id, presetCategory) {
   var editing = id ? (appData.spanEvents || []).find(function (ev) { return ev.id === id; }) : null;
 
   var overlay = document.createElement('div');
@@ -3532,6 +3736,7 @@ function showSpanEventModal(id) {
   newCatOpt.textContent = '+ 新建类别…';
   catSel.appendChild(newCatOpt);
   if (editing) catSel.value = editing.category;
+  else if (presetCategory && getCategoryOrder().indexOf(presetCategory) !== -1) catSel.value = presetCategory;
 
   var catMenuWrap = document.createElement('div');
   catMenuWrap.style.cssText = 'position:relative;flex-shrink:0;';
@@ -3674,6 +3879,7 @@ function showSpanEventModal(id) {
   catSel.addEventListener('change', function () {
     catEditWrap.style.display = 'none';
     newCatWrap.style.display = catSel.value === '__new__' ? 'flex' : 'none';
+    updateMediaFieldsVisibility();
   });
 
   var titleInput = document.createElement('input');
@@ -3761,9 +3967,77 @@ function showSpanEventModal(id) {
   var noteInput = document.createElement('textarea');
   noteInput.className = 'input-box';
   noteInput.style.cssText = 'width:100%;min-height:60px;resize:vertical;';
-  noteInput.placeholder = '';
+  noteInput.placeholder = '一句话备注，比如在哪、和谁、什么心情';
   if (editing && editing.note) noteInput.value = editing.note;
   field('备注', noteInput);
+
+  // ── 媒体专属字段：评分 / 标签 / 长评(读书笔记) / 封面URL，
+  //    只在类别是电视剧/书籍/小说时显示 ────────────────────
+  var mediaFieldsWrap = document.createElement('div');
+  sheet.appendChild(mediaFieldsWrap);
+
+  function mediaField(labelText, inputEl) {
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-bottom:12px;';
+    var lab = document.createElement('div');
+    lab.style.cssText = 'font-size:11.5px;color:var(--text-muted);margin-bottom:5px;';
+    lab.textContent = labelText;
+    wrap.appendChild(lab);
+    wrap.appendChild(inputEl);
+    mediaFieldsWrap.appendChild(wrap);
+    return wrap;
+  }
+
+  var ratingRow = document.createElement('div');
+  ratingRow.style.cssText = 'display:flex;gap:6px;align-items:center;';
+  var ratingVal = editing && editing.rating ? editing.rating : 0;
+  var ratingDots = [];
+  for (var ri = 1; ri <= 5; ri++) {
+    (function (dotVal) {
+      var dot = document.createElement('button');
+      dot.type = 'button';
+      dot.style.cssText = 'width:22px;height:22px;border-radius:50%;border:1.5px solid var(--blue-bd);background:none;cursor:pointer;padding:0;';
+      dot.onclick = function () {
+        ratingVal = (ratingVal === dotVal) ? 0 : dotVal;
+        renderRatingDots();
+      };
+      ratingDots.push(dot);
+      ratingRow.appendChild(dot);
+    })(ri);
+  }
+  function renderRatingDots() {
+    ratingDots.forEach(function (dot, i) {
+      dot.style.background = (i + 1) <= ratingVal ? 'var(--blue)' : 'none';
+    });
+  }
+  renderRatingDots();
+  mediaField('评分（可不填）', ratingRow);
+
+  var tagsInput = document.createElement('input');
+  tagsInput.type = 'text';
+  tagsInput.className = 'input-box';
+  tagsInput.placeholder = '用逗号分隔，比如 悬疑, 年度最佳';
+  if (editing && editing.tags && editing.tags.length) tagsInput.value = editing.tags.join(', ');
+  mediaField('标签（可不填）', tagsInput);
+
+  var coverInput = document.createElement('input');
+  coverInput.type = 'text';
+  coverInput.className = 'input-box';
+  coverInput.placeholder = '封面图片链接（可不填）';
+  if (editing && editing.coverUrl) coverInput.value = editing.coverUrl;
+  mediaField('封面 URL（可不填）', coverInput);
+
+  var longNoteInput = document.createElement('textarea');
+  longNoteInput.className = 'input-box';
+  longNoteInput.style.cssText = 'width:100%;min-height:80px;resize:vertical;';
+  longNoteInput.placeholder = '长评 / 读书笔记（可不填）';
+  if (editing && editing.longNote) longNoteInput.value = editing.longNote;
+  mediaField('长评 / 读书笔记（可不填）', longNoteInput);
+
+  function updateMediaFieldsVisibility() {
+    mediaFieldsWrap.style.display = isMediaCategory(catSel.value) ? 'block' : 'none';
+  }
+  updateMediaFieldsVisibility();
 
   var btnRow = document.createElement('div');
   btnRow.style.cssText = 'display:flex;gap:8px;margin-top:6px;';
@@ -3807,6 +4081,12 @@ function showSpanEventModal(id) {
       displayMode: bandOpt.radio.checked ? 'band' : 'cover',
       showOnCalendar: showCheckbox.checked
     };
+    if (isMediaCategory(catSel.value)) {
+      ev.rating = ratingVal || undefined;
+      ev.tags = tagsInput.value.split(',').map(function (t) { return t.trim(); }).filter(Boolean);
+      ev.coverUrl = coverInput.value.trim() || undefined;
+      ev.longNote = longNoteInput.value.trim() || undefined;
+    }
     addOrUpdateSpanEvent(ev);
     overlay.remove();
     renderTimelineDateChips();

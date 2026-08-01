@@ -68,6 +68,18 @@
 }
 .badge-circle:hover::after{opacity:1}
 .badge-circle .badge-unit{font-size:8px;font-weight:600;margin-top:2px;color:#5B8C1A}
+/* 通用悬浮提示：跟 .badge-circle 同一套气泡机制，但锚定在右边缘而不是居中——
+   给标题栏右侧这种贴边文字用(比如HHI内联展示)，居中锚定的话文字贴着卡片右边缘会导致气泡溢出卡片。 */
+.hover-tip{position:relative;cursor:help}
+.hover-tip::after{
+  content:attr(data-tip);
+  position:absolute;top:calc(100% + 8px);right:0;
+  background:rgba(20,20,20,.92);color:#fff;font-size:11px;font-weight:500;
+  padding:7px 10px;border-radius:6px;white-space:pre-line;max-width:220px;line-height:1.6;text-align:left;
+  opacity:0;pointer-events:none;transition:opacity .12s;z-index:20;
+  box-shadow:0 4px 12px rgba(0,0,0,.18);
+}
+.hover-tip:hover::after{opacity:1}
 #page-overview #snap-drawdown{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .kpi-card-v.card-hero{
   background:linear-gradient(160deg,#FF6B35,#F4511E);border:none;box-shadow:0 8px 20px -6px rgba(244,81,30,.4);
@@ -145,14 +157,17 @@ body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;backgr
   gap:16px;
   grid-template-areas:
     "btarget bkpi    bstruct"
-    "btarget bconc   .      "
+    "btarget bxirr1  bxirr2"
     "btarget btrend  btrend";
 }
 .bento-area-btarget{grid-area:btarget}
 .bento-area-bkpi{grid-area:bkpi}
 .bento-area-bstruct{grid-area:bstruct}
-.bento-area-bconc{grid-area:bconc}
+.bento-area-bxirr1{grid-area:bxirr1}
+.bento-area-bxirr2{grid-area:bxirr2}
 .bento-area-btrend{grid-area:btrend}
+.board-bento-grid-2col{display:grid;grid-template-columns:2fr 1fr;gap:16px;align-items:stretch}
+.board-stack-col{display:flex;flex-direction:column;gap:16px;min-width:0}
 .legend-stack{display:flex;flex-direction:column;align-items:center;gap:8px}
 .legend-stack .legend-rows{display:grid;grid-template-columns:max-content 1fr;column-gap:12px;row-gap:4px;width:100%}
 .legend-stack .leg-l{grid-column:1}
@@ -2650,8 +2665,24 @@ function _globalYearlyStats(){
 const TITLES={overview:'投资组合总览',holdings:'持仓明细',xirr:'收益分析',analysis:'收益分析',board:'一级组合看板',perpetual:'永续提取计划',data:'数据管理'};
 let chartL5,chartL3,chartMkt;
 let chartConcProd,chartConcL3,chartScatter,chartBenchmark;
-let chartBoardType,chartBoardMarket,chartBoardCcy;
+let chartBoardMarket,chartBoardCcy;
 let _bdDrillL1 = null;
+
+/* 结构分布"大类"tab的条形图渲染——原来这里操作的是chartBoardType(甜甜圈)，7-8个大类甜甜圈色块太多不好分辨，
+   改用跟总览"三级组合"同款的.bar-list。三处调用方(初始加载/重置/下钻)共用这一个函数，不再各写一份。 */
+function renderBoardCatBars(entries, total, colorFn, clickable){
+  const max = Math.max(...entries.map(([,v])=>v), 1e-9);
+  document.getElementById('bd-type-leg').innerHTML = entries.map(([k,v],i)=>{
+    const pct = total>0 ? v/total*100 : 0;
+    const color = colorFn(k,i);
+    const nameEsc = k.replace(/'/g,"\\'");
+    return `<div class="bar-row"${clickable?` onclick="drillBoardCat('${nameEsc}')" style="cursor:pointer"`:''}>
+      <div class="bar-row-label"><span class="leg-dot" style="background:${color}"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${k}</span></div>
+      <div class="bar-row-track"><div class="bar-row-fill" style="width:${(v/max*100).toFixed(1)}%;background:${color}"></div></div>
+      <div class="bar-row-pct">${pct.toFixed(2)}%</div>
+    </div>`;
+  }).join('');
+}
 
 function toggleYearlyStatsSort(){
   _yearlyStatsAsc = !_yearlyStatsAsc;
@@ -2668,22 +2699,7 @@ function drillBoardCat(catName){
   const typeEntries = Object.entries(typeMap).sort((a,b)=>b[1]-a[1]);
   const allCats = [...new Set(_groupProducts(_boardLevel, _boardGroup).map(p=>p.cat||getCatOf(p.type)||'其他'))].sort((a,b)=>catSortIndex(a)-catSortIndex(b)||a.localeCompare(b));
   const baseIdx = allCats.indexOf(catName);
-  chartBoardType.data.labels = typeEntries.map(([k])=>k);
-  chartBoardType.data.datasets[0].data = typeEntries.map(([,v])=>v);
-  chartBoardType.data.datasets[0].backgroundColor = typeEntries.map((_,i)=>PALETTE[(baseIdx*3+i+2)%10]);
-  chartBoardType.options.plugins.tooltip.callbacks.label = c=>` ${c.label}: ${grpTotal>0?(c.parsed/grpTotal*100).toFixed(2):'0'}% (组合内)`;
-  chartBoardType.options.onClick = ()=>{};
-  chartBoardType.update();
-  document.getElementById('bd-type-leg').innerHTML = typeEntries.map(([k,v],i)=>{
-    const color=PALETTE[(baseIdx*3+i+2)%10];
-    const pct=grpTotal>0?v/grpTotal*100:0;
-    return`<div class="leg"><div class="leg-l"><div class="leg-dot" style="background:${color}"></div><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${k}</span></div><div class="leg-v">${pct.toFixed(2)}%</div></div>`;
-  }).join('');
-  document.getElementById('fill-bd-type').style.gridTemplateRows=`repeat(${typeEntries.length||1},auto)`;
-  document.getElementById('bd-type-pct').innerHTML = typeEntries.map(([k,v])=>{
-    const pct=grpTotal>0?v/grpTotal*100:0;
-    return`<div style="font-size:12px;font-weight:700;height:20px;line-height:20px;white-space:nowrap">${pct.toFixed(2)}%</div>`;
-  }).join('');
+  renderBoardCatBars(typeEntries, grpTotal, (k,i)=>PALETTE[(baseIdx*3+i+2)%10], false);
   document.getElementById('bd-cat-drillname').textContent = catName;
   document.getElementById('bd-cat-breadcrumb').style.display = 'flex';
 }
@@ -2694,18 +2710,7 @@ function resetBoardCat(){
   const catMap = {};
   prods.forEach(p=>{const k=p.cat||getCatOf(p.type)||'其他';if(!catMap[k])catMap[k]=0;catMap[k]+=toCNY(p.amount,p.ccy)});
   const catEntries = Object.entries(catMap).sort((a,b)=>catSortIndex(a[0])-catSortIndex(b[0])||a[0].localeCompare(b[0]));
-  chartBoardType.data.labels = catEntries.map(([k])=>k);
-  chartBoardType.data.datasets[0].data = catEntries.map(([,v])=>v);
-  chartBoardType.data.datasets[0].backgroundColor = catEntries.map(([k],i)=>catClr(k,i));
-  chartBoardType.options.plugins.tooltip.callbacks.label = c=>` ${c.label}: ${grpTotal>0?(c.parsed/grpTotal*100).toFixed(2):'0'}%`;
-  chartBoardType.options.onClick = (e,els)=>{if(els.length)drillBoardCat(catEntries[els[0].index][0]);};
-  chartBoardType.update();
-  document.getElementById('bd-type-leg').innerHTML=catEntries.map(([k,v],i)=>`<div class="leg"><div class="leg-l"><div class="leg-dot" style="background:${catClr(k,i)}"></div><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${k}</span></div><div class="leg-v">${grpTotal>0?(v/grpTotal*100).toFixed(2):'0'}%</div></div>`).join('');
-  document.getElementById('fill-bd-type').style.gridTemplateRows=`repeat(${catEntries.length||1},auto)`;
-  document.getElementById('bd-type-pct').innerHTML = catEntries.map(([k,v])=>{
-    const pct=grpTotal>0?v/grpTotal*100:0;
-    return`<div style="font-size:12px;font-weight:700;height:20px;line-height:20px;white-space:nowrap">${pct.toFixed(2)}%</div>`;
-  }).join('');
+  renderBoardCatBars(catEntries, grpTotal, (k,i)=>catClr(k,i), true);
   document.getElementById('bd-cat-breadcrumb').style.display = 'none';
 }
 let _curAnalysisTab='xirr';
@@ -3817,34 +3822,11 @@ function renderOverview(){
   const cr5G = total>0 ? mergedExp.slice(0,5).reduce((s,[,v])=>s+v,0)/total*100 : 0;
   const top1 = mergedExp[0];
   const top1Pct = top1&&total>0 ? top1[1]/total*100 : 0;
-  document.getElementById('ov-conc-stats').innerHTML = mergedExp.length ? `
-    <div class="stat-box">
-      <div style="text-align:center;margin-bottom:6px">
-        <span class="stat-box-val" style="color:${hlG.color}">${(hhiG*100).toFixed(2)}</span>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
-        <span class="stat-box-lbl" style="margin-top:0">品种 HHI × 100</span>
-        <span style="font-size:11px;font-weight:600;color:${hlG.color}">${hlG.text}</span>
-      </div>
-    </div>
-    <div class="stat-box">
-      <div style="text-align:center;margin-bottom:6px">
-        <span class="stat-box-val">${cr5G.toFixed(2)}%</span>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
-        <span class="stat-box-lbl" style="margin-top:0;flex-shrink:0">CR5</span>
-        <span style="font-size:11px;color:var(--text3);word-break:break-all">${mergedExp.slice(0,5).map(([n])=>n).join('、')}</span>
-      </div>
-    </div>
-    <div class="stat-box">
-      <div style="text-align:center;margin-bottom:6px">
-        <span class="stat-box-val">${top1Pct.toFixed(2)}%</span>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
-        <span class="stat-box-lbl" style="margin-top:0;flex-shrink:0">最大单一品种</span>
-        <span style="font-size:11px;color:var(--text3)">${top1?top1[0]:'—'}</span>
-      </div>
-    </div>` : '<div class="empty" style="padding:20px;grid-column:1/-1">暂无持仓数据</div>';
+  document.getElementById('ov-conc-stats').innerHTML = mergedExp.length ?
+    statBoxHTML({val:(hhiG*100).toFixed(2), valColor:hlG.color, lbl:'品种 HHI × 100', tag:hlG})
+    + statBoxHTML({val:cr5G.toFixed(2)+'%', lbl:'CR5', note:mergedExp.slice(0,5).map(([n])=>n).join('、')})
+    + statBoxHTML({val:top1Pct.toFixed(2)+'%', lbl:'最大单一品种', note:top1?top1[0]:'—'})
+    : '<div class="empty" style="padding:20px;grid-column:1/-1">暂无持仓数据</div>';
   // l5 donut
   const l5m={};PRODUCTS.forEach(p=>{const k=p.l5||'未分配';if(!l5m[k])l5m[k]=0;l5m[k]+=toCNY(p.amount,p.ccy)});
   const l5k=Object.keys(l5m);
@@ -5458,6 +5440,23 @@ function _xirrCalcRowsHtml(cf){
   }).join('');
 }
 
+// 看板两个XIRR计算器的年份选择——按"级别_组合名"存一份，下次打开同一个组合直接用上次选的年份
+const LS_BOARD_XIRR_PREF = 'bd_xirr_pref';
+function boardXirrPrefGet(lv, groupName){
+  try{
+    const all = JSON.parse(localStorage.getItem(LS_BOARD_XIRR_PREF)||'{}');
+    return all[lv+'_'+groupName] || {};
+  }catch(e){ return {}; }
+}
+function boardXirrPrefSet(lv, groupName, patch){
+  try{
+    const all = JSON.parse(localStorage.getItem(LS_BOARD_XIRR_PREF)||'{}');
+    const key = lv+'_'+groupName;
+    all[key] = Object.assign({}, all[key], patch);
+    localStorage.setItem(LS_BOARD_XIRR_PREF, JSON.stringify(all));
+  }catch(e){ /* localStorage不可用就静默放弃，不影响本次计算结果的展示 */ }
+}
+
 // Re-render "从某年起至今" result when dropdown changes
 function updateBoardXirrFrom(){
   const lv = _boardLevel, g = _boardGroup;
@@ -5465,6 +5464,7 @@ function updateBoardXirrFrom(){
   const sel = document.getElementById('bd-xirr-from-year');
   if(!sel) return;
   const yr = parseInt(sel.value);
+  boardXirrPrefSet(lv, g, {fromYear: yr});
   const result = _groupXirrFromYear(lv, g, yr);
   if(!result){
     document.getElementById('bd-xirr-from-result').innerHTML = `<div class="empty" style="padding:24px;font-size:12px">需要 ${yr-1} 年末快照或 ${yr} 年起的成本流水记录</div>`;
@@ -5482,6 +5482,7 @@ function updateBoardXirrRange(){
   const selT = document.getElementById('bd-xirr-range-to');
   if(!selF||!selT) return;
   const fy = parseInt(selF.value), ty = parseInt(selT.value);
+  boardXirrPrefSet(lv, g, {rangeFrom: fy, rangeTo: ty});
   if(fy>ty){
     document.getElementById('bd-xirr-range-result').innerHTML=`<div class="empty" style="padding:24px;font-size:12px">结束年不能小于起始年</div>`;
     return;
@@ -5640,11 +5641,14 @@ function _renderGroupBoard(lv, groupName){
   const _costYrSet = new Set(cfs.filter(c=>c.type==='成本资金'||c.type==='分红').map(c=>new Date(c.date).getFullYear()));
   const _allYrs    = [...new Set([..._snapYrSet,..._costYrSet])].sort();
   const _fromNowYrs = _allYrs.length ? _allYrs : [new Date().getFullYear()];
-  const _defFromNow = _fromNowYrs[0];
   const _rangeFromYrs = _allYrs.filter(y=>_snapYrSet.has(y-1));
   const _rangeToYrs   = [...new Set([..._snapYrSet, new Date().getFullYear()])].sort();
-  const _defRangeFrom = _rangeFromYrs[0]||'';
-  const _defRangeTo   = _rangeToYrs.length ? _rangeToYrs[_rangeToYrs.length-1] : '';
+  // 记住用户上次为这个组合选的年份，下次打开直接用上次选的，而不是每次都回归默认值；
+  // 如果上次选的年份在当前组合里已经不存在了(比如切到了别的组合、或者数据变了)，退回原来"取第一个/最后一个"的默认逻辑
+  const _xirrPref = boardXirrPrefGet(lv, groupName);
+  const _defFromNow = (_xirrPref.fromYear!=null && _fromNowYrs.includes(_xirrPref.fromYear)) ? _xirrPref.fromYear : _fromNowYrs[0];
+  const _defRangeFrom = (_xirrPref.rangeFrom!=null && _rangeFromYrs.includes(_xirrPref.rangeFrom)) ? _xirrPref.rangeFrom : (_rangeFromYrs[0]||'');
+  const _defRangeTo   = (_xirrPref.rangeTo!=null && _rangeToYrs.includes(_xirrPref.rangeTo)) ? _xirrPref.rangeTo : (_rangeToYrs.length ? _rangeToYrs[_rangeToYrs.length-1] : '');
 
   // "目标 vs 实际" — L1: per-product bars; L2+: per-child-group bars
   let targetChartHtml = '';
@@ -5712,7 +5716,10 @@ function _renderGroupBoard(lv, groupName){
          "结构分布"暂时放第三列第1行，第三列第2行先空着，留给后面要加的内容；市值趋势不再整行铺满，只占中右两列宽度。 -->
     <div class="board-bento-grid-3col" style="margin-bottom:16px">
       <div class="board-section card-display bento-area-btarget" style="display:flex;flex-direction:column">
-        <div class="board-section-title"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>目标 vs 实际（组合内）</div>
+        <div class="board-section-title" style="justify-content:space-between">
+          <span style="display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>目标 vs 实际（组合内）</span>
+          <span id="bd-hhi-inline" style="font-size:12px;white-space:nowrap"></span>
+        </div>
         <div id="bd-target-chart" style="padding-top:4px;flex:1;min-height:0;overflow-y:auto">${targetChartHtml}</div>
       </div>
       <!-- KPI vertical card（跟总览总市值共用同一套 .card-hero 主角皮肤，内部数据排版暂时维持看板自己的样子，留到后面单独讨论） -->
@@ -5837,11 +5844,9 @@ function _renderGroupBoard(lv, groupName){
             <span id="bd-cat-drillname" style="font-weight:600;color:var(--text2)"></span>
             <span style="color:var(--text3)">内类型分布</span>
           </div>
-          <div class="legend-fill" id="fill-bd-type">
-            <div class="donut-wrap"><canvas id="c-bd-type"></canvas></div>
-            <div class="legend" id="bd-type-leg" data-dynamic=""></div>
-          </div>
-          <div id="bd-type-pct" style="display:none"></div>
+          <!-- 大类通常有7-8个，甜甜圈色块太多不好分辨、占比大小也不如长度直观，改用跟总览"三级组合"同一套 .bar-list 条形图组件；
+               币种/市场类别少(2-5个)，甜甜圈的"一眼构图"优势还在，维持圆环不变 -->
+          <div class="bar-list" id="bd-type-leg" data-dynamic=""></div>
         </div>
         <div id="bd-comp-ccy" style="display:none">
           <div class="legend-fill" id="fill-bd-ccy">
@@ -5858,10 +5863,51 @@ function _renderGroupBoard(lv, groupName){
           <div id="bd-market-pct" style="display:none"></div>
         </div>
       </div>
-      <div class="board-section card-display bento-area-bconc">
-        <div class="board-section-title"><svg viewBox="0 0 24 24"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>集中度分析（组合内）</div>
-        <div style="display:flex;flex-direction:column;gap:10px" id="bd-conc-stats"></div>
-      </div>
+      <!-- 集中度分析卡片已取消：CR5、最大单一品种跟"目标vs实际"里已经按大小排好序的持仓列表信息重复，
+           唯一有增量信息的HHI，挪到"目标vs实际"标题行右侧了 -->
+      <!-- 两个XIRR计算器：从Row4/5的堆叠窄栏挪过来，占KPI主角卡下面这一行，取代之前集中度分析的位置 -->
+<div class="board-section card-display bento-area-bxirr1" style="margin-bottom:0">
+          <div class="board-section-title" style="flex-wrap:wrap;gap:4px 8px;margin-bottom:14px">
+            <span style="display:flex;align-items:center;gap:6px">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              从某年起至今 XIRR
+            </span>
+            <span style="font-size:11px;font-weight:400;color:var(--text3)">以前一年末快照为起点（若有）</span>
+          </div>
+          ${_fromNowYrs.length
+            ? `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <span style="font-size:12px;color:var(--text2);white-space:nowrap">起始年份</span>
+                <select class="fi" id="bd-xirr-from-year" style="width:88px;padding:5px 8px;font-size:12px" onchange="updateBoardXirrFrom()">
+                  ${_fromNowYrs.map(y=>`<option value="${y}"${y===_defFromNow?' selected':''}>${y}</option>`).join('')}
+                </select>
+                <span style="font-size:12px;color:var(--text3)">年初 → 今日</span>
+              </div>
+              <div id="bd-xirr-from-result"></div>`
+            : `<div class="empty" style="padding:24px;font-size:12px">暂无流水或快照数据</div>`}
+        </div>
+        <div class="board-section card-display bento-area-bxirr2" style="margin-bottom:0">
+          <div class="board-section-title" style="flex-wrap:wrap;gap:4px 8px;margin-bottom:14px">
+            <span style="display:flex;align-items:center;gap:6px">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              自定义区间 XIRR
+            </span>
+            <span style="font-size:11px;font-weight:400;color:var(--text3)">起止用年末快照作为净值锚点</span>
+          </div>
+          ${_rangeFromYrs.length && _rangeToYrs.length
+            ? `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <select class="fi" id="bd-xirr-range-from" style="width:80px;padding:5px 6px;font-size:12px" onchange="updateBoardXirrRange()">
+                  ${_rangeFromYrs.map(y=>`<option value="${y}"${y===_defRangeFrom?' selected':''}>${y}</option>`).join('')}
+                </select>
+                <span style="font-size:12px;color:var(--text3)">年初</span>
+                <span style="font-size:12px;color:var(--text3)">—</span>
+                <select class="fi" id="bd-xirr-range-to" style="width:80px;padding:5px 6px;font-size:12px" onchange="updateBoardXirrRange()">
+                  ${_rangeToYrs.map(y=>`<option value="${y}"${y===_defRangeTo?' selected':''}>${y}</option>`).join('')}
+                </select>
+                <span style="font-size:12px;color:var(--text3)">年末</span>
+              </div>
+              <div id="bd-xirr-range-result"></div>`
+            : `<div class="empty" style="padding:24px;font-size:12px">需录入相邻年度的快照才能计算</div>`}
+        </div>
       <!-- 市值趋势：现在挤进右侧窄栏，不再是整行宽度，图表比之前紧凑一些（仍是跟总览页共用的 .card-display + .card-hero-soft 模板） -->
     <div class="card card-display card-hero-soft bento-area-btrend" style="margin-bottom:0">
       <div class="card-header">
@@ -5914,9 +5960,11 @@ function _renderGroupBoard(lv, groupName){
       </table></div>
     </div>
 
-    <!-- Row4: annual XIRR + recent cashflows -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-      <div class="board-section">
+    <!-- Row6: 逐年收益率(左列，变宽) + 最近现金流记录(右列，窄)
+         逐年收益率是5列财务表格，数字怕挤，给它更多宽度；现金流记录本来就是"两头固定宽度、中间省略号"的结构，
+         缩窄不会破——两个XIRR计算器已经挪到上面主角卡片那一行了，这里现在只剩现金流记录一项。 -->
+    <div class="board-bento-grid-2col" style="margin-bottom:16px">
+      <div class="board-section" style="display:flex;flex-direction:column">
         <div class="board-section-title" style="flex-wrap:wrap;gap:4px 8px">
           <span style="display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>逐年收益率</span>
           <span style="font-size:11px;font-weight:400;color:var(--text3)">期初为上年末快照次日 · 本年用今日市值临时收口</span>
@@ -5945,67 +5993,23 @@ function _renderGroupBoard(lv, groupName){
             </div>`
           : `<div class="empty" style="padding:30px">暂无流水或快照记录</div>`}
       </div>
-      <div class="board-section">
-        <div class="board-section-title"><svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg>最近现金流记录</div>
-        ${recentCF.length
-          ? recentCF.map(c=>{
-              const isCost=c.type==='成本资金';
-              const cny=costCNY(c);
-              return`<div class="cf-mini-row">
-                <span style="color:var(--text3);width:68px;flex-shrink:0">${c.date}</span>
-                <span style="font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.l1||c.product}</span>
-                <span class="pill ${c.type==='年度快照'?'pill-blue':cny>0?'pill-green':'pill-coral'}" style="font-size:9px">${c.type}</span>
-                <span style="font-weight:600;width:80px;text-align:right;flex-shrink:0" class="${isCost?(cny>0?'pos':'neg'):''}">${cny>0?'+':''}${fmtCNY(cny)}</span>
-              </div>`;
-            }).join('')
-          : '<div class="empty" style="padding:30px">暂无流水记录</div>'}
-      </div>
-    </div>
-
-    <!-- Row5: custom XIRR calculators -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-      <div class="board-section">
-        <div class="board-section-title" style="flex-wrap:wrap;gap:4px 8px;margin-bottom:14px">
-          <span style="display:flex;align-items:center;gap:6px">
-            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            从某年起至今 XIRR
-          </span>
-          <span style="font-size:11px;font-weight:400;color:var(--text3)">以前一年末快照为起点（若有）</span>
+      <div class="board-stack-col">
+        <div class="board-section" style="margin-bottom:0">
+          <div class="board-section-title"><svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg>最近现金流记录</div>
+          ${recentCF.length
+            ? recentCF.map(c=>{
+                const isCost=c.type==='成本资金';
+                const cny=costCNY(c);
+                return`<div class="cf-mini-row">
+                  <span style="color:var(--text3);width:68px;flex-shrink:0">${c.date}</span>
+                  <span style="font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.l1||c.product}</span>
+                  <span class="pill ${c.type==='年度快照'?'pill-blue':cny>0?'pill-green':'pill-coral'}" style="font-size:9px">${c.type}</span>
+                  <span style="font-weight:600;width:80px;text-align:right;flex-shrink:0" class="${isCost?(cny>0?'pos':'neg'):''}">${cny>0?'+':''}${fmtCNY(cny)}</span>
+                </div>`;
+              }).join('')
+            : '<div class="empty" style="padding:30px">暂无流水记录</div>'}
         </div>
-        ${_fromNowYrs.length
-          ? `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-              <span style="font-size:12px;color:var(--text2);white-space:nowrap">起始年份</span>
-              <select class="fi" id="bd-xirr-from-year" style="width:88px;padding:5px 8px;font-size:12px" onchange="updateBoardXirrFrom()">
-                ${_fromNowYrs.map(y=>`<option value="${y}"${y===_defFromNow?' selected':''}>${y}</option>`).join('')}
-              </select>
-              <span style="font-size:12px;color:var(--text3)">年初 → 今日</span>
-            </div>
-            <div id="bd-xirr-from-result"></div>`
-          : `<div class="empty" style="padding:24px;font-size:12px">暂无流水或快照数据</div>`}
-      </div>
-      <div class="board-section">
-        <div class="board-section-title" style="flex-wrap:wrap;gap:4px 8px;margin-bottom:14px">
-          <span style="display:flex;align-items:center;gap:6px">
-            <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            自定义区间 XIRR
-          </span>
-          <span style="font-size:11px;font-weight:400;color:var(--text3)">起止用年末快照作为净值锚点</span>
-        </div>
-        ${_rangeFromYrs.length && _rangeToYrs.length
-          ? `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-              <select class="fi" id="bd-xirr-range-from" style="width:80px;padding:5px 6px;font-size:12px" onchange="updateBoardXirrRange()">
-                ${_rangeFromYrs.map(y=>`<option value="${y}"${y===_defRangeFrom?' selected':''}>${y}</option>`).join('')}
-              </select>
-              <span style="font-size:12px;color:var(--text3)">年初</span>
-              <span style="font-size:12px;color:var(--text3)">—</span>
-              <select class="fi" id="bd-xirr-range-to" style="width:80px;padding:5px 6px;font-size:12px" onchange="updateBoardXirrRange()">
-                ${_rangeToYrs.map(y=>`<option value="${y}"${y===_defRangeTo?' selected':''}>${y}</option>`).join('')}
-              </select>
-              <span style="font-size:12px;color:var(--text3)">年末</span>
-            </div>
-            <div id="bd-xirr-range-result"></div>`
-          : `<div class="empty" style="padding:24px;font-size:12px">需录入相邻年度的快照才能计算</div>`}
-      </div>
+              </div>
     </div>
   `;
 
@@ -6016,18 +6020,9 @@ function _renderGroupBoard(lv, groupName){
 
   const sortedP = [...prods].sort((a,b)=>toCNY(b.amount,b.ccy)-toCNY(a.amount,a.ccy));
 
-  // Type donut
-  if(chartBoardType){chartBoardType.destroy();chartBoardType=null;}
+  // Type bars（改条形图后不再需要 Chart.js 实例，也不用管理 destroy）
   const catEntries = Object.entries(catMap).sort((a,b)=>catSortIndex(a[0])-catSortIndex(b[0])||a[0].localeCompare(b[0]));
-  chartBoardType = new Chart(document.getElementById('c-bd-type'),{
-    type:'doughnut',
-    data:{labels:catEntries.map(([k])=>k),datasets:[{data:catEntries.map(([,v])=>v),backgroundColor:catEntries.map(([k],i)=>catClr(k,i)),borderWidth:0,hoverOffset:6}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.label}: ${grpTotal>0?(c.parsed/grpTotal*100).toFixed(2):'0'}%`}}},
-      onClick(e,els){if(els.length){const cat=catEntries[els[0].index][0];drillBoardCat(cat);}}}
-  });
-  document.getElementById('bd-type-leg').innerHTML=catEntries.map(([k,v],i)=>`<div class="leg"><div class="leg-l"><div class="leg-dot" style="background:${catClr(k,i)}"></div><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${k}</span></div><div class="leg-v">${grpTotal>0?(v/grpTotal*100).toFixed(2):'0'}%</div></div>`).join('');
-  document.getElementById('fill-bd-type').style.gridTemplateRows=`repeat(${catEntries.length||1},auto)`;
-  document.getElementById('bd-type-pct').innerHTML=catEntries.map(([,v])=>`<div style="font-size:12px;font-weight:700;height:20px;line-height:20px;white-space:nowrap">${grpTotal>0?(v/grpTotal*100).toFixed(2):'0'}%</div>`).join('');
+  renderBoardCatBars(catEntries, grpTotal, (k,i)=>catClr(k,i), true);
 
   // Market donut
   if(chartBoardMarket){chartBoardMarket.destroy();chartBoardMarket=null;}
@@ -6055,24 +6050,19 @@ function _renderGroupBoard(lv, groupName){
   document.getElementById('fill-bd-ccy').style.gridTemplateRows=`repeat(${ccyEntries.length||1},auto)`;
   document.getElementById('bd-ccy-pct').innerHTML=ccyEntries.map(([,v])=>`<div style="font-size:12px;font-weight:700;height:20px;line-height:20px;white-space:nowrap">${grpTotal>0?(v.cny/grpTotal*100).toFixed(2):'0'}%</div>`).join('');
 
-  // Concentration
+  // HHI（原来"集中度分析"卡片里的CR5、最大单一品种，跟"目标vs实际"已经按大小排序的持仓列表信息重复，
+  // 已经取消那张卡片；HHI是唯一有增量信息的，挪到"目标vs实际"标题行右侧内联展示）
   const hhi=calcHHI(prods.map(p=>toCNY(p.amount,p.ccy)));
-  const sortedByVal=[...prods].sort((a,b)=>toCNY(b.amount,b.ccy)-toCNY(a.amount,a.ccy));
-  const cr3=grpTotal>0?sortedByVal.slice(0,3).reduce((s,p)=>s+toCNY(p.amount,p.ccy),0)/grpTotal*100:0;
   const hl=hhiLabel(hhi);
-  document.getElementById('bd-conc-stats').innerHTML=`
-    <div style="display:flex;align-items:baseline;justify-content:space-between;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs)">
-      <div><div style="font-size:11px;color:var(--text3)">HHI × 100</div><div style="font-size:11px;color:${hl.color};font-weight:600;margin-top:1px">${hl.text}</div></div>
-      <div style="font-size:20px;font-weight:700;color:${hl.color}">${(hhi*100).toFixed(2)}</div>
-    </div>
-    <div style="display:flex;align-items:baseline;justify-content:space-between;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs)">
-      <div><div style="font-size:11px;color:var(--text3)">CR3 前3品种</div><div style="font-size:11px;color:var(--text3);margin-top:1px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sortedByVal.slice(0,3).map(p=>p.name).join('、')}</div></div>
-      <div style="font-size:20px;font-weight:700;flex-shrink:0;margin-left:8px">${cr3.toFixed(2)}%</div>
-    </div>
-    <div style="display:flex;align-items:baseline;justify-content:space-between;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs)">
-      <div><div style="font-size:11px;color:var(--text3)">品种数</div><div style="font-size:11px;color:var(--text3);margin-top:1px">${Object.keys(catMap).length} 个大类</div></div>
-      <div style="font-size:20px;font-weight:700">${prods.length}</div>
-    </div>`;
+  const hhiEl=document.getElementById('bd-hhi-inline');
+  if(hhiEl){
+    if(prods.length){
+      const tip = `品种 HHI×100 = Σ(单品种占比²)×100，反映持仓集中程度\n数值越高越集中：>25 高度集中 · 15~25 中度集中 · <15 较分散\n当前 ${(hhi*100).toFixed(2)} → ${hl.text}`;
+      hhiEl.innerHTML = `<span class="hover-tip" data-tip="${tip}" style="color:${hl.color};font-weight:700">${(hhi*100).toFixed(2)} ${hl.text}</span>`;
+    } else {
+      hhiEl.innerHTML = '';
+    }
+  }
 }
 
 // Legacy alias — kept so any existing call to _renderL1Board(l1) still works
@@ -6262,6 +6252,44 @@ function hhiLabel(hhi){
   if(hhi>0.15)return{text:'中度集中',color:'var(--amber)'};
   return{text:'较分散',color:'var(--green)'};
 }
+/* 集中度统计卡片的共享模板：总览"全局集中度"、看板"集中度分析"、持仓集中度分析页三处共用同一个函数，
+   不再各自复制一份 stat-box 标签——以前分析页那份因为是独立复制的，CR5 品种名被单独加了
+   overflow:hidden;text-overflow:ellipsis 截断，跟总览/看板不一致；现在改成同一个函数生成，
+   默认就是完整换行显示（word-break:break-all），三处不可能再走岔。
+   note 默认完整显示；传 noteTruncate:true 才会单行省略号截断（目前没有地方需要截断了，保留这个开关只是以防万一）。 */
+function statBoxHTML({val, valColor, lbl, tag, note, noteTruncate}){
+  const noteHtml = note!=null ? `<span style="font-size:11px;color:var(--text3);${noteTruncate?'overflow:hidden;text-overflow:ellipsis;white-space:nowrap':'word-break:break-all'}">${note}</span>` : '';
+  const tagHtml = tag ? `<span style="font-size:11px;font-weight:600;color:${tag.color}">${tag.text}</span>` : '';
+  return `
+    <div class="stat-box">
+      <div style="text-align:center;margin-bottom:6px">
+        <span class="stat-box-val"${valColor?` style="color:${valColor}"`:''}>${val}</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap${noteTruncate?';overflow:hidden':''}">
+        <span class="stat-box-lbl" style="margin-top:0;flex-shrink:0">${lbl}</span>${tagHtml}${noteHtml}
+      </div>
+    </div>`;
+}
+// 集中度统计格子：总览"全局集中度"/看板"集中度分析"/分析页"持仓集中度分析"三处共用，
+// 不再各写一份模板字符串——CR5这类展示品种名单的格子统一用word-break:break-all完整显示，不截断。
+function renderStatBox({val,valColor,label,extraText,extraColor,wrap}){
+  return `<div class="stat-box">
+      <div style="text-align:center;margin-bottom:6px">
+        <span class="stat-box-val"${valColor?` style="color:${valColor}"`:''}>${val}</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
+        <span class="stat-box-lbl" style="margin-top:0${wrap?';flex-shrink:0':''}">${label}</span>
+        ${extraText?`<span style="font-size:11px;${extraColor?`font-weight:600;color:${extraColor}`:'color:var(--text3)'}${wrap?';word-break:break-all':''}">${extraText}</span>`:''}
+      </div>
+    </div>`;
+}
+function renderConcStatBoxes(containerId, hhi, cr5Pct, cr5Names, thirdBoxHtml){
+  const hl=hhiLabel(hhi);
+  const html = renderStatBox({val:(hhi*100).toFixed(2), valColor:hl.color, label:'品种 HHI × 100', extraText:hl.text, extraColor:hl.color})
+    + renderStatBox({val:cr5Pct.toFixed(2)+'%', label:'CR5', extraText:cr5Names.join('、'), wrap:true})
+    + thirdBoxHtml;
+  document.getElementById(containerId).innerHTML = html;
+}
 
 function renderConcentration(){
   const total=totalCNY();
@@ -6301,28 +6329,10 @@ function renderConcentration(){
   const catEntries=Object.entries(catm).sort((a,b)=>catSortIndex(a[0])-catSortIndex(b[0])||a[0].localeCompare(b[0]));
 
   const hl=hhiLabel(hhiProd);
-  document.getElementById('conc-stats').innerHTML=`
-    <div class="stat-box">
-      <div class="stat-box-val" style="color:${hl.color}">${(hhiProd*100).toFixed(2)}</div>
-      <div style="display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;margin-top:4px">
-        <span class="stat-box-lbl" style="margin-top:0">品种 HHI × 100</span>
-        <span style="font-size:11px;font-weight:600;color:${hl.color}">${hl.text}</span>
-      </div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-box-val">${cr5.toFixed(2)}%</div>
-      <div style="display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;margin-top:4px;overflow:hidden">
-        <span class="stat-box-lbl" style="margin-top:0;flex-shrink:0">CR5</span>
-        <span style="font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${merged.slice(0,5).map(([n])=>n).join('、')}</span>
-      </div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-box-val">${cr10.toFixed(2)}%</div>
-      <div style="display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;margin-top:4px;overflow:hidden">
-        <span class="stat-box-lbl" style="margin-top:0;flex-shrink:0">CR10</span>
-        <span style="font-size:11px;color:var(--text3)">${merged.length}个品种 · ${Object.keys(l3m).length}个三级</span>
-      </div>
-    </div>`;
+  document.getElementById('conc-stats').innerHTML=
+    statBoxHTML({val:(hhiProd*100).toFixed(2), valColor:hl.color, lbl:'品种 HHI × 100', tag:hl})
+    + statBoxHTML({val:cr5.toFixed(2)+'%', lbl:'CR5', note:merged.slice(0,5).map(([n])=>n).join('、')})
+    + statBoxHTML({val:cr10.toFixed(2)+'%', lbl:'CR10', note:`${merged.length}个品种 · ${Object.keys(l3m).length}个三级`});
 
   // 品种集中度 bar chart
   const top15=merged.slice(0,15);
