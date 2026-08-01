@@ -1188,6 +1188,8 @@
   .media-card-body { padding: 8px 10px 10px; }
   .media-card-title { font-size: 12.5px; font-weight: 600; color: var(--text); line-height: 1.3; }
   .media-card-meta { font-size: 10.5px; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; gap: 5px; }
+  .media-card-segments { margin-top: 4px; }
+  .media-card-segment { font-size: 10px; color: var(--text-muted); line-height: 1.5; }
   .media-card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
   .media-card-tag { font-size: 9.5px; padding: 1px 7px; border-radius: 20px; background: var(--surface2); color: var(--text-dim); }
 
@@ -1298,6 +1300,10 @@
     text-align: center;
   }
   .timeline-bar.ongoing { background-image: linear-gradient(to right, currentColor 85%, transparent); }
+  .timeline-dot {
+    position: absolute; width: 10px; height: 10px; border-radius: 50%;
+    cursor: pointer; box-shadow: var(--shadow-xs); transform: translateX(-50%);
+  }
 
   /* 跨度事件条的自定义悬浮提示框，见 showBarTooltip()。用 margin 而不
      是敲几个空格字符来做标题和备注之间的间距——HTML 里连续空格默认会
@@ -2331,7 +2337,7 @@ function getDefaultData() {
     pinnedTags: [],   // 常用内容标签（#标签），手动排序，用于快捷插入按钮
     spanEvents: [],   // 跨度事件：{ id, category, title, start, end(null=进行中), note, displayMode }
     customCategories: [], // 自定义跨度事件类别：[{ id, label, color }]
-    categoryOrder: ['travel', 'game', 'tv'], // 时间线页面里类别行的显示顺序，可拖拽调整
+    categoryOrder: ['travel', 'game', 'tv', 'movie'], // 时间线页面里类别行的显示顺序，可拖拽调整
     categoryColors: {}, // 类别颜色覆盖：{ categoryId: '#hex' }，内置和自定义类别都可改
     categoryOverrides: {}, // 类别名称/图标覆盖：{ categoryId: { icon, label } }，内置和自定义类别都可改
     dayTagDefs: null, // 日期标签类型：[{ id, icon, label }]，null 表示还没初始化过默认值
@@ -2380,7 +2386,7 @@ function migrateData() {
   if (!appData.pinnedTags) appData.pinnedTags = [];
   if (!appData.spanEvents) appData.spanEvents = [];
   if (!appData.customCategories) appData.customCategories = [];
-  if (!appData.categoryOrder) appData.categoryOrder = ['travel', 'game', 'tv'];
+  if (!appData.categoryOrder) appData.categoryOrder = ['travel', 'game', 'tv', 'movie'];
   if (!appData.categoryColors) appData.categoryColors = {};
   if (!appData.tagRowColors) appData.tagRowColors = {};
   if (!appData.categoryOverrides) appData.categoryOverrides = {};
@@ -2552,16 +2558,20 @@ function renameContentTag(oldTag, newTag) {
 var SPAN_CATEGORIES = {
   travel: { label: '旅行',   icon: '🧳', color: '#0891b2' },
   game:   { label: '游戏',   icon: '🎮', color: '#4f46e5' },
-  tv:     { label: '电视剧', icon: '📺', color: '#e11d48' }
+  tv:     { label: '电视剧', icon: '📺', color: '#e11d48' },
+  movie:  { label: '电影',   icon: '🎬', color: '#059669' }
 };
-var SPAN_CATEGORY_ORDER = ['travel', 'game', 'tv'];
+var SPAN_CATEGORY_ORDER = ['travel', 'game', 'tv', 'movie'];
 var CUSTOM_CATEGORY_ICON = '📌';
 
-// ── "媒体"类别：按标签文字识别（电视剧/书籍/小说），而不是写死 ID，
-//    这样无论是内置的 tv，还是你自己用"新建类别"建的书籍/小说，
+// ── "媒体"类别：按标签文字识别（电影/电视剧/书籍/小说），而不是写死 ID，
+//    这样无论是内置的 tv/movie，还是你自己用"新建类别"建的书籍/小说，
 //    都能被认出来，不会跟你已有的自定义类别产生重复项。
-var MEDIA_CATEGORY_LABELS = ['电视剧', '书籍', '小说'];
+var MEDIA_CATEGORY_LABELS = ['电影', '电视剧', '书籍', '小说'];
 function isMediaCategory(catId) { return MEDIA_CATEGORY_LABELS.indexOf(getCategoryMeta(catId).label) !== -1; }
+// 电影基本一两天就看完，甘特图里画成跟旅行/电视剧一样的长条，视觉分量
+// 跟实际时长完全不成比例，所以电影这个类别改成画一个小圆点。
+function isDotCategory(catId) { return getCategoryMeta(catId).label === '电影'; }
 function getMediaCategoryIds() { return getCategoryOrder().filter(isMediaCategory); }
 
 function getCategoryMeta(catId) {
@@ -3283,11 +3293,11 @@ function getMediaEvents() {
 
 // 按年份分组：年份顺序按 order 升/降排列，年份内部固定按日期升序
 // （1月→12月），这条内部顺序不受 order 影响，两个视图共享这个规则。
-function buildMediaYearGroups(events, order) {
+function buildMediaYearGroups(items, order) {
   var groups = {};
-  events.forEach(function (ev) {
-    var y = ev.start.slice(0, 4);
-    (groups[y] = groups[y] || []).push(ev);
+  items.forEach(function (item) {
+    var y = item.start.slice(0, 4);
+    (groups[y] = groups[y] || []).push(item);
   });
   var years = Object.keys(groups).sort(function (a, b) {
     return order === 'asc' ? (a < b ? -1 : 1) : (a > b ? -1 : 1);
@@ -3296,6 +3306,33 @@ function buildMediaYearGroups(events, order) {
     groups[y].sort(function (a, b) { return a.start < b.start ? -1 : (a.start > b.start ? 1 : 0); });
   });
   return { years: years, groups: groups };
+}
+
+// 把"同类别 + 同标题"的多条记录合并成一张卡片。合并只发生在这里，
+// 是纯展示层的分组：appData.spanEvents 本身还是一条条分开存的，
+// id、起止时间都不变，时间线甘特图照旧读原始数据，不受影响。
+function clusterMediaEvents(events) {
+  var map = {};
+  events.forEach(function (ev) {
+    var key = ev.category + '||' + ev.title.trim().toLowerCase();
+    (map[key] = map[key] || []).push(ev);
+  });
+  return Object.keys(map).map(function (key) {
+    var segments = map[key].slice().sort(function (a, b) { return a.start < b.start ? -1 : (a.start > b.start ? 1 : 0); });
+    var rep = segments[segments.length - 1]; // 最新一段，代表评分/封面/地区
+    var tagSet = {};
+    segments.forEach(function (ev) { (ev.tags || []).forEach(function (t) { if (t) tagSet[t] = true; }); });
+    return {
+      category: rep.category,
+      title: rep.title,
+      start: rep.start, // 决定这张卡片归到哪一年、年内怎么排序
+      rating: rep.rating,
+      coverUrl: rep.coverUrl,
+      region: rep.region,
+      tags: Object.keys(tagSet),
+      segments: segments
+    };
+  });
 }
 
 function mediaDateRangeCompact(ev) {
@@ -3322,31 +3359,87 @@ function renderMediaBody() {
     body.innerHTML = '<div class="media-empty">还没有记录，点右上角"+ 添加"开始记吧</div>';
     return;
   }
-  var grouped = buildMediaYearGroups(events, getCurrentMediaYearOrder());
+  var clusters = clusterMediaEvents(events);
+  var grouped = buildMediaYearGroups(clusters, getCurrentMediaYearOrder());
   body.innerHTML = renderMediaGridHtml(grouped);
 }
 
+// 渲染时临时建一份"卡片 → 这张卡片背后有哪几段"的索引，供选段弹窗查用
+var mediaClusterIndex = {};
+
 function renderMediaGridHtml(grouped) {
+  mediaClusterIndex = {};
   var html = '';
   grouped.years.forEach(function (year) {
     html += '<div class="media-year-divider">' + year + '</div><div class="media-grid">';
-    grouped.groups[year].forEach(function (ev) {
-      var meta = getCategoryMeta(ev.category);
-      var cover = ev.coverUrl
-        ? '<img src="' + escHtml(ev.coverUrl) + '" alt="">'
+    grouped.groups[year].forEach(function (cluster) {
+      var meta = getCategoryMeta(cluster.category);
+      var cover = cluster.coverUrl
+        ? '<img src="' + escHtml(cluster.coverUrl) + '" alt="">'
         : '<span>' + meta.icon + '</span>';
-      html += '<div class="media-card" style="border-left-color:' + meta.color + ';" onclick="showSpanEventModal(\'' + escJsStr(ev.id) + '\')">' +
+
+      var dateBlockHtml;
+      var clickHandler;
+      if (cluster.segments.length > 1) {
+        var clusterKey = 'mc' + Object.keys(mediaClusterIndex).length;
+        mediaClusterIndex[clusterKey] = cluster.segments;
+        dateBlockHtml = '<div class="media-card-segments">' + cluster.segments.map(function (seg, i) {
+          return '<div class="media-card-segment">第' + (i + 1) + '次 · ' + mediaDateRangeCompact(seg) + '</div>';
+        }).join('') + '</div>' + mediaRatingDotsHtml(cluster.rating);
+        clickHandler = 'showMediaSegmentPicker(\'' + clusterKey + '\',\'' + escJsStr(cluster.title) + '\')';
+      } else {
+        dateBlockHtml = '<div class="media-card-meta"><span>' + mediaDateRangeCompact(cluster.segments[0]) + '</span>' + mediaRatingDotsHtml(cluster.rating) + '</div>';
+        clickHandler = 'showSpanEventModal(\'' + escJsStr(cluster.segments[0].id) + '\')';
+      }
+
+      html += '<div class="media-card" style="border-left-color:' + meta.color + ';" onclick="' + clickHandler + '">' +
         '<div class="media-card-cover" style="background:' + meta.color + '22;color:' + meta.color + ';">' + cover + '</div>' +
         '<div class="media-card-body">' +
-          '<div class="media-card-title">' + escHtml(ev.title) + '</div>' +
-          '<div class="media-card-meta"><span>' + mediaDateRangeCompact(ev) + '</span>' + mediaRatingDotsHtml(ev.rating) + '</div>' +
-          (ev.tags && ev.tags.length ? '<div class="media-card-tags">' + ev.tags.map(function (t) { return '<span class="media-card-tag">' + escHtml(t) + '</span>'; }).join('') + '</div>' : '') +
+          '<div class="media-card-title">' + escHtml(cluster.title) + '</div>' +
+          dateBlockHtml +
+          (cluster.tags.length ? '<div class="media-card-tags">' + cluster.tags.map(function (t) { return '<span class="media-card-tag">' + escHtml(t) + '</span>'; }).join('') + '</div>' : '') +
         '</div>' +
       '</div>';
     });
     html += '</div>';
   });
   return html;
+}
+
+// 合并卡片背后有多段记录时，点击先弹出选哪一段，再进对应那条的编辑弹窗
+function showMediaSegmentPicker(clusterKey, title) {
+  var segments = mediaClusterIndex[clusterKey];
+  if (!segments || !segments.length) return;
+
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.addEventListener('click', function () { overlay.remove(); });
+
+  var sheet = document.createElement('div');
+  sheet.className = 'modal-sheet';
+  sheet.style.maxWidth = '340px';
+  sheet.addEventListener('click', function (e) { e.stopPropagation(); });
+
+  var h = document.createElement('h3');
+  h.textContent = '《' + title + '》· 选择要编辑的一段';
+  sheet.appendChild(h);
+
+  segments.forEach(function (seg, i) {
+    var btn = document.createElement('button');
+    btn.className = 'mbtn mbtn-outline';
+    btn.style.cssText = 'width:100%;text-align:left;margin-bottom:8px;';
+    btn.textContent = '第' + (i + 1) + '次 · ' + mediaDateRangeCompact(seg);
+    btn.onclick = function () {
+      showSpanEventModal(seg.id);
+      // 新弹窗自己有 0.2s 淡入动画，这段时间里旧的选择框先别撤，
+      // 不然背景蒙层会有一瞬间"变淡又变浓"，看着像闪了一下。
+      setTimeout(function () { overlay.remove(); }, 220);
+    };
+    sheet.appendChild(btn);
+  });
+
+  overlay.appendChild(sheet);
+  document.body.appendChild(overlay);
 }
 
 function dateRatio(dateStr, s, e) {
@@ -3449,15 +3542,20 @@ function renderCategoryRowHtml(cat, events, bounds, s, e) {
         var left = leftRatio * 100;
         var width = Math.max((rightRatio - leftRatio) * 100, 1.5);
         var ongoing = !ev.end;
-        var rangeText = ev.start + ' ~ ' + (ev.end || '进行中');
+        var rangeText = (ev.end === ev.start) ? ev.start : (ev.start + ' ~ ' + (ev.end || '进行中'));
         // 原生 title="" 只能显示纯文本、没法让备注部分单独斜体，所以这里
         // 改成自己做一个悬浮提示框（鼠标移入时创建，移出时移除），备注只
         // 取第一行，太长的备注也不适合塞进一个悬浮框里。
         var noteSnippet = (ev.note || '').split(/\n/)[0].trim();
-        html += '<div class="timeline-bar' + (ongoing ? ' ongoing' : '') + '" style="left:' + left + '%;width:' + width + '%;top:' + (8 + rowIdx * 32) + 'px;background:' + meta.color + ';" ' +
-          'onclick="showSpanEventModal(\'' + ev.id + '\')" ' +
+        var hoverAttrs = 'onclick="showSpanEventModal(\'' + ev.id + '\')" ' +
           'onmouseenter="showBarTooltip(event,\'' + escJsStr(ev.title) + '\',\'' + escJsStr(noteSnippet) + '\',\'' + escJsStr(rangeText) + '\')" ' +
-          'onmouseleave="hideBarTooltip()"><span class="timeline-bar-label">' + escHtml(ev.title) + '</span></div>';
+          'onmouseleave="hideBarTooltip()"';
+        if (isDotCategory(cat)) {
+          var dotCenter = (leftRatio + rightRatio) / 2 * 100;
+          html += '<div class="timeline-dot" style="left:' + dotCenter + '%;top:' + (8 + rowIdx * 32 + 7) + 'px;background:' + meta.color + ';" ' + hoverAttrs + '></div>';
+        } else {
+          html += '<div class="timeline-bar' + (ongoing ? ' ongoing' : '') + '" style="left:' + left + '%;width:' + width + '%;top:' + (8 + rowIdx * 32) + 'px;background:' + meta.color + ';" ' + hoverAttrs + '><span class="timeline-bar-label">' + escHtml(ev.title) + '</span></div>';
+        }
       });
     });
     html += '</div>';
