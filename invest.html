@@ -164,7 +164,7 @@ body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;backgr
 .bento-area-bxirr1{grid-area:bxirr1}
 .bento-area-bxirr2{grid-area:bxirr2}
 .bento-area-btrend{grid-area:btrend}
-.board-bento-grid-2col{display:grid;grid-template-columns:2fr 1fr;gap:16px;align-items:stretch}
+.board-bento-grid-2col{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch}
 .board-stack-col{display:flex;flex-direction:column;gap:16px;min-width:0}
 .legend-stack{display:flex;flex-direction:column;align-items:center;gap:8px}
 .legend-stack .legend-rows{display:grid;grid-template-columns:max-content 1fr;column-gap:12px;row-gap:4px;width:100%}
@@ -177,7 +177,7 @@ body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;backgr
 .bar-row-track{flex:1;height:7px;background:var(--surface2);border-radius:4px;overflow:visible;min-width:0;position:relative}
 .bar-row-fill{height:100%;border-radius:4px}
 .bar-row-target{position:absolute;top:-4px;width:2px;height:15px;border-radius:1px;background:var(--red)}
-.bar-row-pct{width:50px;flex-shrink:0;text-align:right;font-size:12px;font-weight:700;color:var(--text)}
+.bar-row-pct{width:145px;flex-shrink:0;text-align:right;font-size:12px;font-weight:700;color:var(--text);white-space:nowrap}
 .legend-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}
 .leg{display:contents;font-size:12px}
 .leg-l{display:flex;align-items:center;gap:6px;color:var(--text2);overflow:hidden}
@@ -2684,7 +2684,7 @@ function renderBoardCatBars(entries, total, colorFn, clickable, targetFn){
     return `<div class="bar-row"${clickable?` onclick="drillBoardCat('${nameEsc}')" style="cursor:pointer"`:''}>
       <div class="bar-row-label"><span class="leg-dot" style="background:${color}"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.k}</span></div>
       <div class="bar-row-track"><div class="bar-row-fill" style="width:${(d.pct/globalMax*100).toFixed(1)}%;background:${color}"></div>${d.target!=null?`<div class="bar-row-target" style="left:${(d.target/globalMax*100).toFixed(1)}%"></div>`:''}</div>
-      <div class="bar-row-pct">${d.pct.toFixed(2)}%${d.target!=null?`<span style="color:var(--text3);font-weight:400"> / ${d.target.toFixed(2)}%</span>`:''}</div>
+      <div class="bar-row-pct">${d.pct.toFixed(2)}%${d.target!=null?`<span style="color:var(--text3);font-weight:400;font-size:11px"> / ${d.target.toFixed(2)}%</span>`:''}</div>
     </div>`;
   }).join('');
 }
@@ -5671,7 +5671,7 @@ function _renderGroupBoard(lv, groupName){
   prods.forEach(p=>{const k=p.cat||getCatOf(p.type)||'其他';catMap[k]=(catMap[k]||0)+toCNY(p.amount,p.ccy);});
 
   // Recent cash flows
-  const recentCF = cfs.sort((a,b)=>a.date.localeCompare(b.date)).slice(-12);
+  const recentCF = cfs.filter(c=>c.type!=='年度快照').sort((a,b)=>a.date.localeCompare(b.date)).slice(-12);
 
   // XIRR flow rows —— 有外币时按流水各自的原始币种显示（不换算成人民币），人民币流水仍显示人民币
   const xirrFlowRows = cfs.filter(c=>c.type==='成本资金'||c.type==='分红'||c.type==='共管转让')
