@@ -1150,6 +1150,13 @@
   .timeline-body { flex: 1; overflow: auto; padding: 22px; }
 
   /* ── 媒体视图 ─────────────────────────────────────────── */
+  .media-search-row { padding: 12px 22px 0; background: var(--surface); flex-shrink: 0; }
+  .media-search-input {
+    width: 100%; box-sizing: border-box; font-family: inherit; font-size: 13px;
+    padding: 9px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text);
+  }
+  .media-search-input:focus { outline: none; border-color: var(--blue-bd); background: var(--surface); }
   .media-toolbar {
     display: flex; align-items: flex-start; justify-content: space-between;
     gap: 12px; padding: 12px 22px; background: var(--surface);
@@ -1177,21 +1184,30 @@
 
   .media-empty { text-align: center; color: var(--text-muted); font-size: 13px; padding: 60px 20px; }
 
-  .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+  .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 12px; }
   .media-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; cursor: pointer; }
   .media-card:hover { border-color: var(--text-muted); }
   .media-card-cover {
-    height: 100px; display: flex; align-items: center; justify-content: center;
-    font-size: 24px;
+    height: 215px; display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
   }
   .media-card-cover img { width: 100%; height: 100%; object-fit: cover; }
-  .media-card-body { padding: 8px 10px 10px; }
-  .media-card-title { font-size: 12.5px; font-weight: 600; color: var(--text); line-height: 1.3; }
-  .media-card-meta { font-size: 10.5px; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; gap: 5px; }
-  .media-card-segments { margin-top: 4px; }
-  .media-card-segment { font-size: 10px; color: var(--text-muted); line-height: 1.5; }
-  .media-card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-  .media-card-tag { font-size: 9.5px; padding: 1px 7px; border-radius: 20px; background: var(--surface2); color: var(--text-dim); }
+  /* 固定四行：标题 / 第1次日期+评分 / 第2次日期(没有就空着) / 标签 */
+  .media-card-body { padding: 8px 10px; height: 100px; box-sizing: border-box; overflow: hidden; display: flex; flex-direction: column; gap: 4px; }
+  .media-card-title {
+    font-size: 13px; font-weight: 600; color: var(--text); line-height: 17px; height: 17px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .media-card-title.is-latin { font-style: italic; }
+  .media-card-line {
+    font-size: 10.5px; color: var(--text-dim); height: 15px; line-height: 15px;
+    display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden;
+  }
+  .media-card-line-empty { visibility: hidden; }
+  .media-card-ord { flex-shrink: 0; min-width: 20px; color: var(--text-muted); }
+  .media-card-date { white-space: nowrap; }
+  .media-card-tags { display: flex; flex-wrap: nowrap; overflow: hidden; gap: 4px; height: 18px; }
+  .media-card-tag { font-size: 9.5px; padding: 2px 7px; border-radius: 20px; background: var(--surface2); color: var(--text-dim); white-space: nowrap; flex-shrink: 0; }
 
   .timeline-axis-row {
     display: flex;
@@ -2193,6 +2209,9 @@
     <div class="timeline-title">媒体</div>
     <button class="timeline-add-btn" style="margin-left:auto;" onclick="addMediaEvent()">+ 添加</button>
   </div>
+  <div class="media-search-row">
+    <input type="text" class="media-search-input" id="mediaSearchInput" placeholder="搜索标题 / 标签 / 地区 / 备注" oninput="setMediaSearch(this.value)">
+  </div>
   <div class="media-toolbar">
     <div class="media-toolbar-left">
       <button type="button" class="media-order-btn" id="mediaYearOrderBtn" onclick="toggleMediaYearOrder()">年份 新→旧</button>
@@ -3162,6 +3181,7 @@ function closeTimelineView() {
 var mediaActiveFilter = 'all'; // 'all' | 具体类别id
 var mediaRegionFilter = 'all'; // 'all' | 你自己填过的某个地区文字
 var mediaTagFilter = null; // null(全部) | 你自己填过的某个标签文字
+var mediaSearchQuery = ''; // 标题/标签/地区/备注 关键词搜索
 var mediaYearOrder = 'desc'; // 年份顺序，年份内部固定按日期升序（1月→12月）
 
 function openMediaView() {
@@ -3288,7 +3308,21 @@ function getMediaEvents() {
   var list = getMediaEventsByCategory();
   if (mediaRegionFilter !== 'all') list = list.filter(function (ev) { return ev.region === mediaRegionFilter; });
   if (mediaTagFilter) list = list.filter(function (ev) { return ev.tags && ev.tags.indexOf(mediaTagFilter) !== -1; });
+  if (mediaSearchQuery) {
+    var q = mediaSearchQuery.toLowerCase();
+    list = list.filter(function (ev) {
+      if ((ev.title || '').toLowerCase().indexOf(q) !== -1) return true;
+      if ((ev.note || '').toLowerCase().indexOf(q) !== -1) return true;
+      if ((ev.region || '').toLowerCase().indexOf(q) !== -1) return true;
+      return (ev.tags || []).some(function (t) { return t.toLowerCase().indexOf(q) !== -1; });
+    });
+  }
   return list;
+}
+
+function setMediaSearch(value) {
+  mediaSearchQuery = value.trim();
+  renderMediaBody();
 }
 
 // 按年份分组：年份顺序按 order 升/降排列，年份内部固定按日期升序
@@ -3314,7 +3348,8 @@ function buildMediaYearGroups(items, order) {
 function clusterMediaEvents(events) {
   var map = {};
   events.forEach(function (ev) {
-    var key = ev.category + '||' + ev.title.trim().toLowerCase();
+    // 同类别 + 同标题 + 同年份才合并；跨年的算不同的一次记忆，各自成卡
+    var key = ev.category + '||' + ev.title.trim().toLowerCase() + '||' + ev.start.slice(0, 4);
     (map[key] = map[key] || []).push(ev);
   });
   return Object.keys(map).map(function (key) {
@@ -3338,7 +3373,13 @@ function clusterMediaEvents(events) {
 function mediaDateRangeCompact(ev) {
   function compact(d) { var p = d.split('-'); return parseInt(p[1], 10) + '/' + parseInt(p[2], 10); }
   if (!ev.end || ev.end === ev.start) return compact(ev.start);
-  return compact(ev.start) + '–' + compact(ev.end);
+  return compact(ev.start) + ' - ' + compact(ev.end);
+}
+
+function mediaOrdinal(n) {
+  var suffixes = ['th', 'st', 'nd', 'rd'];
+  var v = n % 100;
+  return n + (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]);
 }
 
 function mediaRatingDotsHtml(rating) {
@@ -3356,7 +3397,10 @@ function renderMediaBody() {
   if (!body) return;
   var events = getMediaEvents();
   if (!events.length) {
-    body.innerHTML = '<div class="media-empty">还没有记录，点右上角"+ 添加"开始记吧</div>';
+    var hasFilters = mediaSearchQuery || mediaRegionFilter !== 'all' || mediaTagFilter;
+    body.innerHTML = hasFilters
+      ? '<div class="media-empty">没有匹配的记录，换个关键词或筛选条件试试</div>'
+      : '<div class="media-empty">还没有记录，点右上角"+ 添加"开始记吧</div>';
     return;
   }
   var clusters = clusterMediaEvents(events);
@@ -3366,6 +3410,13 @@ function renderMediaBody() {
 
 // 渲染时临时建一份"卡片 → 这张卡片背后有哪几段"的索引，供选段弹窗查用
 var mediaClusterIndex = {};
+
+function isLatinTitle(title) {
+  return !/[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]/.test(title); // 没有中/日/韩文字符就当作西文标题
+}
+
+var MEDIA_TAGS_SHOWN = 3;
+var MEDIA_SEGMENTS_SHOWN = 2; // 卡片固定四行，日期只留两行位置：第1次、第2次
 
 function renderMediaGridHtml(grouped) {
   mediaClusterIndex = {};
@@ -3378,26 +3429,35 @@ function renderMediaGridHtml(grouped) {
         ? '<img src="' + escHtml(cluster.coverUrl) + '" alt="">'
         : '<span>' + meta.icon + '</span>';
 
-      var dateBlockHtml;
-      var clickHandler;
+      var row2Html, row3Html, clickHandler;
       if (cluster.segments.length > 1) {
         var clusterKey = 'mc' + Object.keys(mediaClusterIndex).length;
         mediaClusterIndex[clusterKey] = cluster.segments;
-        dateBlockHtml = '<div class="media-card-segments">' + cluster.segments.map(function (seg, i) {
-          return '<div class="media-card-segment">第' + (i + 1) + '次 · ' + mediaDateRangeCompact(seg) + '</div>';
-        }).join('') + '</div>' + mediaRatingDotsHtml(cluster.rating);
+        var shownSegments = cluster.segments.slice(0, MEDIA_SEGMENTS_SHOWN);
+        var extraSegments = cluster.segments.length - shownSegments.length;
+        row2Html = '<div class="media-card-line"><span class="media-card-ord">' + mediaOrdinal(1) + '</span><span class="media-card-date">' + mediaDateRangeCompact(shownSegments[0]) + '</span>' + mediaRatingDotsHtml(cluster.rating) + '</div>';
+        row3Html = '<div class="media-card-line"><span class="media-card-ord">' + mediaOrdinal(2) + '</span><span class="media-card-date">' + mediaDateRangeCompact(shownSegments[1]) + (extraSegments > 0 ? ' +' + extraSegments : '') + '</span></div>';
         clickHandler = 'showMediaSegmentPicker(\'' + clusterKey + '\',\'' + escJsStr(cluster.title) + '\')';
       } else {
-        dateBlockHtml = '<div class="media-card-meta"><span>' + mediaDateRangeCompact(cluster.segments[0]) + '</span>' + mediaRatingDotsHtml(cluster.rating) + '</div>';
+        row2Html = '<div class="media-card-line"><span class="media-card-date">' + mediaDateRangeCompact(cluster.segments[0]) + '</span>' + mediaRatingDotsHtml(cluster.rating) + '</div>';
+        row3Html = '<div class="media-card-line media-card-line-empty"></div>';
         clickHandler = 'showSpanEventModal(\'' + escJsStr(cluster.segments[0].id) + '\')';
       }
+
+      var shownTags = cluster.tags.slice(0, MEDIA_TAGS_SHOWN);
+      var extraTags = cluster.tags.length - shownTags.length;
+      var tagsHtml = '<div class="media-card-tags">' + shownTags.map(function (t) { return '<span class="media-card-tag">' + escHtml(t) + '</span>'; }).join('') +
+        (extraTags > 0 ? '<span class="media-card-tag">+' + extraTags + '</span>' : '') + '</div>';
+
+      var titleClass = 'media-card-title' + (isLatinTitle(cluster.title) ? ' is-latin' : '');
 
       html += '<div class="media-card" style="border-left-color:' + meta.color + ';" onclick="' + clickHandler + '">' +
         '<div class="media-card-cover" style="background:' + meta.color + '22;color:' + meta.color + ';">' + cover + '</div>' +
         '<div class="media-card-body">' +
-          '<div class="media-card-title">' + escHtml(cluster.title) + '</div>' +
-          dateBlockHtml +
-          (cluster.tags.length ? '<div class="media-card-tags">' + cluster.tags.map(function (t) { return '<span class="media-card-tag">' + escHtml(t) + '</span>'; }).join('') + '</div>' : '') +
+          '<div class="' + titleClass + '" title="' + escHtml(cluster.title) + '">' + escHtml(cluster.title) + '</div>' +
+          row2Html +
+          row3Html +
+          tagsHtml +
         '</div>' +
       '</div>';
     });
@@ -3428,7 +3488,7 @@ function showMediaSegmentPicker(clusterKey, title) {
     var btn = document.createElement('button');
     btn.className = 'mbtn mbtn-outline';
     btn.style.cssText = 'width:100%;text-align:left;margin-bottom:8px;';
-    btn.textContent = '第' + (i + 1) + '次 · ' + mediaDateRangeCompact(seg);
+    btn.textContent = mediaOrdinal(i + 1) + ' · ' + mediaDateRangeCompact(seg);
     btn.onclick = function () {
       showSpanEventModal(seg.id, null, overlay); // 复用同一个蒙层，不叠两层半透明背景
     };
@@ -4216,7 +4276,24 @@ function showSpanEventModal(id, presetCategory, reuseOverlay) {
   coverInput.className = 'input-box';
   coverInput.placeholder = '封面图片链接（可不填）';
   if (editing && editing.coverUrl) coverInput.value = editing.coverUrl;
-  mediaField('封面 URL（可不填）', coverInput);
+  var coverFieldWrap = mediaField('封面 URL（可不填）', coverInput);
+
+  var coverPreview = document.createElement('div');
+  coverPreview.style.cssText = 'margin-top:8px;font-size:11px;color:var(--text-muted);';
+  coverFieldWrap.appendChild(coverPreview);
+
+  function updateCoverPreview() {
+    var url = coverInput.value.trim();
+    if (!url) { coverPreview.innerHTML = ''; return; }
+    coverPreview.innerHTML = '加载中…';
+    var img = new Image();
+    img.style.cssText = 'width:60px;height:84px;object-fit:cover;border-radius:6px;border:1px solid var(--border);display:block;';
+    img.onload = function () { coverPreview.innerHTML = ''; coverPreview.appendChild(img); };
+    img.onerror = function () { coverPreview.innerHTML = '⚠️ 这个链接加载不出图片，可能不是直链（试试右键图片本身"复制图片地址"，而不是网页链接）'; };
+    img.src = url;
+  }
+  coverInput.addEventListener('blur', updateCoverPreview);
+  if (editing && editing.coverUrl) updateCoverPreview();
 
   function updateMediaFieldsVisibility() {
     mediaFieldsWrap.style.display = isMediaCategory(catSel.value) ? 'block' : 'none';
@@ -5587,18 +5664,27 @@ function renderFitnessBodyLine(ds) {
   wrap.querySelectorAll('.note-fitness-line').forEach(function (el) { el.remove(); });
 
   var lines = [];
-  getFitnessBodyTexts(ds).forEach(function (t) { lines.push('#身体 ' + t); });
+  getFitnessBodyTexts(ds).forEach(function (t) { lines.push(escHtml('#身体 ' + t)); });
   getSpanEventsForDate(ds).forEach(function (ev) {
     var meta = getCategoryMeta(ev.category);
-    var dayIndex = Math.round((new Date(ds) - new Date(ev.start)) / 86400000) + 1;
-    lines.push('#' + meta.label + ' 《' + ev.title + '》 · 第' + dayIndex + '天');
+    var titleHtml = isLatinTitle(ev.title) ? '<i>' + escHtml(ev.title) + '</i>' : '《' + escHtml(ev.title) + '》';
+    var suffix = '';
+    if (ev.end !== ev.start) {
+      if (ev.end && ds === ev.end) {
+        suffix = ' · 最后一天';
+      } else {
+        var dayIndex = Math.round((new Date(ds) - new Date(ev.start)) / 86400000) + 1;
+        suffix = ' · 第' + dayIndex + '天';
+      }
+    }
+    lines.push('#' + escHtml(meta.label) + ' ' + titleHtml + suffix);
   });
   if (!lines.length) return;
 
   lines.forEach(function (text) {
     var line = document.createElement('div');
     line.className = 'note-fitness-line';
-    line.textContent = text;
+    line.innerHTML = text;
     wrap.insertBefore(line, noteAreaEl);
   });
 }
