@@ -70,16 +70,14 @@
 .badge-circle .badge-unit{font-size:8px;font-weight:600;margin-top:2px;color:#5B8C1A}
 /* 通用悬浮提示：跟 .badge-circle 同一套气泡机制，但锚定在右边缘而不是居中——
    给标题栏右侧这种贴边文字用(比如HHI内联展示)，居中锚定的话文字贴着卡片右边缘会导致气泡溢出卡片。 */
-.hover-tip{position:relative;cursor:help}
-.hover-tip::after{
-  content:attr(data-tip);
-  position:absolute;top:calc(100% + 8px);right:0;
-  background:rgba(20,20,20,.92);color:#fff;font-size:11px;font-weight:500;
-  padding:7px 10px;border-radius:6px;white-space:pre-line;max-width:220px;line-height:1.6;text-align:left;
-  opacity:0;pointer-events:none;transition:opacity .12s;z-index:20;
-  box-shadow:0 4px 12px rgba(0,0,0,.18);
-}
-.hover-tip:hover::after{opacity:1}
+.hover-tip{cursor:default}
+/* 非数据的说明性文字用这个小ⓘ图标触发悬浮，跟"直接悬浮在数据本身上"(比如HHI那种)是两套不同的触发方式：
+   数据本身有悬浮价值 → 直接把 .hover-tip 加在数据上；纯粹的补充说明、备注 → 挂一个小图标，默认收起，不占地方
+   气泡本身用JS维护的position:fixed元素实现（见脚本里的 _initHoverTip），不用CSS ::after——
+   因为部分ⓘ图标会出现在 overflow-y:auto 的可滚动容器里(比如现金流计算过程)，absolute定位的气泡会被算进
+   祖先的scrollHeight，一悬浮就把容器"撑出"意外的滚动条；position:fixed不受任何祖先overflow影响，从根上避免这个问题。 */
+.info-icon{display:inline-flex;flex-shrink:0;color:var(--text3)}
+.info-icon svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:block}
 #page-overview #snap-drawdown{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .kpi-card-v.card-hero{
   background:linear-gradient(160deg,#FF6B35,#F4511E);border:none;box-shadow:0 8px 20px -6px rgba(244,81,30,.4);
@@ -176,8 +174,9 @@ body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;backgr
 .bar-list{display:flex;flex-direction:column;gap:9px}
 .bar-row{display:flex;align-items:center;gap:8px}
 .bar-row-label{display:flex;align-items:center;gap:6px;width:76px;flex-shrink:0;font-size:11px;color:var(--text2)}
-.bar-row-track{flex:1;height:7px;background:var(--surface2);border-radius:4px;overflow:hidden;min-width:0}
+.bar-row-track{flex:1;height:7px;background:var(--surface2);border-radius:4px;overflow:visible;min-width:0;position:relative}
 .bar-row-fill{height:100%;border-radius:4px}
+.bar-row-target{position:absolute;top:-4px;width:2px;height:15px;border-radius:1px;background:var(--red)}
 .bar-row-pct{width:50px;flex-shrink:0;text-align:right;font-size:12px;font-weight:700;color:var(--text)}
 .legend-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}
 .leg{display:contents;font-size:12px}
@@ -267,6 +266,9 @@ tbody tr.editing td{background:#fffbe6}
 input.fi,select.fi{width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--rs);font-size:13px;font-family:inherit;background:var(--surface);color:var(--text);outline:none;transition:border .15s}
 select.fi{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
 input.fi:focus,select.fi:focus{border-color:var(--blue)}
+/* 看板两个XIRR计算器的年份下拉框单独加悬浮态+聚焦光晕，只作用这3个选择器，不改全局.fi(全app还有98处在用，不该被这次顺带改动) */
+#bd-xirr-from-year:hover,#bd-xirr-range-from:hover,#bd-xirr-range-to:hover{border-color:#B8C4D9}
+#bd-xirr-from-year:focus,#bd-xirr-range-from:focus,#bd-xirr-range-to:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-bg)}
 .fg2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 .modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
@@ -2551,9 +2553,8 @@ function costCNY(c){
 function fmtCNY(v){return '¥'+v.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function fmtPct(v){return(v>=0?'+':'')+v.toFixed(2)+'%'}
 function _xirrResultHtml(r,cf){
-  return `<div style="text-align:center;padding:10px 0 8px">
+  return `<div style="text-align:center;padding:10px 0 14px">
     <div style="font-size:30px;font-weight:700;line-height:1.1" class="${r!=null&&r>=0?'pos':'neg'}">${r!=null?(r>=0?'+':'')+(r*100).toFixed(2)+'%':'N/A'}</div>
-    <div style="font-size:11px;color:var(--text3);margin-top:4px">年化收益率（XIRR）</div>
   </div>
   <div style="border-top:1px solid var(--border);padding-top:8px">
     <div style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:6px;letter-spacing:.05em">现金流计算过程</div>
@@ -2670,16 +2671,20 @@ let _bdDrillL1 = null;
 
 /* 结构分布"大类"tab的条形图渲染——原来这里操作的是chartBoardType(甜甜圈)，7-8个大类甜甜圈色块太多不好分辨，
    改用跟总览"三级组合"同款的.bar-list。三处调用方(初始加载/重置/下钻)共用这一个函数，不再各写一份。 */
-function renderBoardCatBars(entries, total, colorFn, clickable){
-  const max = Math.max(...entries.map(([,v])=>v), 1e-9);
-  document.getElementById('bd-type-leg').innerHTML = entries.map(([k,v],i)=>{
+function renderBoardCatBars(entries, total, colorFn, clickable, targetFn){
+  const withPct = entries.map(([k,v])=>{
     const pct = total>0 ? v/total*100 : 0;
-    const color = colorFn(k,i);
-    const nameEsc = k.replace(/'/g,"\\'");
+    const target = targetFn ? targetFn(k) : null;
+    return {k, v, pct, target};
+  });
+  const globalMax = Math.max(...withPct.map(d=>Math.max(d.pct, d.target||0)), 10);
+  document.getElementById('bd-type-leg').innerHTML = withPct.map((d,i)=>{
+    const color = colorFn(d.k,i);
+    const nameEsc = d.k.replace(/'/g,"\\'");
     return `<div class="bar-row"${clickable?` onclick="drillBoardCat('${nameEsc}')" style="cursor:pointer"`:''}>
-      <div class="bar-row-label"><span class="leg-dot" style="background:${color}"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${k}</span></div>
-      <div class="bar-row-track"><div class="bar-row-fill" style="width:${(v/max*100).toFixed(1)}%;background:${color}"></div></div>
-      <div class="bar-row-pct">${pct.toFixed(2)}%</div>
+      <div class="bar-row-label"><span class="leg-dot" style="background:${color}"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.k}</span></div>
+      <div class="bar-row-track"><div class="bar-row-fill" style="width:${(d.pct/globalMax*100).toFixed(1)}%;background:${color}"></div>${d.target!=null?`<div class="bar-row-target" style="left:${(d.target/globalMax*100).toFixed(1)}%"></div>`:''}</div>
+      <div class="bar-row-pct">${d.pct.toFixed(2)}%${d.target!=null?`<span style="color:var(--text3);font-weight:400"> / ${d.target.toFixed(2)}%</span>`:''}</div>
     </div>`;
   }).join('');
 }
@@ -2710,7 +2715,7 @@ function resetBoardCat(){
   const catMap = {};
   prods.forEach(p=>{const k=p.cat||getCatOf(p.type)||'其他';if(!catMap[k])catMap[k]=0;catMap[k]+=toCNY(p.amount,p.ccy)});
   const catEntries = Object.entries(catMap).sort((a,b)=>catSortIndex(a[0])-catSortIndex(b[0])||a[0].localeCompare(b[0]));
-  renderBoardCatBars(catEntries, grpTotal, (k,i)=>catClr(k,i), true);
+  renderBoardCatBars(catEntries, grpTotal, (k,i)=>catClr(k,i), true, k=>catTargetInGroup(k,_boardLevel,_boardGroup));
   document.getElementById('bd-cat-breadcrumb').style.display = 'none';
 }
 let _curAnalysisTab='xirr';
@@ -3321,6 +3326,18 @@ function prodTargetInGroup(prodName, lv, grpName){
     if(t == null) return;
     hasAny = true;
     total += t * l1MarketVal(l1) / grpVal;
+  });
+  return hasAny ? total : null;
+}
+
+// 结构分布"大类"tab的目标指标：跟"目标vs实际"抓目标的逻辑完全一样(复用prodTargetInGroup)，
+// 只是从"单个品种的目标"改成"把这个大类下所有品种的目标加总"，得到这个大类整体应该占多少比例
+function catTargetInGroup(catName, lv, grpName){
+  const prodNames = [...new Set(_groupProducts(lv, grpName).filter(p=>(p.cat||getCatOf(p.type)||'其他')===catName).map(p=>p.name))];
+  let total = 0, hasAny = false;
+  prodNames.forEach(name=>{
+    const t = prodTargetInGroup(name, lv, grpName);
+    if(t != null){ total += t; hasAny = true; }
   });
   return hasAny ? total : null;
 }
@@ -5428,13 +5445,69 @@ function _groupYearlyStats(level, groupName){
 }
 
 // Render a cash-flow sequence as calculation-process rows; final (chronologically last) row gets emphasis.
+// 通用的ⓘ悬浮提示图标——SVG线框风格，跟标题栏其他图标(时钟/日历等)同一套画法，不用Unicode字符(不同系统字体粗细、对齐不一致)
+// 全局悬浮提示控制器：所有 .hover-tip 元素(包括直接悬浮在数据上的、和挂了.info-icon图标的)共用一个
+// position:fixed 提示框，事件委托在document上，不用逐个元素绑定，动态插入的新元素(比如切换组合后重新渲染的)天然生效。
+(function _initHoverTip(){
+  let tipEl = null;
+  function ensureTipEl(){
+    if(tipEl) return tipEl;
+    tipEl = document.createElement('div');
+    tipEl.id = '_global_hover_tip';
+    tipEl.style.cssText = 'position:fixed;z-index:9999;background:rgba(20,20,20,.92);color:#fff;'
+      + 'font-size:11px;font-weight:500;padding:7px 10px;border-radius:6px;white-space:pre-line;'
+      + 'width:200px;line-height:1.6;text-align:left;box-shadow:0 4px 12px rgba(0,0,0,.18);'
+      + 'opacity:0;pointer-events:none;transition:opacity .12s;';
+    document.body.appendChild(tipEl);
+    return tipEl;
+  }
+  document.addEventListener('mouseover', e=>{
+    const el = e.target.closest('.hover-tip');
+    if(!el) return;
+    const tip = el.getAttribute('data-tip');
+    if(!tip) return;
+    const t = ensureTipEl();
+    t.textContent = tip;
+    t.style.opacity = '0';
+    const r = el.getBoundingClientRect();
+    requestAnimationFrame(()=>{
+      const tw = t.offsetWidth, th = t.offsetHeight;
+      let left = r.right - tw;
+      if(left < 8) left = 8;
+      if(left + tw > window.innerWidth - 8) left = window.innerWidth - 8 - tw;
+      let top = r.bottom + 8;
+      if(top + th > window.innerHeight - 8) top = r.top - th - 8; // 下面放不下就翻到上面
+      t.style.left = left+'px';
+      t.style.top = top+'px';
+      t.style.opacity = '1';
+    });
+  });
+  document.addEventListener('mouseout', e=>{
+    const el = e.target.closest('.hover-tip');
+    if(!el || !tipEl) return;
+    // 鼠标真的离开了这个 .hover-tip(不是移到它内部的子元素)才隐藏
+    if(el.contains(e.relatedTarget)) return;
+    tipEl.style.opacity = '0';
+  });
+})();
+
+function infoIcon(tip){
+  return `<span class="info-icon hover-tip" data-tip="${tip}"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>`;
+}
+// 现金流行的label里"主文字（括号备注）"格式，括号部分不是核心信息，拆出来做成ⓘ悬浮而不是常驻显示
+function splitLabelNote(label){
+  const m = (label||'').match(/^(.*)（([^（）]*)）$/);
+  return m ? {main:m[1], note:m[2]} : {main:label||'', note:null};
+}
 function _xirrCalcRowsHtml(cf){
   return cf.map((c,i)=>{
     const isLast = i===cf.length-1;
     const isNeg = c.amount<0;
-    return `<div style="display:flex;gap:10px;padding:4px 0;font-size:11px;${isLast?'border-top:2px solid var(--border);margin-top:2px;padding-top:6px':'border-bottom:1px solid var(--border)'}">
+    const {main, note} = splitLabelNote(c.label);
+    const barColor = isNeg?'var(--red)':'var(--green)';
+    return `<div style="display:flex;gap:10px;padding:4px 0 4px 8px;font-size:11px;border-left:2px solid ${barColor};${isLast?'border-top:2px solid var(--border);margin-top:2px;padding-top:6px':'border-bottom:1px solid var(--border)'}">
       <span style="color:var(--text3);width:78px;flex-shrink:0;${isLast?'font-weight:600':''}">${c.date}</span>
-      <span style="color:var(--text3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.label||''}</span>
+      <span style="color:var(--text3);flex:1;min-width:0;display:flex;align-items:center;gap:4px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">${main}</span>${note?infoIcon(note):''}</span>
       <span class="${isNeg?'neg':'pos'}" style="width:104px;text-align:right;flex-shrink:0;${isLast?'font-weight:700':'font-weight:600'}">${c.amount>=0?'+':''}${fmtCNY(c.amount)}</span>
     </div>`;
   }).join('');
@@ -5867,12 +5940,12 @@ function _renderGroupBoard(lv, groupName){
            唯一有增量信息的HHI，挪到"目标vs实际"标题行右侧了 -->
       <!-- 两个XIRR计算器：从Row4/5的堆叠窄栏挪过来，占KPI主角卡下面这一行，取代之前集中度分析的位置 -->
 <div class="board-section card-display bento-area-bxirr1" style="margin-bottom:0">
-          <div class="board-section-title" style="flex-wrap:wrap;gap:4px 8px;margin-bottom:14px">
+          <div class="board-section-title" style="margin-bottom:14px">
             <span style="display:flex;align-items:center;gap:6px">
               <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               从某年起至今 XIRR
+              ${infoIcon('以前一年末快照为起点（若有）')}
             </span>
-            <span style="font-size:11px;font-weight:400;color:var(--text3)">以前一年末快照为起点（若有）</span>
           </div>
           ${_fromNowYrs.length
             ? `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -5886,12 +5959,12 @@ function _renderGroupBoard(lv, groupName){
             : `<div class="empty" style="padding:24px;font-size:12px">暂无流水或快照数据</div>`}
         </div>
         <div class="board-section card-display bento-area-bxirr2" style="margin-bottom:0">
-          <div class="board-section-title" style="flex-wrap:wrap;gap:4px 8px;margin-bottom:14px">
+          <div class="board-section-title" style="margin-bottom:14px">
             <span style="display:flex;align-items:center;gap:6px">
               <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               自定义区间 XIRR
+              ${infoIcon('起止用年末快照作为净值锚点')}
             </span>
-            <span style="font-size:11px;font-weight:400;color:var(--text3)">起止用年末快照作为净值锚点</span>
           </div>
           ${_rangeFromYrs.length && _rangeToYrs.length
             ? `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -6022,7 +6095,7 @@ function _renderGroupBoard(lv, groupName){
 
   // Type bars（改条形图后不再需要 Chart.js 实例，也不用管理 destroy）
   const catEntries = Object.entries(catMap).sort((a,b)=>catSortIndex(a[0])-catSortIndex(b[0])||a[0].localeCompare(b[0]));
-  renderBoardCatBars(catEntries, grpTotal, (k,i)=>catClr(k,i), true);
+  renderBoardCatBars(catEntries, grpTotal, (k,i)=>catClr(k,i), true, k=>catTargetInGroup(k,lv,groupName));
 
   // Market donut
   if(chartBoardMarket){chartBoardMarket.destroy();chartBoardMarket=null;}
