@@ -3430,10 +3430,7 @@ function showMediaSegmentPicker(clusterKey, title) {
     btn.style.cssText = 'width:100%;text-align:left;margin-bottom:8px;';
     btn.textContent = '第' + (i + 1) + '次 · ' + mediaDateRangeCompact(seg);
     btn.onclick = function () {
-      showSpanEventModal(seg.id);
-      // 新弹窗自己有 0.2s 淡入动画，这段时间里旧的选择框先别撤，
-      // 不然背景蒙层会有一瞬间"变淡又变浓"，看着像闪了一下。
-      setTimeout(function () { overlay.remove(); }, 220);
+      showSpanEventModal(seg.id, null, overlay); // 复用同一个蒙层，不叠两层半透明背景
     };
     sheet.appendChild(btn);
   });
@@ -3863,12 +3860,16 @@ function removeTimelineTagRow(tagName) {
   renderTimeline();
 }
 
-function showSpanEventModal(id, presetCategory) {
+function showSpanEventModal(id, presetCategory, reuseOverlay) {
   var editing = id ? (appData.spanEvents || []).find(function (ev) { return ev.id === id; }) : null;
 
-  var overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.addEventListener('click', function () { overlay.remove(); });
+  var overlay = reuseOverlay || document.createElement('div');
+  if (reuseOverlay) {
+    overlay.innerHTML = ''; // 复用同一个背景蒙层，只换里面的卡片内容，避免叠两层半透明背景导致的"变浓再变淡"闪烁
+  } else {
+    overlay.className = 'modal-overlay';
+    overlay.addEventListener('click', function () { overlay.remove(); });
+  }
 
   var sheet = document.createElement('div');
   sheet.className = 'modal-sheet';
@@ -4281,7 +4282,7 @@ function showSpanEventModal(id, presetCategory) {
 
   sheet.appendChild(btnRow);
   overlay.appendChild(sheet);
-  document.body.appendChild(overlay);
+  if (!reuseOverlay) document.body.appendChild(overlay);
 }
 
 // ── 笔记里的快捷标签按钮 + # 输入联想 ──────────────────────
