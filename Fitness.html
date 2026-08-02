@@ -232,10 +232,9 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
   /* ── 分类速览：图标/名称/统计文字都是固定像素宽度，手机屏幕装不下会横向溢出，
      改成两行——第一行图标+名称+统计（自动收缩/截断），第二行进度条独占一行 ── */
-  .sport-summary-row{ flex-wrap: wrap; row-gap: 4px; }
-  .sport-summary-name{ width: auto; flex: 1; min-width: 0; }
-  .sport-summary-stat{ width: auto; flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: var(--fs-xs); }
-  .sport-summary-bar-wrap{ flex-basis: 100%; margin-left: 40px; margin-top: 2px; }
+  .sport-summary-row{ flex-wrap: nowrap; }
+  .sport-summary-name{ display: none; }
+  .sport-summary-stat{ width: 150px; flex-shrink: 0; overflow: visible; text-overflow: clip; font-size: var(--fs-xs); }
   .chart-card.full{ grid-column: 1 !important; }
 
   /* ── 指标卡 → 2列 ── */
@@ -314,15 +313,20 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   .mdist-chart-wrap{ display: none; }
   .mdist-list{ display: flex; }
 
-  /* 迷你日期选择器的自定义日历图标（-webkit-mask-image 那套）在不少移动端浏览器
-     渲染不出来，会显示一片空白（功能不受影响，纯粹是图标看不见）。手机端直接放弃
-     自定义图标，恢复浏览器原生渲染，保证图标一定看得见。 */
+  /* 迷你日期选择器的自定义日历图标（-webkit-mask-image 那套伪元素技巧）在不少移动端
+     浏览器渲染不出来，会显示一片空白。手机端换一种更稳妥的实现——不再依赖那个兼容性差
+     的 ::-webkit-calendar-picker-indicator 伪元素，改用输入框自身的 background-image，
+     这是所有浏览器都可靠支持的基础特性。原生图标用 opacity:0 隐藏（不是 display:none，
+     保留它的可点击区域，不影响点击唤起日期选择器的功能）。 */
+  .mini-date-input-plain{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A39A8C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cline x1='16' y1='3' x2='16' y2='7'/%3E%3Cline x1='8' y1='3' x2='8' y2='7'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E") !important;
+    background-repeat:no-repeat !important;
+    background-position:right center !important;
+    background-size:12px 12px !important;
+    padding-right:16px !important;
+  }
   .mini-date-input-plain::-webkit-calendar-picker-indicator{
-    -webkit-appearance:auto;
-    -webkit-mask-image:none; mask-image:none;
-    background-color:transparent;
-    width:auto; height:auto;
-    opacity:.6;
+    opacity:0 !important;
   }
   .landscape-btn{ display: inline-flex; }
 
@@ -3366,7 +3370,7 @@ function renderSportSummary(){
     }
     const barPct = maxCount>0 ? Math.max((count/maxCount)*100, 3) : 0; // 至少留 3% 让色条可见
     return `<div class="sport-summary-row">
-      <span class="sport-summary-icon" style="background:${hexToRgba(getSportColor(sport),0.14)}">${icon}</span>
+      <span class="sport-summary-icon" style="background:${hexToRgba(getSportColor(sport),0.14)}" title="${escapeHtml(sport)}">${icon}</span>
       <span class="sport-summary-name">${escapeHtml(sport)}</span>
       <span class="sport-summary-stat">${count} 次${extra?`<span class="sport-summary-extra"> · ${extra}</span>`:''}</span>
       <div class="sport-summary-bar-wrap"><div class="sport-summary-bar" style="width:${barPct}%;background:${getSportColor(sport)}"></div></div>
