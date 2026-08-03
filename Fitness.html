@@ -200,6 +200,13 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 .mdist-list{ display:none; }
 .landscape-btn{ display:none; }
 
+/* 「累计训练」卡片里的大数字/周均纯展示、不需要点击，但用 position:absolute +
+   left:0;right:0 撑满整卡宽度来做垂直居中定位。这层看不见的整宽区块会盖在
+   上方的日期选择器上面，导致点不中日期输入框/重置按钮——尤其是点了重置之后
+   再想重新选日期，点击其实落在这层透明遮罩上，日期选择器完全没反应。
+   加 pointer-events:none 让点击穿透到下层真正的控件。 */
+.dash-total-block, .dash-avg-block{ pointer-events:none; }
+
 @media(max-width:768px){
 
   /* ── 整体布局 ── */
@@ -234,7 +241,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
      改成两行——第一行图标+名称+统计（自动收缩/截断），第二行进度条独占一行 ── */
   .sport-summary-row{ flex-wrap: nowrap; }
   .sport-summary-name{ display: none; }
-  .sport-summary-stat{ width: 150px; flex-shrink: 0; overflow: visible; text-overflow: clip; font-size: var(--fs-xs); }
+  .sport-summary-stat{ width: 100px; flex-shrink: 0; overflow: visible; text-overflow: clip; font-size: var(--fs-xs); white-space: normal; line-height: 1.3; }
   .chart-card.full{ grid-column: 1 !important; }
 
   /* ── 指标卡 → 2列 ── */
@@ -313,21 +320,6 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   .mdist-chart-wrap{ display: none; }
   .mdist-list{ display: flex; }
 
-  /* 迷你日期选择器的自定义日历图标（-webkit-mask-image 那套伪元素技巧）在不少移动端
-     浏览器渲染不出来，会显示一片空白。手机端换一种更稳妥的实现——不再依赖那个兼容性差
-     的 ::-webkit-calendar-picker-indicator 伪元素，改用输入框自身的 background-image，
-     这是所有浏览器都可靠支持的基础特性。原生图标用 opacity:0 隐藏（不是 display:none，
-     保留它的可点击区域，不影响点击唤起日期选择器的功能）。 */
-  .mini-date-input-plain{
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A39A8C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cline x1='16' y1='3' x2='16' y2='7'/%3E%3Cline x1='8' y1='3' x2='8' y2='7'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E") !important;
-    background-repeat:no-repeat !important;
-    background-position:right center !important;
-    background-size:12px 12px !important;
-    padding-right:16px !important;
-  }
-  .mini-date-input-plain::-webkit-calendar-picker-indicator{
-    opacity:0 !important;
-  }
   .landscape-btn{ display: inline-flex; }
 
   /* ── 数据管理 ── */
@@ -415,45 +407,67 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
 
 .mini-date-label{font-size:var(--fs-xs);color:var(--text3);white-space:nowrap;}
 
-/* 文字风格日期选择器——专用于总计卡片：去掉药丸造型的背景/内边距，
-   让它跟下面"282 次运动 / 周均"这些纯文字数字在同一条左边线上对齐，
-   不再有药丸内边距造成的偏移 */
-.mini-date-input-plain{
+/* 迷你日期选择器——用于统计/图表卡片顶部的"起始日期"筛选。
+   原生 <input type="date"> 各浏览器/系统的弹出日历长得完全不一样、没法用 CSS
+   改样式，所以这里把它完全隐藏，只当"数据容器"用（保留 value/min/max，方便
+   其它代码原样读写、照常触发 onchange）；用户实际看到、点击的是一个自适应
+   宽度的按钮(.mini-date-trigger)，点击后弹出下面自己画的日历面板(.mini-date-popup)，
+   配色、圆角、选中态都跟随全站主题，不再是浏览器默认的原生控件长相。
+   .mini-date-group 是按钮 + 重置按钮共用的胶囊外壳：静止状态就带浅色背景和
+   细边框，一眼能看出是可点击控件；日历图标画在胶囊最前面的伪元素上；
+   悬停/聚焦时用 :focus-within 统一整个胶囊一起高亮。 */
+.mini-date-group{
+  display:inline-flex;
+  align-items:center;
+  gap:1px;
+  background:var(--bg3);
+  border:1px solid var(--border);
+  border-radius:999px;
+  padding:3px 4px 3px 8px;
+  transition:border-color .15s,background .15s,box-shadow .15s;
+}
+.mini-date-group::before{
+  content:'';
+  flex-shrink:0;
+  width:11px;height:11px;
+  margin-right:5px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A39A8C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cline x1='16' y1='3' x2='16' y2='7'/%3E%3Cline x1='8' y1='3' x2='8' y2='7'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-size:contain;
+  transition:opacity .15s;
+}
+.mini-date-group:hover{border-color:var(--brand);background:var(--brand-lt);}
+.mini-date-group:focus-within{border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px var(--brand-lt);}
+
+/* 原生日期输入框：彻底隐藏，纯粹当 value/min/max 的数据容器用，
+   不再依赖它自己的宽度/图标——这两样是之前"文字和重置按钮之间空一大截"的根源 */
+.mini-date-input-plain{ display:none; }
+
+.mini-date-trigger{
+  appearance:none;-webkit-appearance:none;
   background:transparent;
   border:none;
-  padding:2px 5px;
-  margin:-2px -5px;
-  border-radius:var(--radius);
-  height:auto;
+  padding:1px 2px;
+  margin:0;
   color:var(--text2);
   font-size:var(--fs-xs);
   font-family:var(--font);
   font-variant-numeric:tabular-nums;
   cursor:pointer;
-  transition:background .15s,color .15s,box-shadow .15s;
+  line-height:1.3;
 }
-.mini-date-input-plain:hover{color:var(--brand-dk);background:var(--brand-lt);}
-.mini-date-input-plain:focus{outline:none;color:var(--brand-dk);background:var(--brand-lt);box-shadow:0 0 0 3px var(--brand-lt);}
-.mini-date-input-plain::-webkit-calendar-picker-indicator{
-  -webkit-appearance:none;appearance:none;
-  width:13px;height:13px;
-  background-color:var(--text3);
-  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cline x1='16' y1='3' x2='16' y2='7'/%3E%3Cline x1='8' y1='3' x2='8' y2='7'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E");
-  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cline x1='16' y1='3' x2='16' y2='7'/%3E%3Cline x1='8' y1='3' x2='8' y2='7'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E");
-  -webkit-mask-size:contain;mask-size:contain;
-  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
-  -webkit-mask-position:center;mask-position:center;
-  cursor:pointer;opacity:.6;transition:opacity .15s,background-color .15s;
-}
-.mini-date-input-plain:hover::-webkit-calendar-picker-indicator,
-.mini-date-input-plain:focus::-webkit-calendar-picker-indicator{opacity:1;background-color:var(--brand-dk);}
+.mini-date-group:hover .mini-date-trigger,
+.mini-date-group:focus-within .mini-date-trigger{color:var(--brand-dk);}
+.mini-date-trigger:focus{outline:none;}
+.mini-date-trigger.placeholder{color:var(--text3);}
+
 .mini-reset-link-plain{
   display:inline-flex;align-items:center;justify-content:center;
-  width:18px;height:18px;
+  width:16px;height:16px;
   flex-shrink:0;
   border-radius:50%;
   color:var(--text3);
-  opacity:.45;
+  opacity:.55;
   font-size:var(--icon-xs);
   line-height:1;
   cursor:pointer;
@@ -461,6 +475,56 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   transition:all .2s;
 }
 .mini-reset-link-plain:hover{opacity:1;background:var(--coral);color:#fff;transform:rotate(-75deg);}
+
+/* 自绘日历弹层——替代浏览器原生日期选择器，点击 .mini-date-trigger 后弹出 */
+.mini-date-popup{
+  position:fixed;
+  z-index:1000;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow);
+  padding:10px;
+  width:224px;
+  font-family:var(--font);
+  animation:mdpIn .12s ease-out;
+}
+@keyframes mdpIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:none;}}
+.mdp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding:0 2px;}
+.mdp-month{font-size:var(--fs-sm);font-weight:700;color:var(--text);cursor:pointer;border-radius:6px;padding:2px 6px;transition:background .15s;}
+.mdp-month:hover{background:var(--brand-lt);color:var(--brand-dk);}
+.mdp-month-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;}
+.mdp-month-cell{
+  appearance:none;-webkit-appearance:none;border:none;background:transparent;
+  padding:8px 0;border-radius:8px;
+  font-size:var(--fs-xs);color:var(--text);font-family:var(--font);
+  cursor:pointer;transition:background .15s,color .15s;
+}
+.mdp-month-cell:hover:not(.mdp-disabled):not(.mdp-selected){background:var(--brand-lt);color:var(--brand-dk);}
+.mdp-month-cell.mdp-disabled{color:var(--border2);cursor:not-allowed;}
+.mdp-month-cell.mdp-selected{background:var(--brand);color:#fff;font-weight:700;}
+.mdp-nav{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:22px;height:22px;border-radius:50%;
+  color:var(--text2);cursor:pointer;user-select:none;font-size:14px;line-height:1;
+  transition:background .15s,color .15s;
+}
+.mdp-nav:hover{background:var(--brand-lt);color:var(--brand-dk);}
+.mdp-weekdays{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:2px;}
+.mdp-weekdays span{text-align:center;font-size:var(--fs-micro);color:var(--text3);font-weight:700;}
+.mdp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.mdp-cell{
+  appearance:none;-webkit-appearance:none;border:none;background:transparent;
+  width:100%;aspect-ratio:1/1;border-radius:50%;
+  font-size:var(--fs-xs);color:var(--text);font-family:var(--font);
+  cursor:pointer;font-variant-numeric:tabular-nums;
+  transition:background .15s,color .15s;
+}
+.mdp-cell.mdp-empty{cursor:default;}
+.mdp-cell:hover:not(.mdp-disabled):not(.mdp-selected):not(.mdp-empty){background:var(--brand-lt);color:var(--brand-dk);}
+.mdp-cell.mdp-disabled{color:var(--border2);cursor:not-allowed;}
+.mdp-cell.mdp-today{box-shadow:inset 0 0 0 1.5px var(--brand);}
+.mdp-cell.mdp-selected{background:var(--brand);color:#fff;font-weight:700;}
 
 /* Checkbox pill */
 .check-row{display:flex;align-items:center;gap:var(--space-6);font-size:var(--fs-sm);color:var(--text2);}
@@ -628,7 +692,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
   padding:var(--space-8) 0;
   font-size:var(--fs-sm);
 }
-.sport-summary-icon{font-size:var(--icon-sm);flex-shrink:0;width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;}
+.sport-summary-icon{font-size:var(--icon-sm);flex-shrink:0;width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
 .sport-summary-name{font-weight:600;color:var(--text);flex-shrink:0;width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .sport-summary-stat{color:var(--text2);font-variant-numeric:tabular-nums;white-space:nowrap;flex-shrink:0;width:180px;}
 .sport-summary-extra{color:var(--text3);}
@@ -904,8 +968,11 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
       <!-- 第一行：累计训练（窄卡，宽度=上方两张小卡之和）+ 类型占比 + 分类速览 -->
       <div class="chart-card span2" style="display:flex;flex-direction:column;height:100%;position:relative">
         <div style="display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;font-size:var(--fs-xs);color:var(--text3)">
-          <input type="date" id="dash-stat-start" class="mini-date-input-plain" onchange="onDashStatStartChange()" title="选择统计起始日期">
-          <span class="mini-reset-link-plain" onclick="resetDashStatStart()" title="重置为最早日期">↺</span>
+          <span class="mini-date-group">
+            <input type="date" id="dash-stat-start" class="mini-date-input-plain" onchange="onDashStatStartChange()">
+            <button type="button" class="mini-date-trigger placeholder" data-for="dash-stat-start" onclick="toggleMiniDatePicker(this)" title="选择统计起始日期">年/月/日</button>
+            <span class="mini-reset-link-plain" onclick="resetDashStatStart()" title="重置为最早日期">↺</span>
+          </span>
           <span>至今</span>
         </div>
         <div class="dash-total-block" style="position:absolute;left:0;right:0;bottom:50%;margin-bottom:4px;display:flex;justify-content:center">
@@ -1079,8 +1146,11 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
           <div>
             <div style="font-size:var(--fs-xs);color:var(--text3);margin-bottom:var(--space-6);text-transform:uppercase;letter-spacing:.04em">起始日期</div>
             <div style="display:flex;align-items:center;gap:var(--space-6)">
-              <input type="date" id="run-combined-start" class="mini-date-input-plain" onchange="onRunCombinedStartChange()" title="选择起始日期">
-              <span class="mini-reset-link-plain" onclick="resetRunCombinedStart()" title="重置为最早日期">↺</span>
+              <span class="mini-date-group">
+                <input type="date" id="run-combined-start" class="mini-date-input-plain" onchange="onRunCombinedStartChange()">
+                <button type="button" class="mini-date-trigger placeholder" data-for="run-combined-start" onclick="toggleMiniDatePicker(this)" title="选择起始日期">年/月/日</button>
+                <span class="mini-reset-link-plain" onclick="resetRunCombinedStart()" title="重置为最早日期">↺</span>
+              </span>
             </div>
           </div>
         </div>
@@ -1799,8 +1869,11 @@ function renderMonthlyBarCard({containerId, title, subtitle, chartId, startInput
         </div>
         <div style="display:flex;align-items:center;gap:var(--space-6);flex-wrap:wrap">
           <span class="mini-date-label">起始月份</span>
-          <input type="date" id="${startInputId}" class="mini-date-input-plain" onchange="${onStartChange}" title="选择起始月份">
-          <span class="mini-reset-link-plain" onclick="${resetOnClick}" title="重置为最早日期">↺</span>
+          <span class="mini-date-group">
+            <input type="date" id="${startInputId}" class="mini-date-input-plain" onchange="${onStartChange}">
+            <button type="button" class="mini-date-trigger placeholder" data-for="${startInputId}" onclick="toggleMiniDatePicker(this)" title="选择起始月份">年/月/日</button>
+            <span class="mini-reset-link-plain" onclick="${resetOnClick}" title="重置为最早日期">↺</span>
+          </span>
         </div>
       </div>
       ${legendId ? `<div class="legend" id="${legendId}"></div>` : ''}
@@ -1859,8 +1932,11 @@ function renderLineChartCard({containerId, title, subtitle, chartId, startInputI
         <div style="display:flex;align-items:center;gap:var(--space-6);flex-wrap:wrap">
           ${extraControlsHtml}
           <span class="mini-date-label">起始日期</span>
-          <input type="date" id="${startInputId}" class="mini-date-input-plain" onchange="${onStartChange}" title="选择起始日期">
-          <span class="mini-reset-link-plain" onclick="${resetOnClick}" title="重置为最早日期">↺</span>
+          <span class="mini-date-group">
+            <input type="date" id="${startInputId}" class="mini-date-input-plain" onchange="${onStartChange}">
+            <button type="button" class="mini-date-trigger placeholder" data-for="${startInputId}" onclick="toggleMiniDatePicker(this)" title="选择起始日期">年/月/日</button>
+            <span class="mini-reset-link-plain" onclick="${resetOnClick}" title="重置为最早日期">↺</span>
+          </span>
         </div>
       </div>
       <div style="position:relative;height:${chartHeight}px;margin-top:var(--space-10)"><canvas id="${chartId}"></canvas></div>
@@ -2723,6 +2799,170 @@ function upsertChart(id, canvas, config, aux){
 }
 
 // 💾 Dashboard 自定义起始日期（用于总计卡片 / 月度构成柱状图）
+// ═══════════════════════════════════════════════════════
+// 🗓️ 自绘迷你日历弹层——替代 <input type="date"> 的原生日历
+// 原生 input 仍然保留在 DOM 里（display:none），只当 value/min/max 的数据容器，
+// 这样原有的 onchange="onXxxChange()" / .value 读写代码完全不用改；
+// 用户点的是 .mini-date-trigger 按钮，弹出下面这个自己画的日历，选中某天后
+// 把值写回隐藏的 input 并 dispatch 一个 change 事件，触发原有逻辑。
+// ═══════════════════════════════════════════════════════
+function formatMiniDate(v){ return v ? v.replaceAll('-','/') : '年/月/日'; }
+
+// 每次某个起始日期 input 的 value/min/max 被程序设置后，调用这个把对应的
+// 触发按钮文字刷新成一致的显示（renderDashboard / syncStartInput 里都会调用）
+function syncMiniDateTrigger(inputId){
+  const input = document.getElementById(inputId);
+  const btn = document.querySelector('.mini-date-trigger[data-for="'+inputId+'"]');
+  if(!input || !btn) return;
+  btn.textContent = formatMiniDate(input.value);
+  btn.classList.toggle('placeholder', !input.value);
+}
+
+let miniDatePickerEl = null;
+let miniDatePickerFor = null;
+
+function closeMiniDatePicker(){
+  if(miniDatePickerEl){ miniDatePickerEl.remove(); miniDatePickerEl = null; }
+  miniDatePickerFor = null;
+  document.removeEventListener('mousedown', onMiniDatePickerOutsideClick, true);
+  document.removeEventListener('keydown', onMiniDatePickerKeydown, true);
+}
+function onMiniDatePickerOutsideClick(e){
+  if(miniDatePickerEl && !miniDatePickerEl.contains(e.target) && !(e.target.closest && e.target.closest('.mini-date-trigger'))){
+    closeMiniDatePicker();
+  }
+}
+function onMiniDatePickerKeydown(e){
+  if(e.key==='Escape') closeMiniDatePicker();
+}
+
+function toggleMiniDatePicker(btn){
+  const inputId = btn.dataset.for;
+  if(miniDatePickerFor === inputId){ closeMiniDatePicker(); return; }
+  openMiniDatePicker(btn, inputId);
+}
+
+function openMiniDatePicker(btn, inputId){
+  closeMiniDatePicker();
+  const input = document.getElementById(inputId);
+  if(!input) return;
+  miniDatePickerFor = inputId;
+
+  const min = input.min || '';
+  const max = input.max || '';
+  const val = input.value || '';
+  const todayStr = localDateStr();
+  const seed = val || max || todayStr;
+  let viewYear = parseInt(seed.slice(0,4),10);
+  let viewMonth = parseInt(seed.slice(5,7),10) - 1; // 0-based
+  let view = 'day'; // 'day' | 'month'——点头部年月标题在两者间切换
+  const valYear = val ? parseInt(val.slice(0,4),10) : null;
+  const valMonth = val ? parseInt(val.slice(5,7),10) - 1 : null;
+
+  const pop = document.createElement('div');
+  pop.className = 'mini-date-popup';
+  document.body.appendChild(pop);
+  miniDatePickerEl = pop;
+
+  const pad = n => String(n).padStart(2,'0');
+  const ymd = (y,m,d) => `${y}-${pad(m+1)}-${pad(d)}`;
+  const minYM = min ? min.slice(0,7) : '';
+  const maxYM = max ? max.slice(0,7) : '';
+
+  function render(){
+    if(view === 'month') renderMonthPicker(); else renderDay();
+    // 头部年月标题始终可点，用于在"日期格"和"年月选择"之间切换
+    const monthLabel = pop.querySelector('.mdp-month');
+    if(monthLabel){ monthLabel.onclick = ()=>{ view = (view==='day') ? 'month' : 'day'; render(); }; }
+  }
+
+  function renderDay(){
+    const first = new Date(viewYear, viewMonth, 1);
+    const startWeekday = first.getDay();
+    const daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
+    let cells = '';
+    for(let i=0;i<startWeekday;i++) cells += `<span class="mdp-cell mdp-empty"></span>`;
+    for(let d=1; d<=daysInMonth; d++){
+      const dateStr = ymd(viewYear, viewMonth, d);
+      const disabled = (min && dateStr<min) || (max && dateStr>max);
+      const selected = dateStr === val;
+      const today = dateStr === todayStr;
+      cells += `<button type="button" class="mdp-cell${disabled?' mdp-disabled':''}${selected?' mdp-selected':''}${today?' mdp-today':''}" ${disabled?'disabled':''} data-date="${dateStr}">${d}</button>`;
+    }
+    pop.innerHTML = `
+      <div class="mdp-header">
+        <span class="mdp-nav" data-nav="-1">‹</span>
+        <span class="mdp-month" title="点击选择年月">${viewYear}年${viewMonth+1}月</span>
+        <span class="mdp-nav" data-nav="1">›</span>
+      </div>
+      <div class="mdp-weekdays">${['日','一','二','三','四','五','六'].map(w=>`<span>${w}</span>`).join('')}</div>
+      <div class="mdp-grid">${cells}</div>
+    `;
+    pop.querySelector('[data-nav="-1"]').onclick = ()=>{ viewMonth--; if(viewMonth<0){viewMonth=11;viewYear--;} render(); };
+    pop.querySelector('[data-nav="1"]').onclick = ()=>{ viewMonth++; if(viewMonth>11){viewMonth=0;viewYear++;} render(); };
+    pop.querySelectorAll('.mdp-cell[data-date]').forEach(cell=>{
+      cell.onclick = ()=>{
+        if(cell.disabled) return;
+        input.value = cell.dataset.date;
+        input.dispatchEvent(new Event('change', {bubbles:true}));
+        closeMiniDatePicker();
+      };
+    });
+  }
+
+  // 年月选择视图：左右箭头切换整年，12 个月份格子一次点选，
+  // 比"只能一个月一个月点左右箭头翻"快得多，尤其是选择很久以前的日期时
+  function renderMonthPicker(){
+    const names = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+    let cells = '';
+    for(let m=0; m<12; m++){
+      const ym = `${viewYear}-${pad(m+1)}`;
+      const disabled = (minYM && ym<minYM) || (maxYM && ym>maxYM);
+      const selected = (viewYear===valYear && m===valMonth);
+      cells += `<button type="button" class="mdp-month-cell${disabled?' mdp-disabled':''}${selected?' mdp-selected':''}" ${disabled?'disabled':''} data-month="${m}">${names[m]}</button>`;
+    }
+    pop.innerHTML = `
+      <div class="mdp-header">
+        <span class="mdp-nav" data-nav="-1">‹</span>
+        <span class="mdp-month" title="点击返回日期选择">${viewYear}年</span>
+        <span class="mdp-nav" data-nav="1">›</span>
+      </div>
+      <div class="mdp-month-grid">${cells}</div>
+    `;
+    pop.querySelector('[data-nav="-1"]').onclick = ()=>{ viewYear--; render(); };
+    pop.querySelector('[data-nav="1"]').onclick = ()=>{ viewYear++; render(); };
+    pop.querySelectorAll('.mdp-month-cell').forEach(cell=>{
+      cell.onclick = ()=>{
+        if(cell.disabled) return;
+        viewMonth = parseInt(cell.dataset.month,10);
+        view = 'day';
+        render();
+      };
+    });
+  }
+
+  render();
+
+  // 定位在按钮下方；渲染完之后再按实际尺寸做一次边界收敛，避免溢出视口
+  const r = btn.getBoundingClientRect();
+  pop.style.top = (r.bottom + 6) + 'px';
+  pop.style.left = r.left + 'px';
+  requestAnimationFrame(()=>{
+    const pr = pop.getBoundingClientRect();
+    const vw = document.documentElement.clientWidth;
+    const vh = document.documentElement.clientHeight;
+    if(pr.right > vw - 8) pop.style.left = Math.max(8, vw - pr.width - 8) + 'px';
+    if(pr.bottom > vh - 8) pop.style.top = Math.max(8, r.top - pr.height - 6) + 'px';
+  });
+
+  setTimeout(()=>{
+    document.addEventListener('mousedown', onMiniDatePickerOutsideClick, true);
+    document.addEventListener('keydown', onMiniDatePickerKeydown, true);
+  }, 0);
+}
+
+
+
 const LS_DASH_STAT_START='fitness_dash_stat_start';
 const LS_DASH_MONTHLY_START='fitness_dash_monthly_start';
 let dashStatStart = localStorage.getItem(LS_DASH_STAT_START) || '';
@@ -2777,6 +3017,7 @@ function syncStartInput(inputId, state, earliest, latest){
   el.min = earliest; el.max = latest;
   el.value = state.value || earliest;
   el.placeholder = earliest;
+  syncMiniDateTrigger(inputId);
 }
 
 const runMDistStart    = makeChartStartFilter('RunMDistStart',    'fitness_run_mdist_start',    'run-mdist-start',    ()=>renderRunAnalysis());
@@ -2871,7 +3112,7 @@ function renderDashboard(){
   // 注：dash-monthly-start 这个输入框现在由 renderMonthlyBarCard 动态生成，
   // 这里执行时它还不存在，它的 min/max/value 挪到下面调用完模板之后再设置
   const statInput=document.getElementById('dash-stat-start');
-  if(statInput){ statInput.min=earliest; statInput.max=latest; statInput.value=dashStatStart||earliest; statInput.placeholder=earliest; }
+  if(statInput){ statInput.min=earliest; statInput.max=latest; statInput.value=dashStatStart||earliest; statInput.placeholder=earliest; syncMiniDateTrigger('dash-stat-start'); }
 
   // 统计卡片：若选择了起始日期（且不早于最早记录），只统计该日期起（含当天）的记录
   const statStart = (dashStatStart && dashStatStart>=earliest) ? dashStatStart : '';
@@ -2902,7 +3143,7 @@ function renderDashboard(){
       <div class="legend-item" style="background:var(--purple-lt);color:var(--purple)"><div class="legend-dot" id="legend-dot-Badminton" style="background:var(--purple)"></div>羽毛球</div>`;
   }
   const monthlyInput = document.getElementById('dash-monthly-start');
-  if(monthlyInput){ monthlyInput.min=earliest; monthlyInput.max=latest; monthlyInput.value=dashMonthlyStart||earliest; monthlyInput.placeholder=earliest; }
+  if(monthlyInput){ monthlyInput.min=earliest; monthlyInput.max=latest; monthlyInput.value=dashMonthlyStart||earliest; monthlyInput.placeholder=earliest; syncMiniDateTrigger('dash-monthly-start'); }
   upsertChart('monthlyChart', document.getElementById('monthlyChart'), {type:'bar',
     data:{labels:months.map(m=>m.slice(2).replace('-','/')),
       datasets:types.map(t=>({
@@ -3370,7 +3611,7 @@ function renderSportSummary(){
     }
     const barPct = maxCount>0 ? Math.max((count/maxCount)*100, 3) : 0; // 至少留 3% 让色条可见
     return `<div class="sport-summary-row">
-      <span class="sport-summary-icon" style="background:${hexToRgba(getSportColor(sport),0.14)}" title="${escapeHtml(sport)}">${icon}</span>
+      <span class="sport-summary-icon" style="background:${hexToRgba(getSportColor(sport),0.14)}" onclick="showToast('${escapeHtml(sport)}',1500)">${icon}</span>
       <span class="sport-summary-name">${escapeHtml(sport)}</span>
       <span class="sport-summary-stat">${count} 次${extra?`<span class="sport-summary-extra"> · ${extra}</span>`:''}</span>
       <div class="sport-summary-bar-wrap"><div class="sport-summary-bar" style="width:${barPct}%;background:${getSportColor(sport)}"></div></div>
