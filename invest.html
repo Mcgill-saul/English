@@ -150,19 +150,20 @@ body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;backgr
 .legend-fill .leg-v{grid-column:6}
 .board-bento-grid-3col{
   display:grid;
-  grid-template-columns:1fr 1fr 1fr;
+  grid-template-columns:1fr 1fr 1fr 1fr;
   grid-template-rows:auto auto auto;
   gap:16px;
   grid-template-areas:
-    "btarget bkpi    bstruct"
-    "btarget bxirr1  bxirr2"
-    "btarget btrend  btrend";
+    "btarget bkpi    bstruct byearly"
+    "btarget bxirr1  bxirr2  byearly"
+    "btarget btrend  btrend  btrend";
 }
 .bento-area-btarget{grid-area:btarget}
 .bento-area-bkpi{grid-area:bkpi}
 .bento-area-bstruct{grid-area:bstruct}
 .bento-area-bxirr1{grid-area:bxirr1}
 .bento-area-bxirr2{grid-area:bxirr2}
+.bento-area-byearly{grid-area:byearly}
 .bento-area-btrend{grid-area:btrend}
 .board-bento-grid-2col{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch}
 .board-stack-col{display:flex;flex-direction:column;gap:16px;min-width:0}
@@ -5997,6 +5998,35 @@ function _renderGroupBoard(lv, groupName){
       </div>
     </div>
 
+      <div class="board-section card-display bento-area-byearly" style="display:flex;flex-direction:column;margin-bottom:0">
+        <div class="board-section-title" style="flex-wrap:wrap;gap:4px 8px">
+          <span style="display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>逐年收益率</span>
+          <button class="btn btn-sm" style="margin-left:auto;font-size:10px" onclick="toggleYearlyStatsSort()" id="bd-sort-btn">${_yearlyStatsAsc?'↑ 升序':'↓ 降序'}</button>
+        </div>
+        <div style="font-size:11px;font-weight:400;color:var(--text3);margin:-6px 0 8px">期初为上年末快照次日 · 本年用今日市值临时收口</div>
+        ${yearlyStats.length
+          ? `<div class="table-wrap" style="overflow-x:auto;flex:1;min-height:0">
+              <table>
+                <thead><tr>
+                  <th class="no-sort">年度</th>
+                  <th class="no-sort" style="text-align:right">年底金额</th>
+                  <th class="no-sort" style="text-align:right">年收益</th>
+                  <th class="no-sort" style="text-align:right">年收益率</th>
+                  <th class="no-sort" style="text-align:right">当年净投入</th>
+                </tr></thead>
+                <tbody>
+                  ${yearlyStats.map(d=>`<tr>
+                    <td style="font-weight:600">${d.year}${d.isYTD?' <span class="pill pill-blue" style="font-size:9px;margin-left:4px">至今</span>':''}</td>
+                    <td style="text-align:right;font-weight:600">${fmtCNY(d.close)}</td>
+                    <td style="text-align:right" class="${d.gain!=null?(d.gain>=0?'pos':'neg'):''}">${d.gain!=null?(d.gain>=0?'+':'')+fmtCNY(d.gain):'—'}</td>
+                    <td style="text-align:right;font-weight:700" class="${d.rate!=null?(d.rate>=0?'pos':'neg'):''}">${d.rate!=null?(d.rate>=0?'+':'')+(d.rate*100).toFixed(2)+'%':'—'}</td>
+                    <td style="text-align:right;color:var(--text2)">${d.netInvested>=0?'+':''}${fmtCNY(d.netInvested)}</td>
+                  </tr>`).join('')}
+                </tbody>
+              </table>
+            </div>`
+          : `<div class="empty" style="padding:30px">暂无流水或快照记录</div>`}
+      </div>
     </div>
 
     <!-- Row3: product detail table -->
@@ -6033,56 +6063,21 @@ function _renderGroupBoard(lv, groupName){
       </table></div>
     </div>
 
-    <!-- Row6: 逐年收益率(左列，变宽) + 最近现金流记录(右列，窄)
-         逐年收益率是5列财务表格，数字怕挤，给它更多宽度；现金流记录本来就是"两头固定宽度、中间省略号"的结构，
-         缩窄不会破——两个XIRR计算器已经挪到上面主角卡片那一行了，这里现在只剩现金流记录一项。 -->
-    <div class="board-bento-grid-2col" style="margin-bottom:16px">
-      <div class="board-section" style="display:flex;flex-direction:column">
-        <div class="board-section-title" style="flex-wrap:wrap;gap:4px 8px">
-          <span style="display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>逐年收益率</span>
-          <span style="font-size:11px;font-weight:400;color:var(--text3)">期初为上年末快照次日 · 本年用今日市值临时收口</span>
-          <button class="btn btn-sm" style="margin-left:auto;font-size:10px" onclick="toggleYearlyStatsSort()" id="bd-sort-btn">${_yearlyStatsAsc?'↑ 升序':'↓ 降序'}</button>
-        </div>
-        ${yearlyStats.length
-          ? `<div class="table-wrap" style="overflow-x:auto">
-              <table>
-                <thead><tr>
-                  <th class="no-sort">年度</th>
-                  <th class="no-sort" style="text-align:right">年底金额</th>
-                  <th class="no-sort" style="text-align:right">年收益</th>
-                  <th class="no-sort" style="text-align:right">年收益率</th>
-                  <th class="no-sort" style="text-align:right">当年净投入</th>
-                </tr></thead>
-                <tbody>
-                  ${yearlyStats.map(d=>`<tr>
-                    <td style="font-weight:600">${d.year}${d.isYTD?' <span class="pill pill-blue" style="font-size:9px;margin-left:4px">至今</span>':''}</td>
-                    <td style="text-align:right;font-weight:600">${fmtCNY(d.close)}</td>
-                    <td style="text-align:right" class="${d.gain!=null?(d.gain>=0?'pos':'neg'):''}">${d.gain!=null?(d.gain>=0?'+':'')+fmtCNY(d.gain):'—'}</td>
-                    <td style="text-align:right;font-weight:700" class="${d.rate!=null?(d.rate>=0?'pos':'neg'):''}">${d.rate!=null?(d.rate>=0?'+':'')+(d.rate*100).toFixed(2)+'%':'—'}</td>
-                    <td style="text-align:right;color:var(--text2)">${d.netInvested>=0?'+':''}${fmtCNY(d.netInvested)}</td>
-                  </tr>`).join('')}
-                </tbody>
-              </table>
-            </div>`
-          : `<div class="empty" style="padding:30px">暂无流水或快照记录</div>`}
-      </div>
-      <div class="board-stack-col">
-        <div class="board-section" style="margin-bottom:0">
-          <div class="board-section-title"><svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg>最近现金流记录</div>
-          ${recentCF.length
-            ? recentCF.map(c=>{
-                const isCost=c.type==='成本资金';
-                const cny=costCNY(c);
-                return`<div class="cf-mini-row">
-                  <span style="color:var(--text3);width:68px;flex-shrink:0">${c.date}</span>
-                  <span style="font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.l1||c.product}</span>
-                  <span class="pill ${c.type==='年度快照'?'pill-blue':cny>0?'pill-green':'pill-coral'}" style="font-size:9px">${c.type}</span>
-                  <span style="font-weight:600;width:80px;text-align:right;flex-shrink:0" class="${isCost?(cny>0?'pos':'neg'):''}">${cny>0?'+':''}${fmtCNY(cny)}</span>
-                </div>`;
-              }).join('')
-            : '<div class="empty" style="padding:30px">暂无流水记录</div>'}
-        </div>
-              </div>
+    <!-- Row6: 最近现金流记录(独立整行——逐年收益率挪到上面Row1第4列了，两个XIRR计算器也已经在Row1了，这里只剩现金流记录一项) -->
+    <div class="board-section" style="margin-bottom:16px">
+      <div class="board-section-title"><svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg>最近现金流记录</div>
+      ${recentCF.length
+        ? recentCF.map(c=>{
+            const isCost=c.type==='成本资金';
+            const cny=costCNY(c);
+            return`<div class="cf-mini-row">
+              <span style="color:var(--text3);width:68px;flex-shrink:0">${c.date}</span>
+              <span style="font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.l1||c.product}</span>
+              <span class="pill ${c.type==='年度快照'?'pill-blue':cny>0?'pill-green':'pill-coral'}" style="font-size:9px">${c.type}</span>
+              <span style="font-weight:600;width:80px;text-align:right;flex-shrink:0" class="${isCost?(cny>0?'pos':'neg'):''}">${cny>0?'+':''}${fmtCNY(cny)}</span>
+            </div>`;
+          }).join('')
+        : '<div class="empty" style="padding:30px">暂无流水记录</div>'}
     </div>
   `;
 
