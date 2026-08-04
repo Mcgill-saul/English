@@ -719,10 +719,25 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
    不是往下顶开页面；移动端（跟全站同一个 768px 断点）自动切回上下堆叠，
    跟手机上"点了往下展开"的直觉一致 */
 .cycle-layout{display:flex;gap:var(--space-16);align-items:stretch;}
-.cycle-history-panel{flex:0 0 360px;min-width:0;border-left:1px solid var(--border);padding-left:var(--space-16);}
+.cycle-history-panel{
+  flex:1 1 auto; /* 之前是 flex:0 0 360px 固定宽度，面板内的网格自动换行算出来
+                    每行只能放 1 张卡——这才是"第2张历史周期卡片开始往下排、
+                    不往右排"的真正原因。改成能随卡片数量一起变宽 */
+  min-width:0;
+  border-left:1px solid var(--border);
+  padding-left:var(--space-16);
+  overflow-x:auto; /* 历史周期很多时横向滚动，而不是被挤到换行往下堆 */
+}
+/* 历史周期面板内部用横向一排 flex，而不是会自动换行的 grid——
+   桌面端卡片永远排成一行，向右延伸，不再受面板宽度限制而被迫换行 */
+.cycle-history-panel .cycle-grid{display:flex;flex-wrap:nowrap;}
+.cycle-history-panel .cycle-card{flex:0 0 340px;}
 @media(max-width:768px){
   .cycle-layout{flex-direction:column;}
-  .cycle-history-panel{flex:none;width:100%;border-left:none;border-top:1px solid var(--border);padding-left:0;padding-top:var(--space-14);margin-top:var(--space-4);}
+  .cycle-history-panel{flex:none;width:100%;border-left:none;border-top:1px solid var(--border);padding-left:0;padding-top:var(--space-14);margin-top:var(--space-4);overflow-x:visible;}
+  /* 移动端仍然维持"从上往下堆叠"的原有体验 */
+  .cycle-history-panel .cycle-grid{flex-direction:column;flex-wrap:wrap;}
+  .cycle-history-panel .cycle-card{flex:1 1 auto;width:100%;}
 }
 
 /* 周期卡片的「⋮」操作菜单——跟日历筛选菜单是同一套视觉模式 */
@@ -3342,7 +3357,7 @@ let cycleHistoryOpen = false;
 function toggleCycleHistory(){
   cycleHistoryOpen = !cycleHistoryOpen;
   document.getElementById('ana-cycle-history-wrap').style.display = cycleHistoryOpen ? '' : 'none';
-  document.getElementById('ana-cycle-history').style.display = cycleHistoryOpen ? 'grid' : 'none';
+  document.getElementById('ana-cycle-history').style.display = cycleHistoryOpen ? 'flex' : 'none';
   document.getElementById('ana-cycle-toggle').textContent = cycleHistoryOpen ? '收起历史周期' : '查看历史周期';
 }
 
@@ -3673,7 +3688,7 @@ let runCycleHistoryOpen=false;
 function toggleRunCycleHistory(){
   runCycleHistoryOpen=!runCycleHistoryOpen;
   document.getElementById('run-cycle-history-wrap').style.display=runCycleHistoryOpen?'':'none';
-  document.getElementById('run-cycle-history').style.display=runCycleHistoryOpen?'grid':'none';
+  document.getElementById('run-cycle-history').style.display=runCycleHistoryOpen?'flex':'none';
   document.getElementById('run-cycle-toggle').textContent=runCycleHistoryOpen?'收起历史周期':'查看历史周期';
 }
 
