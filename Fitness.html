@@ -4229,6 +4229,26 @@ function parseExcelRows(rows){
   return result.sort((a,b)=>a.date.localeCompare(b.date));
 }
 
+function mergeCycles(target, incoming){
+  // 按 id 去重是常规情况；但同一个"进行中"周期很可能在不同设备/不同时间点导出时
+  // 被各自生成过不同的 id（比如两台设备都创建过一个「进行中」周期，起止日期一样），
+  // 单靠 id 比不出来会导致合并后出现两张看起来一模一样的周期卡片。这里额外用
+  // "起止日期是否完全一致"兜底判断成同一个周期。去重集合也要在循环里实时更新，
+  // 否则导入文件自己内部如果有重复条目，也会被原样加进去两份。
+  const dupKeyOf = c => (c.start||'') + '|' + (c.end||'');
+  const existingIds = new Set(target.map(c=>c.id));
+  const existingDupKeys = new Set(target.map(dupKeyOf));
+  let added = 0;
+  incoming.forEach(c=>{
+    if(!c || !c.id) return;
+    const dupKey = dupKeyOf(c);
+    if(existingIds.has(c.id) || existingDupKeys.has(dupKey)) return;
+    target.push(c); added++;
+    existingIds.add(c.id); existingDupKeys.add(dupKey);
+  });
+  return added;
+}
+
 function confirmImport(){
   if(!_pendingImport) return;
   const mode = document.querySelector('input[name="importMode"]:checked')?.value || 'merge';
@@ -4251,14 +4271,12 @@ function confirmImport(){
     let cyclesAdded = 0;
     if(_pendingImportCycles){
       if(_pendingImportCycles.runCycles){
-        const existingRun = new Set(runCycles.map(c=>c.id));
-        _pendingImportCycles.runCycles.forEach(c=>{ if(c && c.id && !existingRun.has(c.id)){ runCycles.push(c); cyclesAdded++; } });
+        cyclesAdded += mergeCycles(runCycles, _pendingImportCycles.runCycles);
         runCycles.sort((a,b)=>a.start.localeCompare(b.start));
         saveRunCycles(runCycles);
       }
       if(_pendingImportCycles.anaCycles){
-        const existingAna = new Set(anaCycles.map(c=>c.id));
-        _pendingImportCycles.anaCycles.forEach(c=>{ if(c && c.id && !existingAna.has(c.id)){ anaCycles.push(c); cyclesAdded++; } });
+        cyclesAdded += mergeCycles(anaCycles, _pendingImportCycles.anaCycles);
         anaCycles.sort((a,b)=>a.start.localeCompare(b.start));
         saveCycles(anaCycles);
       }
