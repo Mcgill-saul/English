@@ -3987,13 +3987,19 @@ function renderRunAnalysis(){
 //  数据管理（导出/导入）
 // ══════════════════════════════════════
 function exportData(){
-  const b=new Blob([JSON.stringify(records,null,2)],{type:'application/json'});
+  // 之前这里只导出了 records，训练周期(runCycles/anaCycles)完全没打包进去——
+  // 不管周期是新是旧都一样会丢，只是最近的周期里通常有实际跑步记录，
+  // 看起来"有被导出"，其实导出的只是记录本身，周期的起止日期/名称这些
+  // 元数据从来没进过这个文件。改成跟云端 Gist 备份同一个格式一起导出。
+  const payload = {records, runCycles, anaCycles};
+  const b=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(b);
   a.download='fitness_'+localDateStr()+'.json'; a.click();
-  showToast('已导出 JSON');
+  showToast('已导出 JSON（含训练周期）');
 }
 
-// ── JSON Import（与「导出 JSON 备份」的文件格式一一对应）──
+// ── JSON Import（新格式 {records, runCycles, anaCycles} 与旧格式纯记录数组都兼容）──
+let _pendingImportCycles = null; // {runCycles, anaCycles}——只有导入新格式备份文件时才有值
 function importFromJson(e){
   const file = e.target.files[0]; if(!file) return;
   const status = document.getElementById('import-status');
@@ -4003,25 +4009,39 @@ function importFromJson(e){
   reader.onload = ev => {
     try{
       const parsed = JSON.parse(ev.target.result);
-      if(!Array.isArray(parsed)) throw new Error('JSON 格式不正确：应为记录数组（与"导出 JSON 备份"生成的文件格式一致）');
+      let recordsArr, cyclesData = null;
+      if(Array.isArray(parsed)){
+        recordsArr = parsed; // 旧格式：纯记录数组，不含训练周期
+      } else if(parsed && typeof parsed==='object' && Array.isArray(parsed.records)){
+        recordsArr = parsed.records; // 新格式：{records, runCycles, anaCycles}
+        cyclesData = {
+          runCycles: Array.isArray(parsed.runCycles) ? parsed.runCycles : null,
+          anaCycles: Array.isArray(parsed.anaCycles) ? parsed.anaCycles : null,
+        };
+      } else {
+        throw new Error('JSON 格式不正确：应为记录数组，或包含 records 字段的备份对象（与"导出 JSON 备份"生成的文件格式一致）');
+      }
       // 基本字段校验：至少要有 date 和 sport；缺失 id 的记录自动补一个，避免脏数据影响后续渲染
-      const cleaned = parsed
+      const cleaned = recordsArr
         .filter(r=>r && typeof r==='object' && r.date && r.sport)
         .map(r=>({...r, id: r.id || genId()}));
       if(!cleaned.length){ status.textContent='未找到有效记录（每条记录至少需要 date 和 sport 字段）'; return; }
 
       _pendingImport = cleaned;
+      _pendingImportCycles = cyclesData;
       const existing = new Set(records.map(r=>r.id));
       const newCount = cleaned.filter(r=>!existing.has(r.id)).length;
       const dupCount = cleaned.length - newCount;
       const mode = document.querySelector('input[name="importMode"]:checked')?.value || 'merge';
+      const cycleCount = cyclesData ? (cyclesData.runCycles?.length||0) + (cyclesData.anaCycles?.length||0) : 0;
       const prev = document.getElementById('import-preview');
       document.getElementById('import-preview-text').innerHTML =
         `解析完成：共 <strong>${cleaned.length}</strong> 条记录` +
-        (cleaned.length!==parsed.length ? `（已跳过 ${parsed.length-cleaned.length} 条缺少必要字段的记录）` : '') + `<br>` +
+        (cleaned.length!==recordsArr.length ? `（已跳过 ${recordsArr.length-cleaned.length} 条缺少必要字段的记录）` : '') +
+        (cyclesData ? `，另含 <strong>${cycleCount}</strong> 个训练周期` : '') + `<br>` +
         (mode==='overwrite'
-          ? `覆盖模式：将替换现有全部 <strong>${records.length}</strong> 条记录`
-          : `合并模式：<strong>${newCount}</strong> 条新记录将导入，<strong>${dupCount}</strong> 条重复 ID 将跳过`);
+          ? `覆盖模式：将替换现有全部 <strong>${records.length}</strong> 条记录${cyclesData?'及全部训练周期':''}`
+          : `合并模式：<strong>${newCount}</strong> 条新记录将导入，<strong>${dupCount}</strong> 条重复 ID 将跳过${cyclesData?'；训练周期按 ID 合并去重':''}`);
       prev.style.display = 'block';
       status.textContent = '';
     } catch(err){
@@ -4052,6 +4072,7 @@ function importFromExcel(e){
         if(!rows.length){ status.textContent='文件为空'; return; }
         const parsed = parseExcelRows(rows);
         _pendingImport = parsed;
+        _pendingImportCycles = null; // Excel 导入不含训练周期，清掉可能残留的上一次 JSON 导入数据
         const existing = new Set(records.map(r=>r.id));
         const newCount = parsed.filter(r=>!existing.has(r.id)).length;
         const dupCount = parsed.length - newCount;
@@ -4216,6 +4237,10 @@ function confirmImport(){
     if(!confirm(`覆盖模式：将清空现有 ${records.length} 条记录，替换为导入的 ${_pendingImport.length} 条记录。确认？`)) return;
     records = _pendingImport;
     save(records);
+    if(_pendingImportCycles){
+      if(_pendingImportCycles.runCycles){ runCycles = _pendingImportCycles.runCycles; saveRunCycles(runCycles); }
+      if(_pendingImportCycles.anaCycles){ anaCycles = _pendingImportCycles.anaCycles; saveCycles(anaCycles); }
+    }
     showToast(`已覆盖导入 ${records.length} 条记录 ✓`, 3000);
   } else {
     const existing = new Set(records.map(r=>r.id));
@@ -4223,17 +4248,36 @@ function confirmImport(){
     _pendingImport.forEach(r=>{ if(!existing.has(r.id)){ records.push(r); added++; }});
     records.sort((a,b)=>a.date.localeCompare(b.date));
     save(records);
-    showToast(`已合并导入 ${added} 条新记录 ✓`, 3000);
+    let cyclesAdded = 0;
+    if(_pendingImportCycles){
+      if(_pendingImportCycles.runCycles){
+        const existingRun = new Set(runCycles.map(c=>c.id));
+        _pendingImportCycles.runCycles.forEach(c=>{ if(c && c.id && !existingRun.has(c.id)){ runCycles.push(c); cyclesAdded++; } });
+        runCycles.sort((a,b)=>a.start.localeCompare(b.start));
+        saveRunCycles(runCycles);
+      }
+      if(_pendingImportCycles.anaCycles){
+        const existingAna = new Set(anaCycles.map(c=>c.id));
+        _pendingImportCycles.anaCycles.forEach(c=>{ if(c && c.id && !existingAna.has(c.id)){ anaCycles.push(c); cyclesAdded++; } });
+        anaCycles.sort((a,b)=>a.start.localeCompare(b.start));
+        saveCycles(anaCycles);
+      }
+    }
+    showToast(`已合并导入 ${added} 条新记录${cyclesAdded?`、${cyclesAdded} 个训练周期`:''} ✓`, 3000);
   }
 
   _pendingImport = null;
+  _pendingImportCycles = null;
   document.getElementById('import-preview').style.display = 'none';
   document.getElementById('import-status').textContent = '';
   renderDataStats();
+  renderRunAnalysis();
+  renderAnaerobic();
 }
 
 function cancelImport(){
   _pendingImport = null;
+  _pendingImportCycles = null;
   document.getElementById('import-preview').style.display = 'none';
   document.getElementById('import-status').textContent = '';
 }
