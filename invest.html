@@ -86,8 +86,8 @@
 .card-hero .kpi-v-label{color:rgba(255,255,255,.75);font-size:12px}
 .card-hero .kpi-v-val{color:#fff}
 .card-hero .kpi-v-sub{color:rgba(255,255,255,.85)}
-.card-hero .pos{color:#4ADE80}
-.card-hero .neg{color:#FFD9D0}
+.card-hero .pos{color:#fff}
+.card-hero .neg{color:#fff}
 .card-hero #bd-xirr-panel{background:var(--surface);border-radius:var(--rs);padding:12px;margin-top:10px}
 .card-hero #bd-xirr-panel .pos{color:var(--green)}
 .card-hero #bd-xirr-panel .neg{color:var(--red)}
@@ -2552,6 +2552,19 @@ function costCNY(c){
   return c.amount * rate;
 }
 function fmtCNY(v){return '¥'+v.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2})}
+// 主行数字 + 副行数字(外币等值/天数年数等)上下堆叠，小数点对齐——用CSS Grid的"两列自动等宽"特性：
+// 整数部分统一放第1列(右对齐)、小数点开始的部分统一放第2列(左对齐)，Grid会让第1列宽度自动撑到两行里最宽的那个，
+// 于是两行的小数点天然落在同一条竖线上，不用JS去量文字宽度(量字宽这条路这次已经踩过一次坑了)。
+// 如果某一行没有小数点(比如日期"2026-03-05")，就整行都当"整数部分"，右对齐即可，不参与对齐也没关系。
+function alignedNumPair(mainText, mainCls, mainStyle, subText, subCls, subStyle){
+  const split = s=>{ const i=s.lastIndexOf('.'); return i>=0 ? [s.slice(0,i), s.slice(i)] : [s, '']; };
+  const [mi,md] = split(mainText);
+  const [si,sd] = split(subText);
+  return `<div style="display:inline-grid;grid-template-columns:auto auto">
+    <span class="${mainCls||''}" style="${mainStyle};justify-self:end">${mi}</span><span class="${mainCls||''}" style="${mainStyle};justify-self:start">${md}</span>
+    <span class="${subCls||''}" style="${subStyle};justify-self:end">${si}</span><span class="${subCls||''}" style="${subStyle};justify-self:start">${sd}</span>
+  </div>`;
+}
 function fmtPct(v){return(v>=0?'+':'')+v.toFixed(2)+'%'}
 function _xirrResultHtml(r,cf){
   return `<div style="text-align:center;padding:10px 0 14px">
@@ -5456,11 +5469,27 @@ function _groupYearlyStats(level, groupName){
     tipEl = document.createElement('div');
     tipEl.id = '_global_hover_tip';
     tipEl.style.cssText = 'position:fixed;z-index:9999;background:rgba(20,20,20,.92);color:#fff;'
-      + 'font-size:11px;font-weight:500;padding:7px 10px;border-radius:6px;white-space:pre-line;'
-      + 'width:200px;line-height:1.6;text-align:left;box-shadow:0 4px 12px rgba(0,0,0,.18);'
+      + 'font-size:11px;font-weight:500;padding:5px 10px;border-radius:6px;white-space:pre-line;'
+      + 'line-height:1.6;text-align:left;box-shadow:0 4px 12px rgba(0,0,0,.18);'
       + 'opacity:0;pointer-events:none;transition:opacity .12s;';
     document.body.appendChild(tipEl);
     return tipEl;
+  }
+  // 用canvas的measureText量文字宽度，不碰DOM布局引擎——之前用一个离屏position:fixed的span做探针，
+  // 实测量出的宽度(33px)跟气泡实际需要的宽度对不上(渲染成了63px高的3行，说明探针量准了别的东西)，
+  // 猜测是离屏定位元素在某些情况下拿到的layout不可靠。canvas measureText是业界标准的文字测量方案，不依赖DOM布局。
+  const MAX_W = 240;
+  let _measCtx = null;
+  function measureWidth(text){
+    if(!_measCtx){
+      _measCtx = document.createElement('canvas').getContext('2d');
+      _measCtx.font = "500 11px -apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+    }
+    let max = 0;
+    text.split('\n').forEach(line=>{
+      max = Math.max(max, _measCtx.measureText(line).width);
+    });
+    return max;
   }
   document.addEventListener('mouseover', e=>{
     const el = e.target.closest('.hover-tip');
@@ -5470,10 +5499,12 @@ function _groupYearlyStats(level, groupName){
     const t = ensureTipEl();
     t.textContent = tip;
     t.style.opacity = '0';
+    t.style.width = Math.min(measureWidth(tip)+20+6, MAX_W) + 'px'; // +20是左右padding(box-sizing:border-box把width算成含padding的外框宽度)，+6是安全余量
     const r = el.getBoundingClientRect();
     requestAnimationFrame(()=>{
       const tw = t.offsetWidth, th = t.offsetHeight;
-      let left = r.right - tw;
+      // 居中锚定在触发元素正下方，跟品种数徽章的悬浮框风格一致；贴边了再收回来，不跑出视口
+      let left = r.left + r.width/2 - tw/2;
       if(left < 8) left = 8;
       if(left + tw > window.innerWidth - 8) left = window.innerWidth - 8 - tw;
       let top = r.bottom + 8;
@@ -5791,53 +5822,46 @@ function _renderGroupBoard(lv, groupName){
     <div class="board-bento-grid-3col" style="margin-bottom:16px">
       <div class="board-section card-display bento-area-btarget" style="display:flex;flex-direction:column">
         <div class="board-section-title" style="justify-content:space-between">
-          <span style="display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>目标 vs 实际（组合内）</span>
+          <span style="display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>配置偏差</span>
           <span id="bd-hhi-inline" style="font-size:12px;white-space:nowrap"></span>
         </div>
         <div id="bd-target-chart" style="padding-top:4px;flex:1;min-height:0;overflow-y:auto">${targetChartHtml}</div>
       </div>
       <!-- KPI vertical card（跟总览总市值共用同一套 .card-hero 主角皮肤，内部数据排版暂时维持看板自己的样子，留到后面单独讨论） -->
       <div class="kpi-card-v card-hero bento-area-bkpi">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div>
-            <div class="kpi-v-label">持仓起始</div>
-            <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap">
-              <span style="font-size:13px;font-weight:700;color:#fff">${startDate||'—'}</span>
-              <span class="kpi-v-sub">${heldDays!==null?`${heldDays}天 / ${heldYears}年`:'暂无流水'}</span>
-            </div>
+        <div style="position:relative;text-align:center">
+          <span class="hover-tip" data-tip="占总比" style="position:absolute;top:-4px;left:-4px;background:#fff;color:#F4511E;font-size:11px;font-weight:800;padding:0 9px;height:23px;line-height:23px;border-radius:999px;white-space:nowrap">${grpPct.toFixed(2)}%</span>
+          <div class="badge-circle" data-tip="当前持有品种数" style="position:absolute;top:-4px;right:-4px">
+            ${[...new Set(prods.map(p=>p.name))].length}
           </div>
-          <div>
-            <div class="kpi-v-label">占总组合比</div>
-            <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap">
-              <span style="font-size:13px;font-weight:700;color:#fff">${grpPct.toFixed(2)}%</span>
-            </div>
-          </div>
+          <div class="kpi-v-label">当前市值</div>
+          ${soleCcy&&soleCcy!=='MIXED'
+            ? alignedNumPair(fmtCNY(grpTotal),'kpi-v-val','font-size:30px', fmtForeign(grpTotalF,soleCcy),'kpi-v-sub','font-size:30px;font-weight:700;margin-top:2px')
+            : `<div class="kpi-v-val" style="font-size:30px;margin-top:6px">${fmtCNY(grpTotal)}</div>${soleCcy==='MIXED'?`<div style="margin-top:4px">${_mixedCcyHint()}</div>`:''}`}
         </div>
-        <hr>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div>
-            <div class="kpi-v-label">当前市值</div>
-            <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
-              <span class="kpi-v-val">${fmtCNY(grpTotal)}</span>
-              <span class="kpi-v-sub">本金 ${fmtCNY(netCost)}</span>
-            </div>
-            ${soleCcy==='MIXED' ? `<div style="margin-top:3px">${_mixedCcyHint()}</div>` : soleCcy ? `
-            <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:3px">
-              <span class="kpi-v-sub" style="font-size:12px">${fmtForeign(grpTotalF, soleCcy)}</span>
-              <span class="kpi-v-sub">本金 ${fmtForeign(netCostF, soleCcy)}</span>
-            </div>` : ''}
+        <div style="margin-top:26px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+          <div style="text-align:center">
+            <div class="kpi-v-label">本金</div>
+            ${soleCcy&&soleCcy!=='MIXED'
+              ? alignedNumPair(fmtCNY(netCost),'kpi-v-sub','font-size:15px;font-weight:700;margin-top:4px;color:#fff', fmtForeign(netCostF,soleCcy),'kpi-v-sub','font-size:15px;font-weight:700;margin-top:2px')
+              : `<div class="kpi-v-sub" style="font-size:15px;font-weight:700;margin-top:4px;color:#fff">${fmtCNY(netCost)}</div>`}
           </div>
-          <div>
+          <div style="text-align:center">
             <div class="kpi-v-label">浮动盈亏</div>
-            <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap">
-              <span class="kpi-v-val ${gain>=0?'pos':'neg'}">${gain>=0?'+':''}${gainPct.toFixed(2)}%</span>
-              <span class="kpi-v-sub ${gain>=0?'pos':'neg'}" style="font-size:13px;font-weight:600">${gain>=0?'+':''}${fmtCNY(gain)}</span>
-            </div>
-            ${soleCcy==='MIXED' ? `<div style="margin-top:3px">${_mixedCcyHint()}</div>` : soleCcy ? `
-            <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin-top:3px">
-              <span class="kpi-v-sub ${gainF>=0?'pos':'neg'}" style="font-size:12px">${gainF>=0?'+':''}${gainFPct.toFixed(2)}%</span>
-              <span class="kpi-v-sub ${gainF>=0?'pos':'neg'}" style="font-size:12px">${gainF>=0?'+':''}${fmtForeign(gainF, soleCcy)}</span>
-            </div>` : ''}
+            ${soleCcy&&soleCcy!=='MIXED'
+              ? alignedNumPair((gain>=0?'+':'')+fmtCNY(gain), gain>=0?'pos':'neg', 'font-size:15px;font-weight:700;margin-top:4px', (gainF>=0?'+':'')+fmtForeign(gainF,soleCcy), gainF>=0?'pos':'neg', 'font-size:15px;font-weight:700;margin-top:2px')
+              : `<div class="kpi-v-sub ${gain>=0?'pos':'neg'}" style="font-size:15px;font-weight:700;margin-top:4px">${gain>=0?'+':''}${fmtCNY(gain)}</div>`}
+          </div>
+          <div style="text-align:center">
+            <div class="kpi-v-label">盈亏比例</div>
+            ${soleCcy&&soleCcy!=='MIXED'
+              ? alignedNumPair((gain>=0?'+':'')+gainPct.toFixed(2)+'%', gain>=0?'pos':'neg', 'font-size:15px;font-weight:700;margin-top:4px', (gainF>=0?'+':'')+gainFPct.toFixed(2)+'%', gainF>=0?'pos':'neg', 'font-size:15px;font-weight:700;margin-top:2px')
+              : `<div class="kpi-v-sub ${gain>=0?'pos':'neg'}" style="font-size:15px;font-weight:700;margin-top:4px">${gain>=0?'+':''}${gainPct.toFixed(2)}%</div>`}
+          </div>
+          <div style="text-align:center">
+            <div class="kpi-v-label">持仓起始</div>
+            <div class="kpi-v-sub" style="font-size:15px;font-weight:700;margin-top:4px;color:#fff">${startDate||'—'}</div>
+            <div class="kpi-v-sub" style="font-size:15px;font-weight:700;margin-top:2px">${heldDays!==null?`${heldDays}天 / ${heldYears}年`:'暂无流水'}</div>
           </div>
         </div>
         <hr>
@@ -6029,55 +6053,56 @@ function _renderGroupBoard(lv, groupName){
       </div>
     </div>
 
-    <!-- Row3: product detail table -->
-    <div class="board-section">
-      <div class="board-section-title" style="justify-content:space-between">
-        <span><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>品种明细</span>
-        <span style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:400;color:var(--text3)">
-          再平衡阈值
-          <input id="rebal-thresh-amt" type="number" min="0" placeholder="金额"
-            value="${REBAL_THRESH.amt||''}"
-            style="width:72px;padding:2px 6px;font-size:11px;border:1px solid var(--border2);border-radius:4px;font-family:inherit;background:var(--surface);color:var(--text);outline:none"
-            oninput="setRebalThresh('amt',this.value)">
-          <span style="color:var(--border2)">|</span>
-          <input id="rebal-thresh-pct" type="number" min="0" max="100" step="0.1" placeholder="%"
-            value="${REBAL_THRESH.pct||''}"
-            style="width:56px;padding:2px 6px;font-size:11px;border:1px solid var(--border2);border-radius:4px;font-family:inherit;background:var(--surface);color:var(--text);outline:none"
-            oninput="setRebalThresh('pct',this.value)">
-          <span>%</span>
-          <span style="color:var(--border2);font-size:10px;margin-left:2px">百分比优先</span>
-        </span>
+    <!-- Row3: 最近现金流记录(左，1/5) + 品种明细(右，4/5) —— 品种明细原来独占一整行时"品种"那一列空出一大截没用到，
+         现金流记录之前又是自己单独占一整行、内容量不大，两个拼一行更省地方 -->
+    <div style="display:grid;grid-template-columns:1fr 4fr;gap:16px;margin-bottom:16px">
+      <div class="board-section" style="margin-bottom:0">
+        <div class="board-section-title"><svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg>最近现金流记录</div>
+        ${recentCF.length
+          ? recentCF.map(c=>{
+              const isCost=c.type==='成本资金';
+              const cny=costCNY(c);
+              return`<div class="cf-mini-row">
+                <span style="color:var(--text3);width:68px;flex-shrink:0">${c.date}</span>
+                <span style="font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.l1||c.product}</span>
+                <span class="pill ${c.type==='年度快照'?'pill-blue':cny>0?'pill-green':'pill-coral'}" style="font-size:9px">${c.type}</span>
+                <span style="font-weight:600;width:80px;text-align:right;flex-shrink:0" class="${isCost?(cny>0?'pos':'neg'):''}">${cny>0?'+':''}${fmtCNY(cny)}</span>
+              </div>`;
+            }).join('')
+          : '<div class="empty" style="padding:30px">暂无流水记录</div>'}
       </div>
-      <div class="table-wrap"><table style="font-size:12px">
-        <thead><tr>
-          <th style="min-width:80px;position:sticky;left:0;background:var(--surface);z-index:2">类型</th>
-          <th style="min-width:140px;position:sticky;left:80px;background:var(--surface);z-index:2">品种</th>
-          <th style="text-align:right">目标比例</th>
-          <th style="text-align:right">目标金额</th>
-          <th style="text-align:right">当前市值</th>
-          <th style="text-align:right">当前比例</th>
-          <th style="text-align:center">偏差</th>
-          <th style="text-align:right;min-width:100px">再平衡建议</th>
-        </tr></thead>
-        <tbody>${_buildProdTable(prods, grpTotal, lv, groupName)}</tbody>
-      </table></div>
-    </div>
-
-    <!-- Row6: 最近现金流记录(独立整行——逐年收益率挪到上面Row1第4列了，两个XIRR计算器也已经在Row1了，这里只剩现金流记录一项) -->
-    <div class="board-section" style="margin-bottom:16px">
-      <div class="board-section-title"><svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg>最近现金流记录</div>
-      ${recentCF.length
-        ? recentCF.map(c=>{
-            const isCost=c.type==='成本资金';
-            const cny=costCNY(c);
-            return`<div class="cf-mini-row">
-              <span style="color:var(--text3);width:68px;flex-shrink:0">${c.date}</span>
-              <span style="font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.l1||c.product}</span>
-              <span class="pill ${c.type==='年度快照'?'pill-blue':cny>0?'pill-green':'pill-coral'}" style="font-size:9px">${c.type}</span>
-              <span style="font-weight:600;width:80px;text-align:right;flex-shrink:0" class="${isCost?(cny>0?'pos':'neg'):''}">${cny>0?'+':''}${fmtCNY(cny)}</span>
-            </div>`;
-          }).join('')
-        : '<div class="empty" style="padding:30px">暂无流水记录</div>'}
+      <div class="board-section" style="margin-bottom:0;min-width:0">
+        <div class="board-section-title" style="justify-content:space-between">
+          <span><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>品种明细</span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:400;color:var(--text3)">
+            再平衡阈值
+            <input id="rebal-thresh-amt" type="number" min="0" placeholder="金额"
+              value="${REBAL_THRESH.amt||''}"
+              style="width:72px;padding:2px 6px;font-size:11px;border:1px solid var(--border2);border-radius:4px;font-family:inherit;background:var(--surface);color:var(--text);outline:none"
+              oninput="setRebalThresh('amt',this.value)">
+            <span style="color:var(--border2)">|</span>
+            <input id="rebal-thresh-pct" type="number" min="0" max="100" step="0.1" placeholder="%"
+              value="${REBAL_THRESH.pct||''}"
+              style="width:56px;padding:2px 6px;font-size:11px;border:1px solid var(--border2);border-radius:4px;font-family:inherit;background:var(--surface);color:var(--text);outline:none"
+              oninput="setRebalThresh('pct',this.value)">
+            <span>%</span>
+            <span style="color:var(--border2);font-size:10px;margin-left:2px">百分比优先</span>
+          </span>
+        </div>
+        <div class="table-wrap"><table style="font-size:12px">
+          <thead><tr>
+            <th style="min-width:80px;position:sticky;left:0;background:var(--surface);z-index:2">类型</th>
+            <th style="min-width:140px;position:sticky;left:80px;background:var(--surface);z-index:2">品种</th>
+            <th style="text-align:right">目标比例</th>
+            <th style="text-align:right">目标金额</th>
+            <th style="text-align:right">当前市值</th>
+            <th style="text-align:right">当前比例</th>
+            <th style="text-align:center">偏差</th>
+            <th style="text-align:right;min-width:100px">再平衡建议</th>
+          </tr></thead>
+          <tbody>${_buildProdTable(prods, grpTotal, lv, groupName)}</tbody>
+        </table></div>
+      </div>
     </div>
   `;
 
