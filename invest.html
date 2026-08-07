@@ -27,7 +27,7 @@
    .card-hero-soft = 第二主角淡橙皮肤(总览市值趋势 / 看板市值趋势共用)。
    组合选择器(.card.card-display / .kpi-card-v.card-hero)是特意这么写的：普通.card/.kpi-card-v基础规则
    不管写在样式表前面还是后面，都不会反超这几条，不用再操心谁在样式表里出现得晚。 */
-.card.card-display,.board-section.card-display{border:none;border-radius:20px;padding:22px;box-shadow:0 4px 16px -6px rgba(0,0,0,.08)}
+.card.card-display{border:none;border-radius:20px;padding:22px;box-shadow:0 4px 16px -6px rgba(0,0,0,.08)}
 .card-display .card-header{margin-bottom:18px}
 .card.card-hero-soft{background:linear-gradient(160deg,#FFF1E8,#FFFAF7);box-shadow:0 3px 14px -6px rgba(244,81,30,.18)}
 .card-hero-soft .card-title{color:#C2540E}
@@ -366,9 +366,6 @@ input[type=number]{-moz-appearance:textfield}
 .bl1-card-sub{display:flex;gap:8px;margin-top:3px;font-size:11px;color:var(--text3)}
 .bl1-card-xirr{font-size:11px;font-weight:600;margin-top:2px}
 .bl1-empty{padding:80px;text-align:center;color:var(--text3);font-size:13px}
-.board-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:var(--sh);margin-bottom:16px}
-.board-section-title{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:14px;display:flex;align-items:center;gap:6px}
-.board-section-title svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .prod-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
 .prod-row:last-child{border-bottom:none}
 .prod-row-name{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1581,7 +1578,7 @@ let _xirrCalcRows = _saved && _saved.XIRR_CALC_ROWS ? _saved.XIRR_CALC_ROWS : [[
             <button class="btn btn-sm btn-primary" onclick="openSharedProductModal(null)">+ 新增共管产品</button>
           </div>
           <div style="font-size:11px;color:var(--text3);margin-bottom:16px">多个一级组合的资金投入同一个实际产品/账户时，用份额法精确核算各自的当前价值。每次有新资金进入或部分赎回前，需填写"操作前总值"（产品在该操作发生之前一刻的总市值），这是确保份额计算准确的关键。</div>
-          <div id="shared-list"><div class="board-section" style="margin-bottom:12px">
+          <div id="shared-list"><div class="card" style="margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
         <div style="flex:1;min-width:0">
           <span style="font-size:14px;font-weight:700">攒钱利器</span>
@@ -1673,7 +1670,7 @@ let _xirrCalcRows = _saved && _saved.XIRR_CALC_ROWS ? _saved.XIRR_CALC_ROWS : [[
         </table>
       </div>
       
-    </div><div class="board-section" style="margin-bottom:12px">
+    </div><div class="card" style="margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
         <div style="flex:1;min-width:0">
           <span style="font-size:14px;font-weight:700">攒钱利器</span>
@@ -3714,8 +3711,8 @@ function _mixedCcyHint(){
 function renderMarketPlan(){
   const labels={A:'A股',H:'H股',US:'美股'};
   document.getElementById('mkplan-cards').innerHTML = ['A','H','US'].map(k=>`
-    <div class="board-section" style="margin-bottom:0">
-      <div class="board-section-title">${labels[k]}</div>
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title" style="margin-bottom:14px">${labels[k]}</div>
       <div class="form-row"><label class="form-label">市场占比 %</label>
         <input type="number" class="fi" id="mkplan-pct-${k}" value="${MARKET_PLAN.pct[k]||0}" step="0.1" oninput="onMarketPlanInput()">
       </div>
@@ -5820,8 +5817,8 @@ function _renderGroupBoard(lv, groupName){
     <!-- Row1: target-actual(左列，跨3行) + KPI主角卡/结构分布(第1行) + 集中度分析/(暂空)(第2行) + 市值趋势(第3行，跨中右两列)
          "结构分布"暂时放第三列第1行，第三列第2行先空着，留给后面要加的内容；市值趋势不再整行铺满，只占中右两列宽度。 -->
     <div class="board-bento-grid-3col" style="margin-bottom:16px">
-      <div class="board-section card-display bento-area-btarget" style="display:flex;flex-direction:column">
-        <div class="board-section-title" style="justify-content:space-between">
+      <div class="card card-display bento-area-btarget" style="display:flex;flex-direction:column">
+        <div class="card-title" style="margin-bottom:14px;justify-content:space-between">
           <span style="display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>配置偏差</span>
           <span id="bd-hhi-inline" style="font-size:12px;white-space:nowrap"></span>
         </div>
@@ -5926,8 +5923,8 @@ function _renderGroupBoard(lv, groupName){
         </div>
       </div>
 
-      <div class="board-section card-display bento-area-bstruct">
-        <div class="board-section-title" style="justify-content:space-between">
+      <div class="card card-display bento-area-bstruct">
+        <div class="card-title" style="margin-bottom:14px;justify-content:space-between">
           <span style="display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 9 9h-9z"/></svg>结构分布</span>
           <div class="data-tabs" style="margin:0;border:none">
             <div class="dtab active" id="bd-comp-tab-cat" onclick="setBoardCompTab('cat')" style="font-size:11px;padding:4px 8px">大类</div>
@@ -5964,8 +5961,8 @@ function _renderGroupBoard(lv, groupName){
       <!-- 集中度分析卡片已取消：CR5、最大单一品种跟"目标vs实际"里已经按大小排好序的持仓列表信息重复，
            唯一有增量信息的HHI，挪到"目标vs实际"标题行右侧了 -->
       <!-- 两个XIRR计算器：从Row4/5的堆叠窄栏挪过来，占KPI主角卡下面这一行，取代之前集中度分析的位置 -->
-<div class="board-section card-display bento-area-bxirr1" style="margin-bottom:0">
-          <div class="board-section-title" style="margin-bottom:14px">
+<div class="card card-display bento-area-bxirr1" style="margin-bottom:0">
+          <div class="card-title" style="margin-bottom:14px">
             <span style="display:flex;align-items:center;gap:6px">
               <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               从某年起至今 XIRR
@@ -5983,8 +5980,8 @@ function _renderGroupBoard(lv, groupName){
               <div id="bd-xirr-from-result"></div>`
             : `<div class="empty" style="padding:24px;font-size:12px">暂无流水或快照数据</div>`}
         </div>
-        <div class="board-section card-display bento-area-bxirr2" style="margin-bottom:0">
-          <div class="board-section-title" style="margin-bottom:14px">
+        <div class="card card-display bento-area-bxirr2" style="margin-bottom:0">
+          <div class="card-title" style="margin-bottom:14px">
             <span style="display:flex;align-items:center;gap:6px">
               <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               自定义区间 XIRR
@@ -6022,8 +6019,8 @@ function _renderGroupBoard(lv, groupName){
       </div>
     </div>
 
-      <div class="board-section card-display bento-area-byearly" style="display:flex;flex-direction:column;margin-bottom:0">
-        <div class="board-section-title" style="flex-wrap:wrap;gap:4px 8px">
+      <div class="card card-display bento-area-byearly" style="display:flex;flex-direction:column;margin-bottom:0">
+        <div class="card-title" style="margin-bottom:14px;flex-wrap:wrap;gap:4px 8px">
           <span style="display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>逐年收益率</span>
           <button class="btn btn-sm" style="margin-left:auto;font-size:10px" onclick="toggleYearlyStatsSort()" id="bd-sort-btn">${_yearlyStatsAsc?'↑ 升序':'↓ 降序'}</button>
         </div>
@@ -6056,8 +6053,8 @@ function _renderGroupBoard(lv, groupName){
     <!-- Row3: 最近现金流记录(左，1/5) + 品种明细(右，4/5) —— 品种明细原来独占一整行时"品种"那一列空出一大截没用到，
          现金流记录之前又是自己单独占一整行、内容量不大，两个拼一行更省地方 -->
     <div style="display:grid;grid-template-columns:1fr 4fr;gap:16px;margin-bottom:16px">
-      <div class="board-section" style="margin-bottom:0">
-        <div class="board-section-title"><svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg>最近现金流记录</div>
+      <div class="card card-display" style="margin-bottom:0">
+        <div class="card-title" style="margin-bottom:14px"><svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg>最近现金流记录</div>
         ${recentCF.length
           ? recentCF.map(c=>{
               const isCost=c.type==='成本资金';
@@ -6071,8 +6068,8 @@ function _renderGroupBoard(lv, groupName){
             }).join('')
           : '<div class="empty" style="padding:30px">暂无流水记录</div>'}
       </div>
-      <div class="board-section" style="margin-bottom:0;min-width:0">
-        <div class="board-section-title" style="justify-content:space-between">
+      <div class="card card-display" style="margin-bottom:0;min-width:0">
+        <div class="card-title" style="margin-bottom:14px;justify-content:space-between">
           <span><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>品种明细</span>
           <span style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:400;color:var(--text3)">
             再平衡阈值
@@ -6089,16 +6086,16 @@ function _renderGroupBoard(lv, groupName){
             <span style="color:var(--border2);font-size:10px;margin-left:2px">百分比优先</span>
           </span>
         </div>
-        <div class="table-wrap"><table style="font-size:12px">
+        <div class="table-wrap"><table style="font-size:12px;table-layout:fixed;width:100%">
           <thead><tr>
-            <th style="min-width:80px;position:sticky;left:0;background:var(--surface);z-index:2">类型</th>
-            <th style="min-width:140px;position:sticky;left:80px;background:var(--surface);z-index:2">品种</th>
-            <th style="text-align:right">目标比例</th>
-            <th style="text-align:right">目标金额</th>
-            <th style="text-align:right">当前市值</th>
-            <th style="text-align:right">当前比例</th>
-            <th style="text-align:center">偏差</th>
-            <th style="text-align:right;min-width:100px">再平衡建议</th>
+            <th style="width:13%;position:sticky;left:0;background:var(--surface);z-index:2">类型</th>
+            <th style="width:11%;position:sticky;left:13%;background:var(--surface);z-index:2">品种</th>
+            <th style="width:11%;text-align:right">目标比例</th>
+            <th style="width:13%;text-align:right">目标金额</th>
+            <th style="width:13%;text-align:right">当前市值</th>
+            <th style="width:11%;text-align:right">当前比例</th>
+            <th style="width:10%;text-align:center">偏差</th>
+            <th style="width:18%;text-align:right">再平衡建议</th>
           </tr></thead>
           <tbody>${_buildProdTable(prods, grpTotal, lv, groupName)}</tbody>
         </table></div>
@@ -6241,7 +6238,7 @@ function _buildProdTable(prods, grpTotal, lv, groupName){
       const rebalAmt  = target!=null ? (targetAmt-val) : null;
       html += `<tr data-type-group="${typeId}" style="display:none">
         <td style="position:sticky;left:0;background:var(--surface)"></td>
-        <td style="position:sticky;left:80px;background:var(--surface);font-weight:600;padding-left:24px">
+        <td style="position:sticky;left:13%;background:var(--surface);font-weight:600;padding-left:24px">
           <span style="opacity:.3;font-size:10px;margin-right:4px">└</span>${p.name}${p.enhance?'<span class="pill pill-green" style="font-size:9px;margin-left:4px">增强</span>':''}
         </td>
         <td style="text-align:right;color:var(--text3)">${target!=null?parseFloat(target).toFixed(2)+'%':'—'}</td>
@@ -6878,7 +6875,7 @@ function renderSharedList(){
           <button class="btn btn-sm btn-danger" style="margin-left:auto" onclick="deleteSharedTransfer('${sp.id}','${t.id}')">删除</button>
         </div>`;
       }).join('')}` : '';
-    return `<div class="board-section" style="margin-bottom:12px">
+    return `<div class="card" style="margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
         <div style="flex:1;min-width:0">
           <span style="font-size:14px;font-weight:700">${sp.name}</span>
