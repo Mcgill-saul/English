@@ -265,6 +265,16 @@ tbody tr.editing td{background:#fffbe6}
 .form-row{margin-bottom:12px}
 .form-label{font-size:11px;color:var(--text3);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;display:block}
 input.fi,select.fi{width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--rs);font-size:13px;font-family:inherit;background:var(--surface);color:var(--text);outline:none;transition:border .15s}
+.pct-input-wrap{position:relative;display:flex;align-items:center}
+.pct-input-wrap input.fi{padding-right:26px}
+.pct-input-wrap input.fi::-webkit-inner-spin-button,.pct-input-wrap input.fi::-webkit-outer-spin-button{margin-left:4px}
+.pct-input-wrap .pct-suffix{position:absolute;right:10px;color:var(--text2);font-size:12px;font-weight:600;pointer-events:none}
+.mkplan-card{border-top:3px solid var(--border2)}
+.mkplan-card .card-title{display:flex;align-items:center;gap:7px}
+.mkplan-card .card-title .mkplan-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.mkplan-pct-pill{display:inline-flex;align-items:center;gap:1px;background:linear-gradient(160deg,#FF6B35,#F4511E);color:#fff;font-size:12px;font-weight:800;padding:4px 12px;border-radius:999px;box-shadow:0 3px 8px -3px rgba(244,81,30,.5)}
+.mkplan-pct-pill-input{width:28px;background:transparent;border:none;outline:none;color:#fff;font-weight:800;font-size:12px;text-align:right;padding:0;font-family:inherit;-moz-appearance:textfield}
+.mkplan-pct-pill-input::-webkit-inner-spin-button,.mkplan-pct-pill-input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 select.fi{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
 input.fi:focus,select.fi:focus{border-color:var(--blue)}
 /* 看板两个XIRR计算器的年份下拉框单独加悬浮态+聚焦光晕，只作用这3个选择器，不改全局.fi(全app还有98处在用，不该被这次顺带改动) */
@@ -273,27 +283,35 @@ input.fi:focus,select.fi:focus{border-color:var(--blue)}
 .fg2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 .modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
-/* tree：组合层级 org chart（从上而下的组织架构图，连线由JS按真实坐标计算，见 renderHierarchy/_drawHierTreeLines） */
+/* tree：组合层级/类型层级 org chart（从上而下的组织架构图，连线由JS按真实坐标计算，见 renderHierarchy/renderTypeTable/_drawOrgTreeLines） */
 .tree{font-size:12px}
 .tree-orgchart{position:relative;display:inline-block;min-width:100%}
 .tree-orgchart ul{list-style:none;display:flex;justify-content:center;gap:20px;margin:0;padding:0}
 .tree-orgchart li{display:flex;flex-direction:column;align-items:center;list-style:none}
 .tree-orgchart li>ul{margin-top:36px}
-#hier-tree-svg{position:absolute;top:0;left:0;pointer-events:none;overflow:visible}
+/* 从左到右的横向模式（类型层级用）：子节点纵向堆叠在父节点右侧，而不是下方 */
+.tree-orgchart-h ul{flex-direction:column;justify-content:center;gap:10px}
+.tree-orgchart-h li{flex-direction:row;align-items:center}
+.tree-orgchart-h li>ul{margin-top:0;margin-left:40px}
+#hier-tree-svg,#type-tree-svg{position:absolute;top:0;left:0;pointer-events:none;overflow:visible}
 .tree-node{display:inline-block;box-sizing:border-box;border-radius:var(--rs);padding:6px 8px 7px;font-size:11px;line-height:1.4;position:relative;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
 .tree-node-root{width:120px;background:linear-gradient(160deg,#2a2a2a,#1a1a1a);color:#fff;font-weight:700;font-size:12px;padding:9px 10px}
-.tree-node-root .tree-node-sub{color:rgba(255,255,255,.65)}
-.tree-node-root .tree-node-pct{color:rgba(255,255,255,.5)}
+.tree-node-root .tree-node-sub{color:rgba(255,255,255,.85)}
+.tree-node-root .tree-node-pct{color:rgba(255,255,255,.7)}
 .tree-l5-header{width:108px;background:var(--text);color:#fff;font-weight:700}
-.tree-l5-header .tree-node-sub{color:rgba(255,255,255,.65)}
-.tree-l5-header .tree-node-pct{color:rgba(255,255,255,.5)}
+.tree-l5-header .tree-node-sub{color:rgba(255,255,255,.85)}
+.tree-l5-header .tree-node-pct{color:rgba(255,255,255,.7)}
 .tree-l4-h{width:98px;background:var(--bg);border:1px solid var(--border2);color:var(--text);font-weight:600}
 .tree-l3-n{width:94px;background:var(--surface2);border:1px solid var(--border);color:var(--text2)}
 .tree-l2-n{width:90px;background:var(--surface);border:1px solid var(--border);color:var(--text2)}
 .tree-l1-n{width:86px;background:#fff;border:1px solid var(--border2);color:var(--text);font-weight:600}
-.tree-node-sub{color:var(--text3);font-weight:400;font-size:10px;margin-top:3px}
-.tree-node-pct{color:var(--text3);opacity:.75}
+.tree-node-sub{color:var(--text2);font-weight:600;font-size:11px;margin-top:3px}
+.tree-node-pct{color:var(--text2);opacity:.8;font-weight:400}
 .tree-node-placeholder{color:var(--text3);border-style:dashed !important;font-style:italic;font-weight:400}
+.tree-cat-header{width:110px;color:#fff;font-weight:700}
+.tree-cat-header .tree-node-sub{color:rgba(255,255,255,.85)}
+.tree-cat-header .tree-node-pct{color:rgba(255,255,255,.7)}
+.tree-type-n{width:92px;background:#fff;border:1px solid var(--border2);color:var(--text);font-weight:600}
 /* weight tree */
 .wt-node{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:4px;cursor:pointer;user-select:none;font-size:12px;transition:background .12s}
 .wt-node:hover{background:var(--surface2)}
@@ -487,7 +505,7 @@ const DEFAULTS = {
   TARGET_ALLOC: {"易方达中债":{"DIY 1.1":10,"DIY 1.2":10,"DIY 2.1":10,"DIY 2.2":7},"广发国开债":{"DIY 1.1":10,"DIY 1.2":15,"DIY 2.1":15,"DIY 2.2":18,"ZJ 14":10},"红利低波":{"DIY 1.1":15,"DIY 1.2":15,"DIY 2.1":15,"DIY 2.2":15,"ZJ 14":15},"招商A500":{"DIY 1.1":12,"DIY 1.2":15,"DIY 2.1":12,"DIY 2.2":12,"ZJ 14":15},"国泰A500增强":{"DIY 1.1":3,"DIY 2.1":3,"DIY 2.2":3},"国泰海通500增强":{"DIY 1.1":3,"DIY 1.2":3,"DIY 2.1":3,"DIY 2.2":3},"华夏智胜先锋":{"DIY 2.1":0,"DIY 2.2":2,"DIY 1.1":2,"DIY 1.2":2},"国金量化多因子":{"DIY 1.1":3,"DIY 1.2":3,"DIY 2.1":2,"DIY 2.2":3,"ZJ 14":5},"华夏智胜新锐":{"DIY 1.1":4,"DIY 1.2":4,"DIY 2.1":4,"DIY 2.2":4,"ZJ 14":3},"招商1000增强":{"DIY 1.1":4,"DIY 1.2":4,"DIY 2.1":2,"DIY 2.2":4,"ZJ 14":3},"建信1000增强":{"DIY 1.1":4,"DIY 1.2":4,"DIY 2.1":4,"DIY 2.2":4,"ZJ 14":3},"易方达创业板":{"DIY 1.1":5,"DIY 1.2":5,"DIY 2.1":5,"DIY 2.2":5,"ZJ 14":5},"易方达科创50":{"DIY 1.1":5,"DIY 1.2":5,"DIY 2.1":5,"DIY 2.2":5,"ZJ 14":5},"港股通恒生指数":{"DIY 1.1":5,"DIY 2.1":10},"天弘恒科":{"DIY 1.1":2,"DIY 1.2":15,"DIY 2.1":1.5},"工银国科":{"DIY 1.1":8,"DIY 2.1":3.5,"DIY 2.2":5,"MY 14":8},"广发国开债D":{"DIY 1.1":5},"华夏恒科":{"DIY 2.2":10,"MY 14":10},"货币":{"DIY 1.1":0,"DIY 1.2":0,"DIY 2.1":0,"DIY 2.2":0},"易方达300":{"DIY 1.1":0,"DIY 2.1":0,"DIY 2.2":0},"博道300增强":{"DIY 1.1":0},"南方500":{"DIY 2.1":5},"富国1000增强":{"DIY 2.2":0},"南方宝元债":{"ZJ 14":15},"鹏华1000增强":{"ZJ 14":3},"鹏华500增强":{"ZJ 14":3},"景顺中科50ETF":{"ZJ 14":15,"MY 14":5},"比亚迪":{"MY 14":6},"华夏芯片":{"MY 14":14},"易方达中概":{"MY 14":17},"易方达中概C":{"MY 14":6},"易方达中概ETF":{"MY 14":17},"华夏国科ETF":{"MY 14":5},"工银国科30ETF":{"MY 14":7},"华夏恒科ETF":{"MY 14":5},"攒钱利器":{"攒钱利器TT":100,"攒钱利器HM":100,"攒钱利器MY":100}},
   TARGET_ORDER: {"catOrder":["现金债券","红利","大盘","小盘","双创","行业类","恒生指数","恒生科技","投顾债券","投顾权益"],"prodOrder":{"小盘":["国泰海通500增强","华夏智胜先锋","国金量化多因子","华夏智胜新锐","招商1000增强","建信1000增强"],"恒生科技":["天弘恒科","华夏恒科","工银国科"]}},
   BOARD_TYPE_ORDER: ["现金","债券","红利低波","沪深300","中证A500","中证500","中证1000","创业板","科创板","恒生指数","恒生科技"],
-  MARKET_PLAN:  {"pct":{"A":50,"H":25,"US":25},"bondPct":{"A":20,"H":20,"US":20}},
+  MARKET_PLAN:  {"pct":{"A":50,"H":25,"US":25},"bondPct":{"A":20,"H":20,"US":20},"baseMode":"all","customTotal":0,"l3Sel":[]},
   BENCHMARK_PLAN: {"baseYear":2025,"l1Slots":[{"id":"l1mqhyufto6tya","name":"DIY","group":"我的组合"},{"id":"l1mqhyufto6a0d","name":"MY","group":""},{"id":"l1mqxg46bzer5e","name":"攒钱利器","group":""},{"id":"l1mqxra691xqfn","name":"近海巡航","group":""}],"customTracks":[{"id":"cmqhyxb8srlxq","name":"风格轮动","group":"参照","returns":{"2025":16.64,"2026":4.25},"fee":"0.5"},{"id":"cmqxfi7fekk1y","name":"中证全指","group":"A指数","returns":{"2025":24.6,"2026":8.14}},{"id":"cmqxfiljhiusq","name":"中证A500","group":"A指数","returns":{"2025":22.43,"2026":8.94}},{"id":"cmqxfiqevkf45","name":"沪深300","group":"A指数","returns":{"2025":17.66,"2026":5.15}},{"id":"cmqxg1rl14w60","name":"VOO","group":"US指数","returns":{"2025":17.82,"2026":7.53}},{"id":"cmqxg288zoely","name":"QQQ","group":"US指数","returns":{"2025":20.77,"2026":15.28}}],"blendTracks":[{"id":"bmqxfhm2ycfoo","name":"VOO+QQQ","group":"US指数","components":[{"refType":"custom","ref":"cmqxg1rl14w60","weight":50},{"refType":"custom","ref":"cmqxg288zoely","weight":50}]}]},
   SHARED_PRODUCTS: [{"id":"spmqksbcgk7pdg","name":"攒钱利器","market":"A","ccy":"CNY","type":"投顾债券","platform":"HM","lots":[{"id":"lotmqksc9revpna","l1":"攒钱利器HM","amount":150000,"date":"2025-04-15","preValue":null},{"id":"lotmqksnmrlz9e7","l1":"流动性A攒钱","amount":60108.56,"date":"2026-03-20","preValue":156629.95},{"id":"lotmqkso92u32zq","l1":"流动性A攒钱","amount":10038.41,"date":"2026-04-03","preValue":215911.85}],"redemptions":[],"valuations":[{"id":"valmqno5jqldmup","date":"2026-06-21","value":225432.97},{"id":"valmqvsfcag6aez","date":"2026-06-27","value":223813.88},{"id":"valmr5qg5cqlern","date":"2026-07-04","value":224902.28},{"id":"valmrfyr8irwa4t","date":"2026-07-11","value":224970.7},{"id":"valmrprxz46p5vj","date":"2026-07-18","value":225234.08},{"id":"valmrzqppb46luy","date":"2026-07-25","value":226509.5}]},{"id":"spmqlswdev8nyx","name":"攒钱利器","market":"A","ccy":"CNY","type":"投顾债券","platform":"JD","lots":[{"id":"lotmqlsxpg7onn7","l1":"分红A攒钱1","amount":100000,"date":"2025-11-20","preValue":null},{"id":"lotmqlsylews0oq","l1":"分红A攒钱2","amount":20000,"date":"2026-04-03","preValue":100112.01},{"id":"lotmqlsz2n99n63","l1":"分红A攒钱2","amount":10000,"date":"2026-04-27","preValue":121135.16},{"id":"lotmqlszhb5wgp0","l1":"分红A攒钱2","amount":10000,"date":"2026-05-13","preValue":131777.49},{"id":"lotmqlszuiknw4i","l1":"分红A攒钱2","amount":10000,"date":"2026-05-15","preValue":141029.31},{"id":"lotmqm9kbroe9mr","l1":"分红A攒钱2","amount":10000,"date":"2026-05-21","preValue":150495.75},{"id":"lotmqm9kt6dugh8","l1":"分红A攒钱2","amount":20127.07,"date":"2026-06-18","preValue":159381.17}],"redemptions":[],"valuations":[{"id":"valmqno54a6u16b","date":"2026-06-21","value":179508.68},{"id":"valmqvse7hncpa5","date":"2026-06-27","value":178213.63},{"id":"valmr5qmnupk16y","date":"2026-07-04","value":179089},{"id":"valmrfyv7gewnmr","date":"2026-07-11","value":179146.97},{"id":"valmrps2ngyrx5i","date":"2026-07-18","value":179370.13},{"id":"valmrzqn80o8n2j","date":"2026-07-25","value":180386.95}],"transfers":[{"id":"xfermqno1kqb6rdd","fromLotId":"lotmqlsxpg7onn7","toL1":"分红MY","amount":2000,"date":"2026-05-20","preValue":150953.02}]}],
   ACTUAL_CASHFLOWS: [{"date":"2026-02-12","l1":"分红B风格2","ccy":"CNY","amount":-690.03,"note":"华泰恒科ETF"},{"date":"2026-02-13","l1":"分红B风格2","ccy":"CNY","amount":-342.52,"note":"华泰恒科ETF"},{"date":"2026-02-25","l1":"分红B风格2","ccy":"CNY","amount":-1005.05,"note":"华泰恒科ETF"},{"date":"2026-02-26","l1":"分红B风格2","ccy":"CNY","amount":-660.03,"note":"华泰恒科ETF"},{"date":"2026-03-02","l1":"分红B风格2","ccy":"CNY","amount":-2560.13,"note":"华泰恒科ETF"},{"date":"2026-03-20","l1":"分红B风格2","ccy":"CNY","amount":-2480.12,"note":"华泰恒科ETF"},{"date":"2026-03-30","l1":"分红B风格2","ccy":"CNY","amount":-1785.09,"note":"华泰恒科ETF"},{"date":"2026-04-24","l1":"分红B风格2","ccy":"CNY","amount":-2032.1,"note":"景顺中科ETF"},{"date":"2026-05-18","l1":"分红B风格2","ccy":"CNY","amount":-2003.3,"note":"景顺中科ETF"},{"date":"2026-06-08","l1":"分红B风格2","ccy":"CNY","amount":-2400.12,"note":"景顺中科ETF"},{"date":"2026-03-16","l1":"分红B风格1","ccy":"CNY","amount":-10000,"note":"风格轮动"},{"date":"2026-03-20","l1":"分红B风格1","ccy":"CNY","amount":-10000,"note":"风格轮动"},{"date":"2026-03-23","l1":"分红B风格1","ccy":"CNY","amount":-10043.66,"note":"风格轮动"},{"date":"2026-06-08","l1":"分红B风格1","ccy":"CNY","amount":-10000,"note":"风格轮动"},{"date":"2026-03-05","l1":"投机B ZFUS","ccy":"USD","amount":-89.6,"note":"TLT"},{"date":"2026-03-05","l1":"投机B ZFUS","ccy":"USD","amount":-397.5,"note":"SMH"},{"date":"2026-03-06","l1":"投机B ZFUS","ccy":"USD","amount":-300,"note":"GOOGL"},{"date":"2026-03-13","l1":"投机B ZFUS","ccy":"USD","amount":86,"note":"TLT"},{"date":"2026-03-13","l1":"投机B ZFUS","ccy":"USD","amount":-86,"note":"IGV"},{"date":"2026-03-17","l1":"投机B ZFUS","ccy":"USD","amount":0.14,"note":"GOOGL 派息"},{"date":"2026-04-08","l1":"投机B ZFUS","ccy":"USD","amount":0.05,"note":"平台 GOOGL派息返还"},{"date":"2026-04-09","l1":"投机B ZFUS","ccy":"USD","amount":-77.5,"note":"IGV"},{"date":"2026-02-04","l1":"投机A 银河","ccy":"CNY","amount":-1922.5,"note":"工银国科30ETF"},{"date":"2026-02-04","l1":"投机A 银河","ccy":"CNY","amount":-2115.9,"note":"华夏恒科ETF"},{"date":"2026-02-05","l1":"投机A 银河","ccy":"CNY","amount":-630.1,"note":"工银国科30ETF"},{"date":"2026-02-05","l1":"投机A 银河","ccy":"CNY","amount":-1044.2,"note":"华夏恒科ETF"},{"date":"2026-02-06","l1":"投机A 银河","ccy":"CNY","amount":-347.6,"note":"华夏恒科ETF"},{"date":"2026-02-26","l1":"投机A 银河","ccy":"CNY","amount":-1845.1,"note":"工银国科30ETF"},{"date":"2026-02-26","l1":"投机A 银河","ccy":"CNY","amount":-2010.1,"note":"华夏恒科ETF"},{"date":"2026-03-02","l1":"投机A 银河","ccy":"CNY","amount":-2023.1,"note":"工银国科30ETF"},{"date":"2026-03-02","l1":"投机A 银河","ccy":"CNY","amount":-2027.5,"note":"华夏恒科ETF"},{"date":"2026-03-20","l1":"投机A 银河","ccy":"CNY","amount":-2052.1,"note":"工银国科30ETF"},{"date":"2026-03-23","l1":"投机A 银河","ccy":"CNY","amount":-1980.1,"note":"工银国科30ETF"},{"date":"2026-03-23","l1":"投机A 银河","ccy":"CNY","amount":-2074.1,"note":"华夏恒科ETF"},{"date":"2026-03-03","l1":"分红B风格1","ccy":"CNY","amount":-10000,"note":"风格轮动"},{"date":"2026-03-04","l1":"分红B风格1","ccy":"CNY","amount":-10000,"note":"风格轮动"},{"date":"2026-07-02","l1":"投机B ZFUS","ccy":"USD","amount":-159.8,"note":"SPCX"},{"date":"2026-06-19","l1":"投机B ZFUS","ccy":"USD","amount":0.02,"note":"IGV 派息"},{"date":"2026-06-16","l1":"投机B ZFUS","ccy":"USD","amount":0.19,"note":"GOOGL 派息"},{"date":"2026-07-13","l1":"分红B风格1","ccy":"CNY","amount":-10000,"note":"风格轮动"},{"date":"2026-07-17","l1":"分红B风格1","ccy":"CNY","amount":-10000,"note":"风格轮动"},{"date":"2026-07-16","l1":"投机B ZFUS","ccy":"USD","amount":-156,"note":"SKHY"},{"date":"2026-07-16","l1":"投机B ZFUS","ccy":"USD","amount":-120.51,"note":"IQQ"}],
@@ -539,7 +557,8 @@ let TARGET_ORDER = _saved ? (_saved.TARGET_ORDER||{catOrder:[],prodOrder:{}}) : 
 let BOARD_TYPE_ORDER = _saved ? (_saved.BOARD_TYPE_ORDER||[]) : JSON.parse(JSON.stringify(DEFAULTS.BOARD_TYPE_ORDER||[]));
 let REBAL_THRESH = _saved ? (_saved.REBAL_THRESH || {amt:'', pct:'0.5'}) : {amt:'', pct:'0.5'};
 let MARKET_PLAN = _saved && _saved.MARKET_PLAN
-  ? {pct:{...DEFAULTS.MARKET_PLAN.pct,..._saved.MARKET_PLAN.pct},bondPct:{...DEFAULTS.MARKET_PLAN.bondPct,..._saved.MARKET_PLAN.bondPct}}
+  ? {pct:{...DEFAULTS.MARKET_PLAN.pct,..._saved.MARKET_PLAN.pct},bondPct:{...DEFAULTS.MARKET_PLAN.bondPct,..._saved.MARKET_PLAN.bondPct},
+     baseMode:_saved.MARKET_PLAN.baseMode||'all',customTotal:_saved.MARKET_PLAN.customTotal||0,l3Sel:_saved.MARKET_PLAN.l3Sel||[]}
   : JSON.parse(JSON.stringify(DEFAULTS.MARKET_PLAN));
 function _genId(prefix){return prefix+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 let BENCHMARK_PLAN = _saved && _saved.BENCHMARK_PLAN && _saved.BENCHMARK_PLAN.baseYear
@@ -1463,7 +1482,7 @@ let _xirrCalcRows = _saved && _saved.XIRR_CALC_ROWS ? _saved.XIRR_CALC_ROWS : [[
           <div class="card-header">
             <div class="card-title">组合层级 · 结构总览</div>
           </div>
-          <div class="table-wrap" onscroll="_drawHierTreeLines()"><div id="hier-tree"></div></div>
+          <div class="table-wrap" onscroll="_drawOrgTreeLines('hier-tree-chart','hier-tree-svg')"><div id="hier-tree"></div></div>
         </div>
         <div class="card">
           <div class="card-header">
@@ -1481,17 +1500,25 @@ let _xirrCalcRows = _saved && _saved.XIRR_CALC_ROWS ? _saved.XIRR_CALC_ROWS : [[
 
       <!-- 类型层级 -->
       <div id="data-typetable" class="data-panel">
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">类型层级表</div>
-            <button class="btn btn-primary btn-sm" onclick="openTypeModal(-1)">
-              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>新增类型
-            </button>
+        <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start">
+          <div class="card" style="margin-bottom:0">
+            <div class="card-header">
+              <div class="card-title">类型层级表</div>
+              <button class="btn btn-primary btn-sm" onclick="openTypeModal(-1)">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>新增
+              </button>
+            </div>
+            <div class="type-table-wrap type-table-narrow"><table>
+              <thead><tr><th>类型</th><th>大类</th><th class="no-sort"></th></tr></thead>
+              <tbody id="type-tbody" data-dynamic=""></tbody>
+            </table></div>
           </div>
-          <div class="type-table-wrap"><table>
-            <thead><tr><th>类型</th><th>大类</th><th class="no-sort">操作</th></tr></thead>
-            <tbody id="type-tbody" data-dynamic=""></tbody>
-          </table></div>
+          <div class="card" style="margin-bottom:0;min-width:0">
+            <div class="card-header">
+              <div class="card-title">类型层级 · 结构总览</div>
+            </div>
+            <div class="table-wrap" onscroll="_drawOrgTreeLines('type-tree-chart','type-tree-svg',true)"><div id="type-tree"></div></div>
+          </div>
         </div>
       </div>
 
@@ -1512,7 +1539,16 @@ let _xirrCalcRows = _saved && _saved.XIRR_CALC_ROWS ? _saved.XIRR_CALC_ROWS : [[
             <div class="card-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>市场再平衡规划</div>
             <div style="font-size:11px;color:var(--text3)" id="mkplan-total-hint">基于当前总市值 ¥1,974,974.25</div>
           </div>
-          <div style="font-size:11px;color:var(--text3);margin-bottom:14px">基于当前总市值重新规划 A股/H股/美股 三个市场各自的占比，并在每个市场内进一步拆出债券与权益的比例。仅作计算参考，不会修改实际持仓数据。本币换算按「汇率」标签页当前设置实时计算。</div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:14px">基于设定总额重新规划 A股/H股/美股 三个市场各自的占比，并在每个市场内进一步拆出债券与权益的比例。仅作计算参考，不会修改实际持仓数据。本币换算按「汇率」标签页当前设置实时计算。</div>
+          <div style="margin-bottom:16px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs)">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-weight:600">总额口径</div>
+            <div class="data-tabs" style="margin:0;border:none" id="mkplan-base-tabs">
+              <div class="dtab active" onclick="setMkplanBaseMode('all')" style="font-size:11px;padding:4px 10px">全部持仓</div>
+              <div class="dtab" onclick="setMkplanBaseMode('custom')" style="font-size:11px;padding:4px 10px">自定义金额</div>
+              <div class="dtab" onclick="setMkplanBaseMode('l3')" style="font-size:11px;padding:4px 10px">选择三级组合合计</div>
+            </div>
+            <div id="mkplan-base-extra" style="margin-top:10px"></div>
+          </div>
           <div id="mkplan-sumcheck" style="margin-bottom:14px" data-dynamic=""></div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px" id="mkplan-cards" data-dynamic=""></div>
           <div style="margin-top:16px;text-align:right">
@@ -3697,6 +3733,78 @@ function _currentMarketExposure(){
   });
   return m;
 }
+// ── 市场规划：总额口径（全部持仓 / 自定义金额 / 选中三级组合合计） ──
+function _mkplanL3Options(){
+  return [...new Set(HIERARCHY.map(h=>h.l3).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh'));
+}
+function _mkplanL3MemberL1s(){
+  const set=new Set();
+  (MARKET_PLAN.l3Sel||[]).forEach(l3=>{ _groupL1Members(3,l3).forEach(l1=>set.add(l1)); });
+  return set;
+}
+function _mkplanBaseProducts(){
+  if(MARKET_PLAN.baseMode==='l3'){
+    const members=_mkplanL3MemberL1s();
+    return PRODUCTS.filter(p=>members.has(p.l1));
+  }
+  return PRODUCTS;
+}
+function _mkplanBaseTotal(){
+  if(MARKET_PLAN.baseMode==='custom') return Math.max(0,MARKET_PLAN.customTotal||0);
+  if(MARKET_PLAN.baseMode==='l3') return _mkplanBaseProducts().reduce((s,p)=>s+toCNY(p.amount,p.ccy),0);
+  return totalCNY();
+}
+function _mkplanBaseExposure(){
+  // 自定义金额模式下没有对应的实际持仓，不做现状/差距对比
+  if(MARKET_PLAN.baseMode==='custom') return {A:0,H:0,US:0,OTHER:0};
+  const m={A:0,H:0,US:0,OTHER:0};
+  _mkplanBaseProducts().forEach(p=>{ const b=_marketBucketOf(p.market); m[b]+=toCNY(p.amount,p.ccy); });
+  return m;
+}
+function setMkplanBaseMode(mode){
+  MARKET_PLAN.baseMode=mode;
+  lsSave();
+  renderMarketPlan();
+}
+function onMkplanCustomTotalInput(){
+  MARKET_PLAN.customTotal=parseFloat(document.getElementById('mkplan-custom-total').value)||0;
+  lsSave();
+  _renderMarketPlanResults();
+}
+function toggleMkplanL3(name){
+  const sel=MARKET_PLAN.l3Sel||(MARKET_PLAN.l3Sel=[]);
+  const idx=sel.indexOf(name);
+  if(idx>=0) sel.splice(idx,1); else sel.push(name);
+  lsSave();
+  _renderMkplanBaseControls();
+  _renderMarketPlanResults();
+}
+function _renderMkplanBaseControls(){
+  const mode=MARKET_PLAN.baseMode||'all';
+  const modes=['all','custom','l3'];
+  document.querySelectorAll('#mkplan-base-tabs .dtab').forEach((el,i)=>{
+    el.classList.toggle('active', modes[i]===mode);
+  });
+  const extraEl=document.getElementById('mkplan-base-extra');
+  if(!extraEl) return;
+  if(mode==='custom'){
+    extraEl.innerHTML=`<div class="form-row" style="max-width:240px;margin-bottom:4px"><label class="form-label">自定义总额（¥）</label><input type="number" class="fi" id="mkplan-custom-total" value="${MARKET_PLAN.customTotal||''}" placeholder="输入金额" step="0.01" oninput="onMkplanCustomTotalInput()"></div>
+      <div style="font-size:11px;color:var(--text3)">自定义模式下按输入金额计算目标配置金额，不与实际持仓做现状/差距对比。</div>`;
+  }else if(mode==='l3'){
+    const opts=_mkplanL3Options();
+    const sel=MARKET_PLAN.l3Sel||[];
+    extraEl.innerHTML = opts.length ? `
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+        ${opts.map(l3=>`<label style="display:flex;align-items:center;gap:5px;font-size:12px;padding:5px 10px;background:${sel.includes(l3)?'var(--blue-bg)':'var(--surface)'};border:1px solid ${sel.includes(l3)?'var(--blue)':'var(--border)'};border-radius:var(--rs);cursor:pointer;user-select:none">
+          <input type="checkbox" ${sel.includes(l3)?'checked':''} onchange="toggleMkplanL3('${l3}')" style="margin:0">${l3}
+        </label>`).join('')}
+      </div>
+      <div style="font-size:11px;color:var(--text3)">已选 ${sel.length} 个三级组合，合计 ${fmtCNY(_mkplanBaseTotal())}</div>
+    ` : `<div style="font-size:11px;color:var(--text3)">暂无三级组合数据，请先在「组合层级」里维护三级字段。</div>`;
+  }else{
+    extraEl.innerHTML='';
+  }
+}
 function fmtForeign(v,ccy){
   const sym = ccy==='USD'?'$':ccy==='HKD'?'HK$':'';
   return sym+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+(sym?'':' '+ccy);
@@ -3724,26 +3832,55 @@ function _mixedCcyHint(){
 
 function renderMarketPlan(){
   const labels={A:'A股',H:'H股',US:'美股'};
-  document.getElementById('mkplan-cards').innerHTML = ['A','H','US'].map(k=>`
-    <div class="card" style="margin-bottom:0">
-      <div class="card-title" style="margin-bottom:14px">${labels[k]}</div>
-      <div class="form-row"><label class="form-label">市场占比 %</label>
-        <input type="number" class="fi" id="mkplan-pct-${k}" value="${MARKET_PLAN.pct[k]||0}" step="0.1" oninput="onMarketPlanInput()">
+  const accent={A:'var(--blue)',H:'var(--purple)',US:'var(--teal)'};
+  document.getElementById('mkplan-cards').innerHTML = ['A','H','US'].map(k=>{
+    const bondPct = MARKET_PLAN.bondPct[k]!=null?MARKET_PLAN.bondPct[k]:20;
+    const eqPct = Math.round((100-bondPct)*100)/100;
+    return `
+    <div class="card mkplan-card" style="margin-bottom:0;border-top-color:${accent[k]}">
+      <div class="card-title" style="margin-bottom:14px;justify-content:space-between">
+        <span style="display:flex;align-items:center;gap:7px"><span class="mkplan-dot" style="background:${accent[k]}"></span>${labels[k]}</span>
+        <span class="hover-tip mkplan-pct-pill" data-tip="市场占比：该市场目标金额占总额的比例">
+          <input type="number" class="mkplan-pct-pill-input" id="mkplan-pct-${k}" value="${MARKET_PLAN.pct[k]||0}" step="0.1" oninput="onMarketPlanPctInput('${k}')">%
+        </span>
       </div>
-      <div class="form-row" style="margin-bottom:8px"><label class="form-label">债券占比 %（权益 = 100 − 债券）</label>
-        <input type="number" class="fi" id="mkplan-bond-${k}" value="${MARKET_PLAN.bondPct[k]!=null?MARKET_PLAN.bondPct[k]:20}" step="1" min="0" max="100" oninput="onMarketPlanInput()">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div>
+          <label class="form-label">债券占比</label>
+          <div class="pct-input-wrap"><input type="number" class="fi" id="mkplan-bond-${k}" value="${bondPct}" step="1" min="0" max="100" oninput="onMarketPlanBondInput('${k}')"><span class="pct-suffix">%</span></div>
+        </div>
+        <div>
+          <label class="form-label">权益占比</label>
+          <div class="pct-input-wrap"><input type="number" class="fi" id="mkplan-eq-${k}" value="${eqPct}" step="1" min="0" max="100" oninput="onMarketPlanEqInput('${k}')"><span class="pct-suffix">%</span></div>
+        </div>
       </div>
       <div id="mkplan-result-${k}"></div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
+  _renderMkplanBaseControls();
   _renderMarketPlanResults();
 }
 
-function onMarketPlanInput(){
-  ['A','H','US'].forEach(k=>{
-    MARKET_PLAN.pct[k]=parseFloat(document.getElementById('mkplan-pct-'+k).value)||0;
-    MARKET_PLAN.bondPct[k]=Math.min(100,Math.max(0,parseFloat(document.getElementById('mkplan-bond-'+k).value)||0));
-  });
+function onMarketPlanPctInput(k){
+  MARKET_PLAN.pct[k]=parseFloat(document.getElementById('mkplan-pct-'+k).value)||0;
+  lsSave();
+  _renderMarketPlanResults();
+}
+function onMarketPlanBondInput(k){
+  const bondEl=document.getElementById('mkplan-bond-'+k);
+  const eqEl=document.getElementById('mkplan-eq-'+k);
+  const bond=Math.min(100,Math.max(0,parseFloat(bondEl.value)||0));
+  MARKET_PLAN.bondPct[k]=bond;
+  if(eqEl) eqEl.value=Math.round((100-bond)*100)/100;
+  lsSave();
+  _renderMarketPlanResults();
+}
+function onMarketPlanEqInput(k){
+  const bondEl=document.getElementById('mkplan-bond-'+k);
+  const eqEl=document.getElementById('mkplan-eq-'+k);
+  const eq=Math.min(100,Math.max(0,parseFloat(eqEl.value)||0));
+  MARKET_PLAN.bondPct[k]=Math.round((100-eq)*100)/100;
+  if(bondEl) bondEl.value=Math.round((100-eq)*100)/100;
   lsSave();
   _renderMarketPlanResults();
 }
@@ -3757,21 +3894,25 @@ function resetMarketPlan(){
 }
 
 function _renderMarketPlanResults(){
-  const total=totalCNY();
+  const total=_mkplanBaseTotal();
   const labels={A:'A股',H:'H股',US:'美股'};
   const ccyOf ={A:'CNY',H:'HKD',US:'USD'};
-  const actual=_currentMarketExposure();
+  const actual=_mkplanBaseExposure();
+  const mode=MARKET_PLAN.baseMode||'all';
 
-  document.getElementById('mkplan-total-hint').textContent = `基于当前总市值 ${fmtCNY(total)}`;
+  const hintLabel=mode==='custom'?'基于自定义总额'
+    :mode==='l3'?`基于所选三级组合合计${(MARKET_PLAN.l3Sel||[]).length?'（'+MARKET_PLAN.l3Sel.join('、')+'）':''}`
+    :'基于当前总市值';
+  document.getElementById('mkplan-total-hint').textContent = `${hintLabel} ${fmtCNY(total)}`;
 
   const pctSum=['A','H','US'].reduce((s,k)=>s+(MARKET_PLAN.pct[k]||0),0);
   const ok=Math.abs(pctSum-100)<0.05;
   document.getElementById('mkplan-sumcheck').innerHTML=`
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;padding:8px 12px;background:var(--surface2);border-radius:var(--rs)">
-      <span style="color:var(--text3)">三市场占比合计</span>
+      <span style="color:var(--text2)">三市场占比合计</span>
       <span style="font-weight:700;color:${ok?'var(--green)':'var(--red)'}">${pctSum.toFixed(2)}%</span>
       ${ok?'':'<span style="font-size:11px;color:var(--red)">需调整至 100%</span>'}
-      ${actual.OTHER>0?`<span style="margin-left:auto;font-size:11px;color:var(--text3)">另有跨市场/未分类持仓 ${fmtCNY(actual.OTHER)}，未计入下方现状对比</span>`:''}
+      ${mode!=='custom'&&actual.OTHER>0?`<span style="margin-left:auto;font-size:11px;color:var(--text2)">另有跨市场/未分类持仓 ${fmtCNY(actual.OTHER)}，未计入下方现状对比</span>`:''}
     </div>`;
 
   ['A','H','US'].forEach(k=>{
@@ -3781,33 +3922,36 @@ function _renderMarketPlanResults(){
     const bondCny=cny*bondPct/100;
     const eqCny=cny-bondCny;
     const ccy=ccyOf[k];
-    const fLocal=(v)=>ccy==='CNY'?'':`<div style="font-size:11px;color:var(--text3);margin-top:1px">≈ ${fmtForeign(v/FX[ccy],ccy)}</div>`;
+    const accent={A:'var(--blue)',H:'var(--purple)',US:'var(--teal)'}[k];
+    // 本币金额后面直接跟一个「≈外币」的行内小字，不再单独占一行
+    const fInline=(v,sz)=>ccy==='CNY'?'':`<span style="font-size:${sz}px;color:var(--text2);font-weight:400;margin-left:6px">≈ ${fmtForeign(v/FX[ccy],ccy)}</span>`;
 
     const actualCny=actual[k]||0;
     const actualPct=total>0?actualCny/total*100:0;
     const gap=cny-actualCny;
     const gapSmall=Math.abs(gap)<total*0.001; // <0.1% of total ~ treat as already aligned
 
-    document.getElementById('mkplan-result-'+k).innerHTML=`
-      <div style="display:flex;align-items:baseline;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:6px">
+    const compareRow = mode==='custom'
+      ? `<div style="font-size:11px;color:var(--text2);margin-bottom:8px">自定义总额模式，不做现状/差距对比</div>`
+      : `<div style="display:flex;align-items:baseline;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:8px">
         <span>现状 ${actualPct.toFixed(2)}%（${fmtCNY(actualCny)}）</span>
-        <span style="font-weight:600;color:${gapSmall?'var(--text3)':gap>0?'var(--green)':'var(--red)'}">${gapSmall?'已对齐':(gap>0?'需加仓 ':'需减仓 ')+fmtCNY(Math.abs(gap))}</span>
-      </div>
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:10px;margin-bottom:8px">
-        <div style="font-size:11px;color:var(--text3)">目标市场总额</div>
-        <div style="font-size:18px;font-weight:700">${fmtCNY(cny)}</div>
-        ${fLocal(cny)}
+        <span style="font-weight:700;color:${gapSmall?'var(--text2)':gap>0?'var(--green)':'var(--red)'}">${gapSmall?'已对齐':(gap>0?'需加仓 ':'需减仓 ')+fmtCNY(Math.abs(gap))}</span>
+      </div>`;
+
+    document.getElementById('mkplan-result-'+k).innerHTML=`
+      ${compareRow}
+      <div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid ${accent};border-radius:var(--rs);padding:10px 12px;margin-bottom:8px">
+        <div style="font-size:11px;color:var(--text2);font-weight:600">目标市场总额</div>
+        <div style="font-size:19px;font-weight:700;margin-top:2px">${fmtCNY(cny)}${fInline(cny,19)}</div>
       </div>
       <div style="display:flex;gap:8px">
-        <div style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:8px">
-          <div style="font-size:10px;color:var(--text3)">债券 ${bondPct}%</div>
-          <div style="font-size:13px;font-weight:600">${fmtCNY(bondCny)}</div>
-          ${fLocal(bondCny)}
+        <div style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:8px 10px">
+          <div style="font-size:10px;color:var(--text2);font-weight:600">债券 ${bondPct}%</div>
+          <div style="font-size:13px;font-weight:700;margin-top:2px">${fmtCNY(bondCny)}${fInline(bondCny,13)}</div>
         </div>
-        <div style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:8px">
-          <div style="font-size:10px;color:var(--text3)">权益 ${100-bondPct}%</div>
-          <div style="font-size:13px;font-weight:600">${fmtCNY(eqCny)}</div>
-          ${fLocal(eqCny)}
+        <div style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:8px 10px">
+          <div style="font-size:10px;color:var(--text2);font-weight:600">权益 ${100-bondPct}%</div>
+          <div style="font-size:13px;font-weight:700;margin-top:2px">${fmtCNY(eqCny)}${fInline(eqCny,13)}</div>
         </div>
       </div>`;
   });
@@ -4362,7 +4506,7 @@ function renderHierarchy(){
   const treeEl=document.getElementById('hier-tree');
   if(treeEl){
     treeEl.innerHTML=html;
-    if(html) requestAnimationFrame(()=>requestAnimationFrame(_drawHierTreeLines));
+    if(html) requestAnimationFrame(()=>requestAnimationFrame(()=>_drawOrgTreeLines('hier-tree-chart','hier-tree-svg')));
   }
   // editable table
   document.getElementById('hier-tbody').innerHTML=HIERARCHY.map((h,i)=>`<tr id="hh-row-${i}">
@@ -4370,9 +4514,11 @@ function renderHierarchy(){
     <td><button class="kebab-btn" onclick="_openKebab(event,[{l:'编辑',a:'openHierModal(${i})'},{l:'删除',a:'deleteHier(${i})',d:1}])">⋮</button></td>
   </tr>`).join('');
 }
-function _drawHierTreeLines(){
-  const container=document.getElementById('hier-tree-chart');
-  const svg=document.getElementById('hier-tree-svg');
+// 通用组织架构图连线：读取真实DOM坐标，SVG精确连接父子节点中心点。
+// 组合层级树（从上到下）、类型层级树（从左到右）共用这一份逻辑，方向靠 horizontal 参数区分。
+function _drawOrgTreeLines(containerId,svgId,horizontal){
+  const container=document.getElementById(containerId);
+  const svg=document.getElementById(svgId);
   if(!container||!svg) return;
   svg.innerHTML='';
   const cRect=container.getBoundingClientRect();
@@ -4387,19 +4533,24 @@ function _drawHierTreeLines(){
     const childUl=li.children[1];
     if(!node||!node.classList.contains('tree-node')||!childUl||childUl.tagName!=='UL') continue;
     const pRect=node.getBoundingClientRect();
-    const px=pRect.left+pRect.width/2-cRect.left;
-    const py=pRect.bottom-cRect.top;
     for(let j=0;j<childUl.children.length;j++){
       const cli=childUl.children[j];
       if(cli.tagName!=='LI') continue;
       const cnode=cli.children[0];
       if(!cnode) continue;
       const cRect2=cnode.getBoundingClientRect();
-      const cx=cRect2.left+cRect2.width/2-cRect.left;
-      const cy=cRect2.top-cRect.top;
-      const midY=(py+cy)/2;
       const path=document.createElementNS('http://www.w3.org/2000/svg','path');
-      path.setAttribute('d','M '+px+' '+py+' L '+px+' '+midY+' L '+cx+' '+midY+' L '+cx+' '+cy);
+      if(horizontal){
+        const px=pRect.right-cRect.left, py=pRect.top+pRect.height/2-cRect.top;
+        const cx=cRect2.left-cRect.left, cy=cRect2.top+cRect2.height/2-cRect.top;
+        const midX=(px+cx)/2;
+        path.setAttribute('d','M '+px+' '+py+' L '+midX+' '+py+' L '+midX+' '+cy+' L '+cx+' '+cy);
+      }else{
+        const px=pRect.left+pRect.width/2-cRect.left, py=pRect.bottom-cRect.top;
+        const cx=cRect2.left+cRect2.width/2-cRect.left, cy=cRect2.top-cRect.top;
+        const midY=(py+cy)/2;
+        path.setAttribute('d','M '+px+' '+py+' L '+px+' '+midY+' L '+cx+' '+midY+' L '+cx+' '+cy);
+      }
       path.setAttribute('fill','none');
       path.setAttribute('stroke','#cfcac2');
       path.setAttribute('stroke-width','2');
@@ -4407,7 +4558,10 @@ function _drawHierTreeLines(){
     }
   }
 }
-window.addEventListener('resize',()=>{if(document.getElementById('hier-tree-chart'))_drawHierTreeLines()});
+window.addEventListener('resize',()=>{
+  if(document.getElementById('hier-tree-chart'))_drawOrgTreeLines('hier-tree-chart','hier-tree-svg');
+  if(document.getElementById('type-tree-chart'))_drawOrgTreeLines('type-tree-chart','type-tree-svg',true);
+});
 
 // ── Settings ──
 function renderSettings(){
@@ -4642,12 +4796,37 @@ function deleteHier(idx){
 
 // ── Type table (settings) ──
 function renderTypeTable(){
+  const allCats=[...new Set(TYPE_TABLE.map(r=>r.cat))].sort((a,b)=>catSortIndex(a)-catSortIndex(b));
   document.getElementById('type-tbody').innerHTML = TYPE_TABLE.map((r,i)=>`
     <tr>
       <td style="font-weight:600">${r.type}</td>
-      <td><span class="pill pill-gray">${r.cat}</span></td>
+      <td><span class="pill" style="background:${catClr(r.cat,allCats.indexOf(r.cat))}22;color:${catClr(r.cat,allCats.indexOf(r.cat))};border:1px solid ${catClr(r.cat,allCats.indexOf(r.cat))}55">${r.cat}</span></td>
       <td><button class="kebab-btn" onclick="_openKebab(event,[{l:'编辑',a:'openTypeModal(${i})'},{l:'删除',a:'deleteType(${i})',d:1}])">⋮</button></td>
     </tr>`).join('');
+  // 结构总览：全部持仓 → 大类（配色跟图表统一）→ 类型，逻辑跟组合层级树一致，同一份连线函数
+  const fmtInt=v=>'¥'+Math.round(v).toLocaleString('zh-CN');
+  const typeVal=t=>PRODUCTS.filter(p=>(p.type||'')===t).reduce((s,p)=>s+toCNY(p.amount,p.ccy),0);
+  const nodeHtml=(cls,label,val,extraStyle)=>{
+    const pct=totalCNY()>0?val/totalCNY()*100:0;
+    const sub=val>0?`<div class="tree-node-sub">${fmtInt(val)}</div><div class="tree-node-sub tree-node-pct">${pct.toFixed(1)}%</div>`:`<div class="tree-node-sub">—</div>`;
+    const st=extraStyle?` style="${extraStyle}"`:'';
+    return `<div class="tree-node ${cls}"${st}>${label}${sub}</div>`;
+  };
+  const catChildren=allCats.map((cat,ci)=>{
+    const types=TYPE_TABLE.filter(r=>r.cat===cat);
+    const typeLis=types.map(r=>`<li>${nodeHtml('tree-type-n',r.type,typeVal(r.type))}</li>`).join('');
+    const catVal=types.reduce((s,r)=>s+typeVal(r.type),0);
+    return `<li>${nodeHtml('tree-cat-header',cat,catVal,'background:'+catClr(cat,ci))}<ul>${typeLis}</ul></li>`;
+  }).join('');
+  const totalVal=TYPE_TABLE.reduce((s,r)=>s+typeVal(r.type),0);
+  const treeHtml=TYPE_TABLE.length
+    ? `<div class="tree-orgchart tree-orgchart-h" id="type-tree-chart"><svg id="type-tree-svg"></svg><ul><li>${nodeHtml('tree-node-root','全部持仓',totalVal)}<ul>${catChildren}</ul></li></ul></div>`
+    : '';
+  const typeTreeEl=document.getElementById('type-tree');
+  if(typeTreeEl){
+    typeTreeEl.innerHTML=treeHtml;
+    if(treeHtml) requestAnimationFrame(()=>requestAnimationFrame(()=>_drawOrgTreeLines('type-tree-chart','type-tree-svg',true)));
+  }
 }
 function openTypeModal(idx){
   document.getElementById('mt-idx').value=idx;
