@@ -855,6 +855,7 @@ let _xirrCalcRows = _saved && _saved.XIRR_CALC_ROWS ? _saved.XIRR_CALC_ROWS : [[
         </div>
         <div style="display:flex;gap:10px;flex-shrink:0">
         <button class="btn btn-primary btn-sm" id="gist-sync-btn" onclick="showGistPanel()" style="flex-shrink:0;margin-bottom:8px"><svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>已连接云同步</button>
+        <span id="gist-last-push-hint" style="font-size:11px;color:var(--text3);align-self:center;white-space:nowrap"></span>
         <button class="btn btn-primary btn-sm" onclick="exportHTML()" style="flex-shrink:0;margin-bottom:8px">
           <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           导出 HTML
@@ -2434,7 +2435,14 @@ function clearLS(){
 const GIST_FILENAME = 'invest_data.json';
 const LS_GIST_TOKEN = 'invest_gist_token';
 const LS_GIST_ID = 'invest_gist_id';
-const LS_GIST_KNOWN_VERSION = 'invest_gist_known_version';
+// 冲突检测不再依赖 GitHub Gist 接口自己返回的 updated_at 时间戳字符串——
+// 这个值不是我们自己生成、完全掌控的，同一设备连续操作也可能因为 GitHub 那边的时序/精度问题
+// 导致本地记的和查询到的对不上，被误判成"云端被别的设备改过"。改成用我们自己写进数据里的
+// _ts 字段来比对：推送/拉取的都是同一份数据，_ts 是我们自己生成、自己读写的，只要真的是
+// 同一设备的操作，这个数字必然对得上，不会再有假冲突；真出现不同设备的冲突，_ts 确实会不同，
+// 检测依然有效。
+const LS_GIST_KNOWN_TS = 'invest_gist_known_ts';
+const LS_GIST_LAST_PUSH_AT = 'invest_gist_last_push_at'; // 上次成功推送的真实时间（挂钟时间，不是数据版本号），用于顶部"多久没同步"提示
 const GIST_PUSH_DEBOUNCE_MS = 8000;
 const GIST_PUSH_MIN_INTERVAL_MS = 10000;
 
@@ -2469,7 +2477,8 @@ function saveGistConfig(){
 
 function createGist(token){
   setGistStatus('正在创建 Gist…', '');
-  const files = {}; files[GIST_FILENAME] = { content: JSON.stringify(_collectData(Date.now()), null, 2) };
+  const ts = Date.now();
+  const files = {}; files[GIST_FILENAME] = { content: JSON.stringify(_collectData(ts), null, 2) };
   fetch('https://api.github.com/gists', {
     method: 'POST',
     headers: { Authorization: 'Bearer '+token, 'Content-Type': 'application/json', 'X-GitHub-Api-Version': '2022-11-28' },
@@ -2480,7 +2489,8 @@ function createGist(token){
     return res.json();
   }).then(data=>{
     localStorage.setItem(LS_GIST_ID, data.id);
-    if(data.updated_at) localStorage.setItem(LS_GIST_KNOWN_VERSION, data.updated_at);
+    localStorage.setItem(LS_GIST_KNOWN_TS, String(ts));
+    localStorage.setItem(LS_GIST_LAST_PUSH_AT, String(Date.now()));
     const idEl = document.getElementById('gist-id'); if(idEl) idEl.value = data.id;
     setGistStatus('Gist 创建成功，ID 已自动填入 ✓', 'ok');
     updateGistBtnLabel();
@@ -2492,11 +2502,21 @@ function pushToGist(manual){
   const gistId = localStorage.getItem(LS_GIST_ID);
   if(!token || !gistId){ if(manual) setGistStatus('请先配置 Token 和 Gist ID', 'error'); return; }
   if(pushToGist._busy){ if(manual) setGistStatus('同步正在进行中，请稍候…', ''); return; }
-  // 自动上传（非手动点击）做节流保护：距上次上传太近就跳过，等下一次 lsSave 的防抖计时器再试
-  if(!manual && (Date.now()-(pushToGist._lastPush||0) < GIST_PUSH_MIN_INTERVAL_MS)) return;
+  // 自动上传（非手动点击）做节流保护：距上次上传太近就先不发，但会自动安排一次重试，
+  // 不是简单跳过就不管了——不然万一这就是这轮编辑的最后一次触发、之后又没有更多编辑，
+  // 这批修改就会永远没机会被推送上去。
+  if(!manual){
+    const wait = GIST_PUSH_MIN_INTERVAL_MS - (Date.now()-(pushToGist._lastPush||0));
+    if(wait > 0){
+      clearTimeout(pushToGist._retryTimer);
+      pushToGist._retryTimer = setTimeout(()=>pushToGist(false), wait + 200);
+      return;
+    }
+  }
   pushToGist._busy = true;
   if(manual) setGistStatus('检查云端状态…', '');
-  // 上传前先确认云端版本没被其他设备改过，避免静默覆盖
+  // 上传前先确认云端版本没被其他设备改过，避免静默覆盖——比对的是数据里我们自己写的 _ts 字段，
+  // 不是 GitHub 接口返回的 updated_at（那个不是我们能完全掌控的，同设备连续操作也可能对不上）
   fetch('https://api.github.com/gists/'+gistId, { cache: 'no-store', headers: { Authorization: 'Bearer '+token, 'X-GitHub-Api-Version': '2022-11-28' } })
     .then(res=>{
       if(res.status===401) throw new Error('Token 无效或已过期，请重新生成（需勾选 gist 权限）');
@@ -2504,8 +2524,13 @@ function pushToGist(manual){
       return res.json();
     })
     .then(remote=>{
-      const known = localStorage.getItem(LS_GIST_KNOWN_VERSION);
-      if(known && remote.updated_at && known !== remote.updated_at){
+      let remoteTs = null;
+      const file = remote.files && remote.files[GIST_FILENAME];
+      if(file && file.content){
+        try{ remoteTs = JSON.parse(file.content)._ts; }catch(e){ /* 内容解析不了就当没有可比对的版本，不拦截 */ }
+      }
+      const known = localStorage.getItem(LS_GIST_KNOWN_TS);
+      if(known && remoteTs!=null && String(known) !== String(remoteTs)){
         pushToGist._busy = false;
         if(manual) setGistStatus('检测到云端有更新，请先处理冲突', 'error');
         showGistConflictBanner();
@@ -2520,7 +2545,8 @@ function pushToGist(manual){
 }
 
 function doPushGist(token, gistId, manual){
-  const files = {}; files[GIST_FILENAME] = { content: JSON.stringify(_collectData(_dataTs||Date.now()), null, 2) };
+  const ts = _dataTs||Date.now();
+  const files = {}; files[GIST_FILENAME] = { content: JSON.stringify(_collectData(ts), null, 2) };
   fetch('https://api.github.com/gists/'+gistId, {
     method: 'PATCH',
     headers: { Authorization: 'Bearer '+token, 'Content-Type': 'application/json', 'X-GitHub-Api-Version': '2022-11-28' },
@@ -2531,8 +2557,10 @@ function doPushGist(token, gistId, manual){
     return res.json();
   }).then(data=>{
     pushToGist._lastPush = Date.now();
-    if(data.updated_at) localStorage.setItem(LS_GIST_KNOWN_VERSION, data.updated_at);
-    if(manual){ setGistStatus('上传成功 ✓ '+new Date().toLocaleTimeString(), 'ok'); updateGistBtnLabel(); }
+    localStorage.setItem(LS_GIST_KNOWN_TS, String(ts));
+    localStorage.setItem(LS_GIST_LAST_PUSH_AT, String(Date.now()));
+    updateGistBtnLabel();
+    if(manual){ setGistStatus('上传成功 ✓ '+new Date().toLocaleTimeString(), 'ok'); }
   }).catch(e=>{ if(manual) setGistStatus('上传失败：'+e.message, 'error'); })
     .finally(()=>{ pushToGist._busy = false; });
 }
@@ -2582,7 +2610,7 @@ function pullFromGist(manual){
       const content = JSON.parse(file.content);
       if(!content || typeof content!=='object' || !Array.isArray(content.PRODUCTS)) throw new Error('数据格式不正确');
       localStorage.setItem(LS, JSON.stringify(content));
-      if(data.updated_at) localStorage.setItem(LS_GIST_KNOWN_VERSION, data.updated_at);
+      if(content._ts!=null) localStorage.setItem(LS_GIST_KNOWN_TS, String(content._ts));
       if(manual) setGistStatus('从云端拉取成功 ✓ 即将刷新页面', 'ok');
       setTimeout(()=>location.reload(), 600);
     }).catch(e=>{ if(manual) setGistStatus('失败：'+e.message, 'error'); });
@@ -2594,12 +2622,33 @@ function setGistStatus(msg, type){
   el.style.color = type==='error' ? 'var(--red)' : (type==='ok' ? 'var(--green)' : 'var(--text3)');
 }
 
+function _fmtRelTime(ts){
+  const diffMs = Date.now()-ts;
+  const min = Math.floor(diffMs/60000);
+  if(min < 1) return '刚刚';
+  if(min < 60) return min+'分钟前';
+  const hr = Math.floor(min/60);
+  if(hr < 24) return hr+'小时前';
+  const day = Math.floor(hr/24);
+  return day+'天前';
+}
 function updateGistBtnLabel(){
   const btn = document.getElementById('gist-sync-btn'); if(!btn) return;
   const connected = !!(localStorage.getItem(LS_GIST_TOKEN) && localStorage.getItem(LS_GIST_ID));
   btn.innerHTML = connected
     ? '<svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>已连接云同步'
     : '<svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>配置云同步';
+  const hintEl = document.getElementById('gist-last-push-hint');
+  if(hintEl){
+    const lastPushAt = connected ? parseInt(localStorage.getItem(LS_GIST_LAST_PUSH_AT)||'0',10) : 0;
+    if(!connected || !lastPushAt){
+      hintEl.textContent = '';
+    } else {
+      const hrs = (Date.now()-lastPushAt)/3600000;
+      hintEl.textContent = '上次推送 '+_fmtRelTime(lastPushAt);
+      hintEl.style.color = hrs>=24 ? 'var(--red,#e5484d)' : 'var(--text3)';
+    }
+  }
 }
 
 
@@ -8890,7 +8939,7 @@ if(typeof _syncSharedProductRows==='function') _syncSharedProductRows();
 renderBoardNotes();
 document.getElementById('date-badge').textContent = new Date().toLocaleDateString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit'});
 document.getElementById('fx-badge').textContent = `USD ${FX.USD.toFixed(2)} · HKD ${FX.HKD.toFixed(4)}`;
-if(typeof updateGistBtnLabel==='function') updateGistBtnLabel();
+if(typeof updateGistBtnLabel==='function'){ updateGistBtnLabel(); setInterval(updateGistBtnLabel, 60000); }
 showPage('overview');
 </script>
 
