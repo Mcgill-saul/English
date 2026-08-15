@@ -2310,8 +2310,9 @@ let _xirrCalcRows = _saved && _saved.XIRR_CALC_ROWS ? _saved.XIRR_CALC_ROWS : [[
     <input type="hidden" id="ms-level" value="0">
     <input type="hidden" id="ms-group" value="">
     <input type="hidden" id="ms-orig-date" value="2026-07-08">
+    <input type="hidden" id="ms-ccy" value="CNY">
     <div class="form-row"><label class="form-label">日期</label><input class="fi" type="date" id="ms-date"></div>
-    <div class="form-row"><label class="form-label">市值（CNY）</label><input class="fi" type="number" id="ms-amount" min="0" step="0.01"></div>
+    <div class="form-row"><label class="form-label">市值（<span id="ms-ccy-label">CNY</span>）</label><input class="fi" type="number" id="ms-amount" min="0" step="0.01"></div>
     <div class="modal-footer">
       <button class="btn" id="ms-delete-btn" style="color: var(--danger,#e5484d); margin-right: auto;" onclick="deleteSnapshot()">删除</button>
       <button class="btn" onclick="closeMo('mo-snapshot')">取消</button>
@@ -5410,27 +5411,42 @@ function bdXirrTab(tab){
 let _snapChartTotal = null;
 let _snapChartGroup = null;
 
-function openSnapshotModal(mode, level, group, editDate, editAmount){
+function openSnapshotModal(mode, level, group, editDate, editAmount, editCcy){
   document.getElementById('ms-mode').value  = mode;
   document.getElementById('ms-level').value = level;
   document.getElementById('ms-group').value = group || '';
   document.getElementById('ms-title').textContent = editDate
     ? (mode==='total' ? `编辑总资产快照 · ${editDate}` : `编辑快照 · ${group} · ${editDate}`)
     : (mode==='total' ? '录入总资产快照' : `录入快照 · ${group}`);
+  // 总资产快照混合了多种币种，只能录人民币；单个组合快照如果这个组合只持有一种外币，
+  // 就允许直接按外币录入，不用自己心算汇率
+  let ccy = 'CNY';
+  if(mode!=='total' && !editDate){
+    const prods = _groupProducts(parseInt(level), group);
+    const soleCcy = _soleForeignCcy(prods);
+    if(soleCcy && soleCcy!=='MIXED') ccy = soleCcy;
+  }
   if(editDate){
     // 编辑模式：直接回填这一条已有记录，不覆盖成当前日期/当前市值
     document.getElementById('ms-orig-date').value = editDate;
     document.getElementById('ms-date').value = editDate;
+    document.getElementById('ms-ccy').value = editCcy || 'CNY';
+    document.getElementById('ms-ccy-label').textContent = editCcy || 'CNY';
     document.getElementById('ms-amount').value = editAmount.toFixed(2);
     document.getElementById('ms-delete-btn').style.display = '';
   } else {
     document.getElementById('ms-orig-date').value = '';
     document.getElementById('ms-date').value  = today();
+    document.getElementById('ms-ccy').value = ccy;
+    document.getElementById('ms-ccy-label').textContent = ccy;
     document.getElementById('ms-delete-btn').style.display = 'none';
-    // prefill current value
+    // prefill current value —— 外币口径就按这个组合的原始外币市值预填，不做汇率换算
     let amt = 0;
     if(mode==='total'){
       amt = totalCNY();
+    } else if(ccy!=='CNY'){
+      const prods = _groupProducts(parseInt(level), group);
+      amt = prods.filter(p=>p.ccy===ccy).reduce((s,p)=>s+p.amount,0);
     } else {
       amt = groupMarketVal(group, parseInt(level));
     }
@@ -5446,6 +5462,7 @@ function saveSnapshot(){
   const origDate = document.getElementById('ms-orig-date').value || null;
   const date  = document.getElementById('ms-date').value;
   const amt   = parseFloat(document.getElementById('ms-amount').value);
+  const ccy   = document.getElementById('ms-ccy').value || 'CNY';
   if(!date || isNaN(amt)){ toast('请填写日期和金额', true); return; }
   const key = mode==='total' ? 'total' : group;
   // 编辑模式：先按“编辑前的原始日期”精确删除那一条，支持顺手改成别的日期而不留重复
@@ -5456,7 +5473,7 @@ function saveSnapshot(){
   // upsert: same mode+group+date → overwrite
   const idx = SNAPSHOTS.findIndex(s=>s.group===key && s.date===date);
   if(idx>=0) SNAPSHOTS.splice(idx,1);
-  SNAPSHOTS.push({date, group:key, level: mode==='total'?0:level, amount:amt});
+  SNAPSHOTS.push({date, group:key, level: mode==='total'?0:level, amount:amt, ccy});
   SNAPSHOTS.sort((a,b)=>a.date.localeCompare(b.date));
   lsSave();
   closeMo('mo-snapshot');
@@ -5485,7 +5502,7 @@ function deleteSnapshot(){
 function _getSnapshotPoints(mode, level, group){
   const key = mode==='total' ? 'total' : group;
   // daily snapshots
-  const pts = SNAPSHOTS.filter(s=>s.group===key).map(s=>({date:s.date, amount:s.amount, src:'snap'}));
+  const pts = SNAPSHOTS.filter(s=>s.group===key).map(s=>({date:s.date, amount:toCNY(s.amount, s.ccy||'CNY'), rawAmount:s.amount, ccy:s.ccy||'CNY', src:'snap'}));
   // pull yearly snapshots from CASHFLOWS as history anchors
   let yearlySnaps = [];
   if(mode==='total'){
@@ -5499,7 +5516,7 @@ function _getSnapshotPoints(mode, level, group){
   } else {
     yearlySnaps = CASHFLOWS
       .filter(c=>c.type==='年度快照' && (c.l1===group||c.product===group))
-      .map(c=>({date:c.date, amount:costCNY(c), src:'yearly'}));
+      .map(c=>({date:c.date, amount:costCNY(c), rawAmount:c.amount, ccy:c.ccy||'CNY', src:'yearly'}));
   }
   // merge: prefer snap over yearly on same date
   const snapDates = new Set(pts.map(p=>p.date));
@@ -5530,8 +5547,17 @@ function renderSnapshotChart(mode, level, group){
   canvas.style.display='';
   const em = canvas.parentElement.querySelector('.snap-empty');
   if(em) em.remove();
+  // 组合层级永远是单一币种（不会出现混合），这个组合本身是什么币种，图表纵轴就按什么币种画，
+  // 不强制折算成人民币；总资产(total模式)天然是跨组合汇总，必须折算统一单位，维持人民币
+  let displayCcy = 'CNY';
+  if(mode!=='total'){
+    const soleCcy = _soleForeignCcy(_groupProducts(parseInt(level), group));
+    if(soleCcy && soleCcy!=='MIXED') displayCcy = soleCcy;
+  }
+  const ccyHintEl = document.getElementById('snap-group-ccy-hint');
+  if(ccyHintEl) ccyHintEl.textContent = displayCcy!=='CNY' ? `· ${displayCcy}` : '';
   const labels = pts.map(p=>p.date);
-  const amounts = pts.map(p=>p.amount);
+  const amounts = pts.map(p=>displayCcy==='CNY' ? p.amount : p.amount/(FX[displayCcy]||1));
   const minVal = Math.min(...amounts);
   const maxVal = Math.max(...amounts);
 
@@ -5541,8 +5567,14 @@ function renderSnapshotChart(mode, level, group){
   grad.addColorStop(0,'rgba(244,81,30,0.20)');
   grad.addColorStop(1,'rgba(244,81,30,0.01)');
 
-  // Y axis formatter — no decimals, use 万/亿
+  // Y axis formatter —— 人民币用 万/亿，外币用国际通行的 K/M 缩写，各自符合各自的阅读习惯
   function fmtY(v){
+    if(displayCcy!=='CNY'){
+      const sym = displayCcy==='USD'?'$':displayCcy==='HKD'?'HK$':displayCcy+' ';
+      if(Math.abs(v)>=1000000) return sym+(v/1000000).toFixed(1)+'M';
+      if(Math.abs(v)>=1000) return sym+(v/1000).toFixed(1)+'K';
+      return sym+Math.round(v);
+    }
     if(Math.abs(v)>=100000000) return (v/100000000).toFixed(1)+'亿';
     if(Math.abs(v)>=10000) return Math.round(v/10000)+'万';
     return Math.round(v)+'';
@@ -5573,7 +5605,7 @@ function renderSnapshotChart(mode, level, group){
         if(!elements.length) return;
         const p = pts[elements[0].index];
         if(p.src !== 'snap'){ toast('这是自动推算的年度锚点，无法编辑，请直接录入快照覆盖', true); return; }
-        openSnapshotModal(mode, level, group, p.date, p.amount);
+        openSnapshotModal(mode, level, group, p.date, p.rawAmount, p.ccy);
       },
       onHover:(evt, elements)=>{ evt.native.target.style.cursor = elements.length ? 'pointer' : 'default'; },
       plugins:{
@@ -5587,8 +5619,13 @@ function renderSnapshotChart(mode, level, group){
           padding:10,
           callbacks:{
             title: ctx=>[ctx[0].label],
-            label: ctx=>' '+fmtCNY(ctx.parsed.y),
-            afterLabel: ctx=>pts[ctx.dataIndex].src==='yearly'?' 年度快照':' 日常快照'
+            label: ctx=>' '+(displayCcy==='CNY'?fmtCNY(ctx.parsed.y):fmtForeign(ctx.parsed.y,displayCcy)),
+            afterLabel: ctx=>{
+              const p=pts[ctx.dataIndex];
+              const src=p.src==='yearly'?'年度快照':'日常快照';
+              const mismatch=(p.ccy&&p.ccy!==displayCcy)?`（原始录入 ${fmtForeign(p.rawAmount,p.ccy)}）`:'';
+              return ' '+src+mismatch;
+            }
           }
         }
       },
@@ -6221,7 +6258,7 @@ function _renderGroupBoard(lv, groupName){
       const afterTotalF = (soleCcy && soleCcy!=='MIXED') ? grpTotalF - (wouldBeDelta.byCcy[soleCcy]||0) : null;
       return afterTotalF!=null ? fmtSigned(afterTotalF,soleCcy) : fmtSigned(afterTotal,'CNY');
     })()}</span>
-    <span style="color:var(--text3);width:60px;text-align:right">转让后市值</span>
+    <span style="color:var(--text3);width:60px;text-align:right">${hasTransferOut?'转让后市值':'当前市值'}</span>
   </div>`;
   // 全程视角（真实口径）的流水和终值——转让不再影响 CASHFLOWS，grpTotal 本身就是真值，
   // 不需要额外加减，而且不受 hasTransferOut 限制，永远可用
@@ -6389,7 +6426,10 @@ function _renderGroupBoard(lv, groupName){
               ${xirrTermRow}
               <div style="display:flex;justify-content:flex-end;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);gap:8px">
                 <span style="font-size:11px;color:var(--text3)">${hasTransferOut?'转让后':'全程'} XIRR</span>
-                <span style="font-size:15px;font-weight:700" class="${xirrR&&xirrR>=0?'pos':'neg'}">${xirrR!=null?(xirrR>=0?'+':'')+(xirrR*100).toFixed(2)+'%':'N/A'}</span>
+                <span style="font-size:15px;font-weight:700" class="${(() => { const v=hasTransferOut?xirrR:xirrWouldBe; return v!=null&&v>=0?'pos':'neg'; })()}">${(() => {
+                  const v = hasTransferOut ? xirrR : xirrWouldBe;
+                  return v!=null?(v>=0?'+':'')+(v*100).toFixed(2)+'%':'N/A';
+                })()}</span>
               </div>
             </div>
             <div id="bd-xirr-view-without"${hasTransferOut?'':' style="display:none"'}>
@@ -6508,7 +6548,7 @@ function _renderGroupBoard(lv, groupName){
       <!-- 市值趋势：现在挤进右侧窄栏，不再是整行宽度，图表比之前紧凑一些（仍是跟总览页共用的 .card-display + .card-hero-soft 模板） -->
     <div class="card card-display card-hero-soft bento-area-btrend" style="margin-bottom:0">
       <div class="card-header">
-        <div class="card-title"><svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>市值趋势</div>
+        <div class="card-title"><svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>市值趋势<span id="snap-group-ccy-hint" style="font-size:11px;font-weight:500;color:var(--text3);margin-left:4px"></span></div>
         <button class="btn btn-sm" style="background:linear-gradient(160deg,#FF6B35,#F4511E);color:#fff;border:none" onclick="openSnapshotModal('group',${lv},'${groupName.replace(/'/g,"\\'")}')">
           <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>录入快照
         </button>
