@@ -5671,14 +5671,20 @@ function renderSnapshotChart(mode, level, group){
   const ddVal = document.getElementById('snap-drawdown'+ddSuffix+'-val');
   const ddSub = document.getElementById('snap-drawdown'+ddSuffix+'-sub');
   if(ddEl && amounts.length>=2){
-    const lastAmt = amounts[amounts.length-1];
-    const peakAmt = Math.max(...amounts);
-    const peakIdx = amounts.indexOf(peakAmt);
-    const dd = peakAmt>0 ? (lastAmt-peakAmt)/peakAmt*100 : 0;
+    // 标准最大回撤算法：按时间顺序走一遍，动态维护"截至当前的最高点"，每个点都算一次
+    // 相对这个高点的跌幅，全程取跌得最深的一次——不是"最后一个点 vs 全局最高点"，
+    // 因为真正的最大回撤，高点之后的最低点不一定是序列的最后一个点。
+    let runningPeak = amounts[0], runningPeakIdx = 0;
+    let worstDD = 0, worstPeakIdx = 0, worstTroughIdx = 0;
+    for(let i=0;i<amounts.length;i++){
+      if(amounts[i] > runningPeak){ runningPeak = amounts[i]; runningPeakIdx = i; }
+      const ddHere = runningPeak>0 ? (amounts[i]-runningPeak)/runningPeak*100 : 0;
+      if(ddHere < worstDD){ worstDD = ddHere; worstPeakIdx = runningPeakIdx; worstTroughIdx = i; }
+    }
     ddEl.style.display='';
-    ddVal.textContent = (dd>=0?'+':'')+dd.toFixed(2)+'%';
-    ddVal.className = dd>=0?'pos':'neg';
-    ddSub.textContent = '峰值 '+labels[peakIdx];
+    ddVal.textContent = (worstDD>=0?'+':'')+worstDD.toFixed(2)+'%';
+    ddVal.className = worstDD>=0?'pos':'neg';
+    ddSub.textContent = worstDD<0 ? `峰值 ${labels[worstPeakIdx]} → 谷底 ${labels[worstTroughIdx]}` : '暂无回撤';
   } else if(ddEl){
     ddEl.style.display='none';
   }
