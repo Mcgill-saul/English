@@ -501,6 +501,12 @@ input[type=number]{-moz-appearance:textfield}
      ══════════════════════════════ -->
 <script>
 const LS = 'portfolio_v1';
+// localStorage 最后一次被写入的真实墙上时钟时间——专门用来判断"页面加载时该信文件里的默认数据、
+// 还是localStorage里的数据"，跟数据自己带的 _ts（那个是给云端冲突检测用的"数据版本号"）分开管。
+// 不管是日常编辑触发的保存、还是"从云端拉取"触发的保存，只要写过 localStorage，这个值就是
+// 当下这一刻的真实时间，必然比文件本身的时间戳新——不会再出现"拉取的云端数据版本号比文件
+// 自带的还旧，刷新后被文件数据覆盖回去"这种情况。
+const LS_WRITE_AT = 'invest_ls_write_at';
 const LS_KEYS = ['FX','HIERARCHY','PRODUCTS','CASHFLOWS','TYPE_TABLE'];
 
 // ── Defaults (first-run only, no sample data) ──
@@ -544,6 +550,7 @@ function lsSave(){
   try {
     _dataTs = Date.now();
     localStorage.setItem(LS, JSON.stringify(_collectData(_dataTs)));
+    localStorage.setItem(LS_WRITE_AT, String(Date.now()));
     // 若已配置 Gist 云同步，防抖+节流地自动推送一次（见下方 GIST 云同步 模块）
     if(typeof scheduleGistPush==='function') scheduleGistPush();
   } catch(e) {
@@ -554,9 +561,9 @@ function lsSave(){
 // ── Init data：比较 localStorage 和文件内嵌数据谁更新，用新的那份（不再依赖 file:// 判断）──
 const _lsSaved = lsLoad();
 const _fileTs = DEFAULTS._ts || 0;
-const _lsTs   = _lsSaved && _lsSaved._ts || 0;
-const _saved  = (_lsSaved && _lsTs >= _fileTs) ? _lsSaved : null;
-_dataTs = _saved ? _lsTs : _fileTs;
+const _lsWriteAt = parseInt(localStorage.getItem(LS_WRITE_AT)||'0', 10);
+const _saved  = (_lsSaved && _lsWriteAt >= _fileTs) ? _lsSaved : null;
+_dataTs = _saved ? (_saved._ts || _lsWriteAt) : _fileTs;
 let FX           = _saved ? _saved.FX           : JSON.parse(JSON.stringify(DEFAULTS.FX));
 let HIERARCHY    = _saved ? _saved.HIERARCHY    : JSON.parse(JSON.stringify(DEFAULTS.HIERARCHY||[]));
 let PRODUCTS     = (_saved ? _saved.PRODUCTS     : JSON.parse(JSON.stringify(DEFAULTS.PRODUCTS||[]))).filter(p=>!p._sharedSrc);
@@ -2420,6 +2427,7 @@ function histPlatform(){return[...new Set(PRODUCTS.map(p=>p.platform).filter(Boo
 function clearLS(){
   if(!confirm('确认清除所有本地数据，改用文件里自带的数据？此操作不可撤销，建议先点"立即上传"备份。'))return;
   localStorage.removeItem(LS);
+  localStorage.removeItem(LS_WRITE_AT);
   toast('已清除，正在刷新…');
   setTimeout(()=>location.reload(), 600);
 }
@@ -2610,6 +2618,7 @@ function pullFromGist(manual){
       const content = JSON.parse(file.content);
       if(!content || typeof content!=='object' || !Array.isArray(content.PRODUCTS)) throw new Error('数据格式不正确');
       localStorage.setItem(LS, JSON.stringify(content));
+      localStorage.setItem(LS_WRITE_AT, String(Date.now()));
       if(content._ts!=null) localStorage.setItem(LS_GIST_KNOWN_TS, String(content._ts));
       if(manual) setGistStatus('从云端拉取成功 ✓ 即将刷新页面', 'ok');
       setTimeout(()=>location.reload(), 600);
@@ -5583,6 +5592,8 @@ function renderSnapshotChart(mode, level, group){
   if(window[chartRef]){ window[chartRef].destroy(); window[chartRef]=null; }
   if(!pts.length){
     canvas.style.display='none';
+    const hintEl0 = document.getElementById('snap-group-ccy-hint');
+    if(hintEl0) hintEl0.textContent = '';
     const wrap = canvas.parentElement;
     if(!wrap.querySelector('.snap-empty')){
       const d=document.createElement('div');
@@ -8942,6 +8953,5 @@ document.getElementById('fx-badge').textContent = `USD ${FX.USD.toFixed(2)} · H
 if(typeof updateGistBtnLabel==='function'){ updateGistBtnLabel(); setInterval(updateGistBtnLabel, 60000); }
 showPage('overview');
 </script>
-
-
-<div id="immersive-translate-popup" style="all: initial"></div><div id="immersive-translate-popup" style="all: initial"></div></body><eusoft-chrome-extension-root-en id="eusoft-chrome-extension-id-en" ng-version="21.2.17" _nghost-ng-c2138204378=""><template _ngcontent-ng-c2138204378=""></template><!----><!----><!----><app-word-hint-render _ngcontent-ng-c2138204378=""><template></template><!----><!----></app-word-hint-render><app-translate-render _ngcontent-ng-c2138204378=""><template></template><!----><translate-analyzer><template></template></translate-analyzer></app-translate-render><app-capture-word _ngcontent-ng-c2138204378="" class="eusoft-chrome-extension-capture-word-container"></app-capture-word><app-translate-failed-retry _ngcontent-ng-c2138204378="" _nghost-ng-c3967381068=""><!----></app-translate-failed-retry><!----><!----></eusoft-chrome-extension-root-en><div id="immersive-translate-popup" style="all: initial"></div></html>
+</body>
+</html>
