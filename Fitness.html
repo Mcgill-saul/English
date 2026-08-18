@@ -316,6 +316,17 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
     gap: 10px;
   }
   .cycle-card-stats .cycle-stat{ min-width: 0; }
+  /* ── 跑步总览：手机端「平均配速/心率/最快配速/总次数」四项之前用
+     flex:1 + min-width:0 会无限收缩挤成一团，而不是换行。改成两列网格，
+     「累计跑量」hero 区块单独占一整行 ── */
+  #run-overview-stats{
+    display: grid !important;
+    grid-template-columns: repeat(2,1fr);
+    gap: 12px 14px;
+    align-items: start;
+  }
+  #run-overview-stats > div:first-child{ grid-column: 1 / -1; }
+  #run-overview-stats .cycle-stat{ min-width: 0; }
   /* ── 月度跑量：手机端用横向条形列表替代柱状图 ── */
   .mdist-chart-wrap{ display: none; }
   .mdist-list{ display: flex; }
@@ -1096,7 +1107,7 @@ body{min-height:100vh;padding-bottom:4rem;overflow-x:hidden;}
       <div class="chart-card" id="run-dist-card" style="grid-column:2;grid-row:1 / span 2">
         <div class="chart-title" style="margin-bottom:2px">距离分布</div>
         <div class="chart-sub" style="margin-bottom:0">各距离出现次数，按里程从小到大排列</div>
-        <div style="position:relative;height:280px;margin-top:var(--space-14)"><canvas id="runDistBarChart"></canvas></div>
+        <div id="run-dist-chart-wrap" style="position:relative;height:280px;margin-top:var(--space-14)"><canvas id="runDistBarChart"></canvas></div>
       </div>
     </div>
 
@@ -3858,10 +3869,23 @@ function renderRunAnalysis(){
     <div class="cycle-stat"><span class="cycle-stat-label">总次数</span><span class="cycle-stat-val">${runs.length}</span></div>
   `;
 
-  // 距离分布：改成竖向柱状图，横轴按里程从小到大排列
+  // 距离分布：桌面端维持竖向柱状图；手机端屏幕窄，分类一多每根柱子会被压得
+  // 很窄，柱子上的"X次"数字标签放不下、显示不全，所以手机端改成横向柱状图
+  // （indexAxis:'y'）——柱子的"长度"方向变成了水平方向，不再受窄屏宽度限制，
+  // 数字能完整显示；容器高度也跟着分类数量动态给，而不是固定 280px
+  const distChartWrap = document.getElementById('run-dist-chart-wrap');
+  const distIsMobile = window.innerWidth <= 768;
+  if(distChartWrap){
+    distChartWrap.style.height = distIsMobile
+      ? Math.max(220, distEntries.length * 34) + 'px'
+      : '280px';
+  }
   if(!distEntries.length){
     dc('runDistBarChart');
   } else {
+    // indexAxis 切换（横向⇄竖向）属于布局结构性变化，直接销毁重建，
+    // 不用"原地更新"那套逻辑，避免部分 Chart.js 版本下轴向切换后不刷新
+    if(CI.runDistBarChart && CI.runDistBarChart.options.indexAxis !== (distIsMobile?'y':'x')) dc('runDistBarChart');
     upsertChart('runDistBarChart', document.getElementById('runDistBarChart'), {
       type:'bar',
       data:{
@@ -3870,6 +3894,7 @@ function renderRunAnalysis(){
       },
       options:{
         ...CHART_OPT,
+        indexAxis: distIsMobile ? 'y' : 'x',
         plugins:{legend:{display:false}}
       },
       plugins:[ makeBarValueLabelPlugin(val=>String(val)+'次', 16) ]
@@ -4608,6 +4633,7 @@ window.addEventListener('resize', ()=>{
     _combinedChartIsMobile = nowMobile;
     const runPage = document.getElementById('page-run');
     if(runPage && runPage.style.display!=='none' && CI.combinedChart) renderCombinedChart();
+    if(runPage && runPage.style.display!=='none' && CI.runDistBarChart) renderRunAnalysis();
   }, 200);
 });
 
