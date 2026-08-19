@@ -398,6 +398,14 @@
   .hint { font-size: 11px; color: var(--text-light); margin-top: 4px; }
   .tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
   .scroll-area { max-height: 50vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .food-search-row { margin-bottom: 10px; }
+  .food-search-row input {
+    width: 100%; padding: 10px 12px; border: 1.5px solid var(--border);
+    border-radius: 8px; font-size: 14px; background: #fafbfc;
+    -webkit-appearance: none; box-sizing: border-box;
+  }
+  .food-search-row input:focus { outline: none; border-color: var(--primary); background: #fff; }
+  .food-search-row input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 
   .macro-tag {
     display: inline-flex; align-items: center; gap: 2px;
@@ -707,10 +715,11 @@
 <!-- ==================== 页面2：食物库 ==================== -->
 <div class="page" id="page-foods">
   <div class="card">
-    <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
-      <span>添加食物</span>
-      <button class="btn btn-primary" onclick="addFood()" style="padding:7px 16px;font-size:13px;">Add to Pantry</button>
+    <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="toggleAddFoodForm()">
+      <span><span id="addFoodToggleIcon" class="food-type-toggle" style="margin-right:4px;">▾</span>添加食物</span>
+      <button class="btn btn-primary" onclick="event.stopPropagation();addFood()" style="padding:7px 16px;font-size:13px;">Add to Pantry</button>
     </div>
+    <div id="addFoodFormBody">
     <div class="form-row">
       <div class="form-group">
         <label>食物名称</label>
@@ -765,9 +774,16 @@
         <datalist id="foodTypeList"></datalist>
       </div>
     </div>
+    </div>
   </div>
   <div class="card">
-    <div class="card-header">食物列表</div>
+    <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <span>食物列表</span>
+      <span id="foodLibCount" style="font-size:12px;font-weight:normal;color:var(--text-light);"></span>
+    </div>
+    <div class="food-search-row">
+      <input type="search" id="foodSearchInput" autocomplete="off" data-lpignore="true" placeholder="🔍 搜索食物名称..." oninput="renderFoodLibrary()">
+    </div>
     <div class="scroll-area" id="foodLibrary"></div>
   </div>
 </div>
@@ -966,6 +982,8 @@ const STORAGE_KEY_UNSAVED     = 'diet_calc_unsaved_changes';
 const STORAGE_KEY_BMR         = 'diet_calc_bmr';
 const STORAGE_KEY_FOOD_TYPES  = 'diet_calc_food_types';
 const STORAGE_KEY_COMPARE     = 'diet_calc_compare_state';
+const STORAGE_KEY_FOODGROUP_STATE = 'diet_calc_foodgroup_state';
+const STORAGE_KEY_ADDFORM_COLLAPSED = 'diet_calc_addform_collapsed';
 
 // 通用 load/save 工厂
 function lsGet(key, fallback = null) {
@@ -2052,11 +2070,27 @@ function clearFoodForm() {
   document.getElementById('foodType').value = '';
 }
 
+function getFoodGroupState() { return lsGet(STORAGE_KEY_FOODGROUP_STATE, {}); }
+function setFoodGroupState(type, expanded) {
+  const state = getFoodGroupState();
+  state[type] = expanded;
+  lsSet(STORAGE_KEY_FOODGROUP_STATE, state);
+}
+
 function renderFoodLibrary() {
-  const foods = loadFoods();
+  const allFoods = loadFoods();
   const container = document.getElementById('foodLibrary');
-  if (foods.length === 0) { container.innerHTML = '<div class="empty-state">暂无食物数据，请先添加</div>'; return; }
+  const countEl = document.getElementById('foodLibCount');
+  const searchInput = document.getElementById('foodSearchInput');
+  const keyword = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+  if (countEl) countEl.textContent = allFoods.length ? ('共 ' + allFoods.length + ' 种') : '';
+
+  if (allFoods.length === 0) { container.innerHTML = '<div class="empty-state">暂无食物数据，请先添加</div>'; return; }
   closeFoodMenu();
+
+  const foods = keyword ? allFoods.filter(f => f.name.toLowerCase().includes(keyword)) : allFoods;
+  if (foods.length === 0) { container.innerHTML = '<div class="empty-state">没有找到匹配"' + escHtml(searchInput.value.trim()) + '"的食物</div>'; return; }
 
   // 按 foods 数组顺序提取类型（保持用户手动排序后的顺序）
   const typeOrder = [];
@@ -2067,19 +2101,24 @@ function renderFoodLibrary() {
     groups[type].push(f);
   });
 
+  const groupState = getFoodGroupState();
+  const isSearching = keyword !== '';
+
   let html = '';
   typeOrder.forEach((type, ti) => {
     const gid = 'food-group-' + ti;
     const isFirstType = ti === 0;
     const isLastType = ti === typeOrder.length - 1;
+    // 搜索时强制展开，方便看到结果；否则使用记住的展开状态（默认收起）
+    const expanded = isSearching ? true : !!groupState[type];
     html += '<div class="food-type-group" data-type="' + escAttr(type) + '">';
-    html += '<div class="food-type-header" onclick="toggleFoodGroup(\'' + gid + '\',this)">';
-    html += '<span class="food-type-toggle">▸</span> ';
+    html += '<div class="food-type-header" onclick="toggleFoodGroup(\'' + gid + '\',this,\'' + escAttr(type) + '\')">';
+    html += '<span class="food-type-toggle">' + (expanded ? '▾' : '▸') + '</span> ';
     html += '<span>' + escHtml(type) + '</span>';
     html += '<span style="font-size:11px;color:var(--text-light);font-weight:normal;"> (' + groups[type].length + '个)</span>';
     html += '<span class="type-drag-handle" title="拖拽排序" onclick="event.stopPropagation()" onmousedown="onLibTypeDown(event,this)" ontouchstart="onLibTypeDown(event,this)">⠿</span>';
     html += '</div>';
-    html += '<div class="food-type-body" id="' + gid + '" style="display:none">';
+    html += '<div class="food-type-body" id="' + gid + '" style="display:' + (expanded ? 'block' : 'none') + '">';
     groups[type].forEach((f, fi) => {
       const isFirst = fi === 0;
       const isLast = fi === groups[type].length - 1;
@@ -2364,15 +2403,33 @@ function libReorderType(typeName, toIdx) {
   renderFoodLibrary();
 }
 
-function toggleFoodGroup(gid, header) {
+function toggleFoodGroup(gid, header, type) {
   const body = document.getElementById(gid);
   const toggle = header.querySelector('.food-type-toggle');
-  if (body.style.display === 'none') {
+  const nowExpanded = body.style.display === 'none';
+  if (nowExpanded) {
     body.style.display = 'block';
     toggle.textContent = '▾';
   } else {
     body.style.display = 'none';
     toggle.textContent = '▸';
+  }
+  if (type) setFoodGroupState(type, nowExpanded);
+}
+
+function toggleAddFoodForm() {
+  const body = document.getElementById('addFoodFormBody');
+  const icon = document.getElementById('addFoodToggleIcon');
+  const collapsed = body.style.display !== 'none';
+  body.style.display = collapsed ? 'none' : '';
+  icon.textContent = collapsed ? '▸' : '▾';
+  localStorage.setItem(STORAGE_KEY_ADDFORM_COLLAPSED, collapsed ? 'true' : 'false');
+}
+
+function initAddFoodFormState() {
+  if (localStorage.getItem(STORAGE_KEY_ADDFORM_COLLAPSED) === 'true') {
+    document.getElementById('addFoodFormBody').style.display = 'none';
+    document.getElementById('addFoodToggleIcon').textContent = '▸';
   }
 }
 
@@ -2484,6 +2541,7 @@ function init() {
     saveUnsavedFlag(false);
   }
 
+  initAddFoodFormState();
   renderFoodLibrary();
   updateTypeDatalist();
   updatePickerSelect();
