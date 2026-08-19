@@ -823,12 +823,15 @@ const Parser = {
      不会产生重叠），只可能是起止年份哪里写错了，所以属于可以放心报警告的
      纯格式类错误，跟"漏记了谁"那种没法判断是否故意的情况不是一回事。
      只检查排序后相邻两条，够用——真正常见的typo场景（比如相邻两条年份抄错、
-     首尾数字打反）都是相邻的，不需要对每一对都做 O(n²) 检查。 */
+     首尾数字打反）都是相邻的，不需要对每一对都做 O(n²) 检查。
+     用的是严格小于（<），不是小于等于——"上一位到1900年卸任，下一位1900年
+     就继位"这种同一年交接是完全正常的写法（很常见），不算重叠；
+     只有当下一位的起始年份严格早于上一位的结束年份，才是真正的冲突。 */
   findOverlappingRulers(rulers){
     const problems = [];
     const sorted = [...rulers].sort((a,b)=>a.start-b.start);
     for(let i=1;i<sorted.length;i++){
-      if(sorted[i].start <= sorted[i-1].end){
+      if(sorted[i].start < sorted[i-1].end){
         problems.push(`${sorted[i-1].name}（${sorted[i-1].start}-${sorted[i-1].end}）和 ${sorted[i].name}（${sorted[i].start}-${sorted[i].end}）年份有重叠`);
       }
     }
