@@ -155,16 +155,185 @@
     color:var(--ink-soft); cursor:pointer; user-select:none; background:var(--surface);
   }
   .view-tab.active{ background:var(--ink); color:var(--surface); border-color:var(--ink); }
-  .column-board{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; align-items:start; }
+
+  /* 分栏视图：#columnBoard 现在是外层定位容器（放翻页箭头），
+     真正的四栏网格挪到内层 .column-board-grid，两者分开是因为
+     箭头要用 position:absolute 贴在容器左右边缘，如果外层自己也是
+     display:grid，箭头会被当成网格里的一个格子参与排版，位置就不对了。 */
+  /* 容器本身不再吃左右padding——网格宽度要跟上面的年份rail完全一致。
+     箭头用负值offset挪到网格外侧（落在.app本来就有的32px padding空白区里），
+     不占卡片宽度。.app及其父级都没有overflow:hidden，负值定位不会被裁掉。 */
+  .column-board{ position:relative; }
+  .column-board-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; align-items:start; }
   .col-card{
     background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);
     padding:16px; min-height:200px;
   }
-  .col-head{ display:flex; align-items:center; gap:8px; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--line); }
+  /* 翻页箭头：每页同时挂左右两个，取模循环，钝角chevron、描边而非实心，
+     默认颜色跟卡片描边同一个token（--line），hover时加深到--ink-soft，
+     不做按钮底色/阴影，保持跟页面其它箭头式交互一样轻。这是第二轮放大：
+     点击区域从36px再翻一倍到72px，图标同步从26px翻倍到52px（viewBox
+     没变，图标线条粗细跟着宽高等比例放大，不用单独调stroke-width）；
+     offset仍按"跟卡片边缘留4px空隙"这条规则重算（72+4=76），不是随便
+     挪的数字。 */
+  .page-arrow{
+    position:absolute; top:50%; transform:translateY(-50%);
+    width:72px; height:72px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; background:none; border:none; padding:0; z-index:2;
+  }
+  .page-arrow.left{ left:-76px; }
+  .page-arrow.right{ right:-76px; }
+  .page-arrow svg{ stroke:var(--line); transition:stroke .15s ease; }
+  .page-arrow:hover svg{ stroke:var(--ink-soft); }
+  .page-arrow:focus-visible{ outline:2px solid var(--global); outline-offset:2px; border-radius:6px; }
+
+  /* 国家代码：分栏卡片头部原本纯展示的两字母代码，现在可点击唤出
+     置换/删除浮层（SlotMenu）。视觉上只加一个可点击的hover底色提示，
+     不改变代码本身的字号/字重，跟卡片其它渲染规则保持不变。 */
+  /* 字号/字重/flex等版式属性照搬原来.col-title那一份，一个字节没改——
+     开放任意国家后代码位置显示国家名（中文优先），长度不一，用max-width+
+     ellipsis把宽度锁死在跟之前两字母代码差不多的量级，长名字直接截断，
+     不让卡片头部因为选了个长名字的国家被撑宽。 */
+  .col-code{
+    font-family:'Fraunces',serif; font-size:var(--fs-md); font-weight:600; flex:0 0 auto; min-width:20px;
+    max-width:92px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    cursor:pointer; border-radius:4px; padding:1px 4px; margin:-1px -4px; transition:background .15s ease;
+  }
+  .col-code:hover{ background:var(--surface-2); }
+
+  /* 空坑位卡片：外框虚线 + 圆圈虚线 + 十字实线，不放文字。
+     外圈两层虚线传达"待填充"，中心实线十字传达"可点击"——注意可点击的只有
+     圆圈本身（cursor:pointer 只挂在 .empty-slot-circle 上），不是整张卡片，
+     点击事件委托也只认圆圈，弹层紧贴圆圈弹出。 */
+  .col-card.empty-slot{
+    background:transparent; box-shadow:none; border:1px dashed var(--line);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .empty-slot-circle{
+    width:42px; height:42px; border-radius:50%; border:1px dashed var(--line);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; transition:border-color .15s ease;
+  }
+  .empty-slot-circle:hover{ border-color:var(--muted); }
+  .empty-slot-circle svg{ stroke:var(--ink-soft); }
+
+  /* 置换/删除浮层：跟 .chip-tooltip 同一套"JS算坐标+position:fixed"的模式，
+     区别是这个要可点击（chip-tooltip是纯展示，pointer-events:none），
+     所以单独起一套样式，不复用 chip-tooltip 的类。 */
+  .slot-menu{
+    display:none; position:fixed; z-index:999; min-width:132px;
+    background:var(--surface); border:1px solid var(--line); border-radius:10px;
+    box-shadow:var(--shadow); padding:6px;
+  }
+  .slot-menu.show{ display:block; }
+  .slot-menu-item{
+    font-size:var(--fs-body); padding:7px 10px; border-radius:6px; cursor:pointer;
+    color:var(--ink-soft); white-space:nowrap;
+  }
+  .slot-menu-item:hover{ background:var(--surface-2); color:var(--ink); }
+  .slot-menu-item.danger:hover{ color:var(--americas); background:var(--surface-2); }
+  .slot-menu-divider{ height:1px; background:var(--line); margin:5px 2px; }
+  /* 开放任意国家后，"新建/置换"从静态7项列表改成搜索框+动态过滤列表，
+     内容变多了，min-width给宽一点、列表本身限高滚动。 */
+  .slot-menu.wide{ width:220px; }
+  .slot-menu-search{
+    width:100%; padding:6px 8px; margin-bottom:6px; box-sizing:border-box;
+    border:1px solid var(--line); border-radius:6px; font-size:var(--fs-body); font-family:'Inter',sans-serif;
+  }
+  .slot-menu-list{ max-height:220px; overflow-y:auto; }
+  .slot-menu-empty{ padding:7px 10px; font-size:var(--fs-sm); color:var(--muted); }
+
+  /* 年代规则编辑弹层：独立的居中modal，不是贴着坑位的小浮层——
+     一行一段年代，空间比小浮层宽裕，国家选择也是搜索+过滤。 */
+  .modal-backdrop{
+    display:none; position:fixed; inset:0; z-index:998;
+    background:rgba(31,36,48,.32); align-items:center; justify-content:center; padding:20px;
+  }
+  .modal-backdrop.show{ display:flex; }
+  .schedule-modal{
+    background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);
+    width:min(560px, 100%); max-height:80vh; overflow-y:auto; padding:24px;
+  }
+  .schedule-modal-head{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;
+    font-family:'Fraunces',serif; font-size:var(--fs-md); font-weight:600;
+  }
+  .schedule-row{ display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+  .schedule-row input[type="number"]{
+    width:78px; padding:6px 8px; border:1px solid var(--line); border-radius:6px;
+    font-family:'IBM Plex Mono',monospace; font-size:var(--fs-body); background:var(--surface); color:var(--ink);
+  }
+  .sr-sep{ color:var(--muted); font-size:var(--fs-sm); }
+  .sr-country{ flex:1; min-width:0; position:relative; }
+  .sr-country-label{
+    width:100%; text-align:left; padding:6px 10px; border:1px solid var(--line); border-radius:6px;
+    background:var(--surface); cursor:pointer; font-size:var(--fs-body); color:var(--ink-soft);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:'Inter',sans-serif;
+  }
+  .sr-country-label:hover{ border-color:var(--muted); }
+  .sr-country-panel{
+    position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:5;
+    background:var(--surface); border:1px solid var(--line); border-radius:8px; box-shadow:var(--shadow); padding:6px;
+  }
+  .sr-country-search{
+    width:100%; padding:6px 8px; margin-bottom:6px; box-sizing:border-box;
+    border:1px solid var(--line); border-radius:6px; font-size:var(--fs-body); font-family:'Inter',sans-serif;
+  }
+  .sr-country-results{ max-height:180px; overflow-y:auto; }
+  .sr-country-result-item{ padding:6px 10px; border-radius:6px; cursor:pointer; font-size:var(--fs-body); color:var(--ink-soft); }
+  .sr-country-result-item:hover{ background:var(--surface-2); color:var(--ink); }
+  .sr-country-empty{ padding:6px 10px; font-size:var(--fs-sm); color:var(--muted); }
+  .sr-delete{
+    font-size:var(--fs-sm); color:var(--muted); background:none; border:none; cursor:pointer;
+    padding:4px 6px; font-family:'Inter',sans-serif;
+  }
+  .sr-delete:hover{ color:var(--americas); }
+  .schedule-add-btn{
+    font-size:var(--fs-body); color:var(--ink-soft); background:none; border:1px dashed var(--line);
+    border-radius:8px; padding:8px 12px; cursor:pointer; width:100%; margin-top:4px; font-family:'Inter',sans-serif;
+  }
+  .schedule-add-btn:hover{ border-color:var(--muted); color:var(--ink); }
+  .schedule-hint{ font-size:var(--fs-sm); color:var(--muted); margin-top:14px; line-height:1.6; }
+  .col-head{
+    display:flex; align-items:center; flex-wrap:wrap; gap:8px 14px; margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid var(--line);
+    /* 统治者/执政者（.col-tenure-row）现在是这一行内部的一个 flex 子项，跟在
+       色点+国家码后面，不再另起一行——桌面端每栏宽度足够（column-board 是
+       4等分栏，容器最宽能到2400px，单栏轻松四五百像素起步），排得下完整姓名
+       +10格竖条+年份。flex-wrap:wrap 只是窄屏（比如手机上2栏布局）时的安全网：
+       真放不下就自然换到第二行，不会把内容硬挤变形或撑破卡片。 */
+  }
   .col-swatch{ width:9px; height:9px; border-radius:50%; flex:none; }
-  .col-title{ font-family:'Fraunces',serif; font-size:var(--fs-md); font-weight:600; flex:0 0 auto; min-width:34px; }
-  .col-head-bar{ flex:1; min-width:0; }
-  .col-head-bar .bg-item{ margin-bottom:0; }
+  /* 常驻行：现在是标题行内部的一个 flex 子项（flex:1），占满色点+国家码之后
+     剩下的空间，内部再用 space-between 把统治者/执政者分左右——两个槽位分别
+     是完全独立的渲染分支（统治者槽位由"这个国家有没有出现过统治者概念"决定，
+     执政者槽位由"有没有跨过执政者门槛年份"决定），互不依赖，任一个都可能
+     单独不存在。min-width给了一个换行阈值：真装不下就整体换到标题行下面，
+     而不是被挤变形。 */
+  .col-tenure-row{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    flex:1; min-width:220px;
+    font-size:var(--fs-sm); color:var(--ink-soft); font-family:'IBM Plex Mono',monospace;
+  }
+  .col-tenure-row:empty{ display:none; } /* 两侧都不该出现时（统治者无概念+未过执政者门槛），不占位 */
+  /* .tenure-slot 现在可能装多个 .tenure-person（同一时期共治/摄政的情况），
+     用竖线分隔符隔开，允许换行——避免多人并存时把这一整行撑得太宽。
+     容器本身不用 gap（改成0），分隔符自己带 margin：如果沿用容器 gap，
+     分隔符作为中间的一个 flex 子项，gap 会在它两侧各触发一次，变成
+     "gap+|+gap"两倍间距，比行内其他地方（姓名/竖条/年份之间）的单次
+     gap 明显宽出一截；分隔符自带 margin 让总间距收回到接近单次 gap
+     的宽度，视觉上跟其他间距统一。 */
+  .tenure-slot{ display:flex; flex-wrap:wrap; align-items:center; gap:0; min-width:0; }
+  .tenure-person{ display:flex; align-items:center; gap:6px; min-width:0; }
+  .tenure-sep{ color:var(--line); margin:0 3px; }
+  .tenure-name{
+    color:var(--ink); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:150px;
+  }
+  /* 门槛已过但当年查无数据：不隐藏槽位，用一个居中短横线占位，
+     视觉上跟"有名字"的槽位占同一片位置，避免常驻行的左右结构随年份跳动 */
+  .tenure-empty{ color:var(--muted); }
+  .tenure-ticks{ display:inline-flex; align-items:center; gap:1px; flex:none; }
+  .tenure-tick{ width:3px; height:10px; border-radius:1px; background:var(--line); }
+  .tenure-tick.on{ background:var(--tick-color, var(--ink-soft)); }
+  .tenure-years{ font-size:var(--fs-xs); color:var(--muted); white-space:nowrap; }
   .bg-split{ display:flex; gap:8px; }
   .bg-split .bg-item{ flex:1; min-width:0; margin-bottom:0; }
   .col-slot{ margin-bottom:18px; padding-bottom:18px; border-bottom:1px dashed var(--line); min-height:176px; }
@@ -180,7 +349,7 @@
   .col-slot-span > *{ margin-bottom:10px; }
   .col-slot-span > *:last-child{ margin-bottom:0; }
   .col-slot-empty{ font-size:var(--fs-sm); color:var(--muted); opacity:.5; padding:6px 0; }
-  @media (max-width: 980px){ .column-board{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width: 980px){ .column-board-grid{ grid-template-columns:repeat(2,1fr); } }
   .map-card{ background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:10px; position:relative; }
   .map-stage{ position:relative; width:100%; }
   .map-card svg{ width:100%; height:auto; display:block; }
@@ -198,7 +367,7 @@
 
   /* 悬浮卡片：已登记国家，直接锚定在地图对应位置 */
   .popover{
-    position:absolute; width:290px; max-height:360px; overflow-y:auto;
+    position:absolute; width:450px; max-height:360px; overflow-y:auto;
     background:var(--surface); border-radius:12px; box-shadow:0 4px 10px rgba(31,36,48,.1), 0 20px 40px -14px rgba(31,36,48,.28);
     padding:16px 18px; z-index:20; border:1px solid var(--line);
   }
@@ -208,7 +377,7 @@
   }
   .popover-close:hover{ color:var(--ink); }
   .detail-empty{ color:var(--muted); font-size:var(--fs-body); padding-top:2px; }
-  .detail-head{ display:flex; align-items:center; gap:9px; margin-bottom:12px; padding-right:16px; }
+  .detail-head{ display:flex; align-items:center; flex-wrap:wrap; gap:9px; margin-bottom:12px; padding-right:16px; }
   .detail-swatch{ width:9px; height:9px; border-radius:3px; flex-shrink:0; }
   .detail-title{ font-family:'Fraunces',serif; font-size:var(--fs-md); font-weight:600; }
 
@@ -239,7 +408,6 @@
     position:relative; z-index:1; font-size:var(--fs-sm); font-weight:600; color:var(--ink);
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
-  .bg-ruler{ margin-left:8px; }
   .bg-dot{
     position:absolute; top:-4px; bottom:-4px; width:6px; border-radius:3px;
     transform:translateX(-50%); border:2px solid var(--surface); filter:brightness(.85) saturate(1.05);
@@ -292,6 +460,183 @@
   .related-chip{ font-size:var(--fs-sm); color:var(--ink-soft); background:var(--surface-2); border-radius:20px; padding:4px 12px; }
   .related-chip-link{ cursor:pointer; transition:background .15s, color .15s; }
   .related-chip-link:hover{ background:var(--ink); color:var(--surface); }
+
+  /* ---------- search board（高级搜索）----------
+     筛选条件栏：每个字段一个 .search-field 卡片（跟 .picker 同一视觉语言，
+     背景+圆角+label），横排、flex-wrap 自动换行（字段一多，"一字排开"
+     自然撑到第二行，不用额外写断点）。label跟控件同一行摆放（不是label在
+     上、控件在下的两行式），省纵向空间。多选类字段（类型/身份/领域/标签）
+     用胶囊按钮组（复用 .related-chip 那套胶囊视觉，选中态反色），不用
+     下拉菜单——选项数量不多的情况下，胶囊一眼能看到"选了什么"，比折叠在
+     下拉里更直观，也不用额外的开关状态。数字类派生字段配一个运算符
+     下拉+数字输入，单独一类。 */
+  /* 状态条：常驻在筛选栏最上方，汇总"选了几个条件/命中几条"，清空按钮
+     固定在这一行右侧，不再混在字段流里容易被忽略。 */
+  .search-status-bar{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--line);
+  }
+  .search-status-count{ font-size:var(--fs-sm); color:var(--muted); font-family:'IBM Plex Mono',monospace; }
+  .search-status-count b{ color:var(--ink); font-weight:600; }
+  .search-status-actions{ display:flex; align-items:center; gap:8px; flex:none; }
+  .search-help-pill{
+    flex:none; font-size:var(--fs-sm); color:var(--ink-soft); background:var(--surface-2);
+    border:1px solid var(--line); border-radius:20px; padding:6px 13px; cursor:pointer; font-family:'Inter',sans-serif;
+  }
+  .search-help-pill:hover{ border-color:var(--muted); color:var(--ink); }
+  .search-help-pill.active{ background:var(--ink); color:var(--surface); border-color:var(--ink); }
+
+  /* 筛选栏改成三个"分组面板"横排一行（宽屏够放），窄屏自动换行
+     （flex-wrap，不用额外写断点）。组内字段紧凑排布：label不再强制
+     统一宽度（那样短label比如"类型"会留出很大空白），改成贴着内容走，
+     靠 gap 控制间距，看起来更紧凑。 */
+  .search-filters{ display:flex; flex-direction:row; flex-wrap:wrap; align-items:flex-start; gap:10px; margin-bottom:18px; }
+  .search-group{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:10px 12px; flex:1 1 280px;
+  }
+  /* 内容关键词现在有5个字段（比基础属性多一个），最容易撑成两行。之前
+     把它的 flex-grow 提到2.4，结果连带把"基础属性"的份额也挤小了——
+     三组 grow 总和从原来的 3（1+1+1）变成 4.2，基础属性分到的比例从
+     1/3 掉到 1/4.2，宽度跟着缩了。这里改成 1.5 + 0.5，总和仍是 3，
+     基础属性（grow 保持1）拿到的多余空间比例完全不变，只是内容关键词/
+     更多筛选之间的份额往内容关键词那边挪。 */
+  .search-group-wide{ flex:1.2 1 320px; }
+  .search-group-title{
+    font-size:var(--fs-xs); text-transform:uppercase; letter-spacing:.08em; color:var(--muted);
+    font-family:'IBM Plex Mono',monospace; margin-bottom:8px;
+  }
+  .search-group-body{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; }
+  .search-field{
+    display:flex; flex-direction:row; align-items:center; gap:6px; min-width:0;
+  }
+  .search-field-label{ font-size:var(--fs-xs); text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-family:'IBM Plex Mono',monospace; white-space:nowrap; flex:none; }
+  /* 折叠的"更多筛选"：时间范围/关联人物数这类小众精确查询，默认收起，
+     减少首屏拥挤，展开按钮跟分组面板同一视觉语言，箭头旋转表示开合。
+     跟另外两个分组一样参与横排，宽屏下三个面板并排一行。 */
+  .search-advanced{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); flex:0.8 1 180px; }
+  .search-advanced-toggle{
+    width:100%; display:flex; align-items:center; gap:7px; padding:9px 12px;
+    background:none; border:none; cursor:pointer; text-align:left;
+    font-size:var(--fs-sm); color:var(--ink-soft); font-family:'IBM Plex Mono',monospace;
+  }
+  .search-advanced-toggle:hover{ color:var(--ink); }
+  .search-advanced-arrow{ display:inline-block; transition:transform .15s; flex:none; }
+  .search-advanced.open .search-advanced-arrow{ transform:rotate(90deg); }
+  .search-advanced-body{ display:none; padding:0 12px 10px; flex-wrap:wrap; align-items:center; gap:8px 14px; }
+  .search-advanced.open .search-advanced-body{ display:flex; }
+  .search-pill-group{ display:flex; flex-wrap:wrap; gap:5px; max-width:220px; max-height:56px; overflow-y:auto; }
+  .search-pill{
+    font-size:var(--fs-sm); color:var(--ink-soft); background:var(--surface-2);
+    border:1px solid var(--line); border-radius:20px; padding:3px 11px; cursor:pointer;
+    transition:background .12s, color .12s, border-color .12s; user-select:none;
+  }
+  .search-pill:hover{ border-color:var(--muted); }
+  .search-pill.on{ background:var(--ink); color:var(--surface); border-color:var(--ink); }
+  .search-field input[type=text], .search-field input[type=number]{
+    font-family:'Inter',sans-serif; font-size:var(--fs-body); padding:5px 6px;
+    border:none; border-bottom:1.5px solid var(--line); background:transparent; color:var(--ink); width:96px;
+  }
+  .search-field input:focus-visible{ outline:none; border-bottom-color:var(--ink); }
+  .search-range-row{ display:flex; align-items:center; gap:5px; }
+  .search-range-row input{ width:58px; }
+  .search-range-row span{ color:var(--muted); font-size:var(--fs-sm); }
+  .search-op-row{ display:flex; align-items:center; gap:5px; }
+  .search-op-row select{
+    font-family:'IBM Plex Mono',monospace; font-size:var(--fs-sm); color:var(--ink-soft);
+    background:var(--surface-2); border:1px solid var(--line); border-radius:6px; padding:4px 6px;
+  }
+  .search-op-row input{ width:58px; }
+  /* 可搜索多选组件：国家/身份/领域/标签这几个"选项可能很多、会随数据增长"的
+     字段用这个，不能像"类型""是否虚构"那样把所有选项铺成胶囊——选项一多
+     直接铺满一行会很难看。交互上完全照搬 SlotMenu 那套"输入框+实时过滤悬浮
+     列表"（新建/置换坑位选国家用的就是这套），只是这里要支持多选：点一个
+     不关闭列表，选中态在列表里打勾，已选的值在输入框上方长成可点掉的
+     chip。下拉列表内容来自 SearchView.options（buildOptions() 时从真实
+     records 里提取的distinct值），不是写死的静态选项。 */
+  .search-combo-box{
+    display:flex; flex-wrap:wrap; align-items:center; gap:4px;
+    min-width:110px; max-width:170px; border-bottom:1.5px solid var(--line); padding-bottom:3px;
+  }
+  .search-combo-chip{
+    display:inline-flex; align-items:center; gap:3px; font-size:var(--fs-sm);
+    background:var(--ink); color:var(--surface); border-radius:20px; padding:2px 5px 2px 10px; white-space:nowrap;
+  }
+  .search-combo-chip button{ background:none; border:none; color:inherit; cursor:pointer; font-size:11px; line-height:1; padding:1px 3px; opacity:.75; }
+  .search-combo-chip button:hover{ opacity:1; }
+  .search-combo-input{
+    border:none; outline:none; font-family:'Inter',sans-serif; font-size:var(--fs-body);
+    background:transparent; flex:1; min-width:56px; padding:3px 2px; color:var(--ink);
+  }
+  .search-combo-menu{
+    display:none; position:fixed; z-index:999; width:220px;
+    background:var(--surface); border:1px solid var(--line); border-radius:10px;
+    box-shadow:var(--shadow); padding:6px;
+  }
+  .search-combo-menu.show{ display:block; }
+  .search-combo-menu-list{ max-height:220px; overflow-y:auto; }
+  .search-combo-menu-item{
+    font-size:var(--fs-body); padding:6px 10px; border-radius:6px; cursor:pointer;
+    color:var(--ink-soft); display:flex; align-items:center; justify-content:space-between; gap:8px;
+  }
+  .search-combo-menu-item:hover{ background:var(--surface-2); color:var(--ink); }
+  .search-combo-menu-item.selected{ color:var(--ink); font-weight:600; }
+  .search-combo-menu-item .search-combo-check{ color:var(--muted); flex:none; }
+  .search-combo-menu-empty{ padding:7px 10px; font-size:var(--fs-sm); color:var(--muted); }
+  .search-clear-btn{
+    flex:none; font-size:var(--fs-sm); color:var(--muted); background:none; border:1px dashed var(--line);
+    border-radius:10px; padding:7px 14px; cursor:pointer; font-family:'Inter',sans-serif;
+  }
+  .search-clear-btn:hover{ color:var(--ink); border-color:var(--muted); }
+
+  /* 字段说明面板：每个筛选项具体是拿哪个 frontmatter 属性、怎么匹配的，
+     写死成静态文案放在这里——不是从代码反射生成的，所以以后改了
+     buildRecords()/applyFilters() 里的映射逻辑，要记得回来同步改这段文字，
+     不然文案会跟实际行为对不上。默认折叠，跟"更多筛选"同一套开合交互。 */
+  .search-help{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); margin-top:10px; }
+  .search-help-body{ display:none; padding:14px; }
+  .search-help.open .search-help-body{ display:block; }
+  .search-help-note{ font-size:var(--fs-sm); color:var(--muted); line-height:1.6; margin-bottom:12px; padding-bottom:10px; border-bottom:1px dashed var(--line); }
+  .search-help-list{ display:flex; flex-direction:column; gap:9px; }
+  .search-help-item{ display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; }
+  .search-help-key{
+    font-family:'IBM Plex Mono',monospace; font-size:var(--fs-sm); color:var(--ink);
+    background:var(--surface-2); border-radius:6px; padding:2px 7px; flex:none; white-space:nowrap;
+  }
+  .search-help-desc{ font-size:var(--fs-sm); color:var(--ink-soft); line-height:1.65; }
+  .search-help-warn{ color:var(--muted); }
+
+  .search-table-wrap{ max-height:62vh; overflow:auto; border-radius:var(--radius); margin-top:14px; }
+  .search-table{ width:100%; border-collapse:collapse; }
+  .search-table thead th{
+    position:sticky; top:0; z-index:1; background:var(--surface); text-align:left;
+    font-size:var(--fs-xs); text-transform:uppercase; letter-spacing:.05em; color:var(--muted);
+    font-family:'IBM Plex Mono',monospace; padding:9px 12px; border-bottom:1px solid var(--line);
+    cursor:pointer; white-space:nowrap; user-select:none;
+  }
+  .search-table thead th:hover{ color:var(--ink); }
+  .search-table thead th.num, .search-table td.num{ text-align:right; }
+  .search-sort-arrow{ display:inline-block; margin-left:4px; opacity:.55; }
+  .search-table tbody tr{ cursor:pointer; transition:background .1s; }
+  .search-table tbody tr:hover{ background:var(--surface-2); }
+  .search-table tbody tr.no-jump{ cursor:default; }
+  .search-table tbody tr.no-jump:hover{ background:none; }
+  .search-table td{
+    padding:9px 12px; border-bottom:1px solid var(--line); font-size:var(--fs-body);
+    vertical-align:middle; max-width:220px;
+  }
+  .search-kind-dot{ display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px; flex:none; }
+  .search-title-cell{ display:flex; align-items:center; font-family:'Fraunces',serif; font-weight:600; }
+  .search-fictional-mark{ color:var(--muted); font-weight:400; margin-left:5px; font-family:'Inter',sans-serif; font-size:var(--fs-xs); }
+  .search-span-cell{ font-family:'IBM Plex Mono',monospace; color:var(--ink-soft); white-space:nowrap; }
+  .search-chip-cell{ display:flex; flex-wrap:wrap; gap:4px; }
+  .search-chip{
+    font-size:var(--fs-xs); color:var(--ink-soft); background:var(--surface-2);
+    border:1px dashed var(--line); border-radius:20px; padding:2px 8px; white-space:nowrap;
+  }
+  .search-empty-state{ padding:40px 20px; text-align:center; color:var(--muted); }
+  .search-empty-state .display{ font-size:var(--fs-lg); color:var(--ink-soft); margin-bottom:6px; }
+
 
   /* coverage_start/coverage_end 的作品 chip 墙：虚线弱化，跟"相关"chip 同一套语言但描边不同，
      容器固定两行高度（不是"最多两行"，内容不够也占着这个位置，行为对齐政治/经济/其它那几个区域），
@@ -361,6 +706,7 @@
     <div class="tabs-main">
       <div class="tab active" data-tab="time">时间看板</div>
       <div class="tab" data-tab="subject">主体看板</div>
+      <div class="tab" data-tab="search">高级搜索</div>
     </div>
     <div class="view-switch" id="viewSwitch" style="display:none;">
       <div class="view-tab active" data-view="map">地图</div>
@@ -405,6 +751,20 @@
   </div>
 
   <div class="chip-tooltip" id="chipTooltip"></div>
+  <div class="slot-menu" id="slotMenu"></div>
+  <div class="search-combo-menu" id="searchComboMenu"></div>
+
+  <div class="modal-backdrop" id="scheduleBackdrop">
+    <div class="schedule-modal">
+      <div class="schedule-modal-head">
+        <span>年代规则</span>
+        <button type="button" class="btn small" id="scheduleDoneBtn">完成</button>
+      </div>
+      <div id="scheduleRows"></div>
+      <button type="button" class="schedule-add-btn" id="scheduleAddBtn">+ 添加年代</button>
+      <div class="schedule-hint">年份留空表示不限（比如只填"到"就是"从有史以来到这一年"）。当前年份落不到任何一段里，这个坑位会显示成空位。最多5段。</div>
+    </div>
+  </div>
 
   <!-- SUBJECT BOARD -->
   <div class="panel" id="panel-subject">
@@ -432,6 +792,49 @@
     </div>
   </div>
 
+  <!-- SEARCH BOARD -->
+  <div class="panel" id="panel-search">
+    <div id="searchEmpty" class="empty">
+      <div class="display">还没有连接到你的 Obsidian 仓库</div>
+      <div>点右上角"选择 Vault 文件夹"，选中 F WORLD B 这个文件夹</div>
+    </div>
+    <div id="searchContent" style="display:none;">
+      <div class="search-status-bar">
+        <span class="search-status-count" id="searchStatusCount"></span>
+        <div class="search-status-actions">
+          <button type="button" class="search-help-pill" id="searchHelpToggle">字段说明</button>
+          <button type="button" class="search-clear-btn" id="searchClearBtn">清空筛选条件</button>
+        </div>
+      </div>
+      <div class="search-filters" id="searchFilters"></div>
+      <div class="search-help" id="searchHelp">
+        <div class="search-help-body">
+          <div class="search-help-note">不同字段之间是 AND，同一个字段选多个值（比如 tags 同时选了两个）内部是 OR；文本类关键词是子串包含匹配，区分大小写。以下按代码里实际的取值逻辑写的，不是自动生成——以后改了取值逻辑要记得回来同步这段。</div>
+          <dl class="search-help-list">
+            <div class="search-help-item"><span class="search-help-key">type</span><span class="search-help-desc">对应 frontmatter 的 <code>type</code>（entity / event）。</span></div>
+            <div class="search-help-item"><span class="search-help-key">carrier</span><span class="search-help-desc">对应 <code>carrier</code>。下拉选项是当前库里出现过的所有实际值，不是写死的枚举。</span></div>
+            <div class="search-help-item"><span class="search-help-key">country</span><span class="search-help-desc">对应 <code>region_country</code>，经过别名标准化之后的国家名。</span></div>
+            <div class="search-help-item"><span class="search-help-key">is_fictional</span><span class="search-help-desc">对应 <code>is_fictional</code>，布尔值 <code>true</code>/<code>false</code>。</span></div>
+            <div class="search-help-item"><span class="search-help-key">domain</span><span class="search-help-desc">对应 <code>domain</code>。</span></div>
+            <div class="search-help-item"><span class="search-help-key">tags</span><span class="search-help-desc">对应 <code>tags</code>。</span></div>
+            <div class="search-help-item"><span class="search-help-key">filename</span><span class="search-help-desc">不是 frontmatter 属性——匹配的是笔记的文件名本身。</span></div>
+            <div class="search-help-item"><span class="search-help-key">reign_era</span><span class="search-help-desc">对应 <code>reign_era</code>，但<span class="search-help-warn">只从人物（entity）记录读取</span>——事件（event）记录这个字段在代码里固定拼成空字符串，就算事件笔记里也写了 <code>reign_era</code>，这里也搜不到。</span></div>
+            <div class="search-help-item"><span class="search-help-key">topic</span><span class="search-help-desc">对应 <code>topic</code>，但<span class="search-help-warn">只从事件（event）记录读取</span>——人物（entity）记录这个字段在代码里固定拼成空字符串，就算人物笔记里也加了 <code>topic</code>，这里也搜不到，除非改 <code>buildRecords()</code> 里对应这行。</span></div>
+            <div class="search-help-item"><span class="search-help-key">year_range</span><span class="search-help-desc">不是精确匹配某一年，是"记录整体的时间跨度（人物用 <code>start_year</code>~<code>end_year</code>，事件同名字段）跟你填的区间有没有重叠"，有重叠就算命中。</span></div>
+            <div class="search-help-item"><span class="search-help-key">related_count</span><span class="search-help-desc">对应 <code>related</code> 数组的条数（不是数组内容本身），配合运算符（=/&gt;/&lt;/&gt;=/&lt;=）比较。</span></div>
+          </dl>
+        </div>
+      </div>
+      <div class="search-table-wrap">
+        <table class="search-table" id="searchTable">
+          <thead><tr id="searchTableHead"></tr></thead>
+          <tbody id="searchTableBody"></tbody>
+        </table>
+        <div class="search-empty-state" id="searchEmptyState" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -454,8 +857,9 @@
    8. MapView      —— 地图 SVG 构建（真实国家轮廓）、悬浮卡定位、抽屉开关
    9. ColumnBoard  —— 分栏视图（常驻四栏，复用 DetailView）
    10. CompareView —— 主体看板（双人对比时间线）
-   11. ChipTooltip —— coverage chip 悬浮详情（全局共用一个 tooltip 元素）
-   12. App         —— 启动流程、连接 vault、年份轴、tabs、所有事件监听绑定
+   11. SearchView  —— 高级搜索（人物+事件字段筛选、可排序结果表）
+   12. ChipTooltip —— coverage chip 悬浮详情（全局共用一个 tooltip 元素）
+   13. App         —— 启动流程、连接 vault、年份轴、tabs、所有事件监听绑定
    ========================================================= */
 
 /* =========================================================
@@ -516,7 +920,7 @@ const COUNTRY_PATHS = {"Fiji":"M568.5,296.7L569.1,296.6L568.7,298.1L568.5,298.3L
 
 const COUNTRY_REAL_POS = {"Canada":[739.7,60],"US":[737.8,107.5],"Indonesia":[399.4,253.2],"Argentina":[858.3,356.8],"Chile":[836.6,366.6],"Kenya":[183.3,244.3],"Russia":[379.6,57.2],"Norway":[213.3,38.3],"South Africa":[163.4,337.3],"Mexico":[772.2,171],"Brazil":[910.2,280],"Peru":[854.1,275.1],"Colombia":[858.9,233.9],"France":[132.9,100],"Cuba":[836.2,178.2],"Nigeria":[104.2,216.2],"Ghana":[78.7,221.3],"Israel":[191.7,147],"Algeria":[104.2,157.6],"Iraq":[216,142.2],"Thailand":[356.6,199.1],"Vietnam":[371.2,193.9],"North Korea":[432.7,119.8],"South Korea":[433.1,131.4],"Mongolia":[376.8,99.1],"India":[302.3,174.3],"Pakistan":[279.5,151.9],"Iran":[242.8,143.9],"Sweden":[202.5,52.4],"Ukraine":[207.2,91.9],"Poland":[184.7,82.8],"Austria":[163.1,96.5],"Hungary":[175.1,97.8],"Romania":[186.2,102],"Germany":[161.3,85.9],"Greece":[169.9,123.2],"Turkey":[201,123.2],"Switzerland":[147.1,99.1],"Belgium":[146.8,87.3],"Netherlands":[152.7,82.3],"Portugal":[93.5,121.4],"Spain":[106,119.2],"Ireland":[123.2,79.7],"New Zealand":[546.7,377.2],"Australia":[447.8,326.9],"China":[372.3,132.1],"Italy":[149.6,111.8],"Denmark":[171.6,71.1],"UK":[137.1,77.7],"Philippines":[415,209.3],"Malaysia":[378.5,234.5],"Finland":[227.8,47.4],"Czech Republic":[170.4,89.9],"Japan":[459.2,127.8],"Saudi Arabia":[210.4,170.4],"Morocco":[77.3,152.2],"Egypt":[173.5,162.8],"Ethiopia":[189.3,219.1],"Singapore":[362.4,242]}; // 已登记国家的真实几何重心坐标(含新加坡的兜底坐标)
 
-const COUNTRY_CONTINENT_ALL = {"Fiji":"Oceania","Tanzania":"Africa","W. Sahara":"Europe","Canada":"Americas","US":"Americas","Kazakhstan":"Asia","Uzbekistan":"Asia","Papua New Guinea":"Asia","Indonesia":"Asia","Argentina":"Americas","Chile":"Americas","Dem. Rep. Congo":"Africa","Somalia":"Africa","Kenya":"Africa","Sudan":"Europe","Chad":"Europe","Haiti":"Americas","Dominican Rep.":"Americas","Russia":"Asia","Bahamas":"Americas","Falkland Is.":"Americas","Norway":"Europe","Greenland":"Americas","Fr. S. Antarctic Lands":"Asia","Timor-Leste":"Oceania","South Africa":"Africa","Lesotho":"Africa","Mexico":"Americas","Uruguay":"Americas","Brazil":"Americas","Bolivia":"Americas","Peru":"Americas","Colombia":"Americas","Panama":"Americas","Costa Rica":"Americas","Nicaragua":"Americas","Honduras":"Americas","El Salvador":"Americas","Guatemala":"Americas","Belize":"Americas","Venezuela":"Americas","Guyana":"Americas","Suriname":"Americas","France":"Europe","Ecuador":"Americas","Puerto Rico":"Americas","Jamaica":"Americas","Cuba":"Americas","Zimbabwe":"Africa","Botswana":"Africa","Namibia":"Africa","Senegal":"Europe","Mali":"Europe","Mauritania":"Europe","Benin":"Africa","Niger":"Europe","Nigeria":"Africa","Cameroon":"Africa","Togo":"Africa","Ghana":"Africa","Côte d'Ivoire":"Africa","Guinea":"Africa","Guinea-Bissau":"Europe","Liberia":"Africa","Sierra Leone":"Africa","Burkina Faso":"Europe","Central African Rep.":"Africa","Congo":"Africa","Gabon":"Africa","Eq. Guinea":"Africa","Zambia":"Africa","Malawi":"Africa","Mozambique":"Africa","eSwatini":"Africa","Angola":"Africa","Burundi":"Africa","Israel":"Asia","Lebanon":"Europe","Madagascar":"Africa","Palestine":"Europe","Gambia":"Europe","Tunisia":"Europe","Algeria":"Africa","Jordan":"Europe","United Arab Emirates":"Europe","Qatar":"Europe","Kuwait":"Europe","Iraq":"Asia","Oman":"Asia","Vanuatu":"Oceania","Cambodia":"Asia","Thailand":"Asia","Laos":"Asia","Myanmar":"Asia","Vietnam":"Asia","North Korea":"Asia","South Korea":"Asia","Mongolia":"Asia","India":"Asia","Bangladesh":"Asia","Bhutan":"Asia","Nepal":"Asia","Pakistan":"Asia","Afghanistan":"Asia","Tajikistan":"Asia","Kyrgyzstan":"Asia","Turkmenistan":"Asia","Iran":"Asia","Syria":"Europe","Armenia":"Europe","Sweden":"Europe","Belarus":"Europe","Ukraine":"Europe","Poland":"Europe","Austria":"Europe","Hungary":"Europe","Moldova":"Europe","Romania":"Europe","Lithuania":"Europe","Latvia":"Europe","Estonia":"Europe","Germany":"Europe","Bulgaria":"Europe","Greece":"Europe","Turkey":"Asia","Albania":"Europe","Croatia":"Europe","Switzerland":"Europe","Luxembourg":"Europe","Belgium":"Europe","Netherlands":"Europe","Portugal":"Europe","Spain":"Europe","Ireland":"Europe","New Caledonia":"Oceania","Solomon Is.":"Oceania","New Zealand":"Oceania","Australia":"Oceania","Sri Lanka":"Asia","China":"Asia","Italy":"Europe","Denmark":"Europe","UK":"Europe","Iceland":"Europe","Azerbaijan":"Europe","Georgia":"Europe","Philippines":"Asia","Malaysia":"Asia","Brunei":"Asia","Slovenia":"Europe","Finland":"Europe","Slovakia":"Europe","Czech Republic":"Europe","Eritrea":"Europe","Japan":"Asia","Paraguay":"Americas","Yemen":"Europe","Saudi Arabia":"Asia","N. Cyprus":"Europe","Cyprus":"Europe","Morocco":"Africa","Egypt":"Africa","Libya":"Europe","Ethiopia":"Africa","Djibouti":"Africa","Somaliland":"Africa","Uganda":"Africa","Rwanda":"Africa","Bosnia and Herz.":"Europe","Macedonia":"Europe","Serbia":"Europe","Montenegro":"Europe","Kosovo":"Europe","Trinidad and Tobago":"Americas","S. Sudan":"Africa","Singapore":"Asia"}; // 全部176个真实国家的大洲归属(仅用于未登记/背景国家的点击路由)
+const COUNTRY_CONTINENT_ALL = {"Fiji":"Oceania","Tanzania":"Africa","W. Sahara":"Africa","Canada":"Americas","US":"Americas","Kazakhstan":"Asia","Uzbekistan":"Asia","Papua New Guinea":"Asia","Indonesia":"Asia","Argentina":"Americas","Chile":"Americas","Dem. Rep. Congo":"Africa","Somalia":"Africa","Kenya":"Africa","Sudan":"Africa","Chad":"Africa","Haiti":"Americas","Dominican Rep.":"Americas","Russia":"Asia","Bahamas":"Americas","Falkland Is.":"Americas","Norway":"Europe","Greenland":"Americas","Fr. S. Antarctic Lands":"Asia","Timor-Leste":"Oceania","South Africa":"Africa","Lesotho":"Africa","Mexico":"Americas","Uruguay":"Americas","Brazil":"Americas","Bolivia":"Americas","Peru":"Americas","Colombia":"Americas","Panama":"Americas","Costa Rica":"Americas","Nicaragua":"Americas","Honduras":"Americas","El Salvador":"Americas","Guatemala":"Americas","Belize":"Americas","Venezuela":"Americas","Guyana":"Americas","Suriname":"Americas","France":"Europe","Ecuador":"Americas","Puerto Rico":"Americas","Jamaica":"Americas","Cuba":"Americas","Zimbabwe":"Africa","Botswana":"Africa","Namibia":"Africa","Senegal":"Africa","Mali":"Africa","Mauritania":"Africa","Benin":"Africa","Niger":"Africa","Nigeria":"Africa","Cameroon":"Africa","Togo":"Africa","Ghana":"Africa","Côte d'Ivoire":"Africa","Guinea":"Africa","Guinea-Bissau":"Africa","Liberia":"Africa","Sierra Leone":"Africa","Burkina Faso":"Africa","Central African Rep.":"Africa","Congo":"Africa","Gabon":"Africa","Eq. Guinea":"Africa","Zambia":"Africa","Malawi":"Africa","Mozambique":"Africa","eSwatini":"Africa","Angola":"Africa","Burundi":"Africa","Israel":"Asia","Lebanon":"Asia","Madagascar":"Africa","Palestine":"Asia","Gambia":"Africa","Tunisia":"Africa","Algeria":"Africa","Jordan":"Asia","United Arab Emirates":"Asia","Qatar":"Asia","Kuwait":"Asia","Iraq":"Asia","Oman":"Asia","Vanuatu":"Oceania","Cambodia":"Asia","Thailand":"Asia","Laos":"Asia","Myanmar":"Asia","Vietnam":"Asia","North Korea":"Asia","South Korea":"Asia","Mongolia":"Asia","India":"Asia","Bangladesh":"Asia","Bhutan":"Asia","Nepal":"Asia","Pakistan":"Asia","Afghanistan":"Asia","Tajikistan":"Asia","Kyrgyzstan":"Asia","Turkmenistan":"Asia","Iran":"Asia","Syria":"Asia","Armenia":"Europe","Sweden":"Europe","Belarus":"Europe","Ukraine":"Europe","Poland":"Europe","Austria":"Europe","Hungary":"Europe","Moldova":"Europe","Romania":"Europe","Lithuania":"Europe","Latvia":"Europe","Estonia":"Europe","Germany":"Europe","Bulgaria":"Europe","Greece":"Europe","Turkey":"Asia","Albania":"Europe","Croatia":"Europe","Switzerland":"Europe","Luxembourg":"Europe","Belgium":"Europe","Netherlands":"Europe","Portugal":"Europe","Spain":"Europe","Ireland":"Europe","New Caledonia":"Oceania","Solomon Is.":"Oceania","New Zealand":"Oceania","Australia":"Oceania","Sri Lanka":"Asia","China":"Asia","Italy":"Europe","Denmark":"Europe","UK":"Europe","Iceland":"Europe","Azerbaijan":"Europe","Georgia":"Europe","Philippines":"Asia","Malaysia":"Asia","Brunei":"Asia","Slovenia":"Europe","Finland":"Europe","Slovakia":"Europe","Czech Republic":"Europe","Eritrea":"Africa","Japan":"Asia","Paraguay":"Americas","Yemen":"Asia","Saudi Arabia":"Asia","N. Cyprus":"Europe","Cyprus":"Europe","Morocco":"Africa","Egypt":"Africa","Libya":"Africa","Ethiopia":"Africa","Djibouti":"Africa","Somaliland":"Africa","Uganda":"Africa","Rwanda":"Africa","Bosnia and Herz.":"Europe","Macedonia":"Europe","Serbia":"Europe","Montenegro":"Europe","Kosovo":"Europe","Trinidad and Tobago":"Americas","S. Sudan":"Africa","Singapore":"Asia"}; // 全部176个真实国家的大洲归属(仅用于未登记/背景国家的点击路由)
 
 // ↑↑↑ 生成数据结束 ↑↑↑
 
@@ -592,6 +996,56 @@ const COUNTRY_ALIASES = {
   '欧洲':'Europe', '亚洲':'Asia', '美洲':'Americas', '非洲':'Africa', '大洋洲':'Oceania'
 };
 
+/* 分栏坑位开放任意国家后要用到的两张表：
+   - COUNTRY_CN_NAME：英文key→中文名，从COUNTRY_ALIASES反查，同一个英文key
+     可能有好几个中文别名（比如Russia对应"俄罗斯/俄国/苏联"），取插入顺序里第一个
+     出现的当"规范中文名"——上面表里本来就是按"最常用的写法排最前面"的顺序写的
+     （'俄罗斯'排在'俄国'/'苏联'前面），不用另外排序。
+   - ALL_COUNTRY_KEYS：176个国家的英文key全集，来自地图底层的COUNTRY_CONTINENT_ALL，
+     再加上"大洲其它"这5个聚合选项（见下），按显示名字典序排一下，搜索列表里出来的
+     顺序才不会看着随机。
+   没有中文别名的国家（COUNTRY_ALIASES里没登记的一百多个）直接显示英文名，
+   不强行造一个不准的中文翻译。 */
+const COUNTRY_CN_NAME = {};
+Object.keys(COUNTRY_ALIASES).forEach(cn => {
+  const en = COUNTRY_ALIASES[cn];
+  if(!COUNTRY_CN_NAME[en]) COUNTRY_CN_NAME[en] = cn;
+});
+
+/* "大洲其它"：一种不指向单一国家的坑位内容——欧洲其它 = 整个欧洲减去"当前
+   在别的坑位里正显示着的欧洲国家"，专门收留两类内容：(1) region_country
+   直接写大洲名本身（没有对应现代国家的历史政权/说不清具体国家的作品背景），
+   (2) 没被你单独列成卡片的"长尾"欧洲国家历史。用一个不会和真实国家key撞车的
+   前缀区分，171个真实国家永远不会长这个样子。5个大洲各一个，跟CONTINENT_NAME_CN
+   一一对应。 */
+const CONTINENT_OTHER_PREFIX = '__continent_other__';
+function isContinentOtherKey(key){ return typeof key === 'string' && key.startsWith(CONTINENT_OTHER_PREFIX); }
+function continentOfOtherKey(key){ return key.slice(CONTINENT_OTHER_PREFIX.length); }
+function countryDisplayName(key){
+  if(isContinentOtherKey(key)){
+    const continent = continentOfOtherKey(key);
+    return (CONTINENT_NAME_CN[continent] || continent) + '其他';
+  }
+  return COUNTRY_CN_NAME[key] || key;
+}
+const ALL_COUNTRY_KEYS = [
+  ...Object.keys(COUNTRY_CONTINENT_ALL),
+  ...Object.keys(CONTINENT_NAME_CN).map(c => CONTINENT_OTHER_PREFIX + c)
+].sort((a,b) => countryDisplayName(a).localeCompare(countryDisplayName(b), 'zh'));
+
+/* "欧洲其它"要查的国家池：以176国大表COUNTRY_CONTINENT_ALL为准（跟ColumnBoard
+   选择器口径一致，不是地图那张~40国的小表COUNTRY_CONTINENT），大洲名本身也算
+   进池子——这样region_country直接写"欧洲"的笔记，不排除任何国家时也能命中，
+   不会因为"没有具体国家名"就哪儿都不显示。 */
+const COUNTRIES_BY_CONTINENT_ALL = {};
+Object.keys(COUNTRY_CONTINENT_ALL).forEach(c=>{
+  const cont = COUNTRY_CONTINENT_ALL[c];
+  (COUNTRIES_BY_CONTINENT_ALL[cont] = COUNTRIES_BY_CONTINENT_ALL[cont] || []).push(c);
+});
+Object.keys(CONTINENT_NAME_CN).forEach(cont=>{
+  (COUNTRIES_BY_CONTINENT_ALL[cont] = COUNTRIES_BY_CONTINENT_ALL[cont] || []).push(cont);
+});
+
 const Parser = {
 
   cleanVal(v){
@@ -644,6 +1098,60 @@ const Parser = {
     const m = s.match(/^(-?\d+)(?:-(\d{2}))?(?:-(\d{2}))?/);
     if(!m) return null;
     return { year:+m[1], month:m[2]?+m[2]:null, day:m[3]?+m[3]:null };
+  },
+
+  /* tenure 字段：统治者"在位"和执政者"任职"共用同一个字段，靠 carrier 区分
+     语义。允许多段不连续的任期，逗号分隔——"1885-1888, 1892-1896"表示
+     这个人分两次在位/任职，段数不限（三次、四次都是继续加逗号，不需要
+     额外的 tenure2/tenure3 字段）。每一段必须是"起始-结束"，起始不能晚于
+     结束；单独一段格式不对，只跳过这一段并记入 invalid（交给调用方转成
+     警告），不影响这个人身上其他能正常解析的段。 */
+  parseTenureRanges(raw){
+    if(raw===undefined||raw===null||raw==='') return { ranges:[], invalid:[] };
+    const ranges = [];
+    const invalid = [];
+    String(raw).split(',').forEach(seg=>{
+      const s = seg.trim();
+      if(!s) return;
+      const m = s.match(/^(-?\d+)\s*-\s*(-?\d+)$/);
+      if(m && +m[2] >= +m[1]) ranges.push({ start:+m[1], end:+m[2] });
+      else invalid.push(s);
+    });
+    return { ranges, invalid };
+  },
+
+  /* reign_era 字段：只给统治者（carrier=统治者）用，记年号（或天皇时代名）
+     用的——只写"年号-起始年"，不写结束年，因为结束年靠"下一个年号的起始年"
+     自动推算（跟 tenure 段与段之间不用手动填衔接点是同一个道理），逗号分隔
+     多个年号（改元几次就写几段，明清、日本近代这种一辈子一个年号的就只写
+     一段）。起始年直接抄史书/资料上"XX 元年 = 公元哪一年"的现成数字，不用
+     自己去换算"登基年"和"改元年"之间的逾年偏移。
+     可选的末尾 `!`（或中文输入法常打出来的全角「！」，两种都认）标记：
+     "践祚改元"——新君即位当年新年号就生效（日本明治
+     以后"一世一元"是典型例子：1912年明治天皇驾崩当天，大正当天就开始用，
+     不用等下一年），需要跟前一位在交接年同时显示两个年号（"明治45年"和
+     "大正元年"都对，只是对应这一年里不同的月份）。这跟中国明清"逾年
+     改元"（新君 tenure 当年就生效，但年号必须等下一年正月）是两种不同的
+     改元制度，不能靠比较 tenure/reign_era 起始年数字是否相等来自动推断——
+     秦汉唐宋也有"即位当年改元"的例子，如果自动推断会在这些朝代上误判，
+     所以必须手动标注，不写 `!` 就是默认的"逾年"行为，完全不受影响。
+     只该标在"这个人自己的第一段年号"上（表达"我跟前一位是不是需要交接年
+     双显示"），标在同一人后续改元的年号段上没有意义——那些是同一人内部
+     改元，不涉及跟别人交接，代码也不会读到那个位置的标记。 */
+  parseEraSegments(raw){
+    if(raw===undefined||raw===null||raw==='') return { items:[], invalid:[] };
+    const items = [];
+    const invalid = [];
+    String(raw).split(',').forEach(seg=>{
+      const s = seg.trim();
+      if(!s) return;
+      const m = s.match(/^(.+?)-(-?\d+)\s*([!！])?$/);
+      const eraName = m ? m[1].trim() : '';
+      if(m && eraName) items.push({ name:eraName, start:+m[2], immediate: !!m[3] });
+      else invalid.push(s);
+    });
+    items.sort((a,b)=>a.start-b.start);
+    return { items, invalid };
   },
 
   isTrue(v){ return v===true || v==='true' || v==='True'; },
@@ -775,72 +1283,9 @@ const Parser = {
     return { items, skipped };
   },
 
-  /* "## 统治者" 专用的行解析。格式改成了直接写死起止年份："AAA（起始-结束）"，
-     不再靠"继位/登基/称帝"这类关键词、也不再靠"下一条记录出现"去反推上一位
-     什么时候卸任——每条记录自己就是一个完整、独立的区间，谁负责哪几年一目了然，
-     不需要猜。名字（AAA）原样保留，不做任何加工（不特殊处理庙号/年号括号），
-     用户写多短这里就显示多短。
-     起止年份必须都写全——只写一边（比如"朱元璋（1368-）"或者没写括号）算格式错误，
-     交给调用方产生警告；但"这一位到底要不要记进来"完全不做检测，跳过某几位、
-     只记一头一尾、甚至只记一位，都不会有任何警告——这是允许的正常用法。 */
-  parseRulerLine(raw){
-    const li = raw.match(/^\s*[-*]\s*(.+)$/);
-    if(!li) return null;
-    const text = li[1].trim();
-    const m = text.match(/^(.+?)[（(]\s*(-?\d+)\s*-\s*(-?\d+)\s*[）)]\s*$/);
-    if(!m) return null; // 没匹配上"名字（起始-结束）"这个整体形状，格式不对，交给调用方产生警告
-    const name = m[1].trim();
-    const start = +m[2], end = +m[3];
-    if(!name || end < start) return null; // 名字为空、或者结束年份比起始年份还早，都算格式不对
-    return { name, start, end };
-  },
-
-  /* "## 统治者" 小节整体解析：标题识别规则跟 parseTimelineSection 完全一样
-     （前后允许 emoji/符号，核心文字精确匹配"统治者"），只是每一行改用
-     parseRulerLine 而不是 parseTimelineLine。识别不出格式的行同样记入
-     skipped，交给调用方转成警告，不静默丢数据。 */
-  parseRulerSection(body){
-    if(!body) return { items:[], skipped:[] };
-    const lines = body.split(/\r?\n/);
-    const items = [];
-    const skipped = [];
-    let inSection = false;
-    for(const raw of lines){
-      const h2 = raw.match(/^##\s+(.+)/);
-      if(h2){ inSection = Parser.normalizeHeading(h2[1].trim()) === '统治者'; continue; }
-      if(raw.match(/^#{1,2}\s+/)) { inSection = false; continue; }
-      if(!inSection) continue;
-      if(!/^\s*[-*]\s*(.+)$/.test(raw)) continue;
-      const parsed = Parser.parseRulerLine(raw);
-      if(parsed) items.push(parsed);
-      else skipped.push(raw.trim());
-    }
-    return { items, skipped };
-  },
-
-  /* 每条统治者记录自己就有明确的起止年份，只需要检测"两条记录的年份区间
-     有没有重叠"——这个不可能是"故意跳过某人没记"造成的（跳过只会留出空档，
-     不会产生重叠），只可能是起止年份哪里写错了，所以属于可以放心报警告的
-     纯格式类错误，跟"漏记了谁"那种没法判断是否故意的情况不是一回事。
-     只检查排序后相邻两条，够用——真正常见的typo场景（比如相邻两条年份抄错、
-     首尾数字打反）都是相邻的，不需要对每一对都做 O(n²) 检查。
-     用的是严格小于（<），不是小于等于——"上一位到1900年卸任，下一位1900年
-     就继位"这种同一年交接是完全正常的写法（很常见），不算重叠；
-     只有当下一位的起始年份严格早于上一位的结束年份，才是真正的冲突。 */
-  findOverlappingRulers(rulers){
-    const problems = [];
-    const sorted = [...rulers].sort((a,b)=>a.start-b.start);
-    for(let i=1;i<sorted.length;i++){
-      if(sorted[i].start < sorted[i-1].end){
-        problems.push(`${sorted[i-1].name}（${sorted[i-1].start}-${sorted[i-1].end}）和 ${sorted[i].name}（${sorted[i].start}-${sorted[i].end}）年份有重叠`);
-      }
-    }
-    return problems;
-  },
-
   /* tag-registry 解析 */
   parseTagRegistry(body){
-    const result = {domain:[], carrier:[], countryMain:[], countrySecondary:[]};
+    const result = {domain:[], carrier:[], countryMain:[], countrySecondary:[], executiveThreshold:{}};
     let section=null;
     for(const raw of body.split(/\r?\n/)){
       const h2 = raw.match(/^##\s+(.+)/);
@@ -848,7 +1293,8 @@ const Parser = {
       const li = raw.match(/^[-*]\s+(.+)/);
       if(h2){
         const t=h2[1].trim();
-        section = t.includes('领域')?'domain': t.includes('载体')?'carrier': t.includes('国家')?'country': null;
+        section = t.includes('领域')?'domain': t.includes('载体')?'carrier': t.includes('国家')?'country'
+          : t.includes('执政者门槛')?'executiveThreshold': null;
         continue;
       }
       if(h3 && section==='country'){
@@ -856,7 +1302,14 @@ const Parser = {
         section = t.includes('主要')?'countryMain': t.includes('次要')?'countrySecondary':'country';
         continue;
       }
-      if(li && section && result[section]) result[section].push(li[1].trim());
+      if(li && section==='executiveThreshold'){
+        // "- China: 1912" 这种 key:value 格式，中英文冒号都认；没匹配上就跳过，
+        // 不产生警告——这是可选的手动覆盖表，格式随意写错了直接忽略，交给自动兜底逻辑接手
+        const kv = li[1].match(/^([^:：]+)[:：]\s*(-?\d+)/);
+        if(kv) result.executiveThreshold[Parser.normalizeCountry(kv[1].trim())] = +kv[2];
+        continue;
+      }
+      if(li && section && result[section] && Array.isArray(result[section])) result[section].push(li[1].trim());
     }
     return result;
   },
@@ -877,7 +1330,7 @@ const Parser = {
      这是本命名空间唯一对外的入口，其余方法都是它的内部拆分步骤。 */
   async scanVault(dirHandle){
     const events=[], persons=[], warnings=[];
-    let tagRegistry = {domain:DEFAULT_DOMAINS, carrier:[], countryMain:[], countrySecondary:[]};
+    let tagRegistry = {domain:DEFAULT_DOMAINS, carrier:[], countryMain:[], countrySecondary:[], executiveThreshold:{}};
 
     for await (const {handle, path} of Parser.walk(dirHandle)){
       if(path.startsWith('Templates/')) continue;
@@ -896,7 +1349,7 @@ const Parser = {
         const domain = Parser.toArr(fm.domain);
         const common = {
           title, path, keyEra: fm.key_era || '', timeNote: fm.time_note || '',
-          region, domain, carrier: fm.carrier || '',
+          region, domain, tags: Parser.toArr(fm.tags), carrier: fm.carrier || '',
           related: Parser.toArr(fm.related), topic: Parser.toArr(fm.topic),
           fictional: Parser.isTrue(fm.is_fictional), body,
           mainEntity: null, mentionedEntities: []
@@ -908,28 +1361,20 @@ const Parser = {
         if(!start && !fm.time_note){ warnings.push(title+'：没有可识别的 start_year'); }
         const hasBar = fm.key_era === 'National';
         const summary = hasBar ? Parser.extractSection(body, '简述') : '';
-        // "## 统治者"只喂给"现在在位是谁"这个计算用，不该原样出现在卡片正文里，
-        // 所以要跟"简述""时间线"一样被排除在展示文字之外
-        const mainBody = hasBar ? Parser.stripSections(body, ['简述','时间线','统治者']) : Parser.stripTimelineSection(body);
+        // 统治者/执政者信息不再从事件笔记正文抓取，改由 entity 笔记的
+        // tenure 字段 + carrier 承担（见下方 persons 解析）。如果朝代笔记
+        // 还没来得及迁移、残留着旧的"## 统治者"/"## 执政者"标题和列表，
+        // 这里仍然要把它们从卡片正文里剥掉——不识别成数据，纯粹是"不要让
+        // 这段文字露出来"，跟"简述""时间线"性质不同，只是恰好复用同一个
+        // 剥离函数。
+        const mainBody = hasBar ? Parser.stripSections(body, ['简述','时间线','统治者','执政者']) : Parser.stripTimelineSection(body);
         const mdInBody = Parser.extractMonthDay(mainBody || summary);
         if(start && mdInBody && start.month===null){ start.month = mdInBody.month; start.day = mdInBody.day; }
-        // "## 统治者"：只有带进度条的 National 级跨度事件才需要——给"现在在位是谁"这个
-        // 常驻标注用。每条记录自带明确起止年份，渲染时直接查"当前年份落在哪条的
-        // 区间里"即可，不用再排序推断谁先谁后（顺序不影响查找结果，存的时候按
-        // 起始年份排一下只是为了 findOverlappingRulers 检测相邻重叠更方便）
-        let rulers = [];
-        if(hasBar){
-          const { items: rulerItems, skipped: rulerSkipped } = Parser.parseRulerSection(body);
-          rulerSkipped.forEach(line=>{ warnings.push(title+'：「## 统治者」里有一行没识别出「AAA（起始-结束）」格式，已跳过——'+line); });
-          rulers = rulerItems.sort((a,b)=>a.start-b.start);
-          Parser.findOverlappingRulers(rulers).forEach(msg=>{ warnings.push(title+'：「## 统治者」'+msg); });
-        }
         events.push({
           ...common,
           start, end: Parser.parseDate(fm.end_year),
           displayText: mainBody,
-          summary,
-          rulers
+          summary
         });
 
         // 细节条目："## 时间线"下带年份的行，作为主事件之外的额外补充，各自年份独立参与匹配
@@ -949,6 +1394,26 @@ const Parser = {
         enSkipped.forEach(line=>{ warnings.push(title+'：「## 时间线」里有一行没识别出年份，已跳过——'+line); });
         const { items: fictionalTimeline, skipped: ftSkipped } = Parser.parseTimelineSection(body, '小说时间线');
         ftSkipped.forEach(line=>{ warnings.push(title+'：「## 小说时间线」里有一行没识别出年份，已跳过——'+line); });
+        // tenure：统治者"在位"和执政者"任职"共用同一个字段，具体是哪个角色
+        // 完全靠 carrier 决定，这里不区分。支持逗号分隔多段不连续任期
+        // （见 Parser.parseTenureRanges）。写了 tenure 但 carrier 不是
+        // "统治者"/"执政者"，属于数据不一致，产生警告但不阻止解析
+        // （仍然按写出来的值处理，交给使用者自己决定要不要修正）。
+        const { ranges: tenureRanges, invalid: tenureInvalid } = Parser.parseTenureRanges(fm.tenure);
+        tenureInvalid.forEach(seg=>{ warnings.push(title+'：「tenure」字段里有一段没识别出「起始-结束」格式，已跳过——'+seg); });
+        const carrierVal = fm.carrier || '';
+        if(tenureRanges.length && !['统治者','执政者'].includes(carrierVal)){
+          warnings.push(title+'：写了 tenure 但 carrier 不是「统治者」或「执政者」，已按写出的值处理——请确认 carrier 是否写错');
+        }
+        // reign_era：只给统治者用（年号/时代名），执政者继续只靠 tenure 表达
+        // 任职时间，不涉及年号概念。写了 reign_era 但 carrier 不是「统治者」
+        // （比如笔误写在执政者身上），跟 tenure/carrier 一样，产生警告但不
+        // 阻止解析。
+        const { items: reignEra, invalid: reignEraInvalid } = Parser.parseEraSegments(fm.reign_era);
+        reignEraInvalid.forEach(seg=>{ warnings.push(title+'：「reign_era」字段里有一段没识别出「年号-起始年」格式，已跳过——'+seg); });
+        if(reignEra.length && carrierVal !== '统治者'){
+          warnings.push(title+'：写了 reign_era 但 carrier 不是「统治者」，已按写出的值处理——请确认 carrier 是否写错');
+        }
         persons.push({
           title, path,
           birth: Parser.parseDate(fm.start_year),
@@ -956,7 +1421,10 @@ const Parser = {
           timeNote: fm.time_note || '',
           country: Parser.toArr(fm.region_country).map(Parser.normalizeCountry),
           domain: Parser.toArr(fm.domain),
-          carrier: fm.carrier || '',
+          tags: Parser.toArr(fm.tags),
+          carrier: carrierVal,
+          tenureRanges,
+          reignEra,
           related: Parser.toArr(fm.related),
           fictional: Parser.isTrue(fm.is_fictional),
           coverageStart: Parser.parseDate(fm.coverage_start),
@@ -1055,7 +1523,31 @@ const Parser = {
       (p.country||[]).forEach(r=>{ if(!COUNTRY_CONTINENT[r]) warnings.push(p.title+'：国家「'+r+'」未登记，不会显示在地图上'); });
     });
 
-    return { events, persons, tagRegistry, warnings };
+    // 执政者槽位门槛年份：tag-registry 里手动登记的优先生效；没手动登记的国家，
+    // 自动兜底成"这个国家所有 carrier=执政者 的 persons 里、所有任期段中最早
+    // 的那个起始年"（一个人可能有多段不连续任期，这里取全部段里最小的那个）——
+    // 从这一年开始，不管当年有没有具体人选命中，这个国家的执政者槽位都固定展示
+    // （没数据就显示占位符，见 Query.shouldShowExecutiveSlot），之前的年份完全
+    // 不占用这个槽位。
+    const executiveThreshold = { ...tagRegistry.executiveThreshold };
+    const autoMinByCountry = {};
+    persons.forEach(p=>{
+      if(p.carrier !== '执政者' || !p.tenureRanges.length) return;
+      const yr = Math.min(...p.tenureRanges.map(r=>r.start));
+      p.country.forEach(country=>{
+        if(autoMinByCountry[country]===undefined || yr<autoMinByCountry[country]) autoMinByCountry[country]=yr;
+      });
+    });
+    Object.keys(autoMinByCountry).forEach(country=>{
+      if(executiveThreshold[country]===undefined) executiveThreshold[country]=autoMinByCountry[country];
+    });
+
+    // 同一国家+同一carrier下，tenure 区间允许重叠——比如共治、摄政这类同一
+    // 时期存在多位统治者/执政者的情况是真实历史，不算数据错误，所以不再校验
+    // 重叠、也不再报警告。查询时（Query.currentByCarrierFor）会把当年所有
+    // 命中的人一起返回，常驻行同时显示，不再是"只留最后一条覆盖前面的"。
+
+    return { events, persons, tagRegistry, warnings, executiveThreshold };
   }
 };
 
@@ -1112,7 +1604,7 @@ const Color = {
    新增状态时也加在这里，不再随手声明新的裸露全局变量。
    ========================================================= */
 const Store = {
-  vault: { events:[], persons:[], tagRegistry:{domain:DEFAULT_DOMAINS, carrier:[], countryMain:[], countrySecondary:[]}, warnings:[] },
+  vault: { events:[], persons:[], tagRegistry:{domain:DEFAULT_DOMAINS, carrier:[], countryMain:[], countrySecondary:[], executiveThreshold:{}}, warnings:[], executiveThreshold:{} },
   currentYear: (function(){
     const saved = parseInt(localStorage.getItem('fwb_lastYear'), 10);
     return Number.isFinite(saved) ? saved : 1938;
@@ -1138,6 +1630,20 @@ const Utils = {
     const s = startObj.year;
     const e = endObj ? endObj.year : s;
     return year>=s && year<=e;
+  },
+  /* tenure 区间的年份匹配：左闭右开——end 这一年不算这个人自己的，是交棒
+     给下一任的边界年份（沿用你最早定的"XXXX-1900 和 1900-YYYY 相接时，
+     1900 归后面那位"这条规则，只是从"两人相接才用"变成对每条记录都统一
+     适用）。这样如果确实有下一任从 end 这年开始接手，会在 end 这年自然
+     只命中下一任，不会两人都命中；如果没有下一任接手，end 这年就直接
+     查无数据，显示占位符——这也是诚实的，end 本来就是个边界/交接年份，
+     没写下一任的话没法替用户判断那年具体算谁。
+     唯一的例外是 start===end 这种单年任期（笔记里写"1900-1900"表示只在
+     1900这一年在位/在任）——按严格左闭右开算会变成空区间、谁都匹配不到，
+     所以这种情况退化成只匹配 start 这一年本身。 */
+  findAllCurrentByRange(items, year){
+    if(!items || !items.length) return [];
+    return items.filter(r => year >= r.start && year < Math.max(r.end, r.start+1));
   }
 };
 
@@ -1148,8 +1654,228 @@ const Utils = {
    保证三处内容永远互相对得上，不会因为各自查各自的而出现分歧。
    ========================================================= */
 const Query = {
+  /* region_country 精确写国家名的正常匹配之外，再兜底一层：如果这条笔记的
+     region里写的是大洲名本身（比如"欧洲"，常见于奥匈帝国这类没有对应现代
+     国家的历史政权），也要让它出现在这个大洲下每一个具体国家的卡片里——
+     不然"欧洲"这种笔记只能在大洲聚合视图（eventsForContinentYear，靠
+     COUNTRY_CONTINENT 自带的大洲名自映射）里看到，具体国家卡片反而看不到，
+     两边不一致。continent查COUNTRY_CONTINENT_ALL（176国大表，比地图用的
+     那张小表COUNTRY_CONTINENT覆盖全，分栏卡片能选的国家都在这张大表里）。 */
   eventsForCountryYear(country, year){
-    return Store.vault.events.filter(e=> e.region.includes(country) && Utils.inRange(e.start, e.end, year));
+    const continent = COUNTRY_CONTINENT_ALL[country];
+    return Store.vault.events.filter(e=>
+      (e.region.includes(country) || (continent && e.region.includes(continent))) &&
+      Utils.inRange(e.start, e.end, year)
+    );
+  },
+  /* 执政者槽位的门槛判断：这个国家有没有登记过门槛年份（手动登记或自动兜底，
+     见 Parser.scanVault 里 executiveThreshold 的计算），当前年份有没有跨过这个门槛。
+     门槛判断和"找当前是谁"是分开的两步——门槛是国家层面的时间属性，
+     跟具体某一年有没有命中人选无关。 */
+  shouldShowExecutiveSlot(country, year){
+    const threshold = Store.vault.executiveThreshold[country];
+    return threshold !== undefined && year >= threshold;
+  },
+  /* 某国家有没有出现过"统治者"这个概念：跟执政者的门槛年份不是一回事——
+     执政者是"年份到了就固定展示"，统治者是"这个国家压根有没有这个角色"
+     （比如美国没有统治者概念，不管哪一年都不展示这个槽位）。只要这个国家
+     名下出现过至少一位 carrier=统治者 且写了至少一段 tenure 的 person，就认为
+     这个国家有统治者概念，槽位常驻（没命中当年数据时显示占位符）。 */
+  hasRulerConcept(country){
+    return Store.vault.persons.some(p=> p.carrier==='统治者' && p.tenureRanges.length && p.country.includes(country));
+  },
+  /* 按 carrier 从 persons 里取某国家在当前年份命中的所有人——统治者、执政者
+     共用这一份逻辑，只是传入的 carrier 不同。不局限于"当前正好显示哪个跨度
+     事件"，只要这个人任意一段 tenure 区间盖到这一年就能查到，比绑定在某个
+     具体事件笔记上更稳妥。一个人可能有多段不连续任期（tenureRanges 数组），
+     每一段各自铺进查询池里，谁的哪一段命中当前年份就用哪一段——这样"在位
+     第几年/共几年"（渲染层用 hit.start/hit.end 算）天然就是按"当前这一段
+     自己的起止"算，不会因为中间断过而把两段错误地拼成一段连续进度。
+     返回值是数组：Utils.findAllCurrentByRange 用的是左闭右开区间，"同一年
+     交接"（A 到1900年止、B 从1900年始）在 1900 这年天然只命中 B，"真实
+     并存"（重叠横跨不止一年，比如新旧朝代交替、共治、摄政）在重叠的每一年
+     天然两个都命中——不需要额外的后置过滤去区分这两种情况，区间语义本身
+     就已经处理好了。 */
+  currentByCarrierFor(country, year, carrier){
+    const pool = [];
+    Store.vault.persons.forEach(p=>{
+      if(p.carrier===carrier && p.country.includes(country)){
+        // reignEra 一起带上（只有统治者会有非空数组，执政者/大多数君主都是
+        // 空数组），供渲染层查"当前落在这段在位期间里的哪个年号"用，见
+        // Query.findCurrentReignEra。
+        p.tenureRanges.forEach(r=> pool.push({ name:p.title, start:r.start, end:r.end, reignEra:p.reignEra }));
+      }
+    });
+    pool.sort((a,b)=>a.start-b.start);
+    return Utils.findAllCurrentByRange(pool, year);
+  },
+  /* 在某一段在位期间（hit，来自 currentByCarrierFor 的命中结果）内部，
+     查当前年份落在哪个年号里。reign_era 每一段只记"年号-起始年"，结束边界
+     不用手动填，取"下一个年号的起始年"；如果是这个人写的最后一个年号，
+     结束边界兜底成这段 tenure 本身的 hit.end——这样年号的年数范围永远不会
+     超出这个人真实在位的范围，哪怕 reign_era 数据没填全或者填漏了最后一段
+     也不会失真。
+     没有 reign_era 数据（大多数执政者、多数欧洲君主）、或者当前年份还在
+     "登基当年、沿用上一位年号"这种过渡期（早于这个人自己第一个年号的
+     起始年）——两种情况都返回 null，交给调用方回退成直接用 hit 本身的
+     start/end 计算（也就是之前那套纯 tenure 的算法，行为不变）。 */
+  findCurrentReignEra(hit, year){
+    if(!hit.reignEra || !hit.reignEra.length) return null;
+    let current = null;
+    for(let i=0;i<hit.reignEra.length;i++){
+      const segStart = hit.reignEra[i].start;
+      const nextStart = (i+1<hit.reignEra.length) ? hit.reignEra[i+1].start : hit.end;
+      const segEnd = Math.max(nextStart, segStart+1); // 防止相邻两个年号起始年相同导致空区间
+      if(year >= segStart && year < segEnd) current = { name: hit.reignEra[i].name, start: segStart, end: segEnd };
+    }
+    return current;
+  },
+  currentExecutiveFor(country, year){ return Query.currentByCarrierFor(country, year, '执政者'); },
+  /* 统治者专用：优先按"全国年号时间线"匹配年份，而不是先按 tenure 挑人、
+     再在这个人内部找年号。原来那套"先 tenure 后 era"的顺序在"逾年改元"
+     的交接年份会出错——比如1722年康熙驾崩、雍正即位：雍正的 tenure是
+     1722-1735（在位起于父亡那年），但雍正自己的年号要到1723年才启用
+     （reign_era 写的是"雍正-1723"）。按"先 tenure 选人"的算法，1722年
+     tenure 命中的是雍正（tenure 区间左闭右开，交接年归后一位），命中之后
+     发现雍正自己的 reign_era 里根本没有覆盖1722年的年号段（早于雍正第一个
+     年号起始年），只能退化成直接拿雍正的 tenure 数字硬算，于是显示成
+     "雍正 第1/13年"——但史书上1722年仍然记作"康熙六十一年"，不是雍正的
+     年份。
+     解决办法：不再"先选人再找年号"，而是把全国所有统治者的 reign_era
+     按起始年直接拼成一条不分人的连续时间线——前一段年号的结束边界就是
+     后一段年号（不管属于谁）的起始年。这样"交接年份归前一位年号"这种
+     史学惯例，不需要额外特判就能从区间语义里自然得出：1722年落在"康熙"
+     这一段里（因为下一段"雍正"从1723年才开始），天然显示康熙。
+     这条时间线只覆盖"写了 reign_era 的人"；没写 reign_era 的人（大多数
+     执政者、多数欧洲君主）完全不受影响，仍然并入下面的纯 tenure 兜底
+     算法，行为不变。 */
+  /* 两个人的 tenureRanges 有没有"实质并存"：不是随便沾一年边就算——正常
+     交接的两份笔记也经常因为"起始/结束年份该不该算左闭右开"这种笔误性质
+     的写法差异，凑巧重叠1年（比如内禅/驾崩当年前后两人各自按"实际在位
+     最后一年/第一年"的直觉填了整数），这种1年的重叠更可能是笔误而不是
+     真的两人同时称帝，仍然应该当正常接替处理；真正的并存（南北分立、
+     篡位、共治）重叠通常有实打实的年数，不会卡在1年这种擦边程度。
+     阈值定为2年：重叠<2年（含0年，也就是完全不沾边）都当能链接，
+     >=2年才认定是真并存、不能链接。这是个经验阈值，不是精确科学，
+     如果实际数据里出现了误判，可以再调整这个数字。 */
+  overlapYears(rangesA, rangesB){
+    let max = 0;
+    rangesA.forEach(a=> rangesB.forEach(b=>{
+      const os = Math.max(a.start, b.start), oe = Math.min(a.end, b.end);
+      max = Math.max(max, oe - os);
+    }));
+    return max;
+  },
+  /* 找"下一位是谁"要不要连接、隔多远还算合理，是两条独立但要一起满足的
+     规则，缺一个都会出 bug：
+     1) 候选池必须是"这个国家所有统治者"，不能只在"写了 reign_era 的人"
+        里面挑——如果中间恰好插着一位暂时没写年号的统治者（比如 A、C 都
+        有年号，中间的 B 笔记还没来得及补 reign_era），只在有年号的人里
+        找下一位，会直接跳过 B、把 A 的年号一路连到 C 身上，把 B 真实在
+        位的那段年份也一起吞并掉——B 没有年号可显示不代表这段时间不存在，
+        只是"存在但年号未知"，链接应该在 B 这里断开，B 自己那段年份走
+        另一套"没有年号、纯 tenure 兜底显示第X/Y年"的逻辑（下面
+        currentRulerByCountryYear 里的 tenureOnlyPool）。
+     2) 就算候选池扩大到"所有人"，如果两人之间根本没有任何笔记记录这段
+        空档（不是"没写年号"，是"压根没这个人的数据"），也不能无脑连接——
+        history笔记不可能穷举每一年的统治者，尤其上古/中古史料残缺的朝代，
+        差出几百年也很常见，此时前一位的候选起点已经远远超出"正常交接"
+        的范畴，硬连上去反而会把年号错误拉伸出几百年。用一个宽限窗口
+        （GAP_LIMIT_YEARS）兜底：候选人的起始年离自己 tenure 终止年太远
+        （超过这个数），就当作"没有数据"处理，直接用自己 tenure 终止年
+        封顶，不再连接。这是个经验阈值，不是精确科学，某些史料齐全的朝代
+        可以收紧，史料残缺的朝代可能要放宽，需要的话再调整。 */
+  buildEraChain(country){
+    const GAP_LIMIT_YEARS = 10;
+    const all = [];
+    Store.vault.persons.forEach(p=>{
+      if(p.carrier!=='统治者' || !p.country.includes(country) || !p.tenureRanges.length) return;
+      // 兜底边界：如果这是全国时间线上最后一段年号（后面没人接上），
+      // 结束边界退回到这个人自己的 tenure 结束年——跟原来"没有下一位
+      // 数据就不超出本人在位范围"的兜底逻辑保持一致。
+      const tenureEnd = Math.max(...p.tenureRanges.map(r=>r.end));
+      if(p.reignEra.length){
+        // 保留这个人完整的 tenureRanges（而不是压扁成一对 min/max），供
+        // 下面判断"跟谁并存"时按段比对——避免"复辟"这种同一人 tenure
+        // 本身就不连续的情况，被误判成跟中间夹着的另一个政权重叠。
+        p.reignEra.forEach(e=> all.push({ person:p.title, eraName:e.name, start:e.start, immediate:e.immediate, ranges:p.tenureRanges, tenureEnd, hasEra:true }));
+      } else {
+        // 没写年号的统治者：不产出年号段（没年号可显示），但必须出现在
+        // 这条时间线里当"候选卡位者"，否则前一位的年号扫描会直接跳过他。
+        const start = Math.min(...p.tenureRanges.map(r=>r.start));
+        all.push({ person:p.title, start, ranges:p.tenureRanges, tenureEnd, hasEra:false });
+      }
+    });
+    all.sort((a,b)=>a.start-b.start);
+    const chain = [];
+    all.forEach((seg,i)=>{
+      if(!seg.hasEra) return; // 没年号的人自己不产出年号段
+      // 默认兜底：找不到能连接的下一位（数组扫到底、或下一位太远判定
+      // 没数据），退回自己 tenure 终点封顶——但这里要 +1，把这一年真正
+      // 包进去，不能直接照搬 tenureEnd 原样当排他边界。tenure 里 end 这个
+      // 数字，笔记作者写的就是自己真实在位到的最后一年（不管有没有下一位
+      // 接班，都是这么填的）；只有在"确实连接上了下一位"的场景下，这一年
+      // 才会被排他边界规则让给下一位显示（表面上看起来像是"排他"，其实
+      // 只是把这一年的显示权让给了接班人，不代表这年不属于自己）。这里
+      // 既然没有任何人来"接手"这一年（压根没下一位，或者下一位太远、
+      // 判定为数据缺失），就不该再套用排他规则把这年切掉——没人接手就该
+      // 显示在自己名下，用 +1 把这年重新包含进来。
+      let end = seg.tenureEnd + 1;
+      // 依次往后找"真正接替"的下一位：同一个人自己改元（天然算接替，
+      // 不受下面的空档判断约束），或者跟对方 tenure 重叠不足2年（正常
+      // 交接）；如果重叠达到2年以上（真并存，比如南北分立），跳过继续
+      // 往后找，不能拿它的起始年当边界——这样并存的两套年号各自保留
+      // 自己的起止，不会被对方"抢走"结束年。
+      for(let j=i+1;j<all.length;j++){
+        const nxt = all[j];
+        const sameRuler = nxt.person === seg.person;
+        if(sameRuler || Query.overlapYears(seg.ranges, nxt.ranges) < 2){
+          // 候选人（不管有没有年号）离自己 tenure 终点太远——中间这段
+          // 空档没有任何数据记录，不是"正常交接"，不再连接，直接用自己
+          // tenure 终点+1封顶（上面已经设好了 end 的默认值），不继续往后
+          // 找更远的候选人（更远只会更不合理）。
+          if(!sameRuler && (nxt.start - seg.tenureEnd) > GAP_LIMIT_YEARS) break;
+          if(nxt.hasEra){
+            // 下一段标了 `!`（践祚改元，即位当年新年号就生效，比如日本
+            // 明治→大正）——交接年这一年现实里两个年号都成立，边界要
+            // 往后多推1年，让交接年同时落进这一段和下一段（左闭右开
+            // 区间下"结束年本身不算"，往后推1年正好让 nxt.start 这一年
+            // 被两段同时命中），下游 findAllCurrentByRange 会在这年返回
+            // 两个 hit，渲染层复用现有的"多人用 | 并排显示"逻辑，不用改。
+            // 没标 `!` 就是默认的"逾年改元"边界，交接年只归前一段。
+            end = nxt.immediate ? nxt.start+1 : Math.max(nxt.start, seg.start+1);
+          } else {
+            // 下一位没写年号：年号链到这里为止，边界=对方 tenure 起点，
+            // 对方那段年份走 tenureOnlyPool 兜底显示，不会被这段年号
+            // 继续吞并。
+            end = Math.max(nxt.start, seg.start+1);
+          }
+          break;
+        }
+      }
+      const finalEnd = Math.max(end, seg.start+1); // 防止相邻年号起始年相同导致空区间
+      // 包成跟 currentByCarrierFor 输出一样的 hit 形状（name/start/end/
+      // reignEra），下游 renderOneTenurePerson→findCurrentReignEra 不用改，
+      // 直接就能在这个"单年号 hit"里再找一遍，取到一致的 start/end。
+      chain.push({ name:seg.person, start:seg.start, end:finalEnd, reignEra:[{ name:seg.eraName, start:seg.start }] });
+    });
+    return chain;
+  },
+  currentRulerByCountryYear(country, year){
+    const eraChain = Query.buildEraChain(country);
+    const eraHits = Utils.findAllCurrentByRange(eraChain, year);
+    // 没写 reign_era 的统治者（大多数执政者身份的君主、多数欧洲君主）不进
+    // 时间线，单独用纯 tenure 算法兜底查一遍——两边的人互不重叠，
+    // 直接拼起来即可。
+    const tenureOnlyPool = [];
+    Store.vault.persons.forEach(p=>{
+      if(p.carrier==='统治者' && p.country.includes(country) && !p.reignEra.length){
+        p.tenureRanges.forEach(r=> tenureOnlyPool.push({ name:p.title, start:r.start, end:r.end, reignEra:[] }));
+      }
+    });
+    tenureOnlyPool.sort((a,b)=>a.start-b.start);
+    const tenureHits = Utils.findAllCurrentByRange(tenureOnlyPool, year);
+    return [...eraHits, ...tenureHits];
   },
   eventsForContinentYear(continent, year){
     const countries = COUNTRIES_BY_CONTINENT[continent] || [];
@@ -1165,6 +1891,18 @@ const Query = {
     const countries = COUNTRIES_BY_CONTINENT[continent] || [];
     return Store.vault.persons.filter(p=> p.coverageStart && Utils.inRange(p.coverageStart, p.coverageEnd, year) && p.country.some(r=>countries.includes(r)));
   },
+  /* "大洲其它"坑位专用：整个大洲（用176国大表COUNTRIES_BY_CONTINENT_ALL，含
+     大洲名自身）减去exclude这份排除名单——排除名单由ColumnBoard每次渲染时
+     现算（当前年份下，其它坑位实际显示的、属于这个大洲的具体国家），所以
+     这两个函数本身不关心"为什么排除"，只管"给我大洲+排除名单，查结果"。 */
+  eventsForContinentExcludingYear(continent, exclude, year){
+    const pool = (COUNTRIES_BY_CONTINENT_ALL[continent] || []).filter(c => !exclude.includes(c));
+    return Store.vault.events.filter(e=> e.region.some(r=>pool.includes(r)) && Utils.inRange(e.start, e.end, year));
+  },
+  coverageEntitiesForContinentExcludingYear(continent, exclude, year){
+    const pool = (COUNTRIES_BY_CONTINENT_ALL[continent] || []).filter(c => !exclude.includes(c));
+    return Store.vault.persons.filter(p=> p.coverageStart && Utils.inRange(p.coverageStart, p.coverageEnd, year) && p.country.some(r=>pool.includes(r)));
+  },
   /* 按 scope 取当年数据，地图弹窗和分栏表头共用同一份，保证内容不会两边对不上。
      换成真实国家轮廓之后，每个已登记国家都有自己独立可点的形状，不再需要"其他"这个
      兜底分类（以前是给"没有专属图钉的国家"准备的）——点击未登记的背景国家，
@@ -1179,6 +1917,10 @@ const Query = {
       evs = Query.eventsForCountryYear(scope.country, Store.currentYear);
       bgEvents = evs.filter(e=>e.keyEra==='National').sort((a,b)=>a.start.year-b.start.year);
       coverageItems = Query.coverageEntitiesForCountryYear(scope.country, Store.currentYear);
+    } else if(scope.type==='continentOther'){
+      evs = Query.eventsForContinentExcludingYear(scope.continent, scope.exclude, Store.currentYear);
+      bgEvents = evs.filter(e=>e.keyEra==='National').sort((a,b)=>a.start.year-b.start.year);
+      coverageItems = Query.coverageEntitiesForContinentExcludingYear(scope.continent, scope.exclude, Store.currentYear);
     }
     return { evs, bgEvents, coverageItems };
   }
@@ -1238,10 +1980,9 @@ const DetailView = {
     </div>`;
   },
 
-  columnBodyHtml(scope, bgOverride){
+  columnBodyHtml(scope){
     const color = CONTINENT_HEX[scope.continent];
-    const { evs, bgEvents: rawBg, coverageItems } = Query.getScopeEvents(scope);
-    const bgEvents = bgOverride !== undefined ? bgOverride : rawBg;
+    const { evs, bgEvents, coverageItems } = Query.getScopeEvents(scope);
     const shades = Color.domainShadeMap(scope.continent);
     let html = '';
 
@@ -1293,16 +2034,100 @@ const DetailView = {
   },
 
   /* 跨度事件进度条：地图弹窗和分栏共用同一份，避免两处各写一次容易漏改 */
-  /* 找出某个跨度事件在"当前年份"对应的在位者：每条记录自带明确的 [start,end]
-     区间，直接找当前年份落在哪一条里就行，不用再靠"下一条出现"去反推——
-     这也是这次改格式的原因，旧写法（只记继位年份）没法表达"这位到底当了
-     多少年"，全靠猜下一位；现在起止写死了，谁的锅一目了然。
-     如果因为年份打错导致两条区间重叠（parseRulerSection 那边已经会警告这种情况），
-     这里简单取第一个匹配到的，不做特殊容错——既然已经报了警告，让它显示出来
-     反而更容易被发现去修，掩盖掉不会真的解决问题。 */
-  currentRulerFor(bg){
-    if(!bg.rulers || !bg.rulers.length) return null;
-    return bg.rulers.find(r => Store.currentYear >= r.start && Store.currentYear <= r.end) || null;
+
+  /* 单个统治者/执政者槽位：有命中就显示"姓名 + 10格进度竖条 + 第X/共Y年"，
+     没命中（门槛已过但当年查无数据）就显示居中短横线占位——两种情况都要占
+     同一片空间，不然常驻行的左右结构会随年份跳动。10格竖条按"这一年在
+     这个人任期里的相对位置"点亮，跟外层朝代/时代大进度条是两回事，不冲突：
+     大进度条表达"这一年在整个朝代/时代里的位置"，这里表达"在这个人自己
+     任期里的位置"。 */
+  renderTenureTicks(hit, colorHex){
+    const total = hit.end - hit.start;
+    const progressed = Math.min(Math.max(Store.currentYear - hit.start, 0), total);
+    const filled = total>0 ? Math.round((progressed/total)*10) : 10;
+    let ticks = '';
+    for(let i=0;i<10;i++) ticks += `<span class="tenure-tick${i<filled?' on':''}"></span>`;
+    return `<span class="tenure-ticks" style="--tick-color:${colorHex}">${ticks}</span>`;
+  },
+  /* 单个人的"[姓名] + 10格进度竖条 + 年份说明"——被 renderTenureSlot
+     按命中人数循环调用，不直接对外用。 */
+  renderOneTenurePerson(hit, colorHex){
+    // 有 reign_era 数据时，竖条和年份说明按当前年号自己的起止算，不是整个
+    // 在位期间——这样才能体现"现在是这个年号的第几年"，而不是"即位后第几年"
+    // （两者经常因为逾年改元差1年，甚至差更多）。没有 reign_era 数据（大多数
+    // 执政者、多数欧洲君主）就还是按 tenure 本身的起止算，两套数据源共用
+    // 下面同一份计算逻辑，只是"用哪个区间"不同。
+    const era = Query.findCurrentReignEra(hit, Store.currentYear);
+    const range = era || hit;
+    // 总年数按"起止年份相减"算，不是"相减再+1"——跟"明朝276年"（1644-1368）
+    // 这种日常说法的口径一致，不是数组下标那种"两端点都各算一次"的算法。
+    // 起止年份相同这种极端情况钳制到最少1年，不然会显示"共0年"。
+    const totalYears = Math.max(range.end - range.start, 1);
+    // 第几年：range 要么是 Utils.findAllCurrentByRange 用左闭右开区间匹配到
+    // 的 hit 本身，要么是 findCurrentReignEra 用同一套左闭右开算法在 hit 内部
+    // 再细分出的年号区间——两种情况 Store.currentYear 都保证落在
+    // [range.start, range.end) 内，"currentYear-range.start+1" 天然落在
+    // 1 到 totalYears 之间，不需要再额外封顶。
+    const yearsIn = Store.currentYear - range.start + 1;
+    // 年号名跟人物笔记标题完全一样时（日本天皇史书上习惯直接用年号称呼
+    // 本人，"明治天皇"笔记标题就叫"明治"）——把"33年"接在"明治"后面，一起用
+    // 加粗的姓名样式显示（"明治33年"整体加粗，视觉上就是姓名本身的延伸，
+    // 不是另一段辅助信息），"共44年"仍然放在竖条后面、用弱化样式，跟"第X/
+    // Y年"里"Y年"的分量是一样的，只是不再跟前面那个数字挤成一个分数。
+    // 标题跟年号不一样（比如汉武帝，标题是本名、年号是"建元"）——姓名单独
+    // 加粗显示，年号+第几年放在竖条后面的弱化文字里，格式是"年号X年/Y年"，
+    // 跟没有年号数据时"第X/Y年"的分数感保持一致，都是"X/Y"这种写法。
+    // 压根没有年号命中的情况，姓名也单独加粗显示，竖条后面直接用"第X/Y年"。
+    const isTitleAsEra = era && era.name === hit.name;
+    // 年号第一年习惯写"元年"，不写"1年"（"康熙元年"而不是"康熙1年"）——只在
+    // 年号名紧跟着数字的写法里生效（下面两处 boldLabel/trailingLabel 的
+    // 年号分支），跟"第X/Y年"这种没有年号名的写法无关，那边不存在"元年"
+    // 的说法，仍然老实显示"第1/Y年"。
+    const eraYearLabel = yearsIn===1 ? '元' : yearsIn;
+    const boldLabel = isTitleAsEra
+      ? `${Utils.escapeHtml(era.name)}${eraYearLabel}年`
+      : Utils.escapeHtml(Parser.stripWikilinkSyntax(hit.name));
+    const trailingLabel = isTitleAsEra
+      ? `共${totalYears}年`
+      : (era ? `${Utils.escapeHtml(era.name)}${eraYearLabel}年/${totalYears}年` : `第${yearsIn}/${totalYears}年`);
+    return `<span class="tenure-person">
+      <span class="tenure-name">${boldLabel}</span>
+      ${DetailView.renderTenureTicks(range, colorHex)}
+      <span class="tenure-years">${trailingLabel}</span>
+    </span>`;
+  },
+  /* 一个槽位（统治者或执政者）：hits 是当年所有命中的人（数组，可能为空、
+     一个、或多个）。tenure 区间现在允许重叠——共治、摄政这类同一时期存在
+     多位统治者/执政者是真实历史，不算数据错误，命中几个就都显示出来，
+     用竖线隔开，不再"只留一个覆盖掉其他人"。没命中（门槛已过但当年查无
+     数据）就显示居中短横线占位——两种情况都要占同一片空间，不然常驻行的
+     左右结构会随年份跳动。 */
+  renderTenureSlot(hits, colorHex){
+    if(!hits || !hits.length) return `<span class="tenure-slot"><span class="tenure-empty">—</span></span>`;
+    return `<span class="tenure-slot">${hits.map(hit=>DetailView.renderOneTenurePerson(hit, colorHex)).join('<span class="tenure-sep">|</span>')}</span>`;
+  },
+  /* 常驻行：左统治者、右执政者，两个槽位分别独立判断要不要出现——
+     统治者槽位由"这个国家有没有出现过统治者概念"决定（hasRulerConcept，
+     美国这种国家永远是 false，不是年份门槛问题）；执政者槽位由"有没有跨过
+     执政者门槛年份"决定（shouldShowExecutiveSlot，日本/中国在门槛之前是
+     false）。两者都不成立时整行不渲染（col-tenure-row:empty 兜底）；
+     只有一侧成立时，用 flex-end 把内容推到该在的一边（左侧独占就是默认的
+     flex-start，不用特殊处理；右侧独占才需要显式反过来）。
+     分栏卡片、地图弹窗两处共用这一份（大洲级的抽屉没有具体国家，不适用）。
+     调用方把它作为标题行（.col-head/.detail-head）内部的一个子元素嵌进去，
+     跟色点+国家码/国名同一行显示（flex:1 占满剩余空间）——分栏卡片桌面端
+     宽度够，正常就是一行；地图弹窗固定 450px（原先 290px 偏窄，容易把统治者/
+     执政者信息挤到换行、显得很局促，加宽后正常情况下也能一行放下），真放
+     不下时仍靠标题行的 flex-wrap 自动换到下一行，不需要调用方关心，样式层
+     已经兜底。 */
+  renderTenureRow(country, colorHex){
+    const hasRuler = Query.hasRulerConcept(country);
+    const showExec = Query.shouldShowExecutiveSlot(country, Store.currentYear);
+    if(!hasRuler && !showExec) return '';
+    const rulerHtml = hasRuler ? DetailView.renderTenureSlot(Query.currentRulerByCountryYear(country, Store.currentYear), colorHex) : '';
+    const execHtml = showExec ? DetailView.renderTenureSlot(Query.currentExecutiveFor(country, Store.currentYear), colorHex) : '';
+    const rowStyle = (!hasRuler && showExec) ? ' style="justify-content:flex-end"' : '';
+    return `<div class="col-tenure-row"${rowStyle}>${rulerHtml}${execHtml}</div>`;
   },
 
   renderBgItem(bg, color){
@@ -1314,16 +2139,13 @@ const DetailView = {
           <div class="bg-tooltip">${Utils.escapeHtml(Parser.stripWikilinkSyntax(bg.summary))}</div>
         </div>`
       : '';
-    // "现在在位"：常驻显示在名字旁边，跟着年份滑动自动换人，不需要额外悬浮一次——
-    // 跟上面 info（固定不变的朝代简述）是两种性质的信息，特意不挤进同一个悬浮框里，
-    // 见跟用户讨论时定下的设计。
-    const ruler = DetailView.currentRulerFor(bg);
-    // 不用 "·" 分隔、不用文字前缀，直接"XX在位"；跟朝代信息之间的间隔用
-    // .bg-ruler 自己的 margin-left 做真正的 CSS 呼吸空间，不是拿空格符号硬凑
-    const rulerLabel = ruler ? `<span class="bg-ruler">${Utils.escapeHtml(Parser.stripWikilinkSyntax(ruler.name))}在位</span>` : '';
+    // 统治者/执政者不再挤进这条进度条自己的名称行——那样每条跨度事件（包括
+    // 分栏页面里排在后面的历史事件）都会各自算一遍"现在在位是谁"，重复又不带
+    // 竖条。统一改成 DetailView.renderTenureRow，在分栏卡片和地图弹窗/抽屉里
+    // 各自的"标题行"下面单独渲染一次，两处用的是同一份组件、同一套判断逻辑。
     return `<div class="bg-item">
       <div class="bg-track" style="background:${color}2E">
-        <div class="bg-name">${Utils.escapeHtml(bg.title)}（${s} – ${e}）${rulerLabel}</div>
+        <div class="bg-name">${Utils.escapeHtml(bg.title)}（${s} – ${e}）</div>
         <div class="bg-dot" style="left:${pos}%;background:${color}"></div>
         ${info}
       </div>
@@ -1364,10 +2186,18 @@ const DetailView = {
 
   /* 统一组装弹窗标题+正文。换成真实国家轮廓之后，每个国家都是独立可点的形状，
      不会再像手绘图钉那样挤在一起互相遮挡——原来"密集聚类合并成一张卡"的特殊处理
-     不再需要，统一走单卡逻辑即可。 */
+     不再需要，统一走单卡逻辑即可。
+     执政者：只有国家层级的 scope 才判断（大洲没有单一执政者），逻辑跟分栏那边
+     完全一样（复用同一个 Query.shouldShowExecutiveSlot/currentExecutiveFor）。
+     地图这边标题栏没有跨度进度条挤占空间的问题（进度条在弹窗正文里，不在标题栏），
+     所以不需要像分栏那样额外做宽度收紧，直接拼进标题文字里就行。 */
   popoverContentFor(scope){
     const color = CONTINENT_HEX[scope.continent];
     const title = scope.type==='continent' ? CONTINENT_NAME_CN[scope.continent] : scope.country;
+    // 执政者不再拼进标题文字里（以前是"美国 拜登"这样直接接在国名后面，
+    // 没有竖条，跟分栏卡片的常驻行长得不一样）。统一改成调用方在 .detail-head
+    // 下面插入 DetailView.renderTenureRow(scope.country, color)，跟分栏页面
+    // 用的是同一个组件、同一套显隐判断，两处视觉和数据完全一致。
     return { title, bodyHtml: DetailView.detailBodyHtml(scope), color };
   }
 };
@@ -1457,7 +2287,11 @@ const MapView = {
     pop.className = 'popover';
 
     pop.innerHTML = `<button class="popover-close" aria-label="关闭">×</button>
-      <div class="detail-head"><span class="detail-swatch" style="background:${content.color}"></span><span class="detail-title">${Utils.escapeHtml(content.title)}</span></div>
+      <div class="detail-head">
+        <span class="detail-swatch" style="background:${content.color}"></span>
+        <span class="detail-title">${Utils.escapeHtml(content.title)}</span>
+        ${scope.type==='country' ? DetailView.renderTenureRow(scope.country, content.color) : ''}
+      </div>
       ${content.bodyHtml}`;
 
     stage.appendChild(pop);
@@ -1507,39 +2341,494 @@ const MapView = {
    9. ColumnBoard —— 分栏视图（常驻四栏，复用 DetailView）
    ========================================================= */
 const ColumnBoard = {
-  /* 常驻四列，不用点击。第一列大洲、后三列具体国家，都是复用 DetailView.columnBodyHtml */
-  DEFS: [
-    { scope:{type:'continent', continent:'Europe'}, label:'EU', color:CONTINENT_HEX.Europe },
-    { scope:{type:'country', continent:'Asia', country:'China'}, label:'CN', color:CONTINENT_HEX.Asia },
-    { scope:{type:'country', continent:'Asia', country:'Japan'}, label:'JP', color:CONTINENT_HEX.Asia },
-    { scope:{type:'country', continent:'Americas', country:'US'}, label:'US', color:CONTINENT_HEX.Americas },
-  ],
+  STORAGE_KEY: 'fwb_columnSlots',
+  PAGE_STORAGE_KEY: 'fwb_columnPageIndex',
+  /* 8个坑位，两页各4个：初始默认第1页中日美+1空位，第2页英法德俄——
+     跟之前EU/CN/JP/US那版视觉上最接近，用户可以随时点代码/空位改掉。
+     开放任意国家后，这7个key不再是"唯一可选池"，只是初始默认值——
+     实际可选范围是COUNTRY_CONTINENT_ALL里的176个国家。 */
+  DEFAULT_SLOTS: ['China', 'Japan', 'US', null, 'UK', 'France', 'Germany', 'Russia'],
+  SLOTS: null,
+  /* 当前停在哪一页也要记住，不然每次重新打开都是回到第0页——读一次localStorage
+     初始化就行，是个简单标量，不用像SLOTS那样搞懒加载/sanitize那一套。
+     真正非法的值（比如坑位数变了导致越界）交给render()里已有的取模夹逼处理，
+     这里只管"读出来是不是一个数字"这一层。 */
+  pageIndex: (() => {
+    try{
+      const v = parseInt(localStorage.getItem('fwb_columnPageIndex'), 10);
+      return Number.isFinite(v) ? v : 0;
+    }catch(e){ return 0; }
+  })(),
+
+  /* continent 只影响卡片配色（CONTINENT_HEX），不参与事件筛选。
+     现在池子是全部176个国家（COUNTRY_CONTINENT_ALL）+ 5个"大洲其它"聚合选项，
+     不再是写死的7个。 */
+  optionByKey(key){
+    if(!key) return null;
+    if(isContinentOtherKey(key)){
+      const continent = continentOfOtherKey(key);
+      if(!CONTINENT_NAME_CN[continent]) return null;
+      return { key, continent, name: countryDisplayName(key), isContinentOther:true };
+    }
+    const continent = COUNTRY_CONTINENT_ALL[key];
+    if(!continent) return null;
+    return { key, continent, name: countryDisplayName(key) };
+  },
+
+  /* "大洲其它"这张卡的排除名单：看一眼除自己之外的其它7个坑位，当前年份
+     (year)下各自实际显示的是哪个国家，挑出属于同一个大洲的收集起来。
+     跟年份联动——每次年份变化、每次render都重新算一遍，不额外缓存，
+     不是因为算起来贵（顶多8个坑位、每个至多5条规则，量级很小，不会卡），
+     是因为这样才能保证"欧洲其它"永远反映"这一刻实际还没被别的卡片占用的
+     欧洲历史"，不会因为缓存过期而displaystale数据。 */
+  excludedCountriesFor(selfSlotIndex, continent, year){
+    const slots = ColumnBoard.loadSlots();
+    const excluded = [];
+    slots.forEach((raw, i) => {
+      if(i === selfSlotIndex) return;
+      const activeKey = ColumnBoard.activeCountryForSlot(raw, year);
+      if(activeKey && COUNTRY_CONTINENT_ALL[activeKey] === continent) excluded.push(activeKey);
+    });
+    return excluded;
+  },
+
+  /* 一个坑位现在有三种取值：
+     - null：空坑位
+     - 字符串（国家key，也可能是"大洲其它"的聚合key）：固定显示（原来的行为）
+     - {schedule:[{from,to,country}, ...]}：按年份区间自动切换，
+       currentYear落不进任何一段就当空坑位处理。 */
+  activeCountryForSlot(raw, year){
+    if(!raw) return null;
+    if(typeof raw === 'string') return raw;
+    if(raw.schedule){
+      const rule = raw.schedule.find(r => (r.from == null || year >= r.from) && (r.to == null || year < r.to));
+      return rule ? rule.country : null;
+    }
+    return null;
+  },
+
+  sanitizeSlotValue(v){
+    if(v === null) return null;
+    if(typeof v === 'string') return ColumnBoard.optionByKey(v) ? v : null;
+    if(v && typeof v === 'object' && Array.isArray(v.schedule)){
+      const rules = v.schedule
+        .filter(r => r && typeof r === 'object' && ColumnBoard.optionByKey(r.country))
+        .map(r => ({
+          from: Number.isFinite(r.from) ? r.from : null,
+          to: Number.isFinite(r.to) ? r.to : null,
+          country: r.country
+        }))
+        .slice(0, 5);
+      return rules.length ? { schedule: rules } : null;
+    }
+    return null;
+  },
+
+  /* 惰性加载：第一次调用时从 localStorage 读，读不到/读到脏数据就回退默认值，
+     不让一次异常数据把整个分栏搞崩。 */
+  loadSlots(){
+    if(ColumnBoard.SLOTS) return ColumnBoard.SLOTS;
+    let slots = null;
+    try{
+      const raw = localStorage.getItem(ColumnBoard.STORAGE_KEY);
+      if(raw){
+        const parsed = JSON.parse(raw);
+        if(Array.isArray(parsed) && parsed.length === 8){
+          slots = parsed.map(v => ColumnBoard.sanitizeSlotValue(v));
+        }
+      }
+    }catch(e){ /* 解析失败，走默认值 */ }
+    ColumnBoard.SLOTS = slots || ColumnBoard.DEFAULT_SLOTS.slice();
+    return ColumnBoard.SLOTS;
+  },
+
+  saveSlots(){
+    try{ localStorage.setItem(ColumnBoard.STORAGE_KEY, JSON.stringify(ColumnBoard.SLOTS)); }catch(e){}
+  },
+
+  _defaultCardHeight: null,
+  /* 空坑位要对齐"默认"卡片高度——标题行+跨度默认空行+4个专题默认空行+1个影视默认行，
+     不是"这一页恰好有的、可能因为内容多被撑高"的某张真实卡片。用一个查不到任何
+     事件的假国家名，触发 columnBodyHtml/renderTenureRow 里"没数据"的空分支，
+     跟真实卡片用同一套渲染函数离屏渲一次、量出这个骨架高度。只测一次缓存住，
+     以后每次渲染/翻页都直接用缓存值，不重复测，也不用手动维护一个容易过时的像素数。 */
+  measureDefaultCardHeight(){
+    if(ColumnBoard._defaultCardHeight) return ColumnBoard._defaultCardHeight;
+    const probeScope = { type:'country', continent:'Asia', country:'__col_board_probe__' };
+    const probe = document.createElement('div');
+    probe.className = 'col-card';
+    probe.style.cssText = 'position:absolute; visibility:hidden; pointer-events:none; left:-9999px; top:-9999px; width:280px;';
+    probe.innerHTML = `
+      <div class="col-head">
+        <span class="col-swatch" style="background:transparent"></span>
+        <span class="col-code">XX</span>
+        ${DetailView.renderTenureRow('__col_board_probe__', CONTINENT_HEX.Asia)}
+      </div>
+      ${DetailView.columnBodyHtml(probeScope)}`;
+    document.body.appendChild(probe);
+    ColumnBoard._defaultCardHeight = probe.offsetHeight;
+    document.body.removeChild(probe);
+    return ColumnBoard._defaultCardHeight;
+  },
+
+  /* 新建/置换/删除统一走这一个入口，newKey是字符串或null。允许同一个国家
+     同时出现在多个坑位——不去重、不自动挪走别的坑位，单纯把这个坑位设成
+     newKey（null就是删除）。之前那版"选到已占用的国家就自动跟对方互换
+     位置"的逻辑已经去掉了，"置换"现在就是"换成别的国家"，不再触碰其它
+     坑位。 */
+  assignCountry(slotIndex, newKey){
+    const slots = ColumnBoard.loadSlots();
+    slots[slotIndex] = newKey;
+    ColumnBoard.saveSlots();
+    SlotMenu.hide();
+    ColumnBoard.render();
+  },
+
+  /* 把某个坑位设成"按年代规则"模式：rules为空数组等同清空这个坑位。 */
+  setSchedule(slotIndex, rules){
+    const slots = ColumnBoard.loadSlots();
+    slots[slotIndex] = rules.length ? { schedule: rules } : null;
+    ColumnBoard.saveSlots();
+    ColumnBoard.render();
+  },
+
+  /* 翻页箭头点击、键盘左右方向键共用这一个入口，dir是-1或1。 */
+  flipPage(dir){
+    const totalPages = Math.max(1, Math.ceil(ColumnBoard.loadSlots().length / 4));
+    ColumnBoard.pageIndex = (ColumnBoard.pageIndex + dir + totalPages) % totalPages;
+    ColumnBoard.savePageIndex();
+    ColumnBoard.render();
+  },
+
+  savePageIndex(){
+    try{ localStorage.setItem(ColumnBoard.PAGE_STORAGE_KEY, String(ColumnBoard.pageIndex)); }catch(e){}
+  },
 
   render(){
-    const el = document.getElementById('columnBoard');
-    if(!el) return;
-    el.innerHTML = ColumnBoard.DEFS.map(col => {
-      const { bgEvents } = Query.getScopeEvents(col.scope);  // 已按 start.year 从旧到新排好序
-      // 3条及以上：最早的一条挪到标题行显示（国家名后面）；剩下的按"次早配最新、第三早配次新"
-      // 从两端往中间配对，凑不成对的最后一个独自占一整行。1/2条维持原位置不变。
-      let headerBar = '';
-      let bodyBgEvents = bgEvents;
-      if(bgEvents.length >= 3){
-        headerBar = `<div class="col-head-bar">${DetailView.renderBgItem(bgEvents[0], col.color)}</div>`;
-        bodyBgEvents = bgEvents.slice(1);
-      }
+    const wrap = document.getElementById('columnBoard');
+    if(!wrap) return;
+    const slots = ColumnBoard.loadSlots();
+    // 通用N页循环：页数由坑位总数/4算出来，不写死"2页"，以后坑位变多
+    // （比如加更多页）这段逻辑不用跟着改。totalPages<=1时不出箭头。
+    const totalPages = Math.max(1, Math.ceil(slots.length / 4));
+    ColumnBoard.pageIndex = ((ColumnBoard.pageIndex % totalPages) + totalPages) % totalPages;
+    const pageSlots = slots.slice(ColumnBoard.pageIndex * 4, ColumnBoard.pageIndex * 4 + 4);
+    // 每页同时挂左右两个箭头，取模运算翻页——N页时不这样做，单向箭头得绕
+    // 好几圈才能回到相邻的上一页，两个方向都能走才是真的"循环"。
+    const arrowHtml = totalPages > 1 ? `
+      <button class="page-arrow left" id="colPageArrowLeft" aria-label="上一页">
+        <svg width="52" height="52" viewBox="0 0 20 20" fill="none">
+          <path d="M12.5 4 L7 10 L12.5 16" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button class="page-arrow right" id="colPageArrowRight" aria-label="下一页">
+        <svg width="52" height="52" viewBox="0 0 20 20" fill="none">
+          <path d="M7.5 4 L13 10 L7.5 16" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>` : '';
 
+    const cardsHtml = pageSlots.map((raw, i) => {
+      const slotIndex = ColumnBoard.pageIndex * 4 + i;
+      const key = ColumnBoard.activeCountryForSlot(raw, Store.currentYear);
+      const opt = key ? ColumnBoard.optionByKey(key) : null;
+      if(!opt){
+        return `
+        <div class="col-card empty-slot" data-slot="${slotIndex}">
+          <div class="empty-slot-circle">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 3 V13 M3 8 H13" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>`;
+      }
+      const color = CONTINENT_HEX[opt.continent];
+      // "大洲其它"没有一个确定的国家，走continentOther这条新scope分支，
+      // 排除名单每次渲染都现算（跟年份/其它坑位联动）；普通国家还是走
+      // 原来的country分支，一个字节没变。
+      const scope = opt.isContinentOther
+        ? { type:'continentOther', continent:opt.continent, exclude: ColumnBoard.excludedCountriesFor(slotIndex, opt.continent, Store.currentYear) }
+        : { type:'country', continent:opt.continent, country:opt.key };
+      // 卡片本身的渲染规则（col-head/tenureRow/columnBodyHtml）原样复用，
+      // 一个字节都不改，多高还是多高——改动只加在国家代码这个可点击入口上。
+      // "大洲其它"没有统治者概念，常驻行留空，不调用renderTenureRow。
+      const tenureRow = opt.isContinentOther ? '' : DetailView.renderTenureRow(opt.key, color);
       return `
       <div class="col-card">
         <div class="col-head">
-          <span class="col-swatch" style="background:${col.color}"></span>
-          <span class="col-title">${Utils.escapeHtml(col.label)}</span>
-          ${headerBar}
+          <span class="col-swatch" style="background:${color}"></span>
+          <span class="col-code" data-slot="${slotIndex}" title="${Utils.escapeHtml(opt.name)}">${Utils.escapeHtml(opt.name)}</span>
+          ${tenureRow}
         </div>
-        ${DetailView.columnBodyHtml(col.scope, bodyBgEvents)}
-      </div>
-    `;
+        ${DetailView.columnBodyHtml(scope)}
+      </div>`;
     }).join('');
+
+    wrap.innerHTML = arrowHtml + `<div class="column-board-grid">${cardsHtml}</div>`;
+
+    // 空坑位对齐"默认"高度（见 measureDefaultCardHeight 的注释），不测这一页
+    // 恰好渲染出来的真实卡片——那样会被内容多的卡片意外撑高。
+    const grid = wrap.querySelector('.column-board-grid');
+    const emptySlots = grid.querySelectorAll('.col-card.empty-slot');
+    if(emptySlots.length){
+      const h = ColumnBoard.measureDefaultCardHeight();
+      emptySlots.forEach(el => { el.style.minHeight = h + 'px'; });
+    }
+  }
+};
+
+/* =========================================================
+   9b. SlotMenu —— 分栏坑位的"新建/置换/年代规则/删除"浮层
+   ---------------------------------------------------------
+   跟 ChipTooltip 同一套"JS算坐标 + position:fixed"的模式，区别是
+   这个要接收点击（chip-tooltip是纯展示，pointer-events:none），
+   所以单独一个模块、单独一套样式，不复用 chip-tooltip。
+   ========================================================= */
+const SlotMenu = {
+  openFor: null, // 当前打开的是哪个坑位（number），关闭时清空
+
+  positionAt(anchorEl){
+    const menu = document.getElementById('slotMenu');
+    const rect = anchorEl.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+    let left = Math.min(rect.left, window.innerWidth - menuRect.width - 10);
+    left = Math.max(left, 10);
+    let top = rect.bottom + 6;
+    if(top + menuRect.height > window.innerHeight - 10) top = rect.top - menuRect.height - 6;
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+  },
+
+  /* 搜索+过滤的国家选择列表，"新建"（openAdd）和"置换"（expandSwapList）
+     共用这一份渲染逻辑。允许同一个国家出现在多个坑位，所以这里不再做
+     "已被占用就灰掉"的判断——exclude只用来在"置换"时把当前这个坑位自己
+     正显示的国家排掉（选跟自己一样的没有意义）。 */
+  renderCountryPicker(menu, { exclude } = {}){
+    menu.classList.add('wide');
+    menu.innerHTML = `<input type="text" class="slot-menu-search" placeholder="搜索国家…" autocomplete="off"><div class="slot-menu-list"></div>`;
+    const input = menu.querySelector('.slot-menu-search');
+    const list = menu.querySelector('.slot-menu-list');
+    const draw = () => {
+      const q = input.value.trim().toLowerCase();
+      const keys = ALL_COUNTRY_KEYS.filter(k => {
+        if(exclude && k === exclude) return false;
+        if(!q) return true;
+        return countryDisplayName(k).toLowerCase().includes(q) || k.toLowerCase().includes(q);
+      }).slice(0, 60);
+      list.innerHTML = keys.map(k => `<div class="slot-menu-item" data-country="${k}">${Utils.escapeHtml(countryDisplayName(k))}</div>`).join('') || `<div class="slot-menu-empty">没有匹配的国家</div>`;
+    };
+    draw();
+    input.addEventListener('input', draw);
+    setTimeout(() => input.focus(), 0);
+  },
+
+  /* 空坑位点击：搜索+过滤的选国家列表，全部可选（允许重复国家）。 */
+  openAdd(slotIndex, anchorEl){
+    const menu = document.getElementById('slotMenu');
+    SlotMenu.renderCountryPicker(menu);
+    SlotMenu.openFor = slotIndex;
+    menu.classList.add('show');
+    SlotMenu.positionAt(anchorEl);
+    SlotMenu.bindOutsideClick();
+  },
+
+  /* 已选坑位点击：固定模式给"置换/设为年代规则/删除"三项；
+     按年代规则模式给"编辑规则/改回固定国家/删除"三项。 */
+  openSwap(slotIndex, anchorEl){
+    const menu = document.getElementById('slotMenu');
+    menu.classList.remove('wide');
+    const raw = ColumnBoard.loadSlots()[slotIndex];
+    if(raw && typeof raw === 'object'){
+      menu.innerHTML = `
+        <div class="slot-menu-item" data-action="edit-schedule">编辑规则</div>
+        <div class="slot-menu-item" data-action="revert-fixed">改回固定国家</div>
+        <div class="slot-menu-item danger" data-action="delete">删除</div>`;
+    } else {
+      menu.innerHTML = `
+        <div class="slot-menu-item" data-action="expand-swap">置换</div>
+        <div class="slot-menu-item" data-action="to-schedule">设为年代规则</div>
+        <div class="slot-menu-item danger" data-action="delete">删除</div>`;
+    }
+    SlotMenu.openFor = slotIndex;
+    menu.classList.add('show');
+    SlotMenu.positionAt(anchorEl);
+    SlotMenu.bindOutsideClick();
+  },
+
+  expandSwapList(slotIndex){
+    const menu = document.getElementById('slotMenu');
+    const slots = ColumnBoard.loadSlots();
+    const selfKey = typeof slots[slotIndex] === 'string' ? slots[slotIndex] : null;
+    SlotMenu.renderCountryPicker(menu, { exclude:selfKey });
+    // 内容变了，重新定位一次，避免列表展开后底部超出视口
+    const anchor = document.querySelector(`.col-code[data-slot="${slotIndex}"]`);
+    if(anchor) SlotMenu.positionAt(anchor);
+  },
+
+  hide(){
+    const menu = document.getElementById('slotMenu');
+    menu.classList.remove('show');
+    menu.classList.remove('wide');
+    SlotMenu.openFor = null;
+    document.removeEventListener('click', SlotMenu.outsideClickHandler, true);
+  },
+
+  bindOutsideClick(){
+    document.removeEventListener('click', SlotMenu.outsideClickHandler, true);
+    // 用 capture 阶段 + 延后一帧绑定：避免触发浮层的这一次点击（比如点国家代码
+    // 本身）被同一个监听器立刻判定成"点在外面"，导致浮层刚打开就被关掉。
+    setTimeout(() => document.addEventListener('click', SlotMenu.outsideClickHandler, true), 0);
+  },
+
+  outsideClickHandler(e){
+    const menu = document.getElementById('slotMenu');
+    if(menu.contains(e.target)) return;
+    SlotMenu.hide();
+  },
+
+  /* 浮层内部点击的事件委托，挂在#slotMenu上，DOM是动态替换的，
+     跟coverage-chip那种挂在body上的委托同理，避免每次重绘都要重新bind。 */
+  init(){
+    document.getElementById('slotMenu').addEventListener('click', e => {
+      const item = e.target.closest('.slot-menu-item');
+      if(!item) return;
+      const slotIndex = SlotMenu.openFor;
+      if(slotIndex === null) return;
+      const action = item.dataset.action;
+      if(action === 'expand-swap'){ SlotMenu.expandSwapList(slotIndex); return; }
+      if(action === 'to-schedule' || action === 'edit-schedule'){ SlotMenu.hide(); ScheduleEditor.open(slotIndex); return; }
+      if(action === 'revert-fixed'){
+        // 改回固定国家：取当前按年代规则命中的国家（没命中就是null，等于清空）
+        const activeKey = ColumnBoard.activeCountryForSlot(ColumnBoard.loadSlots()[slotIndex], Store.currentYear);
+        ColumnBoard.assignCountry(slotIndex, activeKey);
+        return;
+      }
+      if(action === 'delete'){ ColumnBoard.assignCountry(slotIndex, null); return; }
+      if(item.dataset.country){ ColumnBoard.assignCountry(slotIndex, item.dataset.country); }
+    });
+  }
+};
+
+/* =========================================================
+   9c. ScheduleEditor —— "年代规则"的独立编辑弹层
+   ---------------------------------------------------------
+   一个坑位最多5段年代，每段{from,to,country}——from/to留空表示
+   不限。编辑内容存在ScheduleEditor.rows这个草稿数组里，点"完成"
+   或点浮层外空白才真正写回ColumnBoard.SLOTS并持久化，过程中的
+   增删改都只影响草稿、不影响已保存的数据。
+   ========================================================= */
+const ScheduleEditor = {
+  slotIndex: null,
+  rows: [],
+
+  open(slotIndex){
+    ScheduleEditor.slotIndex = slotIndex;
+    const raw = ColumnBoard.loadSlots()[slotIndex];
+    if(raw && typeof raw === 'object' && Array.isArray(raw.schedule)){
+      ScheduleEditor.rows = raw.schedule.map(r => ({ ...r }));
+    } else {
+      // 从固定国家/空坑位转过来：预填一行，把原来的固定国家（如果有）
+      // 带进来当第一段的国家，方便起步，不用从零开始选。
+      const seedCountry = typeof raw === 'string' ? raw : null;
+      ScheduleEditor.rows = [{ from:null, to:null, country:seedCountry }];
+    }
+    ScheduleEditor.renderRows();
+    document.getElementById('scheduleBackdrop').classList.add('show');
+  },
+
+  close(){
+    document.getElementById('scheduleBackdrop').classList.remove('show');
+    ScheduleEditor.slotIndex = null;
+  },
+
+  save(){
+    if(ScheduleEditor.slotIndex === null) return;
+    const validRows = ScheduleEditor.rows.filter(r => r.country);
+    ColumnBoard.setSchedule(ScheduleEditor.slotIndex, validRows);
+    ScheduleEditor.close();
+  },
+
+  addRow(){
+    if(ScheduleEditor.rows.length >= 5) return;
+    ScheduleEditor.rows.push({ from:null, to:null, country:null });
+    ScheduleEditor.renderRows();
+  },
+
+  deleteRow(idx){
+    ScheduleEditor.rows.splice(idx, 1);
+    ScheduleEditor.renderRows();
+  },
+
+  renderRows(){
+    const body = document.getElementById('scheduleRows');
+    body.innerHTML = ScheduleEditor.rows.map((r, idx) => `
+      <div class="schedule-row" data-idx="${idx}">
+        <input type="number" class="sr-from" data-idx="${idx}" placeholder="不限" value="${r.from ?? ''}">
+        <span class="sr-sep">—</span>
+        <input type="number" class="sr-to" data-idx="${idx}" placeholder="不限" value="${r.to ?? ''}">
+        <div class="sr-country" data-idx="${idx}">
+          <button type="button" class="sr-country-label" data-idx="${idx}">${r.country ? Utils.escapeHtml(countryDisplayName(r.country)) : '选择国家…'}</button>
+          <div class="sr-country-panel" style="display:none">
+            <input type="text" class="sr-country-search" placeholder="搜索国家…" autocomplete="off">
+            <div class="sr-country-results"></div>
+          </div>
+        </div>
+        <button type="button" class="sr-delete" data-idx="${idx}">删除</button>
+      </div>
+    `).join('');
+    document.getElementById('scheduleAddBtn').style.display = ScheduleEditor.rows.length >= 5 ? 'none' : '';
+  },
+
+  filterCountryPanel(searchInput){
+    const panel = searchInput.closest('.sr-country-panel');
+    const results = panel.querySelector('.sr-country-results');
+    const q = searchInput.value.trim().toLowerCase();
+    const keys = ALL_COUNTRY_KEYS.filter(k => !q || countryDisplayName(k).toLowerCase().includes(q) || k.toLowerCase().includes(q)).slice(0, 60);
+    results.innerHTML = keys.map(k => `<div class="sr-country-result-item" data-country="${k}">${Utils.escapeHtml(countryDisplayName(k))}</div>`).join('') || `<div class="sr-country-empty">没有匹配的国家</div>`;
+  },
+
+  init(){
+    const backdrop = document.getElementById('scheduleBackdrop');
+    // 点空白处 = 直接保存并关闭，不做"丢弃修改"的二次确认——编辑成本本来就很低。
+    backdrop.addEventListener('click', e => { if(e.target === backdrop) ScheduleEditor.save(); });
+    document.getElementById('scheduleDoneBtn').addEventListener('click', ScheduleEditor.save);
+    document.getElementById('scheduleAddBtn').addEventListener('click', ScheduleEditor.addRow);
+
+    const rowsEl = document.getElementById('scheduleRows');
+    rowsEl.addEventListener('input', e => {
+      if(e.target.classList.contains('sr-country-search')){ ScheduleEditor.filterCountryPanel(e.target); return; }
+      const idx = +e.target.dataset.idx;
+      if(Number.isNaN(idx)) return;
+      if(e.target.classList.contains('sr-from')) ScheduleEditor.rows[idx].from = e.target.value === '' ? null : Math.round(+e.target.value);
+      else if(e.target.classList.contains('sr-to')) ScheduleEditor.rows[idx].to = e.target.value === '' ? null : Math.round(+e.target.value);
+    });
+
+    rowsEl.addEventListener('click', e => {
+      const delBtn = e.target.closest('.sr-delete');
+      if(delBtn){ ScheduleEditor.deleteRow(+delBtn.dataset.idx); return; }
+
+      const label = e.target.closest('.sr-country-label');
+      if(label){
+        const panel = label.parentElement.querySelector('.sr-country-panel');
+        const isOpen = panel.style.display !== 'none';
+        // 一次只开一个搜索面板，先把别的关掉
+        rowsEl.querySelectorAll('.sr-country-panel').forEach(p => p.style.display = 'none');
+        if(!isOpen){
+          panel.style.display = 'block';
+          const search = panel.querySelector('.sr-country-search');
+          search.value = '';
+          ScheduleEditor.filterCountryPanel(search);
+          setTimeout(() => search.focus(), 0);
+        }
+        return;
+      }
+
+      const resultItem = e.target.closest('.sr-country-result-item');
+      if(resultItem){
+        const idx = +resultItem.closest('.sr-country').dataset.idx;
+        ScheduleEditor.rows[idx].country = resultItem.dataset.country;
+        ScheduleEditor.renderRows();
+      }
+    });
   }
 };
 
@@ -1650,7 +2939,487 @@ const CompareView = {
 };
 
 /* =========================================================
-   11. ChipTooltip —— coverage chip 悬浮详情
+   11. SearchView —— 高级搜索
+   ---------------------------------------------------------
+   人物（entity）+ 事件（event）两类笔记的字段全部摊平在同一张筛选栏里，
+   不设"先选类型"的前置门槛——"类型"本身也只是普普通通的一个筛选项，
+   跟其他字段一样可选可不选。字段组合：不同字段之间 AND，同一个字段
+   选多个值（比如标签同时勾了"军事"和"外交"）之间 OR，是筛选类 UI 最
+   常见的约定。
+   派生数字字段（在位段数/在位总年数/关联人物数/改元次数）不做成"是否
+   连任"这种预设的具体问题开关——那样永远列不完，而是把这些数字本身
+   暴露成能用运算符（=/>/</>=/<=）筛的普通字段，跟"出生年区间"同一套
+   思路，具体问题交给使用者自己用运算符表达（"连任"＝"在位段数>1"）。
+   结果区放弃"按国家分组"，改成扁平表格+表头可排序——这类查询的意图
+   通常是"拉一批数据出来比较/排序"，分组反而会把想比较的东西拆散到
+   不同分组里，表格更直接。 */
+const SearchView = {
+  records: [],
+  options: { carrier:[], domain:[], tags:[] },
+  state: null,
+  sort: { key:'title', dir:1 },
+  _continentMap: null,
+
+  COLUMNS: [
+    { key:'kind', label:'类型' },
+    { key:'title', label:'标题' },
+    { key:'country', label:'国家', sortable:false },
+    { key:'carrier', label:'身份' },
+    { key:'tags', label:'标签', sortable:false },
+    { key:'startYear', label:'时间范围', numeric:true }
+  ],
+  NUMERIC_FIELDS: [
+    { key:'relatedCount', label:'related_count' }
+  ],
+
+  defaultState(){
+    return {
+      kind:new Set(), carrier:new Set(), domain:new Set(), tags:new Set(), country:new Set(), fictional:'',
+      titleKeyword:'', eraKeyword:'', topicKeyword:'',
+      timeMin:'', timeMax:'',
+      relatedCountOp:'', relatedCountVal:''
+    };
+  },
+
+  // "更多筛选"折叠区的展开状态，重绘筛选栏（比如清空后）要保持住，
+  // 不然用户刚展开看时间范围，一点清空又被收回去，体验很突兀。
+  _advancedOpen:false,
+
+  /* 状态条用的"已选 N 个条件"——按"字段"计数，不是按"值"计数（比如标签
+     选了三个算1个条件，不是3个），跟用户对"筛选条件"的直觉一致。 */
+  countActiveFilters(){
+    const s = SearchView.state;
+    let n = 0;
+    if(s.kind.size) n++;
+    if(s.carrier.size) n++;
+    if(s.country.size) n++;
+    if(s.domain.size) n++;
+    if(s.tags.size) n++;
+    if(s.fictional) n++;
+    if(s.titleKeyword) n++;
+    if(s.eraKeyword) n++;
+    if(s.topicKeyword) n++;
+    if(s.timeMin!=='' || s.timeMax!=='') n++;
+    if(s.relatedCountOp && s.relatedCountVal!=='') n++;
+    return n;
+  },
+
+  /* COUNTRIES_BY_CONTINENT 只有"大洲→国家列表"这个方向，跳转到地图时
+     MapView.selectScope 需要反过来的"国家→大洲"，懒加载建一次缓存复用。 */
+  continentOf(country){
+    if(!SearchView._continentMap){
+      const map = {};
+      Object.keys(COUNTRIES_BY_CONTINENT).forEach(cont=>{
+        COUNTRIES_BY_CONTINENT[cont].forEach(c=>{ map[c]=cont; });
+      });
+      SearchView._continentMap = map;
+    }
+    return SearchView._continentMap[country] || 'Asia';
+  },
+
+  /* 把 persons/events 拍平成一份统一形状的搜索记录。事件笔记本身会在
+     scanVault 阶段被拆成"主事件+## 时间线细节条目"多条 events，另外
+     entity 正文里的"## 时间线"/"## 小说时间线"也会各自转成同等地位的
+     合成事件（fromEntityTimeline/fromFictionalTimeline）——这些都不是
+     独立笔记，只是同一篇笔记内部的细节行，搜索结果里只取每个 path 的
+     第一条（也就是"主事件"，合成事件全部排除），不然搜索结果会被同一
+     篇笔记的时间线细节行刷屏。 */
+  buildRecords(){
+    const persons = Store.vault.persons.map(p=>{
+      const tenureYears = (p.tenureRanges||[]).reduce((s,r)=> s + Math.max(r.end-r.start,0), 0);
+      return {
+        kind:'person', title:p.title, path:p.path,
+        country:p.country||[], domain:p.domain||[], tags:p.tags||[],
+        carrier:p.carrier||'', fictional:!!p.fictional,
+        startYear: p.birth ? p.birth.year : null,
+        endYear: p.death ? p.death.year : null,
+        tenureSegments:(p.tenureRanges||[]).length, tenureYears,
+        relatedCount:(p.related||[]).length,
+        eraCount:(p.reignEra||[]).length,
+        eraKeyword:(p.reignEra||[]).map(e=>e.name).join(' '),
+        topicKeyword:'',
+        jumpYear: (p.tenureRanges&&p.tenureRanges[0]) ? p.tenureRanges[0].start : (p.birth?p.birth.year:null),
+        jumpCountry:(p.country||[])[0] || null
+      };
+    });
+    const seenPath = new Set();
+    const events = Store.vault.events
+      .filter(e=> !e.fromEntityTimeline && !e.fromFictionalTimeline)
+      .filter(e=>{ if(seenPath.has(e.path)) return false; seenPath.add(e.path); return true; })
+      .map(e=>({
+        kind:'event', title:e.title, path:e.path,
+        country:e.region||[], domain:e.domain||[], tags:e.tags||[],
+        carrier:e.carrier||'', fictional:!!e.fictional,
+        startYear: e.start ? e.start.year : null,
+        endYear: e.end ? e.end.year : null,
+        tenureSegments:0, tenureYears:0,
+        relatedCount:(e.related||[]).length, eraCount:0,
+        eraKeyword:'', topicKeyword:(e.topic||[]).join(' '),
+        jumpYear: e.start ? e.start.year : null,
+        jumpCountry:(e.region||[])[0] || null
+      }));
+    SearchView.records = [...persons, ...events];
+  },
+
+  buildOptions(){
+    const carrier=new Set(), domain=new Set(), tags=new Set(), country=new Set();
+    SearchView.records.forEach(r=>{
+      if(r.carrier) carrier.add(r.carrier);
+      r.domain.forEach(d=>domain.add(d));
+      r.tags.forEach(t=>tags.add(t));
+      r.country.forEach(c=>country.add(c));
+    });
+    SearchView.options = {
+      carrier:[...carrier].sort(),
+      domain:[...domain].sort(),
+      tags:[...tags].sort(),
+      // 国家用中文显示名排序（跟 ALL_COUNTRY_KEYS 那套排序逻辑一致），
+      // 不是原始 key 的字母序，不然列表看着是乱的
+      country:[...country].sort((a,b)=>countryDisplayName(a).localeCompare(countryDisplayName(b),'zh'))
+    };
+  },
+
+  init(){
+    SearchView.state = SearchView.defaultState();
+    SearchView.buildRecords();
+    SearchView.buildOptions();
+    SearchView.renderFilters();
+    SearchView.renderResults();
+  },
+
+  renderFilters(){
+    const wrap = document.getElementById('searchFilters');
+    const pillGroup = (key, label, opts, radio)=> `
+      <div class="search-field" data-field="${key}"${radio?' data-radio="true"':''}>
+        <span class="search-field-label">${Utils.escapeHtml(label)}</span>
+        <div class="search-pill-group" data-pill-field="${key}">
+          ${opts.length ? opts.map(o=>`<span class="search-pill" data-value="${Utils.escapeHtml(o)}">${Utils.escapeHtml(o)}</span>`).join('') : '<span class="search-field-label">（暂无）</span>'}
+        </div>
+      </div>`;
+    // 国家/身份/领域/标签这几个"选项可能很多、随数据增长"的字段用这个，
+    // 不铺胶囊。chips区域先留空，交给 renderComboChips() 在 init 和每次
+    // 选择变化后单独刷新，避免重绘整条筛选栏导致输入框失焦。
+    // placeholder不给默认兜底文案了——空的输入框就是空的，不额外提示"搜索…"。
+    const comboField = (key, label, placeholder)=> `
+      <div class="search-field search-combo" data-field="${key}">
+        <span class="search-field-label">${Utils.escapeHtml(label)}</span>
+        <div class="search-combo-box" data-combo-box="${key}">
+          <div class="search-combo-chips" data-combo-chips="${key}"></div>
+          <input type="text" class="search-combo-input" data-combo-input="${key}" placeholder="${Utils.escapeHtml(placeholder||'')}" autocomplete="off">
+        </div>
+      </div>`;
+    const textField = (key, label, placeholder)=> `
+      <div class="search-field" data-field="${key}">
+        <span class="search-field-label">${Utils.escapeHtml(label)}</span>
+        <input type="text" data-text-field="${key}" placeholder="${Utils.escapeHtml(placeholder||'')}">
+      </div>`;
+    const rangeField = (key, label)=> `
+      <div class="search-field" data-field="${key}">
+        <span class="search-field-label">${Utils.escapeHtml(label)}</span>
+        <div class="search-range-row">
+          <input type="number" data-range-field="${key}" data-bound="min" placeholder="从">
+          <span>–</span>
+          <input type="number" data-range-field="${key}" data-bound="max" placeholder="到">
+        </div>
+      </div>`;
+    const opField = (key, label)=> `
+      <div class="search-field" data-field="${key}">
+        <span class="search-field-label">${Utils.escapeHtml(label)}</span>
+        <div class="search-op-row">
+          <select data-op-field="${key}">
+            <option value="">不限</option>
+            <option value="=">=</option>
+            <option value=">">&gt;</option>
+            <option value=">=">&gt;=</option>
+            <option value="<">&lt;</option>
+            <option value="<=">&lt;=</option>
+          </select>
+          <input type="number" data-opval-field="${key}">
+        </div>
+      </div>`;
+
+    // 三组：基础属性（"这是谁"）、内容关键词（"内容相关性"）、
+    // 更多筛选（时间范围/关联人物数——数量级的精确查询，用得少，默认折叠）。
+    const basicGroup = `
+      <div class="search-group">
+        <div class="search-group-title">基础属性</div>
+        <div class="search-group-body">
+          ${pillGroup('kind','type', ['entity','event'])}
+          ${comboField('carrier','carrier')}
+          ${comboField('country','country')}
+          ${pillGroup('fictional','is_fictional', ['true','false'], true)}
+        </div>
+      </div>`;
+    const contentGroup = `
+      <div class="search-group search-group-wide">
+        <div class="search-group-title">内容关键词</div>
+        <div class="search-group-body">
+          ${comboField('domain','domain')}
+          ${comboField('tags','tags')}
+          ${textField('titleKeyword','filename','')}
+          ${textField('eraKeyword','reign_era','')}
+          ${textField('topicKeyword','topic','')}
+        </div>
+      </div>`;
+    // 起始年/结束年合并成一个"时间范围"区间：按记录的整段时间跨度
+    // （人物出生–卒年 / 事件起–止年，缺一头就退化成另一头）跟给定区间
+    // 是否有重叠来判断，不再分开精确卡"起始年落在哪"和"结束年落在哪"——
+    // 精确到单个年份的查询本来就是主视图（时间看板）的事，这里不用重复。
+    const advancedGroup = `
+      <div class="search-advanced${SearchView._advancedOpen?' open':''}" id="searchAdvanced">
+        <button type="button" class="search-advanced-toggle" id="searchAdvancedToggle">
+          <span class="search-advanced-arrow">▸</span>更多筛选（时间范围 · 关联人物数）
+        </button>
+        <div class="search-advanced-body">
+          ${rangeField('time','year_range')}
+          ${SearchView.NUMERIC_FIELDS.map(f=>opField(f.key, f.label)).join('')}
+        </div>
+      </div>`;
+    wrap.innerHTML = basicGroup + contentGroup + advancedGroup;
+    SearchView.COMBO_FIELDS.forEach(f=> SearchView.renderComboChips(f.key));
+  },
+
+  COMBO_FIELDS: [
+    { key:'carrier', label:'carrier', display:v=>v },
+    { key:'country', label:'country', display:v=>countryDisplayName(v) },
+    { key:'domain', label:'domain', display:v=>v },
+    { key:'tags', label:'tags', display:v=>v }
+  ],
+
+  comboDisplay(fieldKey, value){
+    const f = SearchView.COMBO_FIELDS.find(x=>x.key===fieldKey);
+    return f ? f.display(value) : value;
+  },
+
+  /* 已选值渲染成 trigger 里的可点掉 chip，跟悬浮列表的开合状态互不干扰——
+     选中/取消选中之后只重画这一小块 chip 区域，不重画整条筛选栏，
+     不会打断正在输入的搜索框焦点。 */
+  renderComboChips(fieldKey){
+    const el = document.querySelector(`[data-combo-chips="${fieldKey}"]`);
+    if(!el) return;
+    const values = [...SearchView.state[fieldKey]];
+    el.innerHTML = values.map(v=>`
+      <span class="search-combo-chip" data-chip-field="${fieldKey}" data-chip-value="${Utils.escapeHtml(v)}">
+        ${Utils.escapeHtml(SearchView.comboDisplay(fieldKey,v))}<button type="button" aria-label="移除">×</button>
+      </span>`).join('');
+  },
+
+  /* 悬浮列表：跟 SlotMenu.positionAt 同一套定位逻辑（贴着输入框下方，
+     超出视口底部就翻到上方），列表内容按输入的关键词实时过滤
+     SearchView.options[fieldKey]（真实数据算出来的，不是写死的），
+     已选中的项打勾但仍然可以再点一次取消，不影响列表本身继续展开——
+     点选项不关闭浮层，方便连续多选。 */
+  openCombo(fieldKey, inputEl){
+    SearchView.comboOpenFor = fieldKey;
+    const menu = document.getElementById('searchComboMenu');
+    menu.innerHTML = `<div class="search-combo-menu-list"></div>`;
+    const list = menu.querySelector('.search-combo-menu-list');
+    const draw = ()=>{
+      const q = inputEl.value.trim().toLowerCase();
+      const opts = (SearchView.options[fieldKey]||[]).filter(o=>{
+        if(!q) return true;
+        return SearchView.comboDisplay(fieldKey,o).toLowerCase().includes(q) || o.toLowerCase().includes(q);
+      });
+      list.innerHTML = opts.length ? opts.map(o=>{
+        const selected = SearchView.state[fieldKey].has(o);
+        return `<div class="search-combo-menu-item${selected?' selected':''}" data-combo-value="${Utils.escapeHtml(o)}">
+          <span>${Utils.escapeHtml(SearchView.comboDisplay(fieldKey,o))}</span>
+          ${selected?'<span class="search-combo-check">✓</span>':''}
+        </div>`;
+      }).join('') : `<div class="search-combo-menu-empty">没有匹配的选项</div>`;
+    };
+    draw();
+    menu.classList.add('show');
+    SearchView.positionCombo(inputEl);
+    SearchView.bindComboOutsideClick();
+    menu._draw = draw; // 输入框继续打字时复用同一个draw，见input事件里的调用
+  },
+
+  positionCombo(anchorEl){
+    const menu = document.getElementById('searchComboMenu');
+    const rect = anchorEl.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+    let left = Math.min(rect.left, window.innerWidth - menuRect.width - 10);
+    left = Math.max(left, 10);
+    let top = rect.bottom + 6;
+    if(top + menuRect.height > window.innerHeight - 10) top = rect.top - menuRect.height - 6;
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+  },
+
+  closeCombo(){
+    SearchView.comboOpenFor = null;
+    document.getElementById('searchComboMenu').classList.remove('show');
+  },
+
+  closeCombo(){
+    SearchView.comboOpenFor = null;
+    document.getElementById('searchComboMenu').classList.remove('show');
+    document.removeEventListener('click', SearchView.comboOutsideClickHandler, true);
+  },
+
+  /* 跟 SlotMenu.bindOutsideClick 同一套写法：capture阶段+延后一帧绑定，
+     避免打开浮层的这一次点击（点输入框本身）被同一个监听器立刻判定成
+     "点在外面"、浮层刚开就被关掉。点在输入框/chip区域本身（.search-combo-box）
+     不算"点在外面"，不然每次点输入框继续打字都会先关掉再重开，体验很糟。 */
+  bindComboOutsideClick(){
+    document.removeEventListener('click', SearchView.comboOutsideClickHandler, true);
+    setTimeout(()=> document.addEventListener('click', SearchView.comboOutsideClickHandler, true), 0);
+  },
+  comboOutsideClickHandler(e){
+    const menu = document.getElementById('searchComboMenu');
+    if(menu.contains(e.target)) return;
+    if(e.target.closest('.search-combo-box')) return;
+    SearchView.closeCombo();
+  },
+
+  toggleComboValue(fieldKey, value){
+    const set = SearchView.state[fieldKey];
+    if(set.has(value)) set.delete(value); else set.add(value);
+    SearchView.renderComboChips(fieldKey);
+    SearchView.renderResults();
+  },
+
+  matchNumeric(val, op, target){
+    if(op==='' || target===''||target===null||target===undefined || isNaN(target)) return true;
+    switch(op){
+      case '=': return val === +target;
+      case '>': return val > +target;
+      case '>=': return val >= +target;
+      case '<': return val < +target;
+      case '<=': return val <= +target;
+      default: return true;
+    }
+  },
+
+  applyFilters(){
+    const s = SearchView.state;
+    return SearchView.records.filter(r=>{
+      if(s.kind.size && !s.kind.has(r.kind==='person'?'entity':'event')) return false;
+      if(s.carrier.size && !s.carrier.has(r.carrier)) return false;
+      if(s.country.size && !r.country.some(c=>s.country.has(c))) return false;
+      if(s.domain.size && !r.domain.some(d=>s.domain.has(d))) return false;
+      if(s.tags.size && !r.tags.some(t=>s.tags.has(t))) return false;
+      if(s.fictional==='yes' && !r.fictional) return false;
+      if(s.fictional==='no' && r.fictional) return false;
+      if(s.titleKeyword && !r.title.includes(s.titleKeyword)) return false;
+      if(s.eraKeyword && !r.eraKeyword.includes(s.eraKeyword)) return false;
+      if(s.topicKeyword && !r.topicKeyword.includes(s.topicKeyword)) return false;
+      // 时间范围：记录的整段跨度 [effStart, effEnd]（缺一头就退化成另一头，
+      // 两头都没有的记录在筛了时间范围时直接排除——没法判断是否命中）
+      // 是否跟用户给的 [timeMin, timeMax] 有重叠，不是精确匹配起止年。
+      if(s.timeMin!=='' || s.timeMax!==''){
+        const effStart = r.startYear!=null ? r.startYear : r.endYear;
+        const effEnd = r.endYear!=null ? r.endYear : r.startYear;
+        if(effStart==null && effEnd==null) return false;
+        if(s.timeMin!=='' && effEnd!=null && effEnd < +s.timeMin) return false;
+        if(s.timeMax!=='' && effStart!=null && effStart > +s.timeMax) return false;
+      }
+      if(!SearchView.matchNumeric(r.relatedCount, s.relatedCountOp, s.relatedCountVal)) return false;
+      return true;
+    });
+  },
+
+  sortRecords(list){
+    const { key, dir } = SearchView.sort;
+    const copy = [...list];
+    copy.sort((a,b)=>{
+      const av = a[key], bv = b[key];
+      if(av==null && bv==null) return 0;
+      if(av==null) return 1;
+      if(bv==null) return -1;
+      if(typeof av === 'string') return av.localeCompare(bv) * dir;
+      return (av - bv) * dir;
+    });
+    return copy;
+  },
+
+  renderResults(){
+    const filtered = SearchView.applyFilters();
+    const sorted = SearchView.sortRecords(filtered);
+    // 状态条：没设条件时只报结果数（等于全量），设了条件才带上"已选 N 个"，
+    // 避免"已选 0 个条件"这种没意义的措辞。
+    const activeCount = SearchView.countActiveFilters();
+    const statusEl = document.getElementById('searchStatusCount');
+    if(statusEl){
+      statusEl.innerHTML = activeCount
+        ? `已选 <b>${activeCount}</b> 个条件 · 命中 <b>${filtered.length}</b> 条结果`
+        : `共 <b>${filtered.length}</b> 条结果`;
+    }
+
+    const theadRow = document.getElementById('searchTableHead');
+    theadRow.innerHTML = SearchView.COLUMNS.map(c=>{
+      const active = SearchView.sort.key===c.key;
+      const arrow = active ? (SearchView.sort.dir===1?'↑':'↓') : '';
+      const sortable = c.sortable!==false;
+      return `<th class="${c.numeric?'num':''}"${sortable?` data-sort-key="${c.key}"`:''}>${Utils.escapeHtml(c.label)}${arrow?`<span class="search-sort-arrow">${arrow}</span>`:''}</th>`;
+    }).join('');
+
+    const table = document.getElementById('searchTable');
+    const emptyState = document.getElementById('searchEmptyState');
+    const tbody = document.getElementById('searchTableBody');
+    if(!sorted.length){
+      table.style.display = 'none';
+      tbody.innerHTML = ''; // 表被隐藏了，但旧行不清空的话会一直挂在DOM里，是脏状态
+      emptyState.style.display = 'block';
+      emptyState.innerHTML = `<div class="display">没有匹配的结果</div><div>试试放宽几个筛选条件，或者点"清空筛选条件"重新来一遍</div>`;
+      return;
+    }
+    table.style.display = '';
+    emptyState.style.display = 'none';
+    tbody.innerHTML = sorted.map(r=>{
+      const dotColor = CONTINENT_HEX[SearchView.continentOf(r.jumpCountry)] || 'var(--muted)';
+      const canJump = !!r.jumpCountry;
+      const span = r.startYear!=null
+        ? `${r.startYear}${(r.endYear!=null && r.endYear!==r.startYear) ? '–'+r.endYear : ''}`
+        : (r.endYear!=null ? '？–'+r.endYear : '—');
+      const allTags = [...r.domain, ...r.tags];
+      const chips = allTags.slice(0,4).map(t=>`<span class="search-chip">${Utils.escapeHtml(t)}</span>`).join('');
+      const more = allTags.length>4 ? `<span class="search-chip">+${allTags.length-4}</span>` : '';
+      return `<tr class="${canJump?'':'no-jump'}" data-jump-country="${Utils.escapeHtml(r.jumpCountry||'')}" data-jump-year="${r.jumpYear!=null?r.jumpYear:''}">
+        <td><span class="search-kind-dot" style="background:${dotColor}"></span>${r.kind==='person'?'entity':'event'}</td>
+        <td><span class="search-title-cell">${Utils.escapeHtml(r.title)}${r.fictional?'<span class="search-fictional-mark">· 虚构</span>':''}</span></td>
+        <td>${Utils.escapeHtml(r.country.join('、')||'—')}</td>
+        <td>${Utils.escapeHtml(r.carrier||'—')}</td>
+        <td><div class="search-chip-cell">${chips}${more}</div></td>
+        <td class="num search-span-cell">${span}</td>
+      </tr>`;
+    }).join('');
+  },
+
+  clearFilters(){
+    SearchView.closeCombo();
+    SearchView.state = SearchView.defaultState();
+    SearchView.renderFilters();
+    SearchView.renderResults();
+  },
+
+  /* 点某一行 -> 切到"时间看板"tab、强制切回地图子视图（分栏视图没有可以
+     "选中"的国家弹窗，弹窗只在地图视图下有意义）、把年份轴拨到这条记录
+     的年份，再调用 MapView.selectScope 弹出该国详情——复用现有的地图
+     弹窗逻辑，不用重新做一套展示。 */
+  jumpTo(country, year){
+    if(!country) return;
+    if(year!=null && !isNaN(year)){
+      Store.currentYear = Math.min(Math.max(year, Store.yearMin), Store.yearMax);
+    }
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab==='time'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active', p.id==='panel-time'));
+    App.updateViewSwitchVisibility();
+    document.querySelectorAll('.view-tab').forEach(t=>t.classList.toggle('active', t.dataset.view==='map'));
+    document.getElementById('mapCardWrap').style.display = '';
+    document.getElementById('columnBoard').style.display = 'none';
+    Store.lastView = 'map';
+    try{ localStorage.setItem('fwb_lastView','map'); }catch(e){}
+    document.getElementById('yearSlider').value = Store.currentYear;
+    document.getElementById('yearInput').value = Store.currentYear;
+    App.renderYear();
+    MapView.selectScope({ type:'country', continent:SearchView.continentOf(country), country });
+  }
+};
+
+/* =========================================================
+   12. ChipTooltip —— coverage chip 悬浮详情
    ---------------------------------------------------------
    全局共用一个 tooltip 元素，用 JS 算坐标定位成 position:fixed，
    脱离 .coverage-chips 那个 overflow:auto 容器的裁剪范围。
@@ -1717,7 +3486,7 @@ const ChipTooltip = {
 };
 
 /* =========================================================
-   12. App —— 启动流程、连接 vault、年份轴、tabs、事件监听绑定
+   13. App —— 启动流程、连接 vault、年份轴、tabs、事件监听绑定
    ---------------------------------------------------------
    这是唯一允许直接操作页面级 DOM 结构（tabs/年份轴/连接按钮）、
    并在文件末尾调用 App.init() 启动整个应用的地方。新增一个
@@ -1729,8 +3498,8 @@ const App = {
     document.getElementById('connDot').classList.toggle('on', on);
     document.getElementById('connText').textContent = on ? 'F WORLD B 已连接' : '未连接仓库';
     document.getElementById('connectBtn').textContent = on ? '重新选择' : '选择 Vault 文件夹';
-    ['timeEmpty','subjectEmpty'].forEach(id=> document.getElementById(id).style.display = on ? 'none' : 'block');
-    ['timeContent','subjectContent'].forEach(id=> document.getElementById(id).style.display = on ? 'block' : 'none');
+    ['timeEmpty','subjectEmpty','searchEmpty'].forEach(id=> document.getElementById(id).style.display = on ? 'none' : 'block');
+    ['timeContent','subjectContent','searchContent'].forEach(id=> document.getElementById(id).style.display = on ? 'block' : 'none');
     App.updateViewSwitchVisibility();
   },
 
@@ -1755,6 +3524,7 @@ const App = {
     App.renderYear();
     CompareView.buildPersonList();
     CompareView.render();
+    SearchView.init();
   },
 
   /* 地图/分栏 这两个 tab 现在跟"时间看板/主体看板"挤在同一行右对齐，
@@ -1852,7 +3622,11 @@ const App = {
       const content = DetailView.popoverContentFor(Store.selectedScope);
       pop.className = 'popover';
       pop.innerHTML = `<button class="popover-close" aria-label="关闭">×</button>
-        <div class="detail-head"><span class="detail-swatch" style="background:${content.color}"></span><span class="detail-title">${Utils.escapeHtml(content.title)}</span></div>
+        <div class="detail-head">
+          <span class="detail-swatch" style="background:${content.color}"></span>
+          <span class="detail-title">${Utils.escapeHtml(content.title)}</span>
+          ${Store.selectedScope.type==='country' ? DetailView.renderTenureRow(Store.selectedScope.country, content.color) : ''}
+        </div>
         ${content.bodyHtml}`;
       pop.querySelector('.popover-close').addEventListener('click', (e)=>{
         e.stopPropagation(); pop.remove(); Store.selectedScope=null;
@@ -1923,6 +3697,102 @@ const App = {
       });
     });
 
+    // 高级搜索：筛选栏（胶囊多选/单选、文本、区间、运算符）+ 结果表（排序表头、
+    // 点行跳转）全部走事件委托——筛选栏每次清空/初始化都会用 innerHTML 重绘，
+    // 结果表每次筛选/排序变化也会重绘 tbody，都不能对单个控件逐一挂监听器。
+    // 清空按钮、字段说明面板都是状态条/筛选栏之外的静态元素（不随
+    // renderFilters 重绘），单独绑一次即可，不用走委托。
+    document.getElementById('searchClearBtn').addEventListener('click', ()=> SearchView.clearFilters());
+    document.getElementById('searchHelpToggle').addEventListener('click', ()=>{
+      document.getElementById('searchHelp').classList.toggle('open');
+      document.getElementById('searchHelpToggle').classList.toggle('active');
+    });
+    document.getElementById('searchFilters').addEventListener('click', e=>{
+      if(e.target.closest('#searchAdvancedToggle')){
+        const el = document.getElementById('searchAdvanced');
+        el.classList.toggle('open');
+        SearchView._advancedOpen = el.classList.contains('open');
+        return;
+      }
+      const chipRemove = e.target.closest('.search-combo-chip button');
+      if(chipRemove){
+        const chip = chipRemove.closest('.search-combo-chip');
+        SearchView.toggleComboValue(chip.dataset.chipField, chip.dataset.chipValue);
+        // 如果对应的下拉此刻正开着，勾选状态也要跟着同步，不然chip被点掉了
+        // 但悬浮列表里那一项还显示着"已选中"的勾，两边会对不上。
+        const menu = document.getElementById('searchComboMenu');
+        if(SearchView.comboOpenFor === chip.dataset.chipField && menu._draw) menu._draw();
+        return;
+      }
+      const pill = e.target.closest('.search-pill');
+      if(!pill) return;
+      const field = pill.closest('.search-field');
+      const group = pill.closest('.search-pill-group');
+      const key = group.dataset.pillField;
+      const val = pill.dataset.value;
+      if(field.dataset.radio === 'true'){
+        // 单选风格的胶囊组（目前只有"是否虚构"）：点已选中的再点一次=取消，
+        // 点未选中的=切过去、同组其余胶囊自动退选，模拟原生 radio 行为。
+        const wasOn = pill.classList.contains('on');
+        group.querySelectorAll('.search-pill').forEach(p=>p.classList.remove('on'));
+        if(!wasOn){ pill.classList.add('on'); SearchView.state.fictional = (val==='true') ? 'yes' : 'no'; }
+        else SearchView.state.fictional = '';
+      } else {
+        pill.classList.toggle('on');
+        const on = pill.classList.contains('on');
+        if(on) SearchView.state[key].add(val); else SearchView.state[key].delete(val);
+      }
+      SearchView.renderResults();
+    });
+    document.getElementById('searchFilters').addEventListener('focusin', e=>{
+      if(e.target.classList.contains('search-combo-input')){
+        SearchView.openCombo(e.target.dataset.comboInput, e.target);
+      }
+    });
+    document.getElementById('searchFilters').addEventListener('input', e=>{
+      const t = e.target;
+      if(t.classList.contains('search-combo-input')){
+        const menu = document.getElementById('searchComboMenu');
+        if(menu._draw) menu._draw();
+        SearchView.positionCombo(t);
+        return;
+      }
+      if(t.dataset.textField){ SearchView.state[t.dataset.textField] = t.value.trim(); SearchView.renderResults(); return; }
+      if(t.dataset.rangeField){
+        const key = t.dataset.rangeField + (t.dataset.bound==='min' ? 'Min' : 'Max');
+        SearchView.state[key] = t.value===''? '' : +t.value;
+        SearchView.renderResults(); return;
+      }
+      if(t.dataset.opvalField){ SearchView.state[t.dataset.opvalField+'Val'] = t.value===''?'':+t.value; SearchView.renderResults(); }
+    });
+    // 悬浮下拉本身是 #searchFilters 外部的全局共用元素（跟 #slotMenu 一样），
+    // 点选项要单独委托在它自己身上；点了不关闭浮层，方便连续多选，
+    // 只重新画一次列表刷新勾选状态。
+    document.getElementById('searchComboMenu').addEventListener('click', e=>{
+      const item = e.target.closest('.search-combo-menu-item');
+      if(!item || !SearchView.comboOpenFor) return;
+      SearchView.toggleComboValue(SearchView.comboOpenFor, item.dataset.comboValue);
+      const menu = document.getElementById('searchComboMenu');
+      if(menu._draw) menu._draw();
+    });
+    document.getElementById('searchFilters').addEventListener('change', e=>{
+      if(e.target.dataset.opField){ SearchView.state[e.target.dataset.opField+'Op'] = e.target.value; SearchView.renderResults(); }
+    });
+    document.getElementById('searchTable').addEventListener('click', e=>{
+      const th = e.target.closest('th[data-sort-key]');
+      if(th){
+        const key = th.dataset.sortKey;
+        if(SearchView.sort.key === key) SearchView.sort.dir *= -1;
+        else { SearchView.sort.key = key; SearchView.sort.dir = 1; }
+        SearchView.renderResults();
+        return;
+      }
+      const tr = e.target.closest('tbody tr');
+      if(tr && tr.dataset.jumpCountry){
+        SearchView.jumpTo(tr.dataset.jumpCountry, tr.dataset.jumpYear ? +tr.dataset.jumpYear : null);
+      }
+    });
+
     // 地图 / 分栏 切换
     document.querySelectorAll('.view-tab').forEach(tab=>{
       tab.addEventListener('click', ()=>{
@@ -1930,7 +3800,7 @@ const App = {
         tab.classList.add('active');
         const isColumns = tab.dataset.view === 'columns';
         document.getElementById('mapCardWrap').style.display = isColumns ? 'none' : '';
-        document.getElementById('columnBoard').style.display = isColumns ? 'grid' : 'none';
+        document.getElementById('columnBoard').style.display = isColumns ? 'block' : 'none';
         if(isColumns) ColumnBoard.render();
         Store.lastView = isColumns ? 'columns' : 'map';
         try{ localStorage.setItem('fwb_lastView', Store.lastView); }catch(e){}
@@ -1942,8 +3812,48 @@ const App = {
     if(Store.lastView === 'columns'){
       document.querySelectorAll('.view-tab').forEach(t=>t.classList.toggle('active', t.dataset.view==='columns'));
       document.getElementById('mapCardWrap').style.display = 'none';
-      document.getElementById('columnBoard').style.display = 'grid';
+      document.getElementById('columnBoard').style.display = 'block';
     }
+
+    // 分栏坑位：翻页箭头 / 国家代码（置换/年代规则/删除）/ 空坑位（新建，
+    // 或者——如果这个坑位其实是"按年代规则"只是当前年份没命中——编辑规则）
+    // 三种点击都委托在 #columnBoard 这个静态容器上（它本身不会被innerHTML替换，
+    // 只有内部的箭头+网格会随ColumnBoard.render()重绘），不用每次渲染后重新bind。
+    document.getElementById('columnBoard').addEventListener('click', e=>{
+      const arrow = e.target.closest('.page-arrow');
+      if(arrow){ ColumnBoard.flipPage(arrow.classList.contains('left') ? -1 : 1); return; }
+      const addCircle = e.target.closest('.empty-slot-circle');
+      if(addCircle){
+        const emptySlot = addCircle.closest('.empty-slot');
+        const slotIndex = +emptySlot.dataset.slot;
+        const raw = ColumnBoard.loadSlots()[slotIndex];
+        if(raw && typeof raw === 'object'){ ScheduleEditor.open(slotIndex); }
+        else { SlotMenu.openAdd(slotIndex, addCircle); }
+        return;
+      }
+      const code = e.target.closest('.col-code');
+      if(code){ SlotMenu.openSwap(+code.dataset.slot, code); return; }
+    });
+    SlotMenu.init();
+    ScheduleEditor.init();
+
+    /* 键盘左右方向键联动翻页箭头。要排除几种"方向键另有用途"的场景，
+       不然会跟别的交互打架：
+       - 焦点在输入框/文本域里（比如年代规则的年份输入、搜索框）——方向键
+         应该是移动光标，不是翻页
+       - 年代规则弹层开着——这时候操作重心在编辑规则，不该被翻页打断
+       - 分栏视图本来就没显示（比如正在看地图）——翻它没有意义 */
+    document.addEventListener('keydown', e=>{
+      if(e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      const tag = document.activeElement && document.activeElement.tagName;
+      if(tag === 'INPUT' || tag === 'TEXTAREA') return;
+      const scheduleBackdrop = document.getElementById('scheduleBackdrop');
+      if(scheduleBackdrop && scheduleBackdrop.classList.contains('show')) return;
+      const columnBoard = document.getElementById('columnBoard');
+      if(!columnBoard || columnBoard.style.display === 'none') return;
+      e.preventDefault();
+      ColumnBoard.flipPage(e.key === 'ArrowLeft' ? -1 : 1);
+    });
 
     // 年份 rail
     /* 拖动滑块时 'input' 事件是连续触发的（快速拖动一下可能几十次），
@@ -1997,20 +3907,35 @@ const App = {
     /* Global 色段悬浮提示：鼠标划过滑块轨道时，实时算鼠标位置对应哪一年，
        查这一年是否落在某个 Global 事件的区间里——不依赖悬停在色段本身上
        （色段是 pointer-events:none 的，划不到），所以滑块的原生拖动/点击
-       行为完全不受影响，这条监听器只负责"要不要显示提示"，不碰年份状态。 */
+       行为完全不受影响，这条监听器只负责"要不要显示提示"，不碰年份状态。
+       mousemove 触发频率不比拖动滑块低，跟下面年份rail同一个道理，也用
+       requestAnimationFrame节流：鼠标坐标每次都记下来（很便宜），真正
+       "查一遍vault、决定要不要弹提示"这个重操作合并到每帧最多跑一次。
+       单独起一个开关（hoverTipScheduled），不跟下面yearRenderScheduled
+       共用——这是两件不相关的事，共用一个开关会互相卡住对方。 */
     const yearSliderEl = document.getElementById('yearSlider');
+    let hoverTipScheduled = false;
+    let lastHoverX = 0, lastHoverY = 0;
     yearSliderEl.addEventListener('mousemove', e=>{
-      const rect = yearSliderEl.getBoundingClientRect();
-      const pct = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
-      const hoverYear = Math.round(Store.yearMin + pct * (Store.yearMax - Store.yearMin));
-      const hits = Store.vault.events.filter(ev=>
-        ev.keyEra==='Global' && ev.start &&
-        hoverYear >= ev.start.year && hoverYear <= (ev.end ? ev.end.year : ev.start.year)
-      );
-      if(hits.length){
-        ChipTooltip.showAt(e.clientX, e.clientY, hits.map(h=>h.title));
-      } else {
-        ChipTooltip.hide();
+      lastHoverX = e.clientX;
+      lastHoverY = e.clientY;
+      if(!hoverTipScheduled){
+        hoverTipScheduled = true;
+        requestAnimationFrame(()=>{
+          hoverTipScheduled = false;
+          const rect = yearSliderEl.getBoundingClientRect();
+          const pct = Math.min(Math.max((lastHoverX - rect.left) / rect.width, 0), 1);
+          const hoverYear = Math.round(Store.yearMin + pct * (Store.yearMax - Store.yearMin));
+          const hits = Store.vault.events.filter(ev=>
+            ev.keyEra==='Global' && ev.start &&
+            hoverYear >= ev.start.year && hoverYear <= (ev.end ? ev.end.year : ev.start.year)
+          );
+          if(hits.length){
+            ChipTooltip.showAt(lastHoverX, lastHoverY, hits.map(h=>h.title));
+          } else {
+            ChipTooltip.hide();
+          }
+        });
       }
     });
     yearSliderEl.addEventListener('mouseleave', ()=> ChipTooltip.hide());
