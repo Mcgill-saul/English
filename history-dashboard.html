@@ -37,6 +37,13 @@
   }
   *{ box-sizing: border-box; }
   html,body{ margin:0; padding:0; }
+  /* 四个 Tab 的内容高度不一样（地图/Sync 图表几乎总是超一屏，主体看板/高级搜索
+     通常不会），纵向滚动条会跟着有无切换。.app 的宽度是用 vw 算的（见下面
+     .app 规则），vw 不会因为滚动条出现/消失而跟着变，两者一凑就会在切 Tab 时
+     让居中的 .app 跳动几像素——这里让滚动条的空间永远预留着（没内容可滚时只是
+     不画轨道，不占用视觉/不影响交互），从根上让 vw 的计算基准在任何 Tab 下都
+     保持一致，消灭这个跳动。 */
+  html{ scrollbar-gutter: stable; }
   body{
     background: var(--bg);
     color: var(--ink);
@@ -144,10 +151,21 @@
   .global-banner.show{ display:flex; justify-content:center; }
   .global-chip-row{ display:flex; align-items:center; gap:10px; }
   .global-chip{
+    position:relative;
     font-family:'Fraunces',serif; font-size:var(--fs-xl); font-weight:600; line-height:1.15;
     color:#F2EEF8; background: linear-gradient(135deg, var(--global), #4E4270);
     padding:8px 20px; border-radius:999px; white-space:nowrap;
   }
+  /* Global chip 本身已经在置顶横幅里够醒目，不需要像National那样再单独套一个"!"图标才能
+     触发——直接悬浮在整个chip背景上就弹出来。视觉上跟National的.bg-tooltip保持一致
+     （深底浅字），只是挂载对象和弹出方向不同：这里锚定在chip正下方水平居中。 */
+  .global-chip-tooltip{
+    display:none; position:absolute; left:50%; top:calc(100% + 8px); transform:translateX(-50%);
+    width:240px; background:var(--ink); color:var(--surface); font-size:var(--fs-sm); line-height:1.6;
+    padding:10px 12px; border-radius:8px; box-shadow:var(--shadow); text-align:left;
+    white-space:normal; font-family:'Inter',sans-serif; font-weight:400; z-index:20;
+  }
+  .global-chip:hover .global-chip-tooltip, .global-chip:focus .global-chip-tooltip{ display:block; }
 
   .view-switch{ display:flex; gap:8px; }
   .view-tab{
@@ -155,6 +173,190 @@
     color:var(--ink-soft); cursor:pointer; user-select:none; background:var(--surface);
   }
   .view-tab.active{ background:var(--ink); color:var(--surface); border-color:var(--ink); }
+
+  /* "同代人物"看板：矩阵转置成"5个分类当外层、10个国家当内层横向对比列"，
+     不是"10个国家卡片、每个卡片里塞5个分类"那套了——原因是分类标题(政治/
+     军事/经济/科学/文化)只有5个，之前挂在10个国家卡片里各贴一遍会重复刷屏
+     50次；转置后分类只在自己的区块标题出现一次，共5次，国家名反而是10个
+     互不相同的词，横向排列不会有"同一句话反复出现"的噪音感。
+     10个国家的"列宽"是个跨行共享的常量（下面表头 .contemp-board-head 和
+     每个 .contemp-domain-row-lanes 都用同一套 repeat(10, 200px) + 同一个
+     gap），全靠两边用同一份网格模板对齐，不是画竖线分隔——细线隔栏在这个
+     卡片化的柔和视觉里显得太生硬，改用列宽+留白对齐，具体讨论过程见对话。
+     列宽200px维持转置前"一个国家栏"的原有最小宽度（原来是
+     minmax(200px,1fr)），没有为了多塞几列进屏幕而收窄——反正10列本来就
+     确定要横向滚动，收窄宽度不会减少滚动，只会让每列显示的信息更挤。
+     整张卡片纵向高度不算很高（表头一行 + 5个分类区块），不需要表头吸顶，
+     横向滚动交给外层 .contemp-grid-scroll 统一处理，表头和5个分类区块
+     属于同一个滚动容器，天然同步滚动，不用额外写JS对齐多个滚动条。 */
+  .contemp-toolbar{ display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px; flex-wrap:wrap; }
+  .contemp-decade-nav{ display:flex; align-items:center; gap:10px; }
+  .contemp-decade-label{ font-family:'IBM Plex Mono',monospace; font-size:var(--fs-lg); font-weight:600; min-width:150px; text-align:center; }
+  .contemp-toolbar-right{ display:flex; align-items:center; gap:18px; font-size:var(--fs-sm); color:var(--ink-soft); }
+  /* 搜索框放年份区间右侧，跟 .contemp-toolbar-right 分开是两个独立的flex子项，
+     中间靠 .contemp-toolbar 的 gap 隔开——复用 .search-combo-box 那套输入框+
+     悬浮下拉的视觉，只是加宽一点，姓名比标签字段一般更长。 */
+  /* 搜索框紧跟在翻页按钮"›"右边（挪进 .contemp-decade-nav 那个flex容器里，
+     跟它共用10px的按钮间距，另外用margin-left单独加宽一点，跟导航按钮拉开
+     呼吸空间，不是紧贴着）。样式从 .search-combo-box 默认的下划线改成胶囊——
+     用 .contemp-search-box.search-combo-box 复合选择器，保证不管这条规则
+     在样式表里排在.search-combo-box前面还是后面，都能稳定盖掉下划线那几个
+     属性（border-bottom/padding-bottom），不用依赖源码顺序猜cascade结果。 */
+  .contemp-search-box.search-combo-box{
+    max-width:220px; min-width:160px; margin-left:18px;
+    border:1px solid var(--line); border-bottom:1px solid var(--line);
+    border-radius:999px; background:var(--surface); padding:6px 14px;
+  }
+  .contemp-search-box .search-combo-input{ padding:0; }
+  .contemp-search-box .search-combo-input::placeholder{ color:var(--muted); opacity:.6; }
+  /* 跨度选择器复用主导航"地图/分栏"那套 .view-switch/.view-tab 胶囊样式——
+     只有5年/10年/20年3个选项，没必要用下拉框（浏览器原生下拉框展开后的
+     列表没法自定义样式，各操作系统长得还不一样），直接做成并排的胶囊按钮，
+     点哪个亮哪个，跟"地图/分栏"、"生平/人物"是同一套视觉语言，也少了
+     "点开下拉再点一次选项"这一步。
+     .view-tab 原尺寸（padding:6px 14px）是给顶层大 Tab 用的，这里塞进
+     一条挤了年份导航/搜索框/复选框的紧凑工具栏里，原尺寸偏大不协调，
+     所以局部缩小 padding/字号，但不动 .view-tab 本身（顶层 Tab 还要用
+     原尺寸），只在 .contemp-span-picker 这个作用域下覆盖。 */
+  .contemp-span-picker.view-switch{ gap:6px; }
+  .contemp-span-picker .view-tab{ padding:3px 10px; font-size:var(--fs-xs); }
+  .contemp-fictional-toggle{ display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none; }
+
+  /* ============================================================
+     色条系统（.contemp-domain-bar）总览——这东西改起来老出问题，原因是
+     它由好几处互相牵连的数值拼起来，改一处不动其它处很容易假装能用、
+     实际某个角落错位。写这段index就是为了以后改之前先看一眼全貌：
+
+     【组成部分，一共4处，缺一不可】
+     A. .contemp-grid-scroll 的 margin-left:-30px —— 把横向滚动容器自己的
+        裁剪边界往左扩，不然色条会被 overflow-x:auto 直接裁掉看不见。
+     B. .contemp-board-card 的 margin-left:30px —— 用等量正margin把A挪出去
+        的位置推回来，保证卡片本身的视觉边界不受影响（跟年代选择条对齐）。
+     C. .contemp-domain-bar 的 width:22px + right:calc(100% + 16px) ——
+        色条自己的宽度、以及它跟卡片左边缘之间探出去多远。
+     D. JS里 renderChip 之前那段 domainRows 的 map 函数 —— 每行色条的
+        clip-path梯形轮廓、往上探多高（gapAbove）、色条自身总高度(H)，
+        这三个数字必须在同一处一起算，不能分开写（下面"高度联动"细讲）。
+
+     【尺寸同步：改宽度改这3个数字，缺一个都会错位】
+     A的30px = C的width(22px) + 8px呼吸间隙；B的30px要等于A的30px（一个
+     负一个正，正负相抵）；C里的22px本身。三个数字现在是分别手写在三条
+     规则里的，不是引用同一个变量——纯CSS/纯JS模板字符串没法轻松共享一个
+     "常量"，只能靠人工同步，所以每处都写了指向其它处的注释，改之前统一
+     搜一遍 "22px" 和 "30px" 出现的地方，都改到。
+
+     【高度联动：这是之前反复出bug的地方，务必只在JS一处改】
+     每条色条要往上多探一截，让顶端够到"自己上方那条分隔线"本身（政治上面
+     是表头的实线，其余4条上面是各自前一行的虚线），不是停在紧挨着的数据
+     顶部——这个"往上探多少"（gapAbove）和"色条实际总高度"（H = 这一行
+     自身高度 + gapAbove）是同一件事的两个面：色条用 top:-{gapAbove}px
+     实现"往上探"，clip-path画梯形轮廓要用H（不是这一行自身原本的高度）
+     才能让图形刚好填满这个被拉高的方框。这两个数字曾经被拆成"CSS写一条
+     :first-child规则改top，JS另外单独算H"两处，结果只改了CSS忘了同步
+     JS的H，色条形状直接崩掉（clip-path按旧高度裁，底部露出没被图形覆盖
+     的区域）。现在改成 gapAbove/ownHeight/H 全部在JS的 domainRows 那段
+     map 函数里一起算、top偏移量也用JS算好直接内联进style——不要再拆开，
+     以后要调间距/高度，去JS那一处改，不要在CSS里单独加针对某一行的规则。
+     ============================================================ */
+  /* 卡片本身留出左侧空间给外探的色条（.contemp-domain-bar 会从每个
+     .contemp-domain-row 的左边缘往外探出 CONTEMP_BAR_W(22px) + 一点点
+     呼吸间隙），横向滚动到最左端时如果这里不留 padding，色条会被
+     overflow-x:auto 直接裁掉看不见。这个 padding-left 数值必须跟下面
+     .contemp-domain-bar 的 width + right 偏移量保持同步，两处写了
+     互相指向的注释，改一处记得改另一处。 */
+  /* 色条会从卡片左边缘往外探出 22px（+16px呼吸间隙），如果这段空间完全在
+     .contemp-grid-scroll 的裁剪范围之外，横向滚动到最左端时会被
+     overflow-x:auto 直接裁掉看不见——但卡片本身的边界位置不能因此挪动
+     （卡片边缘要跟原来、跟上面的年代选择条对齐，这是硬性要求）。
+     解法：不能简单给 .contemp-grid-scroll 加 padding-left（那样整张卡片会
+     被一起推着往右移 30px，卡片边界就变了）。改成"负margin把裁剪容器本身
+     的裁剪边界往左扩 30px，卡片再用等量的正margin往右推回来"——两个
+     margin正负相抵，卡片最终的视觉位置跟没加这套东西之前分毫不差，但
+     容器的可视/可滚动范围已经往左多让出 30px，色条正好落在这段新让出来
+     的空间里，不会被裁。30px = 色条22px宽 + 8px呼吸间隙，跟
+     .contemp-domain-bar 的 width/right 数值互相对应，改一处记得改另一处。 */
+  .contemp-grid-scroll{ overflow-x:auto; padding-bottom:4px; margin-left:-30px; }
+  .contemp-board-card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px; box-shadow:var(--shadow); width:max-content; min-width:calc(100% - 30px); margin-left:30px; }
+  /* 共享表头：只出现这一次，10个国家的列宽模板 repeat(10,minmax(200px,1fr))
+     是下面 .contemp-domain-row-lanes 也要用的同一份，保证两边对得齐。
+     用 minmax(200px,1fr) 而不是死宽度 200px：卡片自己的 min-width 在宽
+     屏幕上可能比"10列×200px+间隙"这个内容自然宽度更宽（min-width和
+     width:max-content冲突时取较大值），如果列宽写死，多出来的宽度就会
+     变成"最后一列右侧一截空白"，10列不会跟着一起变宽。改成
+     minmax(200px,1fr) 后，200px是最小保证值，1fr 让每列在有多余空间时
+     按比例伸展，卡片被撑宽出来的部分平均分配到10列，不会再空在右侧。 */
+  .contemp-board-head{ display:grid; grid-template-columns:repeat(10, minmax(200px, 1fr)); gap:16px; padding-bottom:10px; margin-bottom:12px; border-bottom:1px solid var(--line); }
+  .contemp-board-head-cell{ font-size:var(--fs-sm); font-weight:600; display:flex; align-items:center; gap:6px; }
+  /* 跟分栏卡片 .col-head 的 .col-swatch 同一个视觉手法：色点不用色条——
+     确认过维持"当下的有色圆点"这个既有样式，不额外发明新形状。数量同行
+     右对齐（margin-left:auto），跟转置前的 .contemp-country-head 一致，
+     不再换行显示。 */
+  .contemp-country-swatch{ width:9px; height:9px; border-radius:50%; flex:none; }
+  .contemp-country-count{ color:var(--muted); font-weight:400; font-size:var(--fs-xs); margin-left:auto; }
+  /* 5个分类区块之间用虚线隔开——跟分栏卡片 .col-slot 是同一个视觉手法
+     （border-bottom:dashed + 最后一个不留线），特意让两个视图看起来是
+     「一家人」；转置前这条线是分隔"一个国家卡片内部的5个分类"，转置后
+     变成分隔"5个分类区块本身"，用途变了但视觉手法照旧不用改。
+     position:relative 是为了让下面 .contemp-domain-bar 能以这一行自己的
+     高度为基准 position:absolute 贴出去——色条不再是行内的一个子元素，
+     而是探到卡片外面的装饰，跟着这一行的实际渲染高度走（不管这一行是不是
+     最后一行、有没有 dashed 分隔线的高度差异），不用另外用JS量像素。 */
+  .contemp-domain-row{ margin-bottom:10px; padding-bottom:10px; border-bottom:1px dashed var(--line); position:relative; }
+  .contemp-domain-row:last-child{ margin-bottom:0; padding-bottom:0; border-bottom:none; }
+  /* 原来横放在每行顶部的"政治/经济/文化…"文字标签整行删掉了，改成贴着
+     卡片左边缘往外探出去的竖排色条，省下来的高度就是删掉这行本身占的
+     空间——不用再额外调整.contemp-lane的160px。
+
+     色条形状：梯形斜边（贴卡片一侧右边满高直角，远离卡片一侧左边是短边、
+     上下各一段斜边收拢），外侧（左边）两个角是真正的SVG圆弧（clip-path:
+     path() 配 A 命令），贴卡片一侧（右边）两个角保持直角不处理。
+     颜色/尺寸/字体这些不随行变化的设置写在这条规则里；position（top的
+     负偏移）和 clip-path（含具体像素数值）会被JS按每行实际情况覆盖，
+     这条规则里的 top:0 只是兜底默认值，实际生效的是JS内联的
+     top:-{gapAbove}px——完整的联动逻辑看上面那段总览注释，或者去JS里
+     domainRows 那段 map 函数看实际计算。 */
+  .contemp-domain-bar{
+    position:absolute; top:0; bottom:0; right:calc(100% + 16px); width:22px;
+    display:flex; align-items:center; justify-content:center;
+    writing-mode:vertical-rl; font-size:var(--fs-xs); font-weight:600; letter-spacing:.15em;
+    /* 全局字体栈是 'Inter', sans-serif，Inter 本身不含中文字形，中文字符
+       靠系统兜底字体顶上——大多数系统的中文字体竖排都没问题，但这里单独
+       显式指定几个常见系统中文字体优先，给竖排这个相对小众的场景多一层
+       保险，不动全局字体设置。 */
+    font-family:'PingFang SC','Microsoft YaHei','Noto Sans CJK SC','Inter',sans-serif;
+  }
+  /* 10列跟表头共用同一份 repeat(10,minmax(200px,1fr)) 网格模板才能对齐——
+     200px是转置前"一个国家栏"原有的最小宽度，minmax(...,1fr)是这次为了
+     解决"卡片被min-width撑宽时10列不跟着变宽、多余空间空在最后一列右侧"
+     这个问题新加的（原因和讨论过程见 .contemp-board-head 旁边的注释）。
+     每列（一个国家在这个分类下的人物）固定高度160px、内部各自独立纵向
+     滚动——跟之前"3行定死+超出内部滚动"是同一条规则，只是维度从"一个
+     国家卡片里的一个分类"换成了"一个分类区块里的一个国家"，规则和视觉
+     都没变。chip布局用flex-wrap（一行能放下就放多个），跟转置前的
+     .contemp-domain-chips 完全一样，列宽最小200px，够大多数人名一行放2
+     个，不用像窄列那样强制单列堆叠。悬浮详情不受影响，沿用.coverage-chip
+     已有的ChipTooltip机制（position:fixed，不受这里overflow-y:auto裁剪）。 */
+  .contemp-domain-row-lanes{ display:grid; grid-template-columns:repeat(10, minmax(200px, 1fr)); gap:16px; }
+  .contemp-lane{ height:160px; overflow-y:auto; display:flex; flex-wrap:wrap; align-content:flex-start; gap:5px; }
+  /* 分类没数据时的留白占位——跟分栏卡片的 .col-slot-empty 是同一个用法：
+     渲染一个空的 div，不放"无"这类文字，只用来占住这一格的高度，让整行
+     10列看起来始终对齐，不会因为某列恰好没数据就少一格。 */
+  .contemp-lane-empty{ height:160px; }
+
+  /* 人物 chip 本身直接复用 .coverage-chip 的视觉和悬浮详情逻辑（同一套
+     ChipTooltip 事件委托），额外加 .contemp-chip 这个 class 只是为了跟
+     点击跳转的事件委托区分开，不影响样式——现在只传 data-range（年份，
+     不再带国家/carrier那行 data-summary），悬浮框年份用白色（见
+     .chip-tooltip-range--primary），跟作品chip墙那套"年代弱化灰"分开处理。
+     可点击（跳去主体看板/生平），所以覆盖掉 .coverage-chip 默认的
+     cursor:default，加个 hover 反馈。 */
+  .contemp-chip{ cursor:pointer; }
+  .contemp-chip:hover{ background:var(--surface-2); border-style:solid; }
+  .contemp-chip-fiction{ color:var(--muted); font-size:.9em; margin-left:2px; }
+
+  .contemp-unknown-section{ margin-top:22px; padding-top:16px; border-top:1px dashed var(--line); }
+  .contemp-unknown-head{ font-size:var(--fs-sm); color:var(--muted); margin-bottom:10px; }
+  .contemp-unknown-chips{ display:flex; flex-wrap:wrap; gap:6px; }
 
   /* 分栏视图：#columnBoard 现在是外层定位容器（放翻页箭头），
      真正的四栏网格挪到内层 .column-board-grid，两者分开是因为
@@ -442,11 +644,12 @@
   .subject-pickers{ display:grid; grid-template-columns:1fr auto 1fr; gap:16px; align-items:center; margin-bottom:24px; }
   .picker{ background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 18px; }
   .picker label{ font-size:var(--fs-xs); text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-family:'IBM Plex Mono',monospace; }
-  .picker input{
-    width:100%; margin-top:8px; font-family:'Fraunces',serif; font-size:var(--fs-lg); padding:8px 4px;
-    border:none; border-bottom:2px solid var(--line); background:transparent; color:var(--ink);
-  }
-  .picker input:focus-visible{ outline:none; border-bottom-color:var(--ink); }
+  /* 主体看板选人现在跟高级搜索的 combo 下拉是同一套组件（同样的
+     .search-combo-box/.search-combo-chip/#searchComboMenu），视觉+交互
+     完全统一，不再是浏览器原生 input+datalist。这里只需要把宽度撑满
+     picker 卡片、跟 label 之间留点距离，其余样式直接沿用 search-combo 那套。 */
+  .picker .search-combo-box{ max-width:none; width:100%; margin-top:8px; padding-bottom:6px; border-bottom-width:2px; }
+  .picker .search-combo-input{ font-size:var(--fs-body); padding:4px 2px; }
   .vs{ font-family:'Fraunces',serif; font-style:italic; color:var(--muted); font-size:var(--fs-lg); text-align:center; }
 
   .compare-grid{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
@@ -454,6 +657,24 @@
   .compare-name{ font-family:'Fraunces',serif; font-size:var(--fs-xl); font-weight:600; margin-bottom:2px; }
   .compare-span{ font-family:'IBM Plex Mono',monospace; font-size:var(--fs-sm); color:var(--muted); margin-bottom:18px; }
   .compare-summary{ font-size:var(--fs-body); line-height:1.65; color:var(--ink-soft); white-space:pre-line; margin:-6px 0 18px; padding-bottom:16px; border-bottom:1px solid var(--line); }
+  .compare-heads{ margin-bottom:16px; }
+  .compare-col-head{ padding-bottom:18px; }
+  .compare-feet{ margin-top:16px; }
+  /* 两人同时选中、且出生年（缺出生年就退回时间线最早一条）相差在阈值
+     以内时，才走这套"按年份合并成一行"的对比展示，否则退回两栏各自
+     完整信息（renderCol），并在上方留一句提示说明原因，不是 bug。 */
+  .compare-align-note{
+    font-size:var(--fs-sm); color:var(--muted); background:var(--surface-2);
+    border-radius:8px; padding:9px 14px; margin-bottom:16px;
+  }
+  .compare-timeline{ background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:6px 22px; }
+  .cmp-row{ display:grid; grid-template-columns:1fr auto 1fr; align-items:start; gap:16px; padding:12px 0; border-top:1px solid var(--line); }
+  .cmp-row:first-child{ border-top:none; }
+  .cmp-year{ font-size:var(--fs-sm); color:var(--muted); padding-top:1px; }
+  .cmp-cell{ display:flex; flex-direction:column; gap:8px; min-width:0; }
+  .cmp-item{ font-size:var(--fs-body); line-height:1.5; }
+  .cmp-item-age{ font-family:'IBM Plex Mono',monospace; font-size:var(--fs-xs); color:var(--muted); margin-right:6px; }
+  .cmp-empty{ color:var(--muted); opacity:.5; }
   .related-group{ margin-top:16px; padding-top:12px; border-top:1px dashed var(--line); }
   .related-head{ font-size:var(--fs-xs); color:var(--muted); letter-spacing:.05em; margin-bottom:8px; }
   .related-chips{ display:flex; flex-wrap:wrap; gap:6px; }
@@ -657,8 +878,20 @@
   }
   .chip-tooltip.show{ display:block; }
   .chip-tooltip-range{ color:var(--muted); margin-bottom:4px; font-family:'IBM Plex Mono',monospace; }
+  .chip-tooltip-range:last-child{ margin-bottom:0; }
+  /* 人物TAB专用：年份当主要信息展示，直接用容器自带的高对比浅色（跟
+     .chip-tooltip-title那行同一个颜色来源），不用.chip-tooltip-range默认
+     的弱化灰。间距沿用基础类的margin-bottom:4px（不再单独清零）——现在
+     年份下面经常还要接简述/tags，需要留白，不像最早只有年份一行那阵子
+     可以不留。 */
+  .chip-tooltip-range--primary{ color:var(--surface); }
   .chip-tooltip-title{ margin-bottom:4px; }
   .chip-tooltip-title:last-child{ margin-bottom:0; }
+  /* 这个class现在只服务于作品覆盖chip墙那条分支（块级div，简述单独一行，
+     年份是最后一行时收掉底部间距）——人物TAB分支已经改成span内联拼一段
+     连续文字，不再用这个class。 */
+  .chip-tooltip-summary{ margin-bottom:4px; }
+  .chip-tooltip-summary:last-child{ margin-bottom:0; }
   .tl-item{ display:flex; gap:12px; padding:9px 0; border-top:1px solid var(--line); }
   .tl-item:first-child{ border-top:none; }
   .tl-age{
@@ -683,7 +916,95 @@
   @media (prefers-reduced-motion: reduce){
     *{ transition:none !important; }
   }
+  /* ---------- Synchronological Chart（车头/车厢结构：车头钉死不滚，车厢独立纵向滚动） ---------- */
+  .sync-stage{
+    background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:14px 18px 24px; overflow-x:auto;
+  }
+  /* 车头：大洲标题+国家名，正常文档流，不参与任何滚动，从头到尾钉在卡片顶部 */
+  .sync-head{ display:flex; align-items:flex-start; gap:14px; width:max-content; min-width:100%; padding-left:56px; box-sizing:border-box; }
+  .sync-region-head-block{ display:flex; flex-direction:column; flex:none; }
+  .sync-region-title-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:8px 12px; cursor:pointer; user-select:none; background:var(--surface-2);
+    border-radius:10px 10px 0 0; box-sizing:border-box;
+    /* 标题行宽度由 JS 算出来的 regionWidth（跟车厢轨道同一份数据）强制锁定，
+       国家少、车道窄的地域圈（比如欧洲只有"英国"）标题文字会比车道宽，
+       这里让它视觉上溢出，而不是把整个区块（连带下面的国家名行）撑宽——
+       撑宽了就会导致车头和车厢对不齐，后面区域的国家名/轨道全部错位 */
+    overflow:visible; white-space:nowrap;
+  }
+  .sync-region-title{ font-family:'Fraunces',serif; font-size:var(--fs-base); font-weight:600; display:flex; align-items:center; gap:8px; }
+  .sync-region-dot{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+  .sync-region-toggle{ font-size:var(--fs-sm); color:var(--muted); }
+  .sync-country-label-row{ display:flex; align-items:flex-start; gap:6px; background:var(--surface-2); padding:6px 0; }
+  .sync-country-label-row.collapsed{ display:none; }
+  .sync-column-label{
+    flex:none; font-size:var(--fs-sm); color:var(--ink-soft); white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; text-align:center;
+    background:var(--surface); padding:4px 2px; border-radius:4px; box-sizing:border-box;
+  }
+  /* 车厢：只有这一块自己纵向滚动，年份刻度+彩色车道都在里面，滚到车头下边缘就自然截止 */
+  .sync-body-scroll{ overflow-y:auto; width:max-content; min-width:100%; height:80vh; }
+  .sync-body{ display:flex; align-items:flex-start; gap:0; position:relative; }
+  .sync-year-ruler{
+    flex:none; width:56px; position:relative;
+    font-family:'IBM Plex Mono',monospace; font-size:var(--fs-xs); color:var(--muted);
+  }
+  .sync-year-tick{ position:absolute; right:8px; transform:translateY(-50%); white-space:nowrap; }
+  /* 网格线要横跨"年份轴+所有国家车道"整行，定位基准是 .sync-body（已设 position:relative），
+     不能挂在只有56px宽的 .sync-year-ruler 下面，所以单独用一个铺满整行的容器来装它们 */
+  .sync-year-gridlines{ position:absolute; top:0; left:0; right:0; pointer-events:none; }
+  .sync-year-gridline{ position:absolute; left:56px; right:0; height:1px; background:var(--line); opacity:.6; }
+  .sync-regions-row{ display:flex; align-items:flex-start; gap:14px; position:relative; }
+  .sync-region-track-block{ display:flex; align-items:flex-start; gap:6px; flex:none; }
+  .sync-region-track-block.collapsed{ display:none; }
+  .sync-column-track{ position:relative; border-radius:6px; background:rgba(31,36,48,.045); border:1px solid var(--line); box-sizing:border-box; flex:none; }
+  .sync-bar{
+    position:absolute; border-radius:3px; box-sizing:border-box; border:1px solid rgba(0,0,0,.08);
+    overflow:hidden; cursor:default;
+    display:flex; align-items:center; justify-content:center; /* 名称在色块里居中，不再钉在右上角 */
+  }
+  .sync-bar-label{
+    display:block; padding:2px; font-size:var(--fs-xs); color:#fff; white-space:nowrap;
+    text-shadow:0 1px 1px rgba(0,0,0,.35);
+    writing-mode:vertical-rl; text-orientation:mixed; /* 默认：只有1条车道时竖排，居中显示 */
+  }
+  /* 同一时间片里这个国家同时有2条及以上车道（车道变窄）时，改横排+自动换行，依然居中 */
+  .sync-bar.multi .sync-bar-label{
+    writing-mode:horizontal-tb; white-space:normal; overflow-wrap:anywhere;
+    width:100%; text-align:center; line-height:1.15; padding:2px 1px;
+  }
+  .sync-column-warn{
+    font-size:var(--fs-xs); color:#B23B2E; writing-mode:vertical-rl; text-orientation:mixed; margin-top:4px;
+  }
+  /* 国家显隐设置按钮：跟 tabs 同行，只在 sync tab 激活时显示，复用 view-switch 那套显隐规则 */
+  .sync-settings-btn{
+    display:none; align-items:center; gap:6px; font-size:var(--fs-sm); color:var(--ink-soft);
+    border:1px solid var(--line); border-radius:999px; padding:5px 12px; cursor:pointer; background:var(--surface);
+  }
+  .sync-settings-btn:hover{ background:var(--surface-2); }
+  .sync-settings-panel{
+    position:absolute; top:52px; right:24px; z-index:20; width:320px; max-height:70vh; overflow:auto;
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:12px; display:none;
+  }
+  .sync-settings-panel.open{ display:block; }
+  .sync-settings-region{ margin-bottom:10px; }
+  .sync-settings-region-title{
+    font-size:var(--fs-sm); font-weight:600; color:var(--ink-soft); margin-bottom:5px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .sync-settings-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+  .sync-country-chip{
+    font-size:var(--fs-sm); padding:3px 10px; border-radius:999px; border:1px solid var(--line);
+    color:var(--ink-soft); cursor:pointer; background:var(--surface); white-space:nowrap;
+  }
+  .sync-country-chip.off{ opacity:.4; text-decoration:line-through; }
+  .sync-empty-region{ padding:14px 16px; color:var(--muted); font-size:var(--fs-sm); }
 </style>
+
+
 </head>
 <body>
 <div class="app">
@@ -707,12 +1028,19 @@
       <div class="tab active" data-tab="time">时间看板</div>
       <div class="tab" data-tab="subject">主体看板</div>
       <div class="tab" data-tab="search">高级搜索</div>
+      <div class="tab" data-tab="sync">Synchronological Chart</div>
     </div>
     <div class="view-switch" id="viewSwitch" style="display:none;">
       <div class="view-tab active" data-view="map">地图</div>
       <div class="view-tab" data-view="columns">分栏</div>
     </div>
+    <div class="view-switch" id="subjectViewSwitch" style="display:none;">
+      <div class="view-tab" data-subject-view="bio">生平</div>
+      <div class="view-tab active" data-subject-view="people">人物</div>
+    </div>
+    <div class="sync-settings-btn" id="syncSettingsBtn" style="display:none;">⚙ 显示国家</div>
   </div>
+  <div class="sync-settings-panel" id="syncSettingsPanel"></div>
 
   <!-- TIME BOARD -->
   <div class="panel active" id="panel-time">
@@ -772,25 +1100,60 @@
       <div class="display">还没有连接到你的 Obsidian 仓库</div>
       <div>点右上角"选择 Vault 文件夹"，选中 F WORLD B 这个文件夹</div>
     </div>
-    <div id="subjectContent" style="display:none;">
+    <!-- 生平：原来的"双人物对比"页面，原样搬进来，没改内容 -->
+    <div id="subjectContent" class="subject-view active" data-subject-view-panel="bio" style="display:none;">
       <div class="subject-pickers">
         <div class="picker">
           <label>人物 / 主体 A</label>
-          <input list="personList" id="subjectA" placeholder="搜索姓名…">
+          <div class="search-combo-box subject-combo-box" data-subject-combo="A">
+            <div class="search-combo-chips" data-subject-chip="A"></div>
+            <input type="text" class="search-combo-input" data-subject-input="A" placeholder="搜索姓名…" autocomplete="off">
+          </div>
         </div>
         <div class="vs">vs</div>
         <div class="picker">
           <label>人物 / 主体 B</label>
-          <input list="personList" id="subjectB" placeholder="搜索姓名…">
+          <div class="search-combo-box subject-combo-box" data-subject-combo="B">
+            <div class="search-combo-chips" data-subject-chip="B"></div>
+            <input type="text" class="search-combo-input" data-subject-input="B" placeholder="搜索姓名…" autocomplete="off">
+          </div>
         </div>
       </div>
-      <datalist id="personList"></datalist>
-      <div class="compare-grid" id="compareGrid">
-        <div class="compare-col"><div class="detail-empty">选一个主体 A</div></div>
-        <div class="compare-col"><div class="detail-empty">选一个主体 B</div></div>
+      <div class="compare-area" id="compareGrid">
+        <div class="compare-grid">
+          <div class="compare-col"><div class="detail-empty">选一个主体 A</div></div>
+          <div class="compare-col"><div class="detail-empty">选一个主体 B</div></div>
+        </div>
       </div>
     </div>
+    <!-- 人物：新增的"同代人物"看板，按十年为一个跨度、10个固定国家栏 + 政治/经济/文化 分组 -->
+    <div id="contempContent" class="subject-view" data-subject-view-panel="people" style="display:none;">
+      <div class="contemp-toolbar">
+        <div class="contemp-decade-nav">
+          <button type="button" class="btn small" id="contempPrevBtn">‹</button>
+          <div class="contemp-decade-label" id="contempDecadeLabel">1930 – 1939</div>
+          <button type="button" class="btn small" id="contempNextBtn">›</button>
+          <div class="search-combo-box contemp-search-box" data-contemp-search>
+            <input type="text" class="search-combo-input" id="contempSearchInput" placeholder="🔍 Search" autocomplete="off">
+          </div>
+        </div>
+        <div class="contemp-toolbar-right">
+          <div class="contemp-span-picker view-switch" id="contempSpanSwitch">
+            <div class="view-tab active" data-span="5">5年</div>
+            <div class="view-tab" data-span="10">10年</div>
+            <div class="view-tab" data-span="20">20年</div>
+          </div>
+          <label class="contemp-fictional-toggle">
+            <input type="checkbox" id="contempHideFictional">
+            隐藏虚构人物
+          </label>
+        </div>
+      </div>
+      <div class="contemp-grid-scroll"><div id="contempGrid"></div></div>
+      <div class="contemp-unknown-section" id="contempUnknownSection"></div>
+    </div>
   </div>
+
 
   <!-- SEARCH BOARD -->
   <div class="panel" id="panel-search">
@@ -835,6 +1198,22 @@
     </div>
   </div>
 
+  <!-- SYNCHRONOLOGICAL CHART -->
+  <div class="panel" id="panel-sync">
+    <div id="syncEmpty" class="empty">
+      <div class="display">还没有连接到你的 Obsidian 仓库</div>
+      <div>点右上角"选择 Vault 文件夹"，选中 F WORLD B 这个文件夹</div>
+    </div>
+    <div id="syncContent" style="display:none;">
+      <div class="sync-stage">
+        <div class="sync-head" id="syncHead"></div>
+        <div class="sync-body-scroll" id="syncBodyScroll">
+          <div class="sync-body" id="syncBody"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -846,20 +1225,29 @@
    全局函数 + 全局变量。新增功能时，先想清楚它属于哪个命名空间，
    把方法加进去就行，不用再满页面 Ctrl+F 找相关代码。
 
+   下面的编号严格按这些模块在文件里出现的物理顺序排列——想找
+   第 N 个模块的代码，直接搜"N. 模块名"就能跳到它自己的分隔注释块，
+   不用再猜它到底藏在文件哪个角落。每次新增/挪动模块，记得同步
+   更新这份目录，不然目录比没有目录还误导人。
+
    0. 静态数据常量（大洲/国家/坐标/SVG路径……不会变的配置表，保持顶层裸露）
-   1. Db           —— IndexedDB：记住上次选过的 vault 文件夹句柄
-   2. Parser       —— frontmatter/正文解析 + 扫描 vault，产出 {events, persons, tagRegistry, warnings}
-   3. Color        —— 大洲底色 -> 领域色阶
-   4. Store        —— 唯一的可变状态容器（原来分散的 VAULT/currentYear/... 都在这里）
-   5. Utils        —— 无状态小工具（escapeHtml / inRange）
-   6. Query        —— 按 scope（大洲/国家/其他）+ 年份 查事件、查背景作品
-   7. DetailView   —— 把 Query 的结果拼成 HTML：地图弹窗、抽屉、分栏共用这一份
-   8. MapView      —— 地图 SVG 构建（真实国家轮廓）、悬浮卡定位、抽屉开关
-   9. ColumnBoard  —— 分栏视图（常驻四栏，复用 DetailView）
-   10. CompareView —— 主体看板（双人对比时间线）
-   11. SearchView  —— 高级搜索（人物+事件字段筛选、可排序结果表）
-   12. ChipTooltip —— coverage chip 悬浮详情（全局共用一个 tooltip 元素）
-   13. App         —— 启动流程、连接 vault、年份轴、tabs、所有事件监听绑定
+   1. Db               —— IndexedDB：记住上次选过的 vault 文件夹句柄
+   2. Parser           —— frontmatter/正文解析 + 扫描 vault，产出 {events, persons, tagRegistry, warnings}
+   3. Color            —— 大洲底色 -> 领域色阶
+   4. Store            —— 唯一的可变状态容器（原来分散的 VAULT/currentYear/... 都在这里）
+   5. Utils            —— 无状态小工具（escapeHtml / inRange / compareEventDate……）
+   6. Query            —— 按 scope（大洲/国家/其他）+ 年份 查事件、查背景作品
+   7. DetailView       —— 把 Query 的结果拼成 HTML：地图弹窗、抽屉、分栏共用这一份
+   8. MapView          —— 地图 SVG 构建（真实国家轮廓）、悬浮卡定位、抽屉开关
+   9. ColumnBoard      —— 分栏视图（常驻四栏，复用 DetailView）
+   10. SyncChart       —— Synchronological Chart（共时图）：地域文明圈分组+一国多行车道
+   11. SlotMenu        —— 分栏坑位的"新建/置换/年代规则/删除"浮层
+   12. ScheduleEditor  —— "年代规则"的独立编辑弹层
+   13. CompareView     —— 主体看板「生平」（双人对比时间线）
+   14. ContemporariesView —— 主体看板「人物」（十年为一跨度的同代人物看板）
+   15. SearchView      —— 高级搜索（人物+事件字段筛选、可排序结果表）
+   16. ChipTooltip     —— coverage chip / 人物 chip 悬浮详情（全局共用一个 tooltip 元素）
+   17. App             —— 启动流程、连接 vault、年份轴、tabs、所有事件监听绑定
    ========================================================= */
 
 /* =========================================================
@@ -904,6 +1292,49 @@ Object.keys(COUNTRY_CONTINENT).forEach(c=>{
 });
 
 /* =========================================================
+   Synchronological Chart 专用：地域文明圈分组
+   ---------------------------------------------------------
+   只给这个新TAB用，跟上面 COUNTRY_CONTINENT（大洲，5类，Asia不分东西中南）
+   是两套独立的表，故意不复用——那套是"大洲"粒度，这里要的是"文明圈"粒度
+   （亚洲要拆成东亚/中亚/南亚/西亚）。SYNC_REGION_MAP 是静态查找表，覆盖
+   COUNTRY_CONTINENT 里已登记的国家；查不到的国家（比如"印度河流域"这类
+   非现代国家名）不会自动归类，需要在 SYNC_REGION_OVERRIDE 里手动补一条
+   ——country没有独立的entity笔记可以加frontmatter字段，所以这层手动覆盖
+   只能是代码里的静态表，不是vault笔记字段。 */
+const SYNC_REGION = {
+  NAmerica: { label:'北美', color:'#B24E36' },
+  SAmerica: { label:'南美', color:'#8C5A3C' },
+  Europe:   { label:'欧洲', color:'#2E8E86' },
+  WAsia:    { label:'西亚', color:'#C9762B' },
+  CAsia:    { label:'中亚', color:'#B08A3C' },
+  SAsia:    { label:'南亚', color:'#8C8A2B' },
+  EAsia:    { label:'东亚', color:'#C98A2B' }
+};
+const SYNC_REGION_ORDER = ['NAmerica','SAmerica','Europe','WAsia','CAsia','SAsia','EAsia'];
+const SYNC_REGION_MAP = {
+  Canada:'NAmerica', US:'NAmerica', Mexico:'NAmerica',
+  Brazil:'SAmerica', Argentina:'SAmerica', Chile:'SAmerica', Peru:'SAmerica', Colombia:'SAmerica',
+  UK:'Europe', France:'Europe', Germany:'Europe', Greece:'Europe', Italy:'Europe',
+  Spain:'Europe', Portugal:'Europe', Netherlands:'Europe', Belgium:'Europe',
+  Austria:'Europe', Switzerland:'Europe', Poland:'Europe', Sweden:'Europe',
+  Norway:'Europe', Denmark:'Europe', Finland:'Europe', Ireland:'Europe',
+  Hungary:'Europe', Romania:'Europe', 'Czech Republic':'Europe', Ukraine:'Europe',
+  Russia:'Europe', // 版图横跨欧亚，历史叙事重心通常在欧洲，先放这里，不同意随时用 override 改
+  Turkey:'WAsia', Iraq:'WAsia', 'Saudi Arabia':'WAsia', Israel:'WAsia', Iran:'WAsia',
+  India:'SAsia', Pakistan:'SAsia',
+  Mongolia:'EAsia', China:'EAsia', Japan:'EAsia', 'South Korea':'EAsia', 'North Korea':'EAsia',
+  Vietnam:'EAsia', Thailand:'EAsia', Indonesia:'EAsia', Philippines:'EAsia', Malaysia:'EAsia', Singapore:'EAsia'
+  // 上面这份只覆盖了 COUNTRY_CONTINENT 里已登记的~40国；非洲/大洋洲国家，以及中亚
+  // （哈萨克斯坦等）、更多西亚/南亚国家目前都不在已登记列表里，用到时会掉进
+  // "未分类"分组，届时在这里或 SYNC_REGION_OVERRIDE 里补一条即可。
+};
+// 手动覆盖表：country -> SYNC_REGION 的 key。用于 SYNC_REGION_MAP 查不到的国家
+// （非现代国家名，如"印度河流域"），或者你不认同上面默认分类时（比如想把
+// 俄罗斯挪去别的分组）。留空对象，按需添加，例如：
+//   const SYNC_REGION_OVERRIDE = { '印度河流域': 'SAsia' };
+const SYNC_REGION_OVERRIDE = {};
+
+/* =========================================================
    真实国家轮廓数据（Natural Earth 110m，经 world-atlas 生成）
    ---------------------------------------------------------
    投影：Natural Earth，中心经线160°E（东亚居中，同时避开所有已登记
@@ -925,8 +1356,89 @@ const COUNTRY_CONTINENT_ALL = {"Fiji":"Oceania","Tanzania":"Africa","W. Sahara":
 // ↑↑↑ 生成数据结束 ↑↑↑
 
 const DEFAULT_DOMAINS = ['政治','经济','文化','军事','外交','社会','科技','建筑','自然'];
-/* 主体看板只给"人"这类 entity 展示简介——carrier 目前只有这两个值代表人 */
-const PERSON_CARRIERS = ['人物','统治者'];
+
+/* =========================================================
+   "同代人物"看板（ContemporariesView）专用的10个固定国家栏
+   ---------------------------------------------------------
+   跟地图/共时图那套"大洲聚合"是两回事——这里没有大洲概念，只有国家概念：
+   英/法/德/俄/中/日/美 这7个是点名要单独成栏的国家，剩下的国家（不管哪个
+   大洲）按 COUNTRY_CONTINENT_ALL 现有的大洲归属，分别归进"欧洲其他/
+   亚洲其他/世界其他"这三个兜底栏——世界其他 = 美洲(除美国)+非洲+大洋洲+
+   任何不在上述范围的大洲。
+   注意：COUNTRY_CONTINENT_ALL 里俄罗斯的 continent 标的是 "Asia"（那张表
+   是给地图配色用的，跟这里"俄罗斯单独成栏"的诉求不冲突）——因为俄罗斯已经
+   在 CONTEMP_FIXED_COUNTRY 里被单独摘出来，不会走到"按大洲归类"这一步，
+   所以不会被误分进"亚洲其他"。
+   ========================================================= */
+const CONTEMP_COUNTRY_COLUMNS = [
+  { key:'UK',          label:'英国',     continent:'Europe' },
+  { key:'France',      label:'法国',     continent:'Europe' },
+  { key:'Germany',     label:'德国',     continent:'Europe' },
+  { key:'EuropeOther', label:'欧洲其他', continent:'Europe' },
+  { key:'Russia',      label:'俄罗斯',   continent:'Asia' }, // 跟 COUNTRY_CONTINENT_ALL 的归类一致（见上面注释），色点沿用同一份数据源，不单独发明
+  { key:'China',       label:'中国',     continent:'Asia' },
+  { key:'Japan',       label:'日本',     continent:'Asia' },
+  { key:'AsiaOther',   label:'亚洲其他', continent:'Asia' },
+  { key:'US',          label:'美国',     continent:'Americas' },
+  { key:'WorldOther',  label:'世界其他', continent:null } // 美洲(除美国)+非洲+大洋洲混在一起，没有单一大洲身份，卡头不点色点
+];
+// 点名单独成栏的7个国家，key 是栏位 key 本身（跟 country 名字凑巧同名，不代表通用规则）
+const CONTEMP_FIXED_COUNTRY = new Set(['UK','France','Germany','Russia','China','Japan','US']);
+/* "人物"看板5个 domain 分类的固定配色——特意跟分栏卡片那套"按大洲取色系、
+   deshi 只调深浅"的 Color.domainShadeMap 分开，不复用它：分栏卡片始终只
+   代表一个国家，各分类同色系深浅足够区分；人物看板是10个国家横排对比，
+   如果也按大洲上色，同一大洲下的几个国家栏（比如英国/法国/德国/欧洲其他）
+   所有分类都会撞成同一个颜色，反而分不出"这是哪个 domain"。这里固定5个
+   独立色相，不随国家/大洲变化，好处是任何一栏看到"政治"永远是同一个颜色，
+   横向扫视对比更直接。 */
+const CONTEMP_DOMAIN_COLORS = {
+  政治:'#A6433C', 军事:'#5B6B7A', 经济:'#B9862F', 科学:'#2E7A8E', 文化:'#7C5A8C'
+};
+/* 给一个国家名（已经过 Parser.normalizeCountry 标准化）算出它落在哪个栏位 key 上。
+   不认识的国家名（COUNTRY_CONTINENT_ALL 里查不到）统一兜底进"世界其他"，
+   而不是直接判定失败——这跟"domain 不在政治/军事/经济/文化范围内直接报警告并
+   跳过整个人"是两种不同性质的问题：国家查不到大洲，人本身的身份和事迹还在，
+   没道理因为地理归类失败就把这个人整个从看板上抹掉，兜底进"世界其他"更合理。 */
+function contempCountryBucket(country){
+  if(CONTEMP_FIXED_COUNTRY.has(country)) return country;
+  const continent = COUNTRY_CONTINENT_ALL[country];
+  if(continent==='Europe') return 'EuropeOther';
+  if(continent==='Asia') return 'AsiaOther';
+  return 'WorldOther';
+}
+/* domain 分组：政治/军事/经济/科学/文化 这五类各自独立（2026-08 从"政治含
+   军事"拆开、新增"科学"），只看数组第一个值（多个 domain 不重复出现，跟
+   国家一样只认第一个）。不属于这五类（包括没写 domain）的，返回 null，
+   交给调用方按"报错"处理——不设"其他"兜底，因为按你 vault 的实际写法，
+   人物只会出现在这五个 domain 里，出现别的值说明数据本身有问题，应该被
+   看见而不是被静默兜住。 */
+function contempDomainBucket(domainArr){
+  const d = (domainArr && domainArr.length) ? domainArr[0] : null;
+  if(d==='政治') return '政治';
+  if(d==='军事') return '军事';
+  if(d==='经济') return '经济';
+  if(d==='科学') return '科学';
+  if(d==='文化') return '文化';
+  return null;
+}
+// 页面上展示的固定顺序：政治→军事→经济→科学→文化
+const CONTEMP_DOMAIN_ORDER = ['政治','军事','经济','科学','文化'];
+/* 主体看板只给"人"这类 entity 展示简介——carrier 目前只有这三个值代表人。
+   2026-08 修复：这里原来漏了"执政者"（总统/首相这类），代码其它地方
+   （Query.currentExecutiveFor / shouldShowExecutiveSlot 等）早就把执政者
+   和统治者当成平级的"在位/任职"身份处理，只有这个常量没跟上，导致执政者
+   在主体看板里一直显示不出"简述"——不是有意排除，是遗漏，这里补上。
+   "同代人物"看板（ContemporariesView）判断"是不是一个人"也复用这份常量。 */
+const PERSON_CARRIERS = ['人物','统治者','执政者'];
+
+/* "同代人物"看板悬浮框的月日精度——从entity正文"## 时间线"里挑出"出生"/
+   "死亡"这两条，取它们各自的month/day。出生固定认"出生"两个字（用户笔记里
+   100%这么写，不用兜底）；死亡的措辞不固定（逝世/暗杀/病亡……），所以给了
+   一份关键词表，另外还要排除"被暗杀，但未成功"这种未遂描述——不然会被
+   误认成死亡本身。这两份表都是从实际数据里总结的，以后笔记里出现表外的
+   新说法，跑到 findPrecisionDate 的最后一层兜底（取当年排序最晚的条目）。 */
+const DEATH_KEYWORDS = ['逝世','去世','病逝','病亡','暗杀','遇刺身亡','被杀','自杀','自尽','身故'];
+const DEATH_NEGATION_WORDS = ['未遂','未成功','未果','失败','幸免','逃过'];
 
 
 /* =========================================================
@@ -1347,19 +1859,27 @@ const Parser = {
       if(fm.type === 'event'){
         const region = Parser.toArr(fm.region_country).map(Parser.normalizeCountry);
         const domain = Parser.toArr(fm.domain);
+        // weight：仅 Synchronological Chart 用到——同国并存政权在车道里"占几条宽度"，
+        // 不填=null（渲染时按"剩余宽度平分"处理），必须是正数，否则按未填处理。
+        const weightNum = (fm.weight!==undefined && fm.weight!==null && fm.weight!=='') ? Number(fm.weight) : NaN;
+        const weight = (!isNaN(weightNum) && weightNum>0) ? weightNum : null;
+        // is_sync_chart：白名单——National跨度事件默认不进共时图，打了勾才显示，
+        // 用来把局部战争/短期小事件之类"够格标National但不够格上共时图"的事件挡在外面。
+        const syncChart = Parser.isTrue(fm.is_sync_chart);
         const common = {
           title, path, keyEra: fm.key_era || '', timeNote: fm.time_note || '',
           region, domain, tags: Parser.toArr(fm.tags), carrier: fm.carrier || '',
           related: Parser.toArr(fm.related), topic: Parser.toArr(fm.topic),
-          fictional: Parser.isTrue(fm.is_fictional), body,
+          fictional: Parser.isTrue(fm.is_fictional), body, weight, syncChart,
           mainEntity: null, mentionedEntities: []
         };
         // 主事件：frontmatter 的 start_year/end_year/key_era 永远生效（这是这件事的权威声明，
         // 不因为正文有没有"## 时间线"细节而被顶掉）。内容取"## 时间线"之外的正文（简述等）。
-        // 如果这条有进度条（key_era 有值），"## 简述"单独摘出来放悬浮框，不在卡片正文里重复出现。
+        // National/Global 这两种"有独立展示位"的跨度事件（National走进度条+感叹号悬浮框，
+        // Global走置顶横幅chip悬浮框），"## 简述"都要单独摘出来放悬浮框，不在卡片正文里重复出现。
         const start = Parser.parseDate(fm.start_year);
         if(!start && !fm.time_note){ warnings.push(title+'：没有可识别的 start_year'); }
-        const hasBar = fm.key_era === 'National';
+        const hasBar = fm.key_era === 'National' || fm.key_era === 'Global';
         const summary = hasBar ? Parser.extractSection(body, '简述') : '';
         // 统治者/执政者信息不再从事件笔记正文抓取，改由 entity 笔记的
         // tenure 字段 + carrier 承担（见下方 persons 解析）。如果朝代笔记
@@ -1523,6 +2043,23 @@ const Parser = {
       (p.country||[]).forEach(r=>{ if(!COUNTRY_CONTINENT[r]) warnings.push(p.title+'：国家「'+r+'」未登记，不会显示在地图上'); });
     });
 
+    /* "同代人物"看板专用校验：只看carrier是人（PERSON_CARRIERS）、且有可解析
+       出生年份的这批人（没写出生年份的会走"年代不明"兜底分组，不在这里判）——
+       domain 数组第一个值不属于 政治/军事/经济/科学/文化 任何一类，说明数据
+       本身有问题（这个看板按你的说法，人物只应该出现在这五类里），这里按现有
+       "报错但不崩"的老规矩推进 warnings，人会被这个看板跳过、但不影响其它
+       任何页面正常显示这个人。没写 country 的同理也报一条、也跳过——地图
+       那边"国家未登记"针对的是"写了但没登记"，这里针对的是"压根没写"，
+       是两种不同的问题，分开提示更好定位。 */
+    persons.forEach(p=>{
+      if(!PERSON_CARRIERS.includes(p.carrier)) return;
+      if(!p.birth || p.birth.year==null) return; // 没出生年份的走"年代不明"，不做 domain/country 校验
+      if(!p.country.length){ warnings.push(p.title+'：没有 region_country，未列入《人物》看板'); return; }
+      if(!contempDomainBucket(p.domain)){
+        warnings.push(p.title+'：domain 不含政治/军事/经济/科学/文化（当前是「'+(p.domain.join('、')||'空')+'」），未列入《人物》看板');
+      }
+    });
+
     // 执政者槽位门槛年份：tag-registry 里手动登记的优先生效；没手动登记的国家，
     // 自动兜底成"这个国家所有 carrier=执政者 的 persons 里、所有任期段中最早
     // 的那个起始年"（一个人可能有多段不连续任期，这里取全部段里最小的那个）——
@@ -1644,6 +2181,29 @@ const Utils = {
   findAllCurrentByRange(items, year){
     if(!items || !items.length) return [];
     return items.filter(r => year >= r.start && year < Math.max(r.end, r.start+1));
+  },
+  /* 分栏卡片里同一分类（政治/经济/文化/其他）内部的事件排序。
+     同一年内的事件精度不一——有的写了年月日，有的只到月，有的只有年份，
+     不能把"没写月份"当成 month=0 参与排序，那样会制造"没写月份=发生在
+     年初"的假象。改成按"精度"分层：日期越精确排越前面，只知道年份、
+     月日全无的事件统一垫底，当成这一年的笼统事件收尾。
+     同一层内部再打平时，直接依赖 Array.prototype.sort 的稳定排序特性
+     （ES2019+ 规范保证），不用额外写 tie-break —— 平局的事件保留 vault
+     里原来的先后顺序。
+     只在事件"同一年"内使用（分栏卡片本来就是按当前年份过滤出来的），
+     不处理跨年比较——如果调用方传入跨年的两条事件，年份大小仍然优先。 */
+  compareEventDate(a, b){
+    const sa = a.start, sb = b.start;
+    const ya = sa ? sa.year : null, yb = sb ? sb.year : null;
+    if(ya!==yb) return (ya??0) - (yb??0);
+    // 月份缺失的排最后：用 Infinity 当哨兵值，天然比任何真实月份都大
+    const ma = (sa && sa.month!=null) ? sa.month : Infinity;
+    const mb = (sb && sb.month!=null) ? sb.month : Infinity;
+    if(ma!==mb) return ma-mb;
+    // 同月内，日期缺失的排最后，逻辑同上
+    const da = (sa && sa.day!=null) ? sa.day : Infinity;
+    const db = (sb && sb.day!=null) ? sb.day : Infinity;
+    return da-db;
   }
 };
 
@@ -2006,7 +2566,7 @@ const DetailView = {
     const used = new Set();
     const visibleEvs = evs.filter(e=>e.displayText);
     FIXED_DOMAIN_ROWS.forEach(row=>{
-      const list = visibleEvs.filter(e => e.domain.some(row.match));
+      const list = visibleEvs.filter(e => e.domain.some(row.match)).sort(Utils.compareEventDate);
       list.forEach(e=>used.add(e));
       const c = shades[row.label] || shades['__default'];
       html += `<div class="col-slot">
@@ -2018,7 +2578,7 @@ const DetailView = {
       html += `</div></div>`;
     });
 
-    const others = visibleEvs.filter(e=> !used.has(e));
+    const others = visibleEvs.filter(e=> !used.has(e)).sort(Utils.compareEventDate);
     const oc = shades['未分类'] || shades['__default'];
     html += `<div class="col-slot">
       <div class="domain-tag" style="background:${oc}22;color:${oc}">其他</div>
@@ -2174,7 +2734,12 @@ const DetailView = {
       Object.entries(groups).forEach(([dom, list])=>{
         const c = shades[dom] || shades['__default'];
         html += `<div class="domain-group"><div class="domain-tag" style="background:${c}22;color:${c}">${Utils.escapeHtml(dom)}</div>`;
-        list.forEach(e=>{
+        // 组内排序跟分栏卡片同一套规则（Utils.compareEventDate）：日期越精确越靠前，
+        // 只写了年份没写月日的垫底——两边数据源相同，显示的先后顺序也要保持一致，
+        // 不然同一年份同一分类的事件在分栏和地图弹窗里排列顺序对不上，容易让人以为
+        // 是两份不同的数据。分组本身（哪个 domain 先出现）仍然跟原来一样，按
+        // evs 里第一次遇到该 domain 的顺序来，这里只动组内事件的排序。
+        list.slice().sort(Utils.compareEventDate).forEach(e=>{
           html += DetailView.renderEventRow(e, c);
         });
         html += `</div>`;
@@ -2577,7 +3142,248 @@ const ColumnBoard = {
 };
 
 /* =========================================================
-   9b. SlotMenu —— 分栏坑位的"新建/置换/年代规则/删除"浮层
+/* =========================================================
+   10. SyncChart —— Synchronological Chart（共时图）：世界共时图（甘特图式并列时间轴）
+   ---------------------------------------------------------
+   数据源：Store.vault.events 里 keyEra==='National' 的跨度事件（跟分栏卡片
+   用的"National跨度事件"是同一批数据，这里只是换一种横向拉通的渲染方式）。
+   结构：地域文明圈(SYNC_REGION) -> 国家 -> 该国"车道总宽度"固定不变（用它
+   全部历史事件算出的最大并存数），每个时间片内活跃的事件按weight字段分宽度
+   （见 allocateWidths：保底1条，溢出直接报错，不做自动压缩兜底）。
+   ========================================================= */
+const SyncChart = {
+  collapsedRegions: new Set(),   // 折叠的地域文明圈
+  hiddenCountries: new Set(),    // 组内折叠：手动隐藏的国家
+  pxPerYear: 3,                  // 纵向时间刻度，1年多少px——数字越大轴越长，可调
+  laneUnitPx: 34,                // 一国内"1条宽度"渲染成多少px宽（横向，车道用）
+  minTickGapPx: 60,              // 年份刻度最小间距，用来挑一个"好看"的刻度步长
+
+  regionOf(country){ return SYNC_REGION_OVERRIDE[country] || SYNC_REGION_MAP[country] || null; },
+
+  // 只收 is_sync_chart 打了勾的 National 跨度事件——key_era:National 只代表"该不该有
+  // 进度条"，不代表"够不够格上共时图"，两件事分开控制，互不影响。
+  collectByCountry(){
+    const map = {};
+    (Store.vault.events||[]).forEach(e=>{
+      if(e.keyEra !== 'National' || !e.syncChart || !e.start || e.start.year==null) return;
+      const endYear = (e.end && e.end.year!=null) ? e.end.year : Store.yearMax;
+      (e.region||[]).forEach(country=>{
+        (map[country] = map[country] || []).push({ title:e.title, start:e.start.year, end:endYear, weight:e.weight });
+      });
+    });
+    return map;
+  },
+
+  // 该国"车道总宽度"：用它全部历史事件算最大并存数，固定不变。events数量级很小，O(n²)足够。
+  maxConcurrent(events){
+    if(!events.length) return 0;
+    let max = 1;
+    events.forEach(a=>{
+      let count = 0;
+      events.forEach(b=>{ if(b.start < a.end && b.end > a.start) count++; });
+      if(count > max) max = count;
+    });
+    return max;
+  },
+
+  // 单个时间片内，按weight给活跃事件分配宽度单位：显式weight按字面值当绝对占用量，
+  // 没填的事件平分"总宽度-显式weight之和"的剩余部分，双方都保底1条；
+  // 分不够（显式weight之和+未设置事件数 > 总宽度）直接抛错，不自动压缩兜底。
+  allocateWidths(active, total){
+    const explicit = active.filter(e=> e.weight!=null);
+    const implicit = active.filter(e=> e.weight==null);
+    const explicitSum = explicit.reduce((s,e)=> s+e.weight, 0);
+    const remaining = total - explicitSum;
+    if(remaining < implicit.length - 1e-9){
+      throw new Error(`weight总和(${explicitSum})+未设置事件数(${implicit.length})超过总宽度(${total})，请检查这几条事件的weight`);
+    }
+    const map = new Map();
+    explicit.forEach(e=> map.set(e, e.weight));
+    if(implicit.length) implicit.forEach(e=> map.set(e, remaining/implicit.length));
+    return map;
+  },
+
+  // 同一国家的事件按"持续重叠情况"贪心分配一个固定车道槽位（0,1,2…），分配一次后
+  // 这个事件从生到灭都待在同一槽位里，不会因为隔壁breakpoint里谁跟谁同框重新按宽度
+  // 排序、来回跳位置——这样同一政权自己的色块在时间轴上能连续"贯通"下去，肉眼看是
+  // 稳定的一条子车道，不是每个交叠区间随手切一刀。经典区间图着色贪心算法：按起始年
+  // 排序，每个事件找"最早空出来"的槽位；两个时间上有重叠的事件，构造上不可能分到
+  // 同一槽位，所以同一breakpoint内 sort 时不会撞车。
+  assignSlots(events){
+    const slotMap = new Map();
+    const slotFreeAt = []; // slotFreeAt[i] = 槽位i当前占用到的年份（该占用者的end）
+    events.slice()
+      .sort((a,b)=> (a.start-b.start) || ((b.end-b.start)-(a.end-a.start)) || a.title.localeCompare(b.title))
+      .forEach(ev=>{
+        let idx = slotFreeAt.findIndex(end=> end <= ev.start + 1e-9);
+        if(idx === -1){ idx = slotFreeAt.length; slotFreeAt.push(ev.end); }
+        else{ slotFreeAt[idx] = ev.end; }
+        slotMap.set(ev, idx);
+      });
+    return slotMap;
+  },
+
+  // 给同一国家的底色按槽位错出明暗差：槽位0用原色，往后交替调暗/调亮，幅度随槽位号
+  // 递增——这样交叠时相邻两段哪怕是同一国家同一色系，肉眼也能分清"这是两个不同政权"，
+  // 不用只靠1px的分隔边框硬猜。
+  slotShade(hex, slotIndex){
+    if(!slotIndex) return hex;
+    const [h,s,l] = Color.hexToHsl(hex);
+    const dir = slotIndex % 2 === 1 ? -1 : 1;
+    const step = 9 * Math.ceil(slotIndex/2);
+    const newL = Math.min(80, Math.max(16, l + dir*step));
+    return Color.hslToHex(h, s, newL);
+  },
+
+  // 挑一个让刻度间距不小于 minTickGapPx 的"整年份步长"（1/2/5取整数量级那套）
+  niceYearStep(){
+    const candidates = [1,2,5,10,20,25,50,100,200,250,500,1000,2000];
+    for(const step of candidates){ if(step*SyncChart.pxPerYear >= SyncChart.minTickGapPx) return step; }
+    return candidates[candidates.length-1];
+  },
+
+  // 只画一根车道的彩色轨道（不再带国家名——国家名现在归"车头"管，见 render()）
+  renderCountryTrack(country, events, trackWidth){
+    const total = SyncChart.maxConcurrent(events);
+    if(!total) return null;
+    // 固定槽位：整条时间轴只分配一次，同一政权无论穿过多少个breakpoint都待在
+    // 同一槽位里，画出来的左右位置贯穿始终，不会跟着相邻breakpoint的宽度排序跳来跳去。
+    const slotMap = SyncChart.assignSlots(events);
+    const breakpoints = Array.from(new Set([Store.yearMin, Store.yearMax, ...events.flatMap(e=>[
+      Math.max(e.start, Store.yearMin), Math.min(e.end, Store.yearMax)
+    ])])).sort((a,b)=>a-b);
+    let bars = ''; let warn = '';
+    const baseColor = SYNC_REGION[SyncChart.regionOf(country)] ? SYNC_REGION[SyncChart.regionOf(country)].color : '#8A8578';
+    for(let i=0;i<breakpoints.length-1;i++){
+      const a = breakpoints[i], b = breakpoints[i+1];
+      if(b<=a) continue;
+      const active = events.filter(e=> Math.max(e.start,Store.yearMin)<=a+1e-9 && Math.min(e.end,Store.yearMax)>=b-1e-9);
+      if(!active.length) continue;
+      let widthMap;
+      try{ widthMap = SyncChart.allocateWidths(active, total); }
+      catch(err){ warn = err.message; continue; }
+      // 排序依据改成固定槽位号（而不是每个breakpoint重新按宽度排），左右次序贯穿全程
+      const sorted = active.slice().sort((x,y)=> slotMap.get(x) - slotMap.get(y));
+      let left = 0;
+      sorted.forEach(ev=>{
+        const units = widthMap.get(ev);
+        const widthPx = units * SyncChart.laneUnitPx;
+        const top = (a - Store.yearMin) * SyncChart.pxPerYear;
+        const height = Math.max(1, (b - a) * SyncChart.pxPerYear);
+        const showLabel = height > 34;
+        // 同一政权固定槽位对应固定色阶，交叠时相邻段落哪怕同色系也能靠明暗差分清彼此
+        const barColor = SyncChart.slotShade(baseColor, slotMap.get(ev));
+        // 这一段是不是该事件自己真正的起点/终点：不是的话说明它只是被"别的政权"在这年
+        // 插入/退出而顺带切出来的一刀，上/下边框和圆角都去掉，跟前一段/后一段紧贴成
+        // 一根连续色块；是的话保留边框+圆角，标出这个政权真实的生卒年。左右边框始终
+        // 保留，用来区分同一时段内并排的不同政权。
+        const evClipStart = Math.max(ev.start, Store.yearMin);
+        const evClipEnd = Math.min(ev.end, Store.yearMax);
+        const isFragStart = Math.abs(a - evClipStart) < 1e-6;
+        const isFragEnd = Math.abs(b - evClipEnd) < 1e-6;
+        const edge = '1px solid rgba(0,0,0,.08)';
+        const border = `border-left:${edge};border-right:${edge};border-top:${isFragStart?edge:'none'};border-bottom:${isFragEnd?edge:'none'};`
+          + `border-top-left-radius:${isFragStart?'3px':'0'};border-top-right-radius:${isFragStart?'3px':'0'};`
+          + `border-bottom-left-radius:${isFragEnd?'3px':'0'};border-bottom-right-radius:${isFragEnd?'3px':'0'};`;
+        // 是不是"多车道国家"看的是这条车道整体的容量（total，历史上最多同时并存过
+        // 几个政权），不是这一具体时间片里当下正好活跃几个——清朝这种车道本身是2条
+        // 宽（曾跟南明重叠过），哪怕现在这一刻自己占满了整条车道，也按多车道规则走
+        // 横排；只有从没分裂过（total===1）的国家才会一直竖排。
+        const barCls = total >= 2 ? 'sync-bar multi' : 'sync-bar';
+        bars += `<div class="${barCls}" style="top:${top}px;height:${height}px;left:${left}px;width:${widthPx}px;background:${barColor};${border}" title="${Utils.escapeHtml(ev.title)}（${ev.start}~${ev.end}）">${showLabel?`<span class="sync-bar-label">${Utils.escapeHtml(ev.title)}</span>`:''}</div>`;
+        left += widthPx;
+      });
+    }
+    const trackHeight = (Store.yearMax-Store.yearMin) * SyncChart.pxPerYear;
+    return `${warn?`<div class="sync-column-warn">⚠</div>`:''}<div class="sync-column-track" style="width:${trackWidth}px;height:${trackHeight}px;" title="${warn?Utils.escapeHtml(warn):''}">${bars}</div>`;
+  },
+
+  // 车头(#syncHead)和车厢(#syncBody)分两棵并列的HTML树渲染，但用同一份 grouped/widths
+  // 数据生成，同样的gap/顺序，所以两边宽度天然对得上，不需要额外量高度/宽度去对齐。
+  render(){
+    if(!Store.vault || !Store.vault.events) return;
+
+    const step = SyncChart.niceYearStep();
+    const first = Math.ceil(Store.yearMin/step)*step;
+    let tickHtml = '', gridHtml = '';
+    for(let y=first; y<=Store.yearMax; y+=step){
+      const top = (y-Store.yearMin)*SyncChart.pxPerYear;
+      gridHtml += `<div class="sync-year-gridline" style="top:${top}px;"></div>`;
+      tickHtml += `<div class="sync-year-tick" style="top:${top}px;">${y}</div>`;
+    }
+    const totalHeight = (Store.yearMax-Store.yearMin)*SyncChart.pxPerYear + 20;
+
+    const byCountry = SyncChart.collectByCountry();
+    const grouped = {}; SYNC_REGION_ORDER.forEach(r=> grouped[r]=[]);
+    grouped.__unclassified = [];
+    Object.keys(byCountry).forEach(country=>{
+      const r = SyncChart.regionOf(country);
+      (grouped[r] || grouped.__unclassified).push(country);
+    });
+
+    let headHtml = '', bodyRegionsHtml = '';
+    [...SYNC_REGION_ORDER, '__unclassified'].forEach(rk=>{
+      const countries = grouped[rk];
+      if(!countries || !countries.length) return;
+      countries.sort((a,b)=> countryDisplayName(a).localeCompare(countryDisplayName(b), 'zh'));
+      const collapsed = SyncChart.collapsedRegions.has(rk);
+      const label = rk==='__unclassified' ? '未分类' : SYNC_REGION[rk].label;
+      const dotColor = rk==='__unclassified' ? '#8A8578' : SYNC_REGION[rk].color;
+      const visibleCountries = countries.filter(c=> !SyncChart.hiddenCountries.has(c));
+
+      // 车道总宽度只算一次，车头的标签宽度和车厢的轨道宽度共用同一个值，保证对齐
+      const widths = {};
+      visibleCountries.forEach(c=> widths[c] = SyncChart.maxConcurrent(byCountry[c]) * SyncChart.laneUnitPx);
+      // 整个地域圈"车头区块"的宽度也用这份数据强制锁死（而不是让标题文字撑出来），
+      // 6px 是 .sync-country-label-row / .sync-region-track-block 共用的国家间距
+      const regionWidth = visibleCountries.reduce((s,c)=> s+widths[c], 0)
+        + Math.max(0, visibleCountries.length-1) * 6;
+
+      const labelCells = visibleCountries.map(c=>{
+        const name = countryDisplayName(c);
+        return `<div class="sync-column-label" style="width:${widths[c]}px" title="${Utils.escapeHtml(name)}">${Utils.escapeHtml(name)}</div>`;
+      }).join('');
+      headHtml += `<div class="sync-region-head-block" data-region="${rk}" style="width:${regionWidth}px">
+        <div class="sync-region-title-row" data-region-toggle="${rk}">
+          <div class="sync-region-title"><span class="sync-region-dot" style="background:${dotColor}"></span>${label}</div>
+          <div class="sync-region-toggle">${collapsed?'展开 ▾':'收起 ▴'}</div>
+        </div>
+        <div class="sync-country-label-row ${collapsed?'collapsed':''}">${labelCells || `<div class="sync-empty-region">无</div>`}</div>
+      </div>`;
+
+      const trackCells = visibleCountries.map(c=> SyncChart.renderCountryTrack(c, byCountry[c], widths[c])).filter(Boolean).join('');
+      bodyRegionsHtml += `<div class="sync-region-track-block ${collapsed?'collapsed':''}" data-region="${rk}">${trackCells}</div>`;
+    });
+
+    document.getElementById('syncHead').innerHTML = headHtml || `<div class="sync-empty-region">还没有任何打了 is_sync_chart: true 的 National 跨度事件</div>`;
+    document.getElementById('syncBody').innerHTML = `
+      <div class="sync-year-gridlines" style="height:${totalHeight}px;">${gridHtml}</div>
+      <div class="sync-year-ruler" style="height:${totalHeight}px;">${tickHtml}</div>
+      <div class="sync-regions-row">${bodyRegionsHtml}</div>
+    `;
+    SyncChart.renderSettingsPanel(grouped);
+  },
+
+  // "显示国家"设置面板：跟tabs同行的齿轮按钮弹出，见 App.updateViewSwitchVisibility
+  renderSettingsPanel(grouped){
+    let html = '';
+    [...SYNC_REGION_ORDER, '__unclassified'].forEach(rk=>{
+      const countries = grouped[rk];
+      if(!countries || !countries.length) return;
+      const label = rk==='__unclassified' ? '未分类' : SYNC_REGION[rk].label;
+      html += `<div class="sync-settings-region">
+        <div class="sync-settings-region-title">${label}</div>
+        <div class="sync-settings-chips">
+          ${countries.map(c=> `<div class="sync-country-chip ${SyncChart.hiddenCountries.has(c)?'off':''}" data-country-chip="${Utils.escapeHtml(c)}">${Utils.escapeHtml(countryDisplayName(c))}</div>`).join('')}
+        </div>
+      </div>`;
+    });
+    document.getElementById('syncSettingsPanel').innerHTML = html || `<div class="sync-empty-region">还没有可显示的国家</div>`;
+  }
+};
+
+/* =========================================================
+   11. SlotMenu —— 分栏坑位的"新建/置换/年代规则/删除"浮层
    ---------------------------------------------------------
    跟 ChipTooltip 同一套"JS算坐标 + position:fixed"的模式，区别是
    这个要接收点击（chip-tooltip是纯展示，pointer-events:none），
@@ -2709,7 +3515,7 @@ const SlotMenu = {
 };
 
 /* =========================================================
-   9c. ScheduleEditor —— "年代规则"的独立编辑弹层
+   12. ScheduleEditor —— "年代规则"的独立编辑弹层
    ---------------------------------------------------------
    一个坑位最多5段年代，每段{from,to,country}——from/to留空表示
    不限。编辑内容存在ScheduleEditor.rows这个草稿数组里，点"完成"
@@ -2833,13 +3639,86 @@ const ScheduleEditor = {
 };
 
 /* =========================================================
-   10. CompareView —— 主体看板（双人对比时间线）
+   13. CompareView —— 主体看板「生平」（双人对比时间线）
    ========================================================= */
 const CompareView = {
 
-  buildPersonList(){
-    const dl = document.getElementById('personList');
-    dl.innerHTML = Store.vault.persons.map(p=>`<option value="${Utils.escapeHtml(p.title)}">`).join('');
+  // 单选状态：跟 SearchView 的筛选字段（Set，多选）不一样，这里每一栏
+  // 只能选一个人，选中就整体替换，不是 toggle 累加。
+  selected:{ A:'', B:'' },
+  openFor:null,
+
+  /* 悬浮列表内容直接从 Store.vault.persons 实时算，不再维护一份单独的
+     <datalist> 选项缓存——vault 数据变了这里自然跟着变，不用额外刷新。
+     跟 SearchView.openCombo 是同一套交互写法（贴着输入框定位、输入实时
+     过滤、点选项），共用同一个 #searchComboMenu 悬浮层和 CSS，只是这里
+     选中即替换并关闭浮层（单选），不是点了继续开着方便连选（多选）。 */
+  openCombo(side, inputEl){
+    CompareView.openFor = side;
+    SearchView.comboOpenFor = null; // 反过来也要清，避免高级搜索那边残留的开合状态跟这里的点击互相干扰
+    ContemporariesView.openFor = null; // 同理清掉人物Tab那个搜索框的开合标记，三选一互斥要对称，不能只有它单方面清别人
+    const menu = document.getElementById('searchComboMenu');
+    menu.innerHTML = `<div class="search-combo-menu-list"></div>`;
+    const list = menu.querySelector('.search-combo-menu-list');
+    const draw = ()=>{
+      const q = inputEl.value.trim().toLowerCase();
+      const names = Store.vault.persons.map(p=>p.title)
+        .filter(t=> !q || t.toLowerCase().includes(q))
+        .sort((a,b)=>a.localeCompare(b,'zh'));
+      list.innerHTML = names.length ? names.slice(0,200).map(t=>{
+        const sel = CompareView.selected[side]===t;
+        return `<div class="search-combo-menu-item${sel?' selected':''}" data-subject-value="${Utils.escapeHtml(t)}">
+          <span>${Utils.escapeHtml(t)}</span>${sel?'<span class="search-combo-check">✓</span>':''}
+        </div>`;
+      }).join('') : `<div class="search-combo-menu-empty">没有匹配的人物笔记</div>`;
+    };
+    draw();
+    menu.classList.add('show');
+    SearchView.positionCombo(inputEl);
+    CompareView.bindOutsideClick();
+    menu._draw = draw;
+  },
+
+  closeCombo(){
+    CompareView.openFor = null;
+    document.getElementById('searchComboMenu').classList.remove('show');
+    document.removeEventListener('click', CompareView.comboOutsideClickHandler, true);
+  },
+
+  bindOutsideClick(){
+    document.removeEventListener('click', CompareView.comboOutsideClickHandler, true);
+    setTimeout(()=> document.addEventListener('click', CompareView.comboOutsideClickHandler, true), 0);
+  },
+  comboOutsideClickHandler(e){
+    const menu = document.getElementById('searchComboMenu');
+    if(menu.contains(e.target)) return;
+    if(e.target.closest('.subject-combo-box')) return;
+    CompareView.closeCombo();
+  },
+
+  selectPerson(side, title){
+    CompareView.selected[side] = title;
+    CompareView.renderChip(side);
+    CompareView.closeCombo();
+    CompareView.render();
+  },
+  clearPerson(side){
+    CompareView.selected[side] = '';
+    CompareView.renderChip(side);
+    CompareView.render();
+  },
+  // chip 区域单独重画（不重画整个 picker），输入框清空、placeholder 按
+  // 有没有选中值切换——跟 SearchView.renderComboChips 同一个思路。
+  renderChip(side){
+    const chipsEl = document.querySelector(`[data-subject-chip="${side}"]`);
+    const inputEl = document.querySelector(`[data-subject-input="${side}"]`);
+    const name = CompareView.selected[side];
+    if(chipsEl){
+      chipsEl.innerHTML = name
+        ? `<span class="search-combo-chip" data-subject-chip-remove="${side}">${Utils.escapeHtml(name)}<button type="button" aria-label="移除">×</button></span>`
+        : '';
+    }
+    if(inputEl) inputEl.value = '';
   },
 
   buildTimelineFor(person){
@@ -2866,20 +3745,147 @@ const CompareView = {
       .sort((a,b)=>a.start.year-b.start.year);
   },
 
+  // 出生年相差达到/超过这个数就认为"明显不是同一时代"，不按年份合并对齐，
+  // 退回两栏各自完整展示。
+  ALIGN_THRESHOLD_YEARS:100,
+
+  // 用来判断"是不是同时代人"的锚点年份：优先用出生年（person.birth，人物
+  // 本身的属性，不受笔记写了多详细影响）；没填出生年就退化用这个人时间线
+  // 列表里最早一条的年份兜底。两边都没有任何可用年份时返回 null。
+  anchorYear(person, items){
+    if(person && person.birth) return person.birth.year;
+    return (items && items.length) ? items[0].year : null;
+  },
+
   render(){
     const grid = document.getElementById('compareGrid');
-    const nameA = document.getElementById('subjectA').value.trim();
-    const nameB = document.getElementById('subjectB').value.trim();
+    const nameA = CompareView.selected.A;
+    const nameB = CompareView.selected.B;
     const pA = Store.vault.persons.find(p=>p.title===nameA);
     const pB = Store.vault.persons.find(p=>p.title===nameB);
-    grid.innerHTML = CompareView.renderCol(pA, nameA, 'A') + CompareView.renderCol(pB, nameB, 'B');
+
+    if(pA && pB){
+      const itemsA = CompareView.buildTimelineFor(pA);
+      const itemsB = CompareView.buildTimelineFor(pB);
+      const anchorA = CompareView.anchorYear(pA, itemsA);
+      const anchorB = CompareView.anchorYear(pB, itemsB);
+      const gapKnown = anchorA!=null && anchorB!=null;
+      const aligned = gapKnown && Math.abs(anchorA - anchorB) < CompareView.ALIGN_THRESHOLD_YEARS;
+      if(aligned){
+        grid.innerHTML = CompareView.renderAligned(pA, itemsA, pB, itemsB);
+      } else {
+        const note = gapKnown
+          ? `两人时代相差约 ${Math.abs(anchorA - anchorB)} 年（≥ ${CompareView.ALIGN_THRESHOLD_YEARS} 年阈值），未按年份对齐显示。`
+          : '缺少可比对的年份信息，未按年份对齐显示。';
+        grid.innerHTML = `<div class="compare-align-note">${Utils.escapeHtml(note)}</div>
+          <div class="compare-grid">${CompareView.renderCol(pA,nameA,'A')}${CompareView.renderCol(pB,nameB,'B')}</div>`;
+      }
+    } else {
+      grid.innerHTML = `<div class="compare-grid">${CompareView.renderCol(pA,nameA,'A')}${CompareView.renderCol(pB,nameB,'B')}</div>`;
+    }
+
     grid.querySelectorAll('.related-chip-link').forEach(chip=>{
       chip.addEventListener('click', ()=>{
-        const otherInput = document.getElementById(chip.dataset.side==='A' ? 'subjectB' : 'subjectA');
-        otherInput.value = chip.dataset.name;
-        CompareView.render();
+        const otherSide = chip.dataset.side==='A' ? 'B' : 'A';
+        CompareView.selectPerson(otherSide, chip.dataset.name);
       });
     });
+  },
+
+  /* 对齐展示：头部（姓名/生卒/简述）跟脚部（相关提及/相关）还是各自
+     一栏并排，只有中间的时间线部分改成按年份合并——取A、B年份的并集，
+     从小到大排成一行一行，每行左格放A那年的条目、右格放B那年的，
+     谁那年没有就留空（cmp-empty 那个"—"），不强行编造内容。 */
+  renderAligned(pA, itemsA, pB, itemsB){
+    let html = `<div class="compare-grid compare-heads">
+      ${CompareView.renderHead(pA)}${CompareView.renderHead(pB)}
+    </div>`;
+
+    const groupByYear = items=>{
+      const m = new Map();
+      items.forEach(it=>{ if(!m.has(it.year)) m.set(it.year, []); m.get(it.year).push(it); });
+      return m;
+    };
+    const mapA = groupByYear(itemsA), mapB = groupByYear(itemsB);
+    const years = [...new Set([...mapA.keys(), ...mapB.keys()])].sort((a,b)=>a-b);
+
+    html += `<div class="compare-timeline">`;
+    years.forEach(y=>{
+      html += `<div class="cmp-row">
+        <div class="cmp-cell">${CompareView.renderYearCell(mapA.get(y), pA)}</div>
+        <div class="cmp-year mono">${y}</div>
+        <div class="cmp-cell">${CompareView.renderYearCell(mapB.get(y), pB)}</div>
+      </div>`;
+    });
+    html += `</div>`;
+
+    const hasFootA = CompareView.hasFootContent(pA);
+    const hasFootB = CompareView.hasFootContent(pB);
+    if(hasFootA || hasFootB){
+      html += `<div class="compare-grid compare-feet">
+        ${hasFootA ? CompareView.renderFoot(pA,'A') : '<div></div>'}
+        ${hasFootB ? CompareView.renderFoot(pB,'B') : '<div></div>'}
+      </div>`;
+    }
+    return html;
+  },
+
+  renderYearCell(items, person){
+    if(!items || !items.length) return `<span class="cmp-empty">—</span>`;
+    return items.map(it=>{
+      const age = person.birth ? (it.year - person.birth.year) : null;
+      return `<div class="cmp-item">${age!==null?`<span class="cmp-item-age">${age}岁</span>`:''}${Utils.escapeHtml(Parser.stripWikilinkSyntax(it.title))}${it.fictional?' <span class="ev-fiction">· 虚构</span>':''}</div>`;
+    }).join('');
+  },
+
+  // 头部：姓名/生卒年/简述，从原来 renderCol 顶部那段拆出来单独复用。
+  renderHead(person){
+    const span = (person.birth?person.birth.year:'?') + ' – ' + (person.death?person.death.year:'…');
+    let html = `<div class="compare-col compare-col-head">
+      <div class="compare-name">${Utils.escapeHtml(person.title)}</div>
+      <div class="compare-span mono">${span}</div>`;
+    if(PERSON_CARRIERS.includes(person.carrier)){
+      const summary = Parser.extractSection(person.body, '简述');
+      if(summary) html += `<div class="compare-summary">${Utils.escapeHtml(Parser.stripWikilinkSyntax(summary))}</div>`;
+    }
+    html += `</div>`;
+    return html;
+  },
+
+  hasFootContent(person){
+    if(!person) return false;
+    return CompareView.mentionedEventsFor(person).length > 0 || (person.related||[]).length > 0;
+  },
+
+  // 脚部：相关提及/相关，从原来 renderCol 底部那段拆出来单独复用。
+  renderFoot(person, side){
+    let html = `<div class="compare-col compare-col-foot">`;
+    const mentioned = CompareView.mentionedEventsFor(person);
+    if(mentioned.length){
+      html += `<div class="mentioned-group">
+        <div class="mentioned-head">相关提及</div>`;
+      mentioned.forEach(e=>{
+        html += `<div class="mentioned-row">
+          <span class="mentioned-title">${Utils.escapeHtml(Parser.stripWikilinkSyntax(e.displayText))}</span>
+          ${e.fictional?' <span class="ev-fiction">· 虚构</span>':''}
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    if((person.related||[]).length){
+      html += `<div class="related-group">
+        <div class="related-head">相关</div>
+        <div class="related-chips">`;
+      person.related.forEach(name=>{
+        const isEntity = Store.vault.persons.some(p=>p.title===name);
+        html += isEntity
+          ? `<span class="related-chip related-chip-link" data-side="${side}" data-name="${Utils.escapeHtml(name)}">${Utils.escapeHtml(name)}</span>`
+          : `<span class="related-chip">${Utils.escapeHtml(name)}</span>`;
+      });
+      html += `</div></div>`;
+    }
+    html += `</div>`;
+    return html;
   },
 
   renderCol(person, typedName, side){
@@ -2896,7 +3902,7 @@ const CompareView = {
     // 不适合在这里配一段简介，它们的简介走"!"悬浮图标（另外处理）。
     if(PERSON_CARRIERS.includes(person.carrier)){
       const summary = Parser.extractSection(person.body, '简述');
-      if(summary) html += `<div class="compare-summary">${Utils.escapeHtml(summary)}</div>`;
+      if(summary) html += `<div class="compare-summary">${Utils.escapeHtml(Parser.stripWikilinkSyntax(summary))}</div>`;
     }
     items.forEach(it=>{
       const age = person.birth ? (it.year - person.birth.year) : null;
@@ -2939,7 +3945,347 @@ const CompareView = {
 };
 
 /* =========================================================
-   11. SearchView —— 高级搜索
+   14. ContemporariesView —— 主体看板「人物」（主体看板下的二级 Tab，十年为一跨度的同代人物看板）
+   ---------------------------------------------------------
+   跟"生平"(CompareView 双人对比)是完全独立的另一套内容，只是共享同一个
+   顶层 panel-subject。核心是"整十年为一个跨度（可调 5/10/20），只看
+   出生年份落在这个跨度里的人物，按10个固定国家栏 -> 政治/经济/文化
+   三个 domain 分组 铺成 chip 墙"。
+
+   跟 SyncChart/ColumnBoard 的关键区别：这里的国家栏是完全写死的10个
+   （CONTEMP_COUNTRY_COLUMNS），不是"vault 里出现过哪些国家就显示哪些"，
+   所以不需要 SyncChart 那套折叠/显示设置。
+
+   分组规则（跟人讨论定下来的，都写在 contempCountryBucket / 
+   contempDomainBucket 两个函数旁边的注释里，不重复）：
+   - 一人多国家/多domain：只认数组第一个值，不重复出现在多栏
+   - country 不在7个点名国家里的，按 COUNTRY_CONTINENT_ALL 的大洲归类
+     进 欧洲其他/亚洲其他/世界其他
+   - domain 第一个值不属于 政治/军事/经济/文化：Parser.scanVault 阶段已经
+     push 过 warning 并整个人跳过了，这里不用再重复校验
+   - 没有可解析出生年份的人：不参与十年段过滤，固定显示在页面最下面的
+     "年代不明"区块，全局只有一份，不随翻页变化
+   ========================================================= */
+const ContemporariesView = {
+  span: 10,        // 5 / 10 / 20，年为单位
+  bucketStart: null, // 当前十年段的起始年；null 表示还没算过，第一次 render 时按存档/Store.currentYear 对齐算出来
+  hideFictional: false,
+  openFor: null,   // 搜索下拉是否打开，跟 CompareView.openFor / SearchView.comboOpenFor 是同一套写法，互相独立
+
+  // 区间/跨度独立持久化，不再跟着主时间轴（Store.currentYear，地图/分栏视图共用
+  // 的那条全局年份）联动——只有从没在人物TAB操作过（localStorage读不到）时，
+  // 才退回用 Store.currentYear 起个默认值；之后你在这里翻页/切跨度，只认自己
+  // 存的记录，不受你在别的视图怎么拖年份滑块影响。
+  STORAGE_KEY: 'fwb_contempBucket',
+
+  decadeStart(year, span){
+    return Math.floor(year/span) * span;
+  },
+
+  save(){
+    try{ localStorage.setItem(ContemporariesView.STORAGE_KEY, JSON.stringify({bucketStart:ContemporariesView.bucketStart, span:ContemporariesView.span})); }catch(e){}
+  },
+
+  ensureInit(){
+    if(ContemporariesView.bucketStart==null){
+      let restored = false;
+      try{
+        const raw = localStorage.getItem(ContemporariesView.STORAGE_KEY);
+        if(raw){
+          const saved = JSON.parse(raw);
+          if(Number.isFinite(saved.bucketStart) && [5,10,20].includes(saved.span)){
+            ContemporariesView.bucketStart = saved.bucketStart;
+            ContemporariesView.span = saved.span;
+            restored = true;
+          }
+        }
+      }catch(e){}
+      if(!restored){
+        ContemporariesView.bucketStart = ContemporariesView.decadeStart(Store.currentYear, ContemporariesView.span);
+      }
+    }
+  },
+
+  // carrier 是"人"、且 country/domain 都能正常归类的人物——已经在 vault 扫描阶段
+  // 把 country 缺失/domain 不合法的人过滤掉了（连带 push 了 warning），这里
+  // 只需要再次确认一遍 carrier + country + domain 都合法（vault 扫描之后
+  // 用户可能没重新连接，保守起见还是在这里也判一遍，不完全依赖扫描阶段）
+  eligiblePersons(){
+    return Store.vault.persons.filter(p=>
+      PERSON_CARRIERS.includes(p.carrier) && p.country.length && contempDomainBucket(p.domain));
+  },
+
+  render(){
+    ContemporariesView.ensureInit();
+    const span = ContemporariesView.span;
+    const start = ContemporariesView.bucketStart;
+    const end = start + span - 1;
+    document.getElementById('contempDecadeLabel').textContent = `${start} – ${end}`;
+    document.querySelectorAll('#contempSpanSwitch .view-tab').forEach(t=>
+      t.classList.toggle('active', +t.dataset.span === span));
+    document.getElementById('contempHideFictional').checked = ContemporariesView.hideFictional;
+
+    const eligible = ContemporariesView.eligiblePersons();
+    const inRange = eligible.filter(p=>{
+      if(!p.birth || p.birth.year==null) return false;
+      if(p.birth.year<start || p.birth.year>end) return false;
+      if(ContemporariesView.hideFictional && p.fictional) return false;
+      return true;
+    });
+
+    const buckets = {};
+    CONTEMP_COUNTRY_COLUMNS.forEach(c=> buckets[c.key] = { 政治:[], 军事:[], 经济:[], 科学:[], 文化:[] });
+    inRange.forEach(p=>{
+      const bk = contempCountryBucket(p.country[0]);
+      const dk = contempDomainBucket(p.domain);
+      buckets[bk][dk].push(p);
+    });
+    // 同一个国家栏、同一个 domain 分组内部，按出生年月日精度排序——直接
+    // 复用分栏卡片那套 Utils.compareEventDate，字段名对不上（events 用
+    // start，persons 用 birth），拿 birth 现包一层 {start:...} 就行，不用
+    // 另外写一份一样的排序函数。
+    Object.values(buckets).forEach(domainMap=>{
+      CONTEMP_DOMAIN_ORDER.forEach(dk=>{
+        domainMap[dk].sort((a,b)=> Utils.compareEventDate({start:a.birth},{start:b.birth}));
+      });
+    });
+
+    // 共享表头：10个国家只在这一行渲染一次，色点复用 .contemp-country-swatch
+    // （维持圆点，不用之前示意图里的色条方案）；总数是这个国家在当前十年段
+    // 里5个分类加总，跟转置前那套 total 算法一样，只是显示位置变了。
+    const headCells = CONTEMP_COUNTRY_COLUMNS.map(col=>{
+      const domainMap = buckets[col.key];
+      const total = CONTEMP_DOMAIN_ORDER.reduce((s,dk)=> s+domainMap[dk].length, 0);
+      const swatch = col.continent
+        ? `<span class="contemp-country-swatch" style="background:${CONTINENT_HEX[col.continent]}"></span>` : '';
+      return `<div class="contemp-board-head-cell">${swatch}${col.label}<span class="contemp-country-count">${total}</span></div>`;
+    }).join('');
+
+    // 5个分类各自一行，行内按同一份国家顺序横向排10列——矩阵转置的核心，
+    // 外层从"10个国家"变成"5个分类"，内层反过来。5个分类顺序固定、每行
+    // 必出现，不管有没有数据；每列没数据时留白占位（.contemp-lane-empty），
+    // 保证10列始终对齐，不会因为某列没人就错位。分类名不再横排在行顶部，
+    // 改成 .contemp-domain-bar 竖排贴在卡片左侧外面（见CSS注释），这里只是
+    // 把原来的文字标签 div 换成这个色条 div，其余结构不变。
+    const domainRows = CONTEMP_DOMAIN_ORDER.map((dk, idx)=>{
+      const c = CONTEMP_DOMAIN_COLORS[dk];
+      const lanes = CONTEMP_COUNTRY_COLUMNS.map(col=>{
+        const list = buckets[col.key][dk];
+        return list.length
+          ? `<div class="contemp-lane">${list.map(ContemporariesView.renderChip).join('')}</div>`
+          : `<div class="contemp-lane-empty"></div>`;
+      }).join('');
+      // 色条要往上多探一截，够到"自己上方"那条分隔线本身（不是停在紧挨着
+      // 的数据顶部）——政治上方是表头的实线（表头margin-bottom:12px造成
+      // 的间距），军事/经济/科学/文化上方是各自前一行的虚线（每行
+      // margin-bottom:10px造成的间距），gapAbove按这个规则区分第一行和
+      // 其余4行。色条往上探多少（top的负偏移）、色条实际总高度H、
+      // clip-path梯形轮廓，三件事必须用同一个gapAbove/H推出来，不然会
+      // 出现"CSS往上挪了，但clip-path还按旧高度裁"这种两边对不上、
+      // 图形错位的问题（之前只改第一行时出过这个bug）——完整的连带关系
+      // （宽度要同步改哪几处、这里的高度联动为什么不能拆开）看CSS里
+      // .contemp-grid-scroll 上方那段"色条系统总览"注释，这里只写这一段
+      // 计算本身。
+      // W/r这两个数值要跟CSS里.contemp-domain-bar的width保持一致（改
+      // 宽度记得两边一起改）。isLast（文化）没有下面.contemp-domain-row
+      // 的padding-bottom/border-bottom（最后一个不留虚线分隔线），
+      // 自身高度比其余行矮11px，这个和gapAbove是两件独立的事，各自算。
+      const isFirst = idx === 0;
+      const isLast = idx === CONTEMP_DOMAIN_ORDER.length - 1;
+      const gapAbove = isFirst ? 12 : 10;
+      const ownHeight = isLast ? 160 : 160 + 10 + 1;
+      const H = ownHeight + gapAbove;
+      const W = 22, r = 36;
+      const topY = 0.06 * H, bottomY = 0.94 * H;
+      const clip = `path('M ${W} 0 L ${W} ${H} L 7 ${bottomY} A ${r} ${r} 0 0 1 0 ${bottomY - r} L 0 ${topY + r} A ${r} ${r} 0 0 1 7 ${topY} Z')`;
+      return `<div class="contemp-domain-row">
+        <div class="contemp-domain-bar" style="top:-${gapAbove}px;background:${c}33;color:${c};clip-path:${clip}">${dk}</div>
+        <div class="contemp-domain-row-lanes">${lanes}</div>
+      </div>`;
+    }).join('');
+
+    document.getElementById('contempGrid').innerHTML = `<div class="contemp-board-card">
+      <div class="contemp-board-head">${headCells}</div>
+      ${domainRows}
+    </div>`;
+
+    // 年代不明：全局固定一份，跟当前十年段/翻页无关，放在整个网格最下面
+    const unknown = eligible.filter(p=>{
+      if(p.birth && p.birth.year!=null) return false;
+      if(ContemporariesView.hideFictional && p.fictional) return false;
+      return true;
+    }).sort((a,b)=> a.title.localeCompare(b.title,'zh'));
+    const unknownEl = document.getElementById('contempUnknownSection');
+    unknownEl.innerHTML = !unknown.length ? '' : `
+      <div class="contemp-unknown-head">年代不明（没有可解析的出生年份，共 ${unknown.length} 位）</div>
+      <div class="contemp-unknown-chips">${unknown.map(ContemporariesView.renderChip).join('')}</div>
+    `;
+  },
+
+  // chip 直接复用 .coverage-chip 的样式和悬浮详情（ChipTooltip 事件委托
+  // 已经绑在 .coverage-chip 上了）——悬浮框内容是年份/简述/tags拼成一段
+  // 连续文字（data-range/data-summary/data-tags三个属性，具体见下面
+  // renderChip里怎么取值、ChipTooltip.show()里contemp-chip那条分支怎么
+  // 拼），额外挂 .contemp-chip 只为了点击事件委托的选择器区分，加
+  // data-contemp-name 存人物标题给点击跳转用。
+  renderChip(p){
+    const birthY = (p.birth && p.birth.year!=null) ? p.birth.year : null;
+    const deathY = (p.death && p.death.year!=null) ? p.death.year : null;
+    const birthStr = birthY!=null ? ContemporariesView.formatPreciseDate(birthY, ContemporariesView.findPrecisionDate(p,'birth')) : null;
+    const deathStr = deathY!=null ? ContemporariesView.formatPreciseDate(deathY, ContemporariesView.findPrecisionDate(p,'death')) : null;
+    const range = birthStr!=null ? `${birthStr} – ${deathStr!=null?deathStr:'?'}` : '生年不明';
+    // 悬浮框新增两行：简述取"## 简述"小节，跟生平看板/作品覆盖chip墙同一套
+    // 提取逻辑（Parser.extractSection + stripWikilinkSyntax 去掉正文里的
+    // [[双链]]语法）；tags是frontmatter原生数组，纯文字逗号连接，不做成
+    // 胶囊（悬浮框空间有限，胶囊太重）。两者没有就不传对应data-*属性，
+    // ChipTooltip.show()那边本来就是"有值才渲染这一行"，不用额外处理。
+    const summary = Parser.extractSection(p.body, '简述');
+    return `<span class="coverage-chip contemp-chip" data-contemp-name="${Utils.escapeHtml(p.title)}"
+      data-range="${Utils.escapeHtml(range)}"
+      data-summary="${summary ? Utils.escapeHtml(Parser.stripWikilinkSyntax(summary)) : ''}"
+      data-tags="${p.tags && p.tags.length ? Utils.escapeHtml(p.tags.join(', ')) : ''}"
+      >${Utils.escapeHtml(p.title)}${p.fictional?' <span class="contemp-chip-fiction">· 虚构</span>':''}</span>`;
+  },
+
+  /* 从entity正文"## 时间线"（已解析成 p.timeline，每条带 year/month/day）里，
+     挑出跟 which（'birth'/'death'）对应年份一致的条目，找出真正代表出生/
+     死亡的那一条，取它的月日。找不到就返回 null，调用方退回纯年份显示。 */
+  findPrecisionDate(p, which){
+    const anchor = p[which];
+    if(!anchor || anchor.year==null) return null;
+    const sameYear = (p.timeline||[]).filter(t=> t.year===anchor.year);
+    if(!sameYear.length) return null;
+
+    if(which==='birth'){
+      const hit = sameYear.find(t=> (t.fullText||'').includes('出生'));
+      return hit ? { month:hit.month, day:hit.day } : null;
+    }
+
+    // 死亡：先排除"被暗杀，但未成功"这类未遂描述，再按死亡关键词表匹配；
+    // 关键词只剩一条就直接用；剩多条或一条都没剩，退到"当年排序最晚的一条"
+    // ——死亡逻辑上必然是这个人一生里最后发生的事，不依赖猜中具体用词。
+    const noNegation = sameYear.filter(t=> !DEATH_NEGATION_WORDS.some(w=>(t.fullText||'').includes(w)));
+    const keywordHits = noNegation.filter(t=> DEATH_KEYWORDS.some(k=>(t.fullText||'').includes(k)));
+    let chosen;
+    if(keywordHits.length===1) chosen = keywordHits[0];
+    else if(keywordHits.length>1) chosen = ContemporariesView.pickLatestTimelineItem(keywordHits);
+    else if(noNegation.length) chosen = ContemporariesView.pickLatestTimelineItem(noNegation);
+    else chosen = ContemporariesView.pickLatestTimelineItem(sameYear); // 极端兜底：全被否定词滤掉了，退回不滤的全部候选
+    return chosen ? { month:chosen.month, day:chosen.day } : null;
+  },
+
+  // 同一年多条候选时，取"月日最晚"的一条；没写月日的条目排序值给-1（比任何
+  // 真实月份都小），不会抢到"最晚"，除非候选里所有条目都没写月日——那种情况
+  // 靠稳定排序保底选最后一条（数组顺序=笔记里的书写顺序，通常也是时间顺序）。
+  pickLatestTimelineItem(items){
+    return items.slice().sort((a,b)=>{
+      const am = a.month??-1, ad = a.day??-1;
+      const bm = b.month??-1, bd = b.day??-1;
+      return (am-bm) || (ad-bd);
+    })[items.length-1];
+  },
+
+  // 展示格式：有日就"年.月.日"，只有月没日就"年.月"，完全没有月日精度就纯年份
+  formatPreciseDate(year, precise){
+    if(!precise || precise.month==null) return String(year);
+    return precise.day!=null ? `${year}.${precise.month}.${precise.day}` : `${year}.${precise.month}`;
+  },
+
+  // 点一个人 -> 跳到主体看板「生平」子视图，放进人物A——复用 SearchView.jumpTo
+  // 那套"切主 Tab / 切子视图 / 调用已有 select 逻辑"的写法
+  jumpToPerson(title){
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab==='subject'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active', p.id==='panel-subject'));
+    App.updateViewSwitchVisibility();
+    App.setSubjectSubView('bio');
+    CompareView.selectPerson('A', title);
+  },
+
+  prevDecade(){ ContemporariesView.ensureInit(); ContemporariesView.bucketStart -= ContemporariesView.span; ContemporariesView.save(); ContemporariesView.render(); },
+  nextDecade(){ ContemporariesView.ensureInit(); ContemporariesView.bucketStart += ContemporariesView.span; ContemporariesView.save(); ContemporariesView.render(); },
+
+  // 切换跨度（5/10/20）时，尽量让"当前十年段的中点年份"落在新跨度对齐后的
+  // 段里，而不是直接拿旧的 start 数字套新 span 的整除规则——不然经常会
+  // 出现"切个跨度，年代却跳到看似无关的地方"的突兀感
+  setSpan(span){
+    ContemporariesView.ensureInit();
+    const mid = ContemporariesView.bucketStart + Math.floor(ContemporariesView.span/2);
+    ContemporariesView.span = span;
+    ContemporariesView.bucketStart = ContemporariesView.decadeStart(mid, span);
+    ContemporariesView.save();
+    ContemporariesView.render();
+  },
+  setHideFictional(v){ ContemporariesView.hideFictional = v; ContemporariesView.render(); },
+
+  /* 搜索跳转：候选人物范围限定在"实际会在这个看板出现"的那批——carrier/country/
+     domain 都合法（eligiblePersons）、且有能解析的出生年份，不然搜到一个人却
+     跳到TA根本不会显示的区间，体验上会很奇怪。交互跟 CompareView.openCombo /
+     SearchView 的 combo 下拉完全同款（共用 #searchComboMenu 悬浮层、
+     SearchView.positionCombo 定位），点列表项＝"确定"，不单独发明新交互。 */
+  searchCandidates(){
+    return ContemporariesView.eligiblePersons().filter(p=>p.birth && p.birth.year!=null);
+  },
+
+  openSearchCombo(inputEl){
+    ContemporariesView.openFor = true;
+    CompareView.openFor = null;       // 三套 combo（人物A/B、高级搜索字段、这里）互斥，开一个要清掉另外两个的开合状态
+    SearchView.comboOpenFor = null;
+    const menu = document.getElementById('searchComboMenu');
+    menu.innerHTML = `<div class="search-combo-menu-list"></div>`;
+    const list = menu.querySelector('.search-combo-menu-list');
+    const draw = ()=>{
+      const q = inputEl.value.trim().toLowerCase();
+      const names = ContemporariesView.searchCandidates().map(p=>p.title)
+        .filter(t=> !q || t.toLowerCase().includes(q))
+        .sort((a,b)=>a.localeCompare(b,'zh'));
+      list.innerHTML = names.length ? names.slice(0,200).map(t=>
+        `<div class="search-combo-menu-item" data-contemp-search-value="${Utils.escapeHtml(t)}"><span>${Utils.escapeHtml(t)}</span></div>`
+      ).join('') : `<div class="search-combo-menu-empty">没有匹配的人物笔记（只搜索会在本看板显示的人物）</div>`;
+    };
+    draw();
+    menu.classList.add('show');
+    SearchView.positionCombo(inputEl);
+    ContemporariesView.bindSearchOutsideClick();
+    menu._draw = draw;
+  },
+
+  closeSearchCombo(){
+    ContemporariesView.openFor = null;
+    document.getElementById('searchComboMenu').classList.remove('show');
+    document.removeEventListener('click', ContemporariesView.searchOutsideClickHandler, true);
+  },
+
+  bindSearchOutsideClick(){
+    document.removeEventListener('click', ContemporariesView.searchOutsideClickHandler, true);
+    setTimeout(()=> document.addEventListener('click', ContemporariesView.searchOutsideClickHandler, true), 0);
+  },
+  searchOutsideClickHandler(e){
+    const menu = document.getElementById('searchComboMenu');
+    if(menu.contains(e.target)) return;
+    if(e.target.closest('.contemp-search-box')) return;
+    ContemporariesView.closeSearchCombo();
+  },
+
+  // 点下拉项＝选定并跳转：按TA的出生年算所在区间；如果"隐藏虚构人物"开着
+  // 而这个人正好是虚构的，跳过去也看不见，所以顺手帮着把开关关掉（跟你确认
+  // 过的处理方式），不是默默生效——开关本身有UI，关掉了你在界面上就能看到。
+  selectSearchPerson(title){
+    const person = ContemporariesView.searchCandidates().find(p=>p.title===title);
+    ContemporariesView.closeSearchCombo();
+    document.getElementById('contempSearchInput').value = '';
+    if(!person) return;
+    ContemporariesView.ensureInit();
+    if(ContemporariesView.hideFictional && person.fictional){
+      ContemporariesView.hideFictional = false;
+    }
+    ContemporariesView.bucketStart = ContemporariesView.decadeStart(person.birth.year, ContemporariesView.span);
+    ContemporariesView.save();
+    ContemporariesView.render();
+  }
+};
+
+/* =========================================================
+   15. SearchView —— 高级搜索
    ---------------------------------------------------------
    人物（entity）+ 事件（event）两类笔记的字段全部摊平在同一张筛选栏里，
    不设"先选类型"的前置门槛——"类型"本身也只是普普通通的一个筛选项，
@@ -3211,6 +4557,8 @@ const SearchView = {
      点选项不关闭浮层，方便连续多选。 */
   openCombo(fieldKey, inputEl){
     SearchView.comboOpenFor = fieldKey;
+    CompareView.openFor = null; // 防止主体看板那个combo残留打开状态，导致同一次点击两边的处理器都触发
+    ContemporariesView.openFor = null; // 同理清掉人物Tab搜索框的开合标记
     const menu = document.getElementById('searchComboMenu');
     menu.innerHTML = `<div class="search-combo-menu-list"></div>`;
     const list = menu.querySelector('.search-combo-menu-list');
@@ -3378,7 +4726,7 @@ const SearchView = {
       const more = allTags.length>4 ? `<span class="search-chip">+${allTags.length-4}</span>` : '';
       return `<tr class="${canJump?'':'no-jump'}" data-jump-country="${Utils.escapeHtml(r.jumpCountry||'')}" data-jump-year="${r.jumpYear!=null?r.jumpYear:''}">
         <td><span class="search-kind-dot" style="background:${dotColor}"></span>${r.kind==='person'?'entity':'event'}</td>
-        <td><span class="search-title-cell">${Utils.escapeHtml(r.title)}${r.fictional?'<span class="search-fictional-mark">· 虚构</span>':''}</span></td>
+        <td><span class="search-title-cell">${Utils.escapeHtml(r.title)}${r.fictional?' <span class="search-fictional-mark">· 虚构</span>':''}</span></td>
         <td>${Utils.escapeHtml(r.country.join('、')||'—')}</td>
         <td>${Utils.escapeHtml(r.carrier||'—')}</td>
         <td><div class="search-chip-cell">${chips}${more}</div></td>
@@ -3406,7 +4754,7 @@ const SearchView = {
     document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab==='time'));
     document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active', p.id==='panel-time'));
     App.updateViewSwitchVisibility();
-    document.querySelectorAll('.view-tab').forEach(t=>t.classList.toggle('active', t.dataset.view==='map'));
+    document.querySelectorAll('#viewSwitch .view-tab').forEach(t=>t.classList.toggle('active', t.dataset.view==='map'));
     document.getElementById('mapCardWrap').style.display = '';
     document.getElementById('columnBoard').style.display = 'none';
     Store.lastView = 'map';
@@ -3419,7 +4767,7 @@ const SearchView = {
 };
 
 /* =========================================================
-   12. ChipTooltip —— coverage chip 悬浮详情
+   16. ChipTooltip —— coverage chip 悬浮详情
    ---------------------------------------------------------
    全局共用一个 tooltip 元素，用 JS 算坐标定位成 position:fixed，
    脱离 .coverage-chips 那个 overflow:auto 容器的裁剪范围。
@@ -3433,15 +4781,53 @@ const ChipTooltip = {
   show(chip){
     const tip = document.getElementById('chipTooltip');
     tip.innerHTML = '';
-    const rangeEl = document.createElement('div');
-    rangeEl.className = 'chip-tooltip-range';
-    rangeEl.textContent = chip.dataset.range || '';
-    tip.appendChild(rangeEl);
-    if(chip.dataset.summary){
-      const sumEl = document.createElement('div');
-      sumEl.className = 'chip-tooltip-summary';
-      sumEl.textContent = chip.dataset.summary;
-      tip.appendChild(sumEl);
+    if(chip.classList.contains('contemp-chip')){
+      // 人物TAB：年份/简述/tags不再各占一个块级div（强制各自一行），改成
+      // 拼进同一段流动文字里——用span（内联元素）+ " · "（空格-圆点-空格）
+      // 分隔，跟app里"· 虚构"那处标记统一用的标点写法一致，不用没有可见
+      // 分隔符的纯空格（换行后容易看不出是故意留的间隔）。超出悬浮框220px
+      // 宽度时交给容器自带的 white-space:normal 自然换行，不再是"逐项
+      // 换行"。tags按要求也改成白色（不再单独用弱化灰），所以这条分支里
+      // 三项都不需要额外配色class，只有年份保留 chip-tooltip-range--primary
+      // 是为了保留等宽字体（IBM Plex Mono），让日期在一段中文叙述里视觉上
+      // 更好辨认，颜色本身默认就是白色，三项没有谁比谁"次要"了。没有的
+      // 部分（简述/tags）直接跳过，不产生多余的分隔符或空行。
+      const p = document.createElement('div');
+      const pieces = [];
+      if(chip.dataset.range){
+        const el = document.createElement('span');
+        el.className = 'chip-tooltip-range chip-tooltip-range--primary';
+        el.textContent = chip.dataset.range;
+        pieces.push(el);
+      }
+      if(chip.dataset.summary){
+        const el = document.createElement('span');
+        el.textContent = chip.dataset.summary;
+        pieces.push(el);
+      }
+      if(chip.dataset.tags){
+        const el = document.createElement('span');
+        el.textContent = chip.dataset.tags;
+        pieces.push(el);
+      }
+      pieces.forEach((el,i)=>{
+        if(i>0) p.appendChild(document.createTextNode(' · '));
+        p.appendChild(el);
+      });
+      tip.appendChild(p);
+    } else {
+      // 其它地方（比如作品覆盖chip墙）保持原来"年代单独一行、弱化灰，
+      // 简述单独一行"的块级div结构，不受上面contemp-chip分支影响。
+      const rangeEl = document.createElement('div');
+      rangeEl.className = 'chip-tooltip-range';
+      rangeEl.textContent = chip.dataset.range || '';
+      tip.appendChild(rangeEl);
+      if(chip.dataset.summary){
+        const sumEl = document.createElement('div');
+        sumEl.className = 'chip-tooltip-summary';
+        sumEl.textContent = chip.dataset.summary;
+        tip.appendChild(sumEl);
+      }
     }
     tip.classList.add('show');
     const rect = chip.getBoundingClientRect();
@@ -3486,7 +4872,7 @@ const ChipTooltip = {
 };
 
 /* =========================================================
-   13. App —— 启动流程、连接 vault、年份轴、tabs、事件监听绑定
+   17. App —— 启动流程、连接 vault、年份轴、tabs、事件监听绑定
    ---------------------------------------------------------
    这是唯一允许直接操作页面级 DOM 结构（tabs/年份轴/连接按钮）、
    并在文件末尾调用 App.init() 启动整个应用的地方。新增一个
@@ -3498,9 +4884,31 @@ const App = {
     document.getElementById('connDot').classList.toggle('on', on);
     document.getElementById('connText').textContent = on ? 'F WORLD B 已连接' : '未连接仓库';
     document.getElementById('connectBtn').textContent = on ? '重新选择' : '选择 Vault 文件夹';
-    ['timeEmpty','subjectEmpty','searchEmpty'].forEach(id=> document.getElementById(id).style.display = on ? 'none' : 'block');
-    ['timeContent','subjectContent','searchContent'].forEach(id=> document.getElementById(id).style.display = on ? 'block' : 'none');
+    ['timeEmpty','subjectEmpty','searchEmpty','syncEmpty'].forEach(id=> document.getElementById(id).style.display = on ? 'none' : 'block');
+    ['timeContent','searchContent','syncContent'].forEach(id=> document.getElementById(id).style.display = on ? 'block' : 'none');
+    // 主体看板下面挂着"生平/人物"两个子视图，不能像上面那样无脑一起设 block——
+    // 断开连接时两个都要收起来；连上的话要看当前选的是哪个子视图，不能两个同时显示
+    if(on){
+      App.setSubjectSubView(App.currentSubjectSubView || 'people');
+    }else{
+      document.getElementById('subjectContent').style.display = 'none';
+      document.getElementById('contempContent').style.display = 'none';
+    }
     App.updateViewSwitchVisibility();
+  },
+
+  currentSubjectSubView: 'people',
+  /* "生平"(原来的双人物对比) / "人物"(新增的同代人物看板) 切换，view 是
+     'bio' 或 'people'。人物看板第一次被打开时才去 build/render（跟
+     SyncChart 只在切到 sync tab 时才 render 是同一个偷懒思路——不用
+     每次连上 vault 就白白算一遍，等真的点进去看再算）。 */
+  setSubjectSubView(view){
+    App.currentSubjectSubView = view;
+    document.querySelectorAll('#subjectViewSwitch .view-tab').forEach(t=>
+      t.classList.toggle('active', t.dataset.subjectView===view));
+    document.getElementById('subjectContent').style.display = view==='bio' ? 'block' : 'none';
+    document.getElementById('contempContent').style.display = view==='people' ? 'block' : 'none';
+    if(view==='people') ContemporariesView.render();
   },
 
   renderWarnings(){
@@ -3522,17 +4930,28 @@ const App = {
     App.setupSlider();
     MapView.buildMap();
     App.renderYear();
-    CompareView.buildPersonList();
     CompareView.render();
     SearchView.init();
+    SyncChart.render();
   },
 
   /* 地图/分栏 这两个 tab 现在跟"时间看板/主体看板"挤在同一行右对齐，
-     但它只在"时间看板"被选中、且 vault 已连接（真的有内容可切换）时才该出现 */
+     但它只在"时间看板"被选中、且 vault 已连接（真的有内容可切换）时才该出现；
+     Synchronological Chart 的"⚙ 显示国家"设置按钮是同一套显隐规则，只是换成 sync tab 触发 */
   updateViewSwitchVisibility(){
     const timeActive = document.querySelector('.tab[data-tab="time"]').classList.contains('active');
     const connected = document.getElementById('timeContent').style.display !== 'none';
     document.getElementById('viewSwitch').style.display = (timeActive && connected) ? 'flex' : 'none';
+
+    const subjectActive = document.querySelector('.tab[data-tab="subject"]').classList.contains('active');
+    const subjectConnected = document.getElementById('subjectEmpty').style.display === 'none';
+    document.getElementById('subjectViewSwitch').style.display = (subjectActive && subjectConnected) ? 'flex' : 'none';
+
+    const syncActive = document.querySelector('.tab[data-tab="sync"]').classList.contains('active');
+    const syncConnected = document.getElementById('syncContent').style.display !== 'none';
+    const syncBtnOn = syncActive && syncConnected;
+    document.getElementById('syncSettingsBtn').style.display = syncBtnOn ? 'flex' : 'none';
+    if(!syncBtnOn) document.getElementById('syncSettingsPanel').classList.remove('open');
   },
 
   computeYearRange(){
@@ -3645,7 +5064,14 @@ const App = {
     const chips = document.getElementById('globalChips');
     if(!globals.length){ banner.classList.remove('show'); return; }
     banner.classList.add('show');
-    chips.innerHTML = globals.map(g=>`<div class="global-chip">${Utils.escapeHtml(g.title)}</div>`).join('');
+    // 有"## 简述"才可悬浮（tabindex让键盘也能触发），没有就是原来那样纯文字chip，
+    // 跟National"有summary才出感叹号"是同一条规则，只是Global不需要额外的图标元素。
+    chips.innerHTML = globals.map(g=>{
+      const tooltip = g.summary
+        ? `<div class="global-chip-tooltip">${Utils.escapeHtml(Parser.stripWikilinkSyntax(g.summary))}</div>`
+        : '';
+      return `<div class="global-chip"${g.summary ? ' tabindex="0"' : ''}>${Utils.escapeHtml(g.title)}${tooltip}</div>`;
+    }).join('');
   },
 
   /* 所有事件监听绑定的唯一入口，文件末尾调用一次。 */
@@ -3694,8 +5120,36 @@ const App = {
         tab.classList.add('active');
         document.getElementById('panel-'+tab.dataset.tab).classList.add('active');
         App.updateViewSwitchVisibility();
+        if(tab.dataset.tab === 'sync') SyncChart.render();
       });
     });
+
+    // Synchronological Chart：大洲分组折叠 走事件委托（纵向布局不再需要分界年份）
+    document.getElementById('syncHead').addEventListener('click', e=>{
+      const head = e.target.closest('[data-region-toggle]');
+      if(!head) return;
+      const rk = head.dataset.regionToggle;
+      if(SyncChart.collapsedRegions.has(rk)) SyncChart.collapsedRegions.delete(rk);
+      else SyncChart.collapsedRegions.add(rk);
+      SyncChart.render();
+    });
+
+    // "⚙ 显示国家"设置面板：按钮开合 + 面板内chip勾选国家显隐，点面板外部自动收起
+    document.getElementById('syncSettingsBtn').addEventListener('click', e=>{
+      e.stopPropagation();
+      document.getElementById('syncSettingsPanel').classList.toggle('open');
+    });
+    document.getElementById('syncSettingsPanel').addEventListener('click', e=>{
+      e.stopPropagation();
+      const chip = e.target.closest('[data-country-chip]');
+      if(!chip) return;
+      const c = chip.dataset.countryChip;
+      if(SyncChart.hiddenCountries.has(c)) SyncChart.hiddenCountries.delete(c);
+      else SyncChart.hiddenCountries.add(c);
+      SyncChart.render();
+      document.getElementById('syncSettingsPanel').classList.add('open');
+    });
+    document.addEventListener('click', ()=> document.getElementById('syncSettingsPanel').classList.remove('open'));
 
     // 高级搜索：筛选栏（胶囊多选/单选、文本、区间、运算符）+ 结果表（排序表头、
     // 点行跳转）全部走事件委托——筛选栏每次清空/初始化都会用 innerHTML 重绘，
@@ -3793,10 +5247,13 @@ const App = {
       }
     });
 
-    // 地图 / 分栏 切换
-    document.querySelectorAll('.view-tab').forEach(tab=>{
+    // 地图 / 分栏 切换（限定在 #viewSwitch 容器内选——下面"生平/人物"切换
+    // 视觉上复用了同一个 .view-tab class，但点击逻辑必须分开绑定，不然
+    // document.querySelectorAll('.view-tab') 不分容器全选，两组切换会互相
+    // 清掉对方的 active 高亮、甚至误触发对方的显隐逻辑）
+    document.querySelectorAll('#viewSwitch .view-tab').forEach(tab=>{
       tab.addEventListener('click', ()=>{
-        document.querySelectorAll('.view-tab').forEach(t=>t.classList.remove('active'));
+        document.querySelectorAll('#viewSwitch .view-tab').forEach(t=>t.classList.remove('active'));
         tab.classList.add('active');
         const isColumns = tab.dataset.view === 'columns';
         document.getElementById('mapCardWrap').style.display = isColumns ? 'none' : '';
@@ -3810,10 +5267,16 @@ const App = {
     // 读出来了），不用等你点一下才切过去——地图 tab 默认在 HTML 里是 active 的，
     // 如果记住的是分栏，这里要把 active 状态和显示都手动挪过去
     if(Store.lastView === 'columns'){
-      document.querySelectorAll('.view-tab').forEach(t=>t.classList.toggle('active', t.dataset.view==='columns'));
+      document.querySelectorAll('#viewSwitch .view-tab').forEach(t=>t.classList.toggle('active', t.dataset.view==='columns'));
       document.getElementById('mapCardWrap').style.display = 'none';
       document.getElementById('columnBoard').style.display = 'block';
     }
+
+    // 生平 / 人物 切换（主体看板下面的二级 Tab，跟上面"地图/分栏"是同一套视觉
+    // 但完全独立的一组，理由同上面注释）
+    document.querySelectorAll('#subjectViewSwitch .view-tab').forEach(tab=>{
+      tab.addEventListener('click', ()=> App.setSubjectSubView(tab.dataset.subjectView));
+    });
 
     // 分栏坑位：翻页箭头 / 国家代码（置换/年代规则/删除）/ 空坑位（新建，
     // 或者——如果这个坑位其实是"按年代规则"只是当前年份没命中——编辑规则）
@@ -3952,9 +5415,35 @@ const App = {
     document.getElementById('drawerClose').addEventListener('click', MapView.closeDrawer);
     document.getElementById('drawerBackdrop').addEventListener('click', MapView.closeDrawer);
 
-    // 主体看板：两个输入框任一变化就重新渲染对比
-    document.getElementById('subjectA').addEventListener('input', CompareView.render);
-    document.getElementById('subjectB').addEventListener('input', CompareView.render);
+    // 主体看板：两个人物输入框现在是跟高级搜索同款的 combo 下拉——
+    // 聚焦打开悬浮列表，打字实时过滤，点列表项/点相关chip才选中并触发
+    // CompareView.render()；跟 SearchView 那套是分开的委托（作用域是
+    // .subject-pickers 而不是 #searchFilters），但共用同一个
+    // #searchComboMenu 悬浮层和点击外部关闭逻辑的写法。
+    document.querySelector('.subject-pickers').addEventListener('focusin', e=>{
+      if(e.target.classList.contains('search-combo-input')){
+        CompareView.openCombo(e.target.dataset.subjectInput, e.target);
+      }
+    });
+    document.querySelector('.subject-pickers').addEventListener('input', e=>{
+      const t = e.target;
+      if(t.classList.contains('search-combo-input')){
+        const menu = document.getElementById('searchComboMenu');
+        if(menu._draw) menu._draw();
+        SearchView.positionCombo(t);
+      }
+    });
+    document.querySelector('.subject-pickers').addEventListener('click', e=>{
+      const chipRemove = e.target.closest('.search-combo-chip button');
+      if(chipRemove){
+        CompareView.clearPerson(chipRemove.closest('.search-combo-chip').dataset.subjectChipRemove);
+      }
+    });
+    document.getElementById('searchComboMenu').addEventListener('click', e=>{
+      const item = e.target.closest('.search-combo-menu-item');
+      if(!item || !CompareView.openFor) return;
+      CompareView.selectPerson(CompareView.openFor, item.dataset.subjectValue);
+    });
 
     // coverage chip 悬浮详情：事件委托挂在 body 上
     document.body.addEventListener('mouseover', e=>{
@@ -3971,6 +5460,33 @@ const App = {
     });
     document.body.addEventListener('focusout', e=>{
       if(e.target.closest('.coverage-chip')) ChipTooltip.hide();
+    });
+
+    // "人物"看板：十年段翻页 / 跨度切换 / 虚构筛选 / 点 chip 跳到「生平」
+    document.getElementById('contempPrevBtn').addEventListener('click', ()=> ContemporariesView.prevDecade());
+    document.getElementById('contempNextBtn').addEventListener('click', ()=> ContemporariesView.nextDecade());
+    document.querySelectorAll('#contempSpanSwitch .view-tab').forEach(tab=>{
+      tab.addEventListener('click', ()=> ContemporariesView.setSpan(+tab.dataset.span));
+    });
+    document.getElementById('contempHideFictional').addEventListener('change', e=>
+      ContemporariesView.setHideFictional(e.target.checked));
+    document.getElementById('contempContent').addEventListener('click', e=>{
+      const chip = e.target.closest('.contemp-chip');
+      if(chip) ContemporariesView.jumpToPerson(chip.dataset.contempName);
+    });
+    // 搜索人物跳转年代：跟人物A/B输入框同款交互（聚焦打开、打字过滤、点下拉项确定），
+    // 只是作用域是 .contemp-search-box、写到 ContemporariesView 自己的 openFor 上
+    const contempSearchInput = document.getElementById('contempSearchInput');
+    contempSearchInput.addEventListener('focusin', ()=> ContemporariesView.openSearchCombo(contempSearchInput));
+    contempSearchInput.addEventListener('input', ()=>{
+      const menu = document.getElementById('searchComboMenu');
+      if(ContemporariesView.openFor && menu._draw) menu._draw();
+      SearchView.positionCombo(contempSearchInput);
+    });
+    document.getElementById('searchComboMenu').addEventListener('click', e=>{
+      const item = e.target.closest('[data-contemp-search-value]');
+      if(!item || !ContemporariesView.openFor) return;
+      ContemporariesView.selectSearchPerson(item.dataset.contempSearchValue);
     });
   }
 };
