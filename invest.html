@@ -265,10 +265,13 @@ input.fi,select.fi,textarea.fi{width:100%;padding:8px 10px;border:1px solid var(
 .pct-input-wrap input.fi{padding-right:26px}
 .pct-input-wrap input.fi::-webkit-inner-spin-button,.pct-input-wrap input.fi::-webkit-outer-spin-button{margin-left:4px}
 .pct-input-wrap .pct-suffix{position:absolute;right:10px;color:var(--text2);font-size:12px;font-weight:600;pointer-events:none}
-.mkplan-card{border-top:3px solid var(--border2)}
-/* mkplan-card 套 card-display 后，card-display 的 border:none 会连带吃掉这条彩色顶边（同时销毁的
+/* accent-card：卡片顶部彩色强调条，全局通用——凡是需要用颜色区分类别/属性的卡片都应该用这个 class，
+   不要再各自内联 border-left/border-top 了（曾经市场规划和资金来源两处各写一套、方向还不一样）。
+   具体颜色通过内联 style="border-top-color:xxx" 指定，粗细/位置统一交给这个 class 管。 */
+.accent-card{border-top:3px solid var(--border2)}
+/* accent-card 套 card-display 后，card-display 的 border:none 会连带吃掉这条彩色顶边（同时销毁的
    border-top-color 内联覆盖也就跟着失效）——用组合选择器把顶边单独加回来，其余三边仍走 card-display 的无边框风格。 */
-.card.card-display.mkplan-card{border-top:3px solid var(--border2)}
+.card.card-display.accent-card{border-top:3px solid var(--border2)}
 .mkplan-card .card-title{display:flex;align-items:center;gap:7px}
 .mkplan-card .card-title .mkplan-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .mkplan-pct-pill{display:inline-flex;align-items:center;gap:1px;background:linear-gradient(160deg,#FF6B35,#F4511E);color:#fff;font-size:12px;font-weight:800;padding:4px 12px;border-radius:999px;box-shadow:0 3px 8px -3px rgba(244,81,30,.5)}
@@ -2684,9 +2687,17 @@ function updateGistBtnLabel(){
 
 
 // ── kebab menu ──
+let _kebabOpenBtn = null;
 function _openKebab(e, items){
   document.querySelectorAll('.kebab-menu').forEach(m=>m.remove());
   const btn = e.currentTarget;
+  // 再次点击同一个已经打开菜单的按钮 → 视为关闭，不重新创建
+  if(_kebabOpenBtn === btn){
+    _kebabOpenBtn = null;
+    e.stopPropagation();
+    return;
+  }
+  _kebabOpenBtn = btn;
   const rect = btn.getBoundingClientRect();
   const menu = document.createElement('div');
   menu.className = 'kebab-menu';
@@ -2695,13 +2706,16 @@ function _openKebab(e, items){
     const el = document.createElement('div');
     el.className = 'kebab-item'+(item.d?' danger':'');
     el.textContent = item.l;
-    el.onclick = ev=>{ ev.stopPropagation(); menu.remove(); (new Function(item.a))(); };
+    el.onclick = ev=>{ ev.stopPropagation(); menu.remove(); _kebabOpenBtn = null; (new Function(item.a))(); };
     menu.appendChild(el);
   });
   document.body.appendChild(menu);
   e.stopPropagation();
 }
-document.addEventListener('click', ()=>document.querySelectorAll('.kebab-menu').forEach(m=>m.remove()));
+document.addEventListener('click', ()=>{
+  document.querySelectorAll('.kebab-menu').forEach(m=>m.remove());
+  _kebabOpenBtn = null;
+});
 
 // ── helpers ──
 function today(){return new Date().toISOString().slice(0,10)}
@@ -4006,7 +4020,7 @@ function renderMarketPlan(){
     const bondPct = MARKET_PLAN.bondPct[k]!=null?MARKET_PLAN.bondPct[k]:20;
     const eqPct = Math.round((100-bondPct)*100)/100;
     return `
-    <div class="card card-display mkplan-card" style="margin-bottom:0;border-top-color:${accent[k]}">
+    <div class="card card-display accent-card mkplan-card" style="margin-bottom:0;border-top-color:${accent[k]}">
       <div class="card-title" style="margin-bottom:14px;justify-content:space-between">
         <span style="display:flex;align-items:center;gap:7px"><span class="mkplan-dot" style="background:${accent[k]}"></span>${labels[k]}</span>
         <span class="hover-tip mkplan-pct-pill" data-tip="市场占比：该市场目标金额占总额的比例">
@@ -7763,11 +7777,11 @@ function _fsResolveMember(raw){
     const netCost = _groupNetCost(lv, group);
     if(!(netCost>0.01)) return null;
     const grpTotal = _groupMarketVal2(lv, group);
-    return { name:`${name}（本金拆分）`, l1:group, val:grpTotal*(split.amount||0)/netCost, isSplit:true };
+    return { name:`${name}（本金拆分）`, l1:group, val:grpTotal*(split.amount||0)/netCost, principal:split.amount||0, isSplit:true };
   }
   const p = PRODUCTS.find(p=>p.id===raw);
   if(!p) return null;
-  return { name:p.name, l1:p.l1, val:toCNY(p.amount,p.ccy), isSplit:false, isShared:!!p._sharedSrc };
+  return { name:p.name, l1:p.l1, val:toCNY(p.amount,p.ccy), principal:null, isSplit:false, isShared:!!p._sharedSrc };
 }
 function _fsResolveMembers(fs){
   return (fs.members||[]).map(_fsResolveMember).filter(Boolean);
@@ -7787,7 +7801,11 @@ function _resolveCompareTarget(target){
 function renderFundSourceList(){
   const el = document.getElementById('fundsource-list');
   if(!el) return;
+  el.style.display = 'grid';
+  el.style.gridTemplateColumns = 'repeat(auto-fit, minmax(min(500px, 100%), 500px))';
+  el.style.gap = '14px';
   if(!FUND_SOURCES.length){
+    el.style.display = 'block';
     el.innerHTML = '<div class="empty" style="padding:40px;text-align:center;color:var(--text3)">还没有资金来源，点右上角"新增资金来源"开始</div>';
     return;
   }
@@ -7796,41 +7814,47 @@ function renderFundSourceList(){
     const total = members.reduce((s,m)=>s+m.val,0);
     const target = _resolveCompareTarget(fs.compareTarget);
     const diff = target!=null ? total-target : null;
+    const totalColor = target!=null ? (diff>=0?'var(--green)':'var(--red)') : 'var(--text)';
+    const headerRight = target!=null
+      ? `<div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+           <span style="font-size:11px;font-weight:700">对比目标 / 合计市值</span>
+           <span style="font-size:16px;font-weight:700"><span style="color:var(--text3)">${fmtCNY(target)}</span><span style="color:var(--text3)"> / </span><span style="color:${totalColor}">${fmtCNY(total)}</span></span>
+         </div>
+         <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:4px">
+           <span style="font-size:11px;font-weight:700">差值</span>
+           <span style="font-size:13px;font-weight:600" class="${diff>=0?'pos':'neg'}">${diff>=0?'+':''}${fmtCNY(diff)}</span>
+         </div>`
+      : `<div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+           <span style="font-size:11px;font-weight:700">合计市值</span>
+           <span style="font-size:16px;font-weight:700">${fmtCNY(total)}</span>
+         </div>`;
     const tagHtml = m => m.isSplit
       ? ' <span class="pill pill-blue" style="font-size:8px;padding:1px 5px">本金拆分</span>'
       : (m.isShared ? ' <span class="pill pill-blue" style="font-size:8px;padding:1px 5px">共管</span>' : '');
+    const memberValHtml = m => {
+      if(m.isSplit && m.principal!=null){
+        const mColor = m.val>=m.principal ? 'var(--green)' : 'var(--red)';
+        return `<span style="color:var(--text3)">${fmtCNY(m.principal)}</span><span style="color:var(--text3)"> / </span><span style="color:${mColor}">${fmtCNY(m.val)}</span>`;
+      }
+      return fmtCNY(m.val);
+    };
     const membersHtml = members.length
-      ? `<table style="width:100%;margin-top:10px">
-          <thead><tr><th>品种</th><th>所属一级组合</th><th style="text-align:right">当前市值</th></tr></thead>
-          <tbody>${members.map(m=>`<tr><td>${m.name}${tagHtml(m)}</td><td>${m.l1}</td><td style="text-align:right">${fmtCNY(m.val)}</td></tr>`).join('')}</tbody>
-        </table>`
+      ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">${members.map(m=>`
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 0">
+            <div style="font-size:12px;font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span>${m.name}</span>${tagHtml(m)}<span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:6px">${m.l1}</span></div>
+            <div style="font-size:12px;font-weight:700;flex-shrink:0;white-space:nowrap">${memberValHtml(m)}</div>
+          </div>`).join('')}</div>`
       : '<div style="font-size:11px;color:var(--text3);margin-top:8px">暂无关联品种</div>';
-    return `<div class="card card-display" style="margin-bottom:12px">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    return `<div class="card card-display accent-card" style="border-top-color:var(--blue)">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
         <div style="flex:1;min-width:0">
           <span style="font-size:14px;font-weight:700">${fs.name}</span>
           <span class="pill pill-blue" style="margin-left:8px;font-size:9px" title="合计仅作参考，不计入任何一级组合或总市值">仅参考</span>
           <span style="font-size:11px;color:var(--text3);margin-left:8px">${members.length} 项</span>
         </div>
-        <div style="flex-shrink:0;display:grid;grid-template-columns:repeat(${target!=null?3:1},auto);gap:0 20px;text-align:right">
-          <div>
-            <div style="font-size:9px;color:var(--text3);margin-bottom:3px">合计市值</div>
-            <div style="font-size:14px;font-weight:700">${fmtCNY(total)}</div>
-          </div>
-          ${target!=null ? `<div>
-            <div style="font-size:9px;color:var(--text3);margin-bottom:3px">对比目标</div>
-            <div style="font-size:14px;font-weight:700">${fmtCNY(target)}</div>
-          </div>
-          <div>
-            <div style="font-size:9px;color:var(--text3);margin-bottom:3px">差额</div>
-            <div style="font-size:14px;font-weight:700" class="${diff>=0?'pos':'neg'}">${diff>=0?'+':''}${fmtCNY(diff)}</div>
-          </div>` : ''}
-        </div>
-        <div style="flex-shrink:0;display:flex;gap:6px">
-          <button class="btn btn-sm" onclick="openFundSourceModal('${fs.id}')">编辑</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteFundSource('${fs.id}')">删除</button>
-        </div>
+        <button class="kebab-btn" style="flex-shrink:0" onclick="_openKebab(event,[{l:'编辑',a:'openFundSourceModal(\\'${fs.id}\\')'},{l:'删除',a:'deleteFundSource(\\'${fs.id}\\')',d:1}])">⋮</button>
       </div>
+      <div style="margin-top:8px">${headerRight}</div>
       ${membersHtml}
     </div>`;
   }).join('');
