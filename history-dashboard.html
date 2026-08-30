@@ -276,7 +276,35 @@
      的空间里，不会被裁。30px = 色条22px宽 + 8px呼吸间隙，跟
      .contemp-domain-bar 的 width/right 数值互相对应，改一处记得改另一处。 */
   .contemp-grid-scroll{ overflow-x:auto; padding-bottom:4px; margin-left:-30px; }
-  .contemp-board-card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px; box-shadow:var(--shadow); width:max-content; min-width:calc(100% - 30px); margin-left:30px; }
+  /* 宽度只靠 min-width:calc(100%-30px) 撑住（配合外层 .contemp-grid-scroll
+     兜底极窄屏时的横向滚动），特意不写 width:max-content——那个属性会让
+     祖先容器的宽度变成"由内容自己撑出来的"，浏览器算下面 grid 的
+     minmax(200px,1fr) 轨道宽度时就会把 1fr 当成 auto 处理，auto 轨道的
+     取值方式是"这一列内容不换行摊平要多宽就给多宽"，直接绕开了
+     .contemp-lane 的 flex-wrap 换行——数据多的国家那一列会被撑得越来越宽，
+     160px 的纵向滚动区因为根本没触发溢出，看起来完全没用上。去掉
+     width:max-content 后，卡片宽度是由容器决定的"确定值"，1fr 会老实按
+     "每列至少200px、剩余空间平分"计算，列宽变成确定值，flex-wrap 才会
+     真正生效，宽屏下也照样不留白（这块逻辑完全没受影响）。 */
+  /* min-width 取两个下限里较大的那个：
+     - calc(100% - 30px)：宽屏时至少跟容器一样宽，配合下面grid的1fr让多余
+       空间平分给10列，不留右侧空白（这条逻辑没变）。
+     - 10列×200px（跟 .contemp-domain-row-lanes 的 minmax(200px,1fr) 同步）
+       + 9条列间隙×16px（跟同一处的 gap:16px 同步）+ 左右padding 32px
+       （跟本规则自己的 padding:14px 16px 同步）+ 左右边框 2px（跟本规则
+       自己的 border:1px 同步）——小屏时容器比这个还窄，卡片也至少要撑到
+       这个宽度，边框盒子才能跟内容一样宽，横向滚动时边框才跟得上内容，
+       不会滚出一截没边框包着的区域。改列数/列最小宽/gap/padding/border
+       记得同步改这个算式里对应的项。
+     用这个确定的 calc() 算式代替 width:max-content 是有意为之：max-content
+     这类"由内容决定宽度"的intrinsic关键字，会让下面grid的1fr轨道在计算
+     时被当成auto处理（导致某一列内容越多被撑得越宽，绕开flex-wrap换行），
+     这段fix的完整背景见上面"色条系统总览"隔壁、这条规则改动时的讨论记录。 */
+  .contemp-board-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:14px 16px; box-shadow:var(--shadow); margin-left:30px;
+    min-width:max(calc(100% - 30px), calc(10 * 200px + 9 * 16px + 2 * 16px + 2 * 1px));
+  }
   /* 共享表头：只出现这一次，10个国家的列宽模板 repeat(10,minmax(200px,1fr))
      是下面 .contemp-domain-row-lanes 也要用的同一份，保证两边对得齐。
      用 minmax(200px,1fr) 而不是死宽度 200px：卡片自己的 min-width 在宽
