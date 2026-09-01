@@ -54,15 +54,10 @@
   .mono{ font-family:'IBM Plex Mono', monospace; }
 
   /* ---------- shell ---------- */
-  .app{ width: min(97vw, 2400px); margin: 0 auto; padding: 14px 32px 80px; }
-  .topbar{
-    display:flex; align-items:center; justify-content:space-between;
-    padding-bottom: 10px; margin-bottom: 14px; border-bottom: 1px solid var(--line);
-  }
-  .brand{ display:flex; align-items:baseline; gap:10px; }
-  .brand h1{ font-size:var(--fs-xl); font-weight:600; margin:0; letter-spacing:.2px; }
-  .brand .sub{ font-size:var(--fs-sm); color:var(--muted); font-family:'IBM Plex Mono',monospace; }
-  .conn{ display:flex; align-items:center; gap:10px; font-size:var(--fs-body); color:var(--ink-soft); }
+  /* position:relative：给 .conn-rail 提供定位上下文，它挪到 .app 外侧的
+     留白区（负值right探出去），不占用文档流空间，所以 padding-top 不用
+     像"占一整行"那样补很多，回到22px这个只给 .tabs 本身留呼吸空间的值。 */
+  .app{ width: min(97vw, 2400px); margin: 0 auto; padding: 22px 32px 80px; position:relative; }
   .dot{ width:8px; height:8px; border-radius:50%; background:#C0392B; display:inline-block; }
   .dot.on{ background:#3E8E5A; }
   .btn{
@@ -74,6 +69,48 @@
   .btn:focus-visible{ outline:2px solid var(--global); outline-offset:2px; }
   .btn.ghost{ background:transparent; }
   .btn.small{ padding:5px 10px; font-size:var(--fs-sm); }
+  /* 原来独占一整行的 .topbar（品牌名+连接状态+按钮）拆掉了：品牌名不要，
+     连接状态圆点/文字/按钮挪到这里，竖排堆叠（保留贴外侧留白区的定位，
+     不占 .tabs 的位置），但每一行的文字本身横排显示——上一版把"选择 Vault
+     文件夹"这种长文案硬套竖排，拉得太长跟横排的"地图/分栏"按钮不协调；
+     这版把文案本身缩短（"已连接"/"未连接"三个字，按钮改成纯图标📁+
+     title属性放完整说明），横排也能塞进这条45-60px宽的外侧留白区，不用
+     再牺牲文字方向。
+     right:-24px 比上一版的-44px保守——上一版按理论视口宽度估算，实测在
+     用户实际窗口宽度下直接把内容推到贴浏览器滚动条/溢出视口，说明那个
+     视口下外侧留白比理论值窄，这版收窄offset降低溢出风险，如果视觉上
+     还是贴太紧或者留白过多，再按实际效果调这一个数字。
+     .conn-rail 本身不再是简单的flex竖排列表——圆点+"已连接"这一行要跟
+     .tabs 里"分栏"按钮的文字对齐，文件夹图标要下移到贴 .year-rail 卡片
+     的上边线，两个目标点垂直距离比较远（中间隔着 .tabs 剩下的高度+
+     margin-bottom），用flex的gap撑不出这个距离，所以拆成两个独立的
+     position:absolute子元素，各自按目标位置单独给top值，不再互相牵连。
+     .conn-rail-status（圆点+"已连接"）的 top:32px 是按 .tabs 的padding+
+     字号估算出来的理论值（.tab用9px上下padding+15px字号，.tabs从.app的
+     22px padding-top算起，算出视觉中心约在40px高度），还没根据截图微调过，
+     如果看着跟"分栏"文字没对齐，也是能再调的。
+     .conn-rail-icon-btn 的 top 一开始按理论值给的是59px（.year-rail顶边线
+     理论估算约73px），根据截图反馈"再往下挪"，已经调成76px——这个是
+     实际效果图对过的值，不是纯理论估算了，除非视觉上又不对，不然不用
+     再按公式重新推。 */
+  .conn-rail{ position:absolute; top:0; right:-24px; z-index:5; }
+  .conn-rail-status{
+    position:absolute; top:32px; left:50%; transform:translateX(-50%);
+    display:flex; align-items:center; gap:6px; white-space:nowrap;
+  }
+  .conn-rail-text{
+    font-size:var(--fs-xs); color:var(--ink-soft); white-space:nowrap;
+  }
+  .conn-rail-icon-btn{
+    position:absolute; top:76px; left:50%; transform:translateX(-50%);
+    font-size:15px; line-height:1; cursor:pointer; width:28px; height:28px; padding:0;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:50%; border:1px solid var(--line); background:var(--surface); color:var(--ink);
+    transition:.15s ease;
+  }
+  .conn-rail-icon-btn:hover{ border-color:var(--ink-soft); }
+  .conn-rail-icon-btn:focus-visible{ outline:2px solid var(--global); outline-offset:2px; }
+
 
   /* ---------- tabs ---------- */
   .tabs{ display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:14px; }
@@ -101,8 +138,17 @@
   /* ---------- time board ---------- */
   .year-rail{
     background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);
-    padding:24px 24px; margin-bottom:20px;
+    padding:17px 24px 24px 24px; margin-bottom:20px;
   }
+  /* padding-top 比左/右/下三边的24px少（当前17px）：.year-big 是46px字号、
+     line-height:1的IBM Plex Mono，但这款字体自己的行高（ascent+descent）
+     是1.3倍字号，比line-height:1定的1倍字号更宽，多出来的部分会溢出到数字
+     视觉墨迹上方，实测约留出7.6px看不见的空白；而下面.ticks（11px、字体
+     默认约1.3倍行高）这块隐藏空白只有约2.9px——理论算下来两边只差4.7px
+     （对应padding-top≈19px），但实际肉眼看19px时顶部还是偏松，又往下调了
+     2px到17px，说明字体度量算出的理论值和浏览器对<input>这个表单控件的
+     实际渲染之间有些许出入，这个17px是理论值+实测微调的结果，不是纯公式
+     算出来的，以后再调就直接肉眼对比，不用重新走公式。 */
   /* margin-bottom 数值本身不大，但 .year-big 是 46px/line-height:1 的等宽字体，
      数字字形实际墨迹高度只占这个行框的七成左右，底下还留着一截没被数字用满的
      "降部预留空间"（即使数字没有降部，字体度量本身依然保留这块空间）。
@@ -257,6 +303,15 @@
      的区域）。现在改成 gapAbove/ownHeight/H 全部在JS的 domainRows 那段
      map 函数里一起算、top偏移量也用JS算好直接内联进style——不要再拆开，
      以后要调间距/高度，去JS那一处改，不要在CSS里单独加针对某一行的规则。
+
+     【分栏(ColumnBoard)也用这套色条，但走的是另一条路】
+     梯形clip-path的形状公式抽成了顶层共享函数 domainBarClipPath(H,W,r)，
+     .domain-bar 这条CSS规则（宽度/竖排文字/字体）也是两边共用——但上面
+     A/B/C/D这4处"防止被横向滚动裁掉"的联动，分栏这边完全不需要：分栏的
+     4张卡片是CSS Grid平铺分页，没有横向滚动容器，色条只贴着最左边一张
+     卡片往外探，改用真实DOM测量（不是套公式）算H和top，具体看
+     ColumnBoard.renderDomainBars 那段注释。改共享的形状/视觉这两处两边
+     都要看一眼有没有连带影响，改各自的定位/联动逻辑互不影响。
      ============================================================ */
   /* 卡片本身留出左侧空间给外探的色条（.contemp-domain-bar 会从每个
      .contemp-domain-row 的左边缘往外探出 CONTEMP_BAR_W(22px) + 一点点
@@ -343,9 +398,12 @@
      这条规则里的 top:0 只是兜底默认值，实际生效的是JS内联的
      top:-{gapAbove}px——完整的联动逻辑看上面那段总览注释，或者去JS里
      domainRows 那段 map 函数看实际计算。 */
-  .contemp-domain-bar{
-    position:absolute; top:0; bottom:0; right:calc(100% + 16px); width:22px;
-    display:flex; align-items:center; justify-content:center;
+  /* 色条的视觉基础（宽度、竖排文字、字体）——主体看板(.contemp-domain-bar)和
+     分栏(.col-domain-bar)共用这一份，定位方式不一样（各自贴着不同的容器往外探），
+     所以定位相关的属性(position/top/left/right/bottom)拆到各自的规则里，不放
+     在这条共享基础里。颜色/clip-path两边都是JS内联style覆盖，这里不用管。 */
+  .domain-bar{
+    width:22px; display:flex; align-items:center; justify-content:center;
     writing-mode:vertical-rl; font-size:var(--fs-xs); font-weight:600; letter-spacing:.15em;
     /* 全局字体栈是 'Inter', sans-serif，Inter 本身不含中文字形，中文字符
        靠系统兜底字体顶上——大多数系统的中文字体竖排都没问题，但这里单独
@@ -353,6 +411,7 @@
        保险，不动全局字体设置。 */
     font-family:'PingFang SC','Microsoft YaHei','Noto Sans CJK SC','Inter',sans-serif;
   }
+  .contemp-domain-bar{ position:absolute; top:0; bottom:0; right:calc(100% + 16px); }
   /* 10列跟表头共用同一份 repeat(10,minmax(200px,1fr)) 网格模板才能对齐——
      200px是转置前"一个国家栏"原有的最小宽度，minmax(...,1fr)是这次为了
      解决"卡片被min-width撑宽时10列不跟着变宽、多余空间空在最后一列右侧"
@@ -372,10 +431,8 @@
   .contemp-lane-empty{ height:160px; }
 
   /* 人物 chip 本身直接复用 .coverage-chip 的视觉和悬浮详情逻辑（同一套
-     ChipTooltip 事件委托），额外加 .contemp-chip 这个 class 只是为了跟
-     点击跳转的事件委托区分开，不影响样式——现在只传 data-range（年份，
-     不再带国家/carrier那行 data-summary），悬浮框年份用白色（见
-     .chip-tooltip-range--primary），跟作品chip墙那套"年代弱化灰"分开处理。
+     ChipTooltip 事件委托、同一套流动文字排版），额外加 .contemp-chip 这个
+     class 只是为了跟点击跳转的事件委托区分开，不影响样式。
      可点击（跳去主体看板/生平），所以覆盖掉 .coverage-chip 默认的
      cursor:default，加个 hover 反馈。 */
   .contemp-chip{ cursor:pointer; }
@@ -411,7 +468,12 @@
     width:72px; height:72px; display:flex; align-items:center; justify-content:center;
     cursor:pointer; background:none; border:none; padding:0; z-index:2;
   }
-  .page-arrow.left{ left:-76px; }
+  /* 左箭头挪到-102px（原来是跟右箭头一样的-76px=72箭头+4间隙）：
+     72(箭头) + 8(箭头到色条的呼吸间隙) + 22(色条宽度，跟.domain-bar的
+     width同步) = 102，色条现在直接贴卡片（0间隙），中间只需要塞进色条
+     本身+它跟箭头的8px间隙。色条只贴最左侧这一张卡片，右边没有色条，
+     右箭头维持原来的-76px不用动，两个箭头故意不对称。 */
+  .page-arrow.left{ left:-102px; }
   .page-arrow.right{ right:-76px; }
   .page-arrow svg{ stroke:var(--line); transition:stroke .15s ease; }
   .page-arrow:hover svg{ stroke:var(--ink-soft); }
@@ -566,9 +628,31 @@
   .tenure-years{ font-size:var(--fs-xs); color:var(--muted); white-space:nowrap; }
   .bg-split{ display:flex; gap:8px; }
   .bg-split .bg-item{ flex:1; min-width:0; margin-bottom:0; }
-  .col-slot{ margin-bottom:18px; padding-bottom:18px; border-bottom:1px dashed var(--line); min-height:176px; }
+  .col-slot{ margin-bottom:18px; padding-bottom:18px; border-bottom:1px dashed var(--line); min-height:191px; }
   .col-slot.coverage-slot{ min-height:0; }  /* 背景区不参与四栏对齐撑高，只要两行的高度就够 */
-  .col-slot-content{ max-height:140px; overflow-y:auto; }
+  /* 5条 .event-row（不换行）理论高度是 170.75px（每条 6+20.15+6+2，
+     20.15=13px字号×1.55行高）。.col-slot-content 的 max-height 定成
+     172px（170.75向上取整再留约1.25px子像素舍入余量，防止浏览器把
+     20.15这种带小数的行高向上取整时刚好撞线触发滚动条）；6条理论高度
+     204.9px，跟172px之间还有约33px安全区间，不会误触发——五条刚好完整
+     显示不触发滚动条，第六条才会。
+     注意 .col-slot 自己的 min-height 不能直接抄这个172px：全局有
+     *{box-sizing:border-box}，min-height 算的是"内容+padding+border"
+     这一整个盒子，而 .col-slot 自己身上就带着18px的padding-bottom和
+     1px的border-bottom（见本条规则），这19px会从min-height这个预算里
+     扣掉，min-height只是下限不是上限——内容一旦长到172px（比如5条数据），
+     .col-slot的实际总高度会自然撑到172+19=191px，超出172px这个下限，
+     导致跟内容少、靠191px下限撑起来的卡片对不齐。所以 .col-slot 的
+     min-height 要留出这19px的余量，定成 172+18+1=191px，两个数字才能
+     在内容跑满时也保持一致。 */
+  .col-slot-content{ max-height:172px; overflow-y:auto; }
+  /* 色条只贴最左侧那一张卡片，定位是相对 .column-board（左右翻页箭头的
+     定位上下文）算的绝对坐标——不是相对每个 .col-slot 自己，因为分栏这边
+     色条要测真实DOM算出的top/height（ColumnBoard.renderDomainBars）。
+     left:-22px = 色条自身宽度22px，卡片到色条这段呼吸间隙已去掉，色条
+     直接贴着卡片左边缘。跟箭头之间仍保留8px间隙，所以箭头的坐标（见
+     .page-arrow.left）要跟着这里同步收窄，两处改一处都要看对方。 */
+  .col-domain-bar{ position:absolute; left:-22px; }
   .col-slot:last-child{ border-bottom:none; margin-bottom:0; padding-bottom:0; }
   .col-slot-span{ padding-bottom:12px; min-height:40px; }  /* 下方留白改成跟上方(col-head 的 12px)一致，条形本身27px+这12px+1px边框 */
   /* 跨度事件在"自有空间"显示时（不跟标题同行），可能是多行堆叠——每行要么是单个
@@ -887,7 +971,7 @@
   .search-empty-state .display{ font-size:var(--fs-lg); color:var(--ink-soft); margin-bottom:6px; }
 
 
-  /* coverage_start/coverage_end 的作品 chip 墙：虚线弱化，跟"相关"chip 同一套语言但描边不同，
+  /* coverage 字段（多段区间语法同 tenure）驱动的作品 chip 墙：虚线弱化，跟"相关"chip 同一套语言但描边不同，
      容器固定两行高度（不是"最多两行"，内容不够也占着这个位置，行为对齐政治/经济/其它那几个区域），
      超出两行内部滚动，chip 内文字不截断、放不下整体挪下一行（flex-wrap 默认行为）。
      悬浮详情不用 CSS :hover 那套（position:absolute 会被这里的 overflow:auto 直接裁掉，
@@ -905,21 +989,14 @@
     font-size:var(--fs-xs); line-height:1.5; box-shadow:var(--shadow); pointer-events:none;
   }
   .chip-tooltip.show{ display:block; }
-  .chip-tooltip-range{ color:var(--muted); margin-bottom:4px; font-family:'IBM Plex Mono',monospace; }
-  .chip-tooltip-range:last-child{ margin-bottom:0; }
-  /* 人物TAB专用：年份当主要信息展示，直接用容器自带的高对比浅色（跟
-     .chip-tooltip-title那行同一个颜色来源），不用.chip-tooltip-range默认
-     的弱化灰。间距沿用基础类的margin-bottom:4px（不再单独清零）——现在
-     年份下面经常还要接简述/tags，需要留白，不像最早只有年份一行那阵子
-     可以不留。 */
+  .chip-tooltip-range{ color:var(--muted); font-family:'IBM Plex Mono',monospace; }
+  /* 年份/简述/tags现在统一走span内联拼成一段流动文字（.contemp-chip和作品
+     覆盖chip墙共用同一套渲染逻辑，见 ChipTooltip.show()），margin-bottom
+     对内联元素不生效，不需要再管间距；年份当主要信息展示，用容器自带的
+     高对比浅色，不用.chip-tooltip-range默认的弱化灰。 */
   .chip-tooltip-range--primary{ color:var(--surface); }
   .chip-tooltip-title{ margin-bottom:4px; }
   .chip-tooltip-title:last-child{ margin-bottom:0; }
-  /* 这个class现在只服务于作品覆盖chip墙那条分支（块级div，简述单独一行，
-     年份是最后一行时收掉底部间距）——人物TAB分支已经改成span内联拼一段
-     连续文字，不再用这个class。 */
-  .chip-tooltip-summary{ margin-bottom:4px; }
-  .chip-tooltip-summary:last-child{ margin-bottom:0; }
   .tl-item{ display:flex; gap:12px; padding:9px 0; border-top:1px solid var(--line); }
   .tl-item:first-child{ border-top:none; }
   .tl-age{
@@ -1037,16 +1114,12 @@
 <body>
 <div class="app">
 
-  <div class="topbar">
-    <div class="brand">
-      <h1 class="display">F WORLD B</h1>
-      <span class="sub">时间坐标 · TIME COORDINATE</span>
-    </div>
-    <div class="conn">
+  <div class="conn-rail" id="connRail">
+    <div class="conn-rail-status">
       <span class="dot" id="connDot"></span>
-      <span id="connText">未连接仓库</span>
-      <button class="btn" id="connectBtn">选择 Vault 文件夹</button>
+      <span class="conn-rail-text" id="connText" title="未连接仓库">未连接</span>
     </div>
+    <button class="conn-rail-icon-btn" id="connectBtn" title="选择 Vault 文件夹">📁</button>
   </div>
 
   <div class="warn-strip" id="warnStrip"></div>
@@ -1422,6 +1495,16 @@ const CONTEMP_FIXED_COUNTRY = new Set(['UK','France','Germany','Russia','China',
 const CONTEMP_DOMAIN_COLORS = {
   政治:'#A6433C', 军事:'#5B6B7A', 经济:'#B9862F', 科学:'#2E7A8E', 文化:'#7C5A8C'
 };
+/* 分类色条的梯形裁剪路径——主体看板(ContemporariesView)和分栏(ColumnBoard)的色条
+   共用同一份形状定义，只是各自算H（色条自身总高度）的方式不一样：主体看板5个分类
+   高度固定、用公式直接推；分栏每张卡片高度不固定（背景跨度事件进度条、换行的长
+   标题……），用渲染完之后的真实DOM测量出H再传进来。W是色条宽度，要跟各自CSS里
+   .contemp-domain-bar / .col-domain-bar 的 width 保持一致；r是外侧圆角半径。
+   形状本身只在这一处定义，两边谁都不用各自再写一遍，改这里两边同步生效。 */
+function domainBarClipPath(H, W, r){
+  const topY = 0.06 * H, bottomY = 0.94 * H;
+  return `path('M ${W} 0 L ${W} ${H} L 7 ${bottomY} A ${r} ${r} 0 0 1 0 ${bottomY - r} L 0 ${topY + r} A ${r} ${r} 0 0 1 7 ${topY} Z')`;
+}
 /* 给一个国家名（已经过 Parser.normalizeCountry 标准化）算出它落在哪个栏位 key 上。
    不认识的国家名（COUNTRY_CONTINENT_ALL 里查不到）统一兜底进"世界其他"，
    而不是直接判定失败——这跟"domain 不在政治/军事/经济/文化范围内直接报警告并
@@ -1962,6 +2045,17 @@ const Parser = {
         if(reignEra.length && carrierVal !== '统治者'){
           warnings.push(title+'：写了 reign_era 但 carrier 不是「统治者」，已按写出的值处理——请确认 carrier 是否写错');
         }
+        // coverage：作品类 entity 描绘的背景年代，跟 tenure 是完全一样的"多段
+        // 不连续区间"语法（逗号分隔，每段"起始-结束"）——双线/多线叙事的作品
+        // （比如一半剧情在古代、一半在现代，中间隔几百年）没法用一段
+        // [start,end] 表达，会把中间毫不相关的年份也误判成"这部作品覆盖到了"，
+        // 所以跟 tenure 一样允许写多段：coverage: "1420-1420, 1990-1990"。
+        // 原来是 coverage_start/coverage_end 两个各自单值的字段，现在合并成
+        // 这一个——两个字段拆开写多段的话，谁跟谁配对全靠"第几个"这种脆弱的
+        // 位置对应关系，容易两边字段改漏一处就错位，tenure 当初也是因为这个
+        // 原因才设计成一个字段自己把 start-end 写在一起。
+        const { ranges: coverageRanges, invalid: coverageInvalid } = Parser.parseTenureRanges(fm.coverage);
+        coverageInvalid.forEach(seg=>{ warnings.push(title+'：「coverage」字段里有一段没识别出「起始-结束」格式，已跳过——'+seg); });
         persons.push({
           title, path,
           birth: Parser.parseDate(fm.start_year),
@@ -1975,8 +2069,7 @@ const Parser = {
           reignEra,
           related: Parser.toArr(fm.related),
           fictional: Parser.isTrue(fm.is_fictional),
-          coverageStart: Parser.parseDate(fm.coverage_start),
-          coverageEnd: Parser.parseDate(fm.coverage_end),
+          coverageRanges,
           body,
           timeline: entityTimeline,
           fictionalTimeline: fictionalTimeline
@@ -2195,6 +2288,13 @@ const Utils = {
     const s = startObj.year;
     const e = endObj ? endObj.year : s;
     return year>=s && year<=e;
+  },
+  /* coverage 多段区间的年份匹配：跟下面 findAllCurrentByRange（tenure专用、左闭右开、
+     有"交接给下一任"的语义）不是一回事——这里没有谁接谁的概念，就是纯粹的闭区间，
+     "这一年落没落在这部作品描绘的某一段背景年代里"，start/end 两头都算数，
+     多段之间只要命中任意一段就算覆盖到了。 */
+  rangesInclude(ranges, year){
+    return (ranges||[]).some(r=> year>=r.start && year<=r.end);
   },
   /* tenure 区间的年份匹配：左闭右开——end 这一年不算这个人自己的，是交棒
      给下一任的边界年份（沿用你最早定的"XXXX-1900 和 1900-YYYY 相接时，
@@ -2469,15 +2569,15 @@ const Query = {
     const countries = COUNTRIES_BY_CONTINENT[continent] || [];
     return Store.vault.events.filter(e=> e.region.some(r=>countries.includes(r)) && Utils.inRange(e.start, e.end, year));
   },
-  /* coverage_start/coverage_end：作品类 entity 描绘的背景年代，跟"这一年真实/虚构发生了什么"分开查——
+  /* coverage：作品类 entity 描绘的背景年代，跟"这一年真实/虚构发生了什么"分开查——
      不走 bgEvents（跨度事件进度条）那条路，因为同一年覆盖到的作品数量可能很多（比如法国大革命），
      硬塞进只为"国运级大事"设计的进度条/两两配对排布里会挤爆，所以单独查、单独展示成 chip 墙。 */
   coverageEntitiesForCountryYear(country, year){
-    return Store.vault.persons.filter(p=> p.coverageStart && Utils.inRange(p.coverageStart, p.coverageEnd, year) && p.country.includes(country));
+    return Store.vault.persons.filter(p=> p.coverageRanges.length && Utils.rangesInclude(p.coverageRanges, year) && p.country.includes(country));
   },
   coverageEntitiesForContinentYear(continent, year){
     const countries = COUNTRIES_BY_CONTINENT[continent] || [];
-    return Store.vault.persons.filter(p=> p.coverageStart && Utils.inRange(p.coverageStart, p.coverageEnd, year) && p.country.some(r=>countries.includes(r)));
+    return Store.vault.persons.filter(p=> p.coverageRanges.length && Utils.rangesInclude(p.coverageRanges, year) && p.country.some(r=>countries.includes(r)));
   },
   /* "大洲其它"坑位专用：整个大洲（用176国大表COUNTRIES_BY_CONTINENT_ALL，含
      大洲名自身）减去exclude这份排除名单——排除名单由ColumnBoard每次渲染时
@@ -2489,7 +2589,7 @@ const Query = {
   },
   coverageEntitiesForContinentExcludingYear(continent, exclude, year){
     const pool = (COUNTRIES_BY_CONTINENT_ALL[continent] || []).filter(c => !exclude.includes(c));
-    return Store.vault.persons.filter(p=> p.coverageStart && Utils.inRange(p.coverageStart, p.coverageEnd, year) && p.country.some(r=>pool.includes(r)));
+    return Store.vault.persons.filter(p=> p.coverageRanges.length && Utils.rangesInclude(p.coverageRanges, year) && p.country.some(r=>pool.includes(r)));
   },
   /* 按 scope 取当年数据，地图弹窗和分栏表头共用同一份，保证内容不会两边对不上。
      换成真实国家轮廓之后，每个已登记国家都有自己独立可点的形状，不再需要"其他"这个
@@ -2532,19 +2632,22 @@ const FIXED_DOMAIN_ROWS = [
 
 const DetailView = {
 
-  /* coverage_start/coverage_end 的作品，展示成 chip 墙——数量不设上限，flex-wrap 自然换行，
+  /* coverage 的作品，展示成 chip 墙——数量不设上限，flex-wrap 自然换行，
      容器固定两行高度、超出内部滚动。只显示书名，年代区间 + 简述放进 data-* 属性，
      悬浮时由全局共用的 .chip-tooltip 读取展示（不能用 CSS :hover 挂在 chip 自己身上，
      会被 .coverage-chips 的 overflow:auto 裁掉，见上面 CSS 注释）。
+     年代区间：一部作品可能有多段不连续的背景年代（双线/多线叙事），不管当前查询的是
+     哪一年、命中了哪一段，chip 上永远把这部作品的所有段都列出来（比如"1420 / 1990"），
+     不只显示命中的那一段——保持"这部作品的完整背景年代"这个信息本身跟查询年份无关。
      wrapperClass：分栏传 'col-slot'（复用政治/经济那套外壳，包括"最后一个不显示底边框"的规则），
      地图弹窗传 'domain-group'（跟真实 domain 分组外层结构一致）——标签固定叫"背景"，
      颜色用中性弱化色（不用国家/domain 主题色），跟这块内容本身的"弱化"定位对上。 */
   renderCoverageChips(coverageItems, wrapperClass){
     const chips = coverageItems.map(p=>{
-      const s = p.coverageStart.year, e = p.coverageEnd ? p.coverageEnd.year : '?';
+      const rangeText = p.coverageRanges.map(r=> r.start===r.end ? String(r.start) : (r.start+' – '+r.end)).join(' / ');
       const summary = Parser.extractSection(p.body, '简述');
       return `<div class="coverage-chip" tabindex="0"
-        data-range="${Utils.escapeHtml(s + ' – ' + e)}"
+        data-range="${Utils.escapeHtml(rangeText)}"
         data-summary="${summary ? Utils.escapeHtml(Parser.stripWikilinkSyntax(summary)) : ''}">
         <span class="coverage-chip-name">${Utils.escapeHtml(p.title)}</span>
       </div>`;
@@ -2597,8 +2700,10 @@ const DetailView = {
       const list = visibleEvs.filter(e => e.domain.some(row.match)).sort(Utils.compareEventDate);
       list.forEach(e=>used.add(e));
       const c = shades[row.label] || shades['__default'];
-      html += `<div class="col-slot">
-        <div class="domain-tag" style="background:${c}22;color:${c}">${row.label}</div>
+      // 不再内嵌"政治/经济/文化"这行文字标签——挪到卡片外面的竖排色条了（跟主体看板
+      // 视觉统一，见 ColumnBoard.renderDomainBars），这里只留 data-domain-slot（标签文字）
+      // /data-domain-color（配色）两个属性给那段JS渲染完后测量用，不影响这里的实际展示。
+      html += `<div class="col-slot" data-domain-slot="${Utils.escapeHtml(row.label)}" data-domain-color="${c}">
         <div class="col-slot-content">`;
       html += list.length
         ? list.map(e=>DetailView.renderEventRow(e, c)).join('')
@@ -2608,8 +2713,7 @@ const DetailView = {
 
     const others = visibleEvs.filter(e=> !used.has(e)).sort(Utils.compareEventDate);
     const oc = shades['未分类'] || shades['__default'];
-    html += `<div class="col-slot">
-      <div class="domain-tag" style="background:${oc}22;color:${oc}">其他</div>
+    html += `<div class="col-slot" data-domain-slot="其他" data-domain-color="${oc}">
       <div class="col-slot-content">`;
     html += others.length
       ? others.map(e=>DetailView.renderEventRow(e, oc)).join('')
@@ -3166,6 +3270,59 @@ const ColumnBoard = {
       const h = ColumnBoard.measureDefaultCardHeight();
       emptySlots.forEach(el => { el.style.minHeight = h + 'px'; });
     }
+
+    // 色条要放在空坑位高度补完之后再画——万一空坑位改高度间接影响了后面兄弟
+    // 元素的布局（这里目前不会，但顺序上保险起见还是等所有DOM调整都做完、
+    // 布局彻底稳定了再测量），保证量到的是最终会展示给用户的那个高度，不是
+    // 中间态。
+    ColumnBoard.renderDomainBars(wrap, grid);
+  },
+
+  /* 分类色条：贴着分栏这一页最左侧那张卡片外面，视觉语言（竖排梯形色条）
+     照抄主体看板(ContemporariesView)，具体讨论过程和"为什么不能像主体看板
+     那样一条色条横跨所有列"见 .column-board-grid 上方 CSS 里"色条系统总览"
+     注释末尾那段。
+     只测第一坑位（不管是不是当前页真的选了国家）：分栏每张卡片是独立渲染的，
+     卡头上方"背景跨度事件进度条"（.col-slot-span）高度不固定，导致"政治/
+     经济/文化/其他"这4块在4张卡片之间的实际垂直位置对不齐，没法共用一条
+     色条——只能挑一张卡片当基准，选最左边那张；如果这一坑正好是空的（没
+     选国家），没有分类槽位可测，直接不画色条。
+     用真实DOM测量（getBoundingClientRect），不是像主体看板那样套公式硬算：
+     分栏这边可变高度的东西比主体看板多（背景进度条、可能换行的长标题……），
+     公式会越写越复杂，渲染完直接量更准也更省心。 */
+  renderDomainBars(wrap, grid){
+    // 每次重新渲染都要先清掉上一次画的色条——它们是wrap的直接子元素，不在
+    // wrap.innerHTML那次整体替换的范围内（那次只替换了箭头+grid），不清理
+    // 会越攒越多。
+    wrap.querySelectorAll('.col-domain-bar').forEach(el => el.remove());
+
+    const firstCard = grid.querySelector('.col-card:not(.empty-slot)');
+    if(!firstCard) return;
+
+    const wrapTop = wrap.getBoundingClientRect().top;
+    const slots = firstCard.querySelectorAll('[data-domain-slot]');
+    slots.forEach(slotEl=>{
+      const rect = slotEl.getBoundingClientRect();
+      // top延伸到"紧挨着上面那个东西"的底边——政治上面是背景进度条
+      // (.col-slot-span)，经济/文化/其他上面是前一个分类槽位，统一用
+      // previousElementSibling 就自动覆盖了这两种情况，不用像主体看板
+      // 那样单独判断"是不是第一行"——分栏这边DOM结构本身已经保证了这
+      // 一点（col-slot-span 永远是渲染出来的第一个兄弟元素）。
+      const prevEl = slotEl.previousElementSibling;
+      const top = (prevEl ? prevEl.getBoundingClientRect().bottom : rect.top) - wrapTop;
+      const bottom = rect.bottom - wrapTop;
+      const H = bottom - top;
+      const c = slotEl.dataset.domainColor;
+      const bar = document.createElement('div');
+      bar.className = 'domain-bar col-domain-bar';
+      bar.style.top = top + 'px';
+      bar.style.height = H + 'px';
+      bar.style.background = c + '33';
+      bar.style.color = c;
+      bar.style.clipPath = domainBarClipPath(H, 22, 36);
+      bar.textContent = slotEl.dataset.domainSlot;
+      wrap.appendChild(bar);
+    });
   }
 };
 
@@ -4124,10 +4281,9 @@ const ContemporariesView = {
       const ownHeight = isLast ? 160 : 160 + 10 + 1;
       const H = ownHeight + gapAbove;
       const W = 22, r = 36;
-      const topY = 0.06 * H, bottomY = 0.94 * H;
-      const clip = `path('M ${W} 0 L ${W} ${H} L 7 ${bottomY} A ${r} ${r} 0 0 1 0 ${bottomY - r} L 0 ${topY + r} A ${r} ${r} 0 0 1 7 ${topY} Z')`;
+      const clip = domainBarClipPath(H, W, r);
       return `<div class="contemp-domain-row">
-        <div class="contemp-domain-bar" style="top:-${gapAbove}px;background:${c}33;color:${c};clip-path:${clip}">${dk}</div>
+        <div class="domain-bar contemp-domain-bar" style="top:-${gapAbove}px;background:${c}33;color:${c};clip-path:${clip}">${dk}</div>
         <div class="contemp-domain-row-lanes">${lanes}</div>
       </div>`;
     }).join('');
@@ -4809,54 +4965,40 @@ const ChipTooltip = {
   show(chip){
     const tip = document.getElementById('chipTooltip');
     tip.innerHTML = '';
-    if(chip.classList.contains('contemp-chip')){
-      // 人物TAB：年份/简述/tags不再各占一个块级div（强制各自一行），改成
-      // 拼进同一段流动文字里——用span（内联元素）+ " · "（空格-圆点-空格）
-      // 分隔，跟app里"· 虚构"那处标记统一用的标点写法一致，不用没有可见
-      // 分隔符的纯空格（换行后容易看不出是故意留的间隔）。超出悬浮框220px
-      // 宽度时交给容器自带的 white-space:normal 自然换行，不再是"逐项
-      // 换行"。tags按要求也改成白色（不再单独用弱化灰），所以这条分支里
-      // 三项都不需要额外配色class，只有年份保留 chip-tooltip-range--primary
-      // 是为了保留等宽字体（IBM Plex Mono），让日期在一段中文叙述里视觉上
-      // 更好辨认，颜色本身默认就是白色，三项没有谁比谁"次要"了。没有的
-      // 部分（简述/tags）直接跳过，不产生多余的分隔符或空行。
-      const p = document.createElement('div');
-      const pieces = [];
-      if(chip.dataset.range){
-        const el = document.createElement('span');
-        el.className = 'chip-tooltip-range chip-tooltip-range--primary';
-        el.textContent = chip.dataset.range;
-        pieces.push(el);
-      }
-      if(chip.dataset.summary){
-        const el = document.createElement('span');
-        el.textContent = chip.dataset.summary;
-        pieces.push(el);
-      }
-      if(chip.dataset.tags){
-        const el = document.createElement('span');
-        el.textContent = chip.dataset.tags;
-        pieces.push(el);
-      }
-      pieces.forEach((el,i)=>{
-        if(i>0) p.appendChild(document.createTextNode(' · '));
-        p.appendChild(el);
-      });
-      tip.appendChild(p);
-    } else {
-      // 其它地方（比如作品覆盖chip墙）保持原来"年代单独一行、弱化灰，
-      // 简述单独一行"的块级div结构，不受上面contemp-chip分支影响。
-      const rangeEl = document.createElement('div');
-      rangeEl.className = 'chip-tooltip-range';
-      rangeEl.textContent = chip.dataset.range || '';
-      tip.appendChild(rangeEl);
-      if(chip.dataset.summary){
-        const sumEl = document.createElement('div');
-        sumEl.className = 'chip-tooltip-summary';
-        sumEl.textContent = chip.dataset.summary;
-        tip.appendChild(sumEl);
-      }
+    // 年份/简述/tags（tags只有 .contemp-chip 才会传，作品覆盖chip墙没有这项，
+    // 下面按"有值才渲染这一项"处理，天然兼容两种chip）不再各占一个块级div
+    // （强制各自一行），统一拼进同一段流动文字里——用span（内联元素）+ " · "
+    // （空格-圆点-空格）分隔，跟app里"· 虚构"那处标记统一用的标点写法一致，
+    // 不用没有可见分隔符的纯空格（换行后容易看不出是故意留的间隔）。超出
+    // 悬浮框220px宽度时交给容器自带的 white-space:normal 自然换行，不再是
+    // "逐项换行"。tags/简述按要求也是白色（不再单独用弱化灰），所以这几项
+    // 都不需要额外配色class，只有年份保留 chip-tooltip-range--primary 是为
+    // 了保留等宽字体（IBM Plex Mono），让日期在一段叙述文字里视觉上更好
+    // 辨认，颜色本身默认就是白色，几项没有谁比谁"次要"了。没有的部分
+    // （简述/tags）直接跳过，不产生多余的分隔符或空行。
+    const p = document.createElement('div');
+    const pieces = [];
+    if(chip.dataset.range){
+      const el = document.createElement('span');
+      el.className = 'chip-tooltip-range chip-tooltip-range--primary';
+      el.textContent = chip.dataset.range;
+      pieces.push(el);
     }
+    if(chip.dataset.summary){
+      const el = document.createElement('span');
+      el.textContent = chip.dataset.summary;
+      pieces.push(el);
+    }
+    if(chip.dataset.tags){
+      const el = document.createElement('span');
+      el.textContent = chip.dataset.tags;
+      pieces.push(el);
+    }
+    pieces.forEach((el,i)=>{
+      if(i>0) p.appendChild(document.createTextNode(' · '));
+      p.appendChild(el);
+    });
+    tip.appendChild(p);
     tip.classList.add('show');
     const rect = chip.getBoundingClientRect();
     const tipRect = tip.getBoundingClientRect();
@@ -4910,8 +5052,11 @@ const App = {
 
   setConnected(on){
     document.getElementById('connDot').classList.toggle('on', on);
-    document.getElementById('connText').textContent = on ? 'F WORLD B 已连接' : '未连接仓库';
-    document.getElementById('connectBtn').textContent = on ? '重新选择' : '选择 Vault 文件夹';
+    const connTextEl = document.getElementById('connText');
+    connTextEl.textContent = on ? '已连接' : '未连接';
+    connTextEl.title = on ? '已连接' : '未连接仓库';
+    const connectBtnEl = document.getElementById('connectBtn');
+    connectBtnEl.title = on ? '重新选择' : '选择 Vault 文件夹';
     ['timeEmpty','subjectEmpty','searchEmpty','syncEmpty'].forEach(id=> document.getElementById(id).style.display = on ? 'none' : 'block');
     ['timeContent','searchContent','syncContent'].forEach(id=> document.getElementById(id).style.display = on ? 'block' : 'none');
     // 主体看板下面挂着"生平/人物"两个子视图，不能像上面那样无脑一起设 block——
@@ -5122,7 +5267,9 @@ const App = {
 
     (async function tryRestore(){
       if(!('showDirectoryPicker' in window)){
-        document.getElementById('connText').textContent = '此浏览器不支持本地文件读取，请用 Chrome/Edge 打开';
+        const connTextEl = document.getElementById('connText');
+        connTextEl.textContent = '不支持';
+        connTextEl.title = '此浏览器不支持本地文件读取，请用 Chrome/Edge 打开';
         document.getElementById('connectBtn').style.display='none';
         return;
       }
@@ -5133,7 +5280,7 @@ const App = {
         if(perm === 'granted'){ await App.connectVault(handle); }
         else{
           Store.pendingRestoreHandle = handle;
-          document.getElementById('connectBtn').textContent = '重新连接 F WORLD B';
+          document.getElementById('connectBtn').title = '重新连接';
         }
       }catch(e){
         console.warn('恢复上次连接的 vault 失败：', e);
