@@ -497,6 +497,22 @@
   .page-arrow svg{ stroke:var(--line); transition:stroke .15s ease; }
   .page-arrow:hover svg{ stroke:var(--ink-soft); }
   .page-arrow:focus-visible{ outline:2px solid var(--global); outline-offset:2px; border-radius:6px; }
+  /* "+新增一页"按钮：不常驻，只在翻到最后一页时才由JS插入这个元素（不在
+     最后一页时HTML里压根没有这个按钮，不是靠CSS隐藏），跟右箭头一样横向
+     贴 right:-76px（同一条竖线上，视觉对齐），纵向卡在右箭头正下方——
+     右箭头本身 top:50%+height:72px 垂直居中，它的下边缘是"50%+36px"，
+     这里再加12px呼吸间隙，就是 calc(50% + 48px)。图标风格照抄箭头（无
+     底色/边框、描边色跟随 var(--line)/hover变深），但整体做小一圈（44px
+     而不是72px），跟箭头保持视觉主次之分——箭头是常驻的主导航，这个是
+     偶尔才出现的次要操作。 */
+  .page-add-btn{
+    position:absolute; top:calc(50% + 48px); right:-76px;
+    width:44px; height:44px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; background:none; border:none; padding:0; z-index:2;
+  }
+  .page-add-btn svg{ stroke:var(--line); transition:stroke .15s ease; }
+  .page-add-btn:hover svg{ stroke:var(--ink-soft); }
+  .page-add-btn:focus-visible{ outline:2px solid var(--global); outline-offset:2px; border-radius:6px; }
 
   /* 国家代码：分栏卡片头部原本纯展示的两字母代码，现在可点击唤出
      置换/删除浮层（SlotMenu）。视觉上只加一个可点击的hover底色提示，
@@ -1385,8 +1401,15 @@
    多一层缩进，没有实际收益。
    ========================================================= */
 const CONTINENT_HEX = {
-  Asia:'#C98A2B', Europe:'#2E8E86', Americas:'#B24E36', Africa:'#7C8A3C', Oceania:'#8A5A8C'
+  Asia:'#C98A2B', Europe:'#7FAE6E', Americas:'#3E6FA8', Africa:'#7C8A3C', Oceania:'#8A5A8C'
 };
+/* 国家专属配色覆盖：优先级高于 CONTINENT_HEX 的大洲色，只用来给"这个国家
+   必须跟同大洲其他国家区分开"的情况开小灶（比如中国、日本都在Asia大洲下，
+   但各自要跟俄罗斯、跟彼此都不一样，一个大洲色分不出三种，必须单独指定）。
+   查不到覆盖色的国家，照常退回 CONTINENT_HEX[continent] 那一档大洲色，
+   两者的取用逻辑统一封装在 Color.countryHex 里，不要在各处调用点各自写
+   一遍"先查覆盖表再退回大洲表"这段判断。 */
+const COUNTRY_HEX_OVERRIDE = { China:'#B24E36', Japan:'#ABA697' };
 const CONTINENT_NAME_CN = { Asia:'亚洲', Europe:'欧洲', Americas:'美洲', Africa:'非洲', Oceania:'大洋洲' };
 
 const COUNTRY_CONTINENT = {
@@ -2316,9 +2339,17 @@ const Color = {
     const toHex=v=>Math.round((v+m)*255).toString(16).padStart(2,'0');
     return '#'+toHex(r)+toHex(g)+toHex(b);
   },
-  domainShadeMap(continent){
+  /* 国家专属色优先，查不到再退回大洲色——全站所有"要给具体国家上色"的地方
+     统一走这一个函数，不要各处各写一遍 COUNTRY_HEX_OVERRIDE[x]||CONTINENT_HEX[y]
+     这段判断，以后再加新的国家专属色，只用改 COUNTRY_HEX_OVERRIDE 这一张表，
+     不用满文件找调用点。country 传 falsy（大洲聚合视图，没有具体某个国家）
+     时，天然只会落到 CONTINENT_HEX[continent] 这一档，行为跟以前完全一样。 */
+  countryHex(country, continent){
+    return (country && COUNTRY_HEX_OVERRIDE[country]) || CONTINENT_HEX[continent] || '#8A8578';
+  },
+  domainShadeMap(continent, country){
     const domains = Store.vault.tagRegistry.domain.length ? Store.vault.tagRegistry.domain : DEFAULT_DOMAINS;
-    const [h,s] = Color.hexToHsl(CONTINENT_HEX[continent] || '#8A8578');
+    const [h,s] = Color.hexToHsl(Color.countryHex(country, continent));
     const map = {};
     domains.forEach((d,i)=>{
       const t = domains.length>1 ? i/(domains.length-1) : 0;
@@ -2749,9 +2780,9 @@ const DetailView = {
   },
 
   columnBodyHtml(scope){
-    const color = CONTINENT_HEX[scope.continent];
+    const color = Color.countryHex(scope.country, scope.continent);
     const { evs, bgEvents, coverageItems } = Query.getScopeEvents(scope);
-    const shades = Color.domainShadeMap(scope.continent);
+    const shades = Color.domainShadeMap(scope.continent, scope.country);
     let html = '';
 
     html += `<div class="col-slot col-slot-span">`;
@@ -2928,10 +2959,10 @@ const DetailView = {
   },
 
   detailBodyHtml(scope){
-    const color = CONTINENT_HEX[scope.continent];
+    const color = Color.countryHex(scope.country, scope.continent);
     const { evs, bgEvents, coverageItems } = Query.getScopeEvents(scope);
 
-    const shades = Color.domainShadeMap(scope.continent);
+    const shades = Color.domainShadeMap(scope.continent, scope.country);
     let html = '';
 
     if(bgEvents.length){
@@ -2981,7 +3012,7 @@ const DetailView = {
      地图这边标题栏没有跨度进度条挤占空间的问题（进度条在弹窗正文里，不在标题栏），
      所以不需要像分栏那样额外做宽度收紧，直接拼进标题文字里就行。 */
   popoverContentFor(scope){
-    const color = CONTINENT_HEX[scope.continent];
+    const color = Color.countryHex(scope.country, scope.continent);
     const title = scope.type==='continent' ? CONTINENT_NAME_CN[scope.continent] : scope.country;
     // 执政者不再拼进标题文字里（以前是"美国 拜登"这样直接接在国名后面，
     // 没有竖条，跟分栏卡片的常驻行长得不一样）。统一改成调用方在 .detail-head
@@ -3020,7 +3051,14 @@ const MapView = {
       path.setAttribute('d', d);
       path.setAttribute('class','country bg');
       path.dataset.continent = continent;
-      path.addEventListener('click', (ev)=>{ ev.stopPropagation(); MapView.openDrawer({type:'continentOther', continent, exclude: COUNTRIES_BY_CONTINENT[continent] || []}); });
+      // exclude 要过滤掉"大洲名自映射"那条自己（COUNTRY_CONTINENT 里
+      // Europe:'Europe' 这种，专门给纯大洲名笔记用来避开"未登记"警告的），
+      // 不然 COUNTRIES_BY_CONTINENT[continent] 派生出来的排除名单会把"大洲名
+      // 自己"也当成一个"已注册国家"塞进去，导致 eventsForContinentExcludingYear
+      // 算池子时把 region_country 直接写大洲名的笔记也一起排除掉，在"大洲其他"
+      // 视图里"消失"（分栏那边的排除名单是现算实际坑位占用，不会踩到这个坑，
+      // 只有地图这条路径受影响）。
+      path.addEventListener('click', (ev)=>{ ev.stopPropagation(); MapView.openDrawer({type:'continentOther', continent, exclude: (COUNTRIES_BY_CONTINENT[continent] || []).filter(c => c !== continent)}); });
       svg.appendChild(path);
     });
 
@@ -3030,7 +3068,7 @@ const MapView = {
       const path = document.createElementNS('http://www.w3.org/2000/svg','path');
       path.setAttribute('d', d);
       path.setAttribute('class','country registered');
-      path.setAttribute('fill', CONTINENT_HEX[continent]);
+      path.setAttribute('fill', Color.countryHex(name, continent));
       path.dataset.country = name;
       path.dataset.continent = continent;
       path.addEventListener('click', (ev)=>{ ev.stopPropagation(); MapView.selectScope({type:'country', continent, country:name}); });
@@ -3044,7 +3082,7 @@ const MapView = {
       const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
       dot.setAttribute('cx',x); dot.setAttribute('cy',y); dot.setAttribute('r',3.5);
       dot.setAttribute('class','country registered fallback-dot');
-      dot.setAttribute('fill', CONTINENT_HEX['Asia']);
+      dot.setAttribute('fill', Color.countryHex('Singapore','Asia'));
       dot.dataset.country = 'Singapore';
       dot.dataset.continent = 'Asia';
       dot.addEventListener('click', (ev)=>{ ev.stopPropagation(); MapView.selectScope({type:'country', continent:'Asia', country:'Singapore'}); });
@@ -3121,7 +3159,7 @@ const MapView = {
     const drawer = document.getElementById('drawer');
     const backdrop = document.getElementById('drawerBackdrop');
     const body = document.getElementById('drawerBody');
-    const color = CONTINENT_HEX[scope.continent];
+    const color = Color.countryHex(scope.country, scope.continent);
     const baseTitle = CONTINENT_NAME_CN[scope.continent] || scope.continent;
     const title = scope.type==='continentOther' ? baseTitle+'其他' : baseTitle;
     body.innerHTML = `<div class="detail-head"><span class="detail-swatch" style="background:${color}"></span><span class="detail-title">${Utils.escapeHtml(title)}</span></div>${DetailView.detailBodyHtml(scope)}`;
@@ -3228,7 +3266,12 @@ const ColumnBoard = {
   },
 
   /* 惰性加载：第一次调用时从 localStorage 读，读不到/读到脏数据就回退默认值，
-     不让一次异常数据把整个分栏搞崩。 */
+     不让一次异常数据把整个分栏搞崩。
+     长度校验原来是"必须精确等于8"——现在支持"+新增一页"之后，合法长度
+     不再是单一的8，而是任意4的倍数（8/12/16……，每页固定4个坑位，addPage
+     每次整页地加）。改成"大于0且是4的倍数"，8依然合法（默认情况不受
+     影响），新增过页面之后的12/16同样能正常读出来，不会被误判成脏数据
+     退回默认8个。 */
   loadSlots(){
     if(ColumnBoard.SLOTS) return ColumnBoard.SLOTS;
     let slots = null;
@@ -3236,7 +3279,7 @@ const ColumnBoard = {
       const raw = localStorage.getItem(ColumnBoard.STORAGE_KEY);
       if(raw){
         const parsed = JSON.parse(raw);
-        if(Array.isArray(parsed) && parsed.length === 8){
+        if(Array.isArray(parsed) && parsed.length > 0 && parsed.length % 4 === 0){
           slots = parsed.map(v => ColumnBoard.sanitizeSlotValue(v));
         }
       }
@@ -3307,6 +3350,19 @@ const ColumnBoard = {
     try{ localStorage.setItem(ColumnBoard.PAGE_STORAGE_KEY, String(ColumnBoard.pageIndex)); }catch(e){}
   },
 
+  /* "+新增一页"按钮的入口：往坑位数组末尾追加4个空坑位（一页的量），存档，
+     翻到刚新增的这一页。loadSlots() 那条"必须精确等于8"的校验已经放开成
+     "4的倍数"（见 loadSlots 自己的注释），这里追加完之后长度依然是4的
+     倍数，下次读档不会被判定成"存档损坏"退回默认值。 */
+  addPage(){
+    const slots = ColumnBoard.loadSlots();
+    slots.push(null, null, null, null);
+    ColumnBoard.saveSlots();
+    ColumnBoard.pageIndex = Math.ceil(slots.length / 4) - 1;
+    ColumnBoard.savePageIndex();
+    ColumnBoard.render();
+  },
+
   render(){
     const wrap = document.getElementById('columnBoard');
     if(!wrap) return;
@@ -3329,6 +3385,15 @@ const ColumnBoard = {
           <path d="M7.5 4 L13 10 L7.5 16" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>` : '';
+    // "+新增一页"：不常驻，只在翻到最后一页时才拼进HTML里（不是靠CSS
+    // display切换，前面几页的DOM里压根没有这个按钮），翻到别的页面直接
+    // 从DOM里消失，不占位置。
+    const addPageHtml = ColumnBoard.pageIndex === totalPages - 1 ? `
+      <button class="page-add-btn" id="colPageAddBtn" aria-label="新增一页">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M10 4 V16 M4 10 H16" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>` : '';
 
     const cardsHtml = pageSlots.map((raw, i) => {
       const slotIndex = ColumnBoard.pageIndex * 4 + i;
@@ -3344,7 +3409,7 @@ const ColumnBoard = {
           </div>
         </div>`;
       }
-      const color = CONTINENT_HEX[opt.continent];
+      const color = Color.countryHex(opt.isContinentOther ? null : opt.key, opt.continent);
       // "大洲其它"没有一个确定的国家，走continentOther这条新scope分支，
       // 排除名单每次渲染都现算（跟年份/其它坑位联动）；普通国家还是走
       // 原来的country分支，一个字节没变。
@@ -3366,7 +3431,7 @@ const ColumnBoard = {
       </div>`;
     }).join('');
 
-    wrap.innerHTML = arrowHtml + `<div class="column-board-grid">${cardsHtml}</div>`;
+    wrap.innerHTML = arrowHtml + addPageHtml + `<div class="column-board-grid">${cardsHtml}</div>`;
 
     // 空坑位对齐"默认"高度（见 measureDefaultCardHeight 的注释），不测这一页
     // 恰好渲染出来的真实卡片——那样会被内容多的卡片意外撑高。
@@ -4348,7 +4413,7 @@ const ContemporariesView = {
       const domainMap = buckets[col.key];
       const total = CONTEMP_DOMAIN_ORDER.reduce((s,dk)=> s+domainMap[dk].length, 0);
       const swatch = col.continent
-        ? `<span class="contemp-country-swatch" style="background:${CONTINENT_HEX[col.continent]}"></span>` : '';
+        ? `<span class="contemp-country-swatch" style="background:${Color.countryHex(col.key, col.continent)}"></span>` : '';
       return `<div class="contemp-board-head-cell">${swatch}${col.label}<span class="contemp-country-count">${total}</span></div>`;
     }).join('');
 
@@ -5006,7 +5071,7 @@ const SearchView = {
     table.style.display = '';
     emptyState.style.display = 'none';
     tbody.innerHTML = sorted.map(r=>{
-      const dotColor = CONTINENT_HEX[SearchView.continentOf(r.jumpCountry)] || 'var(--muted)';
+      const dotColor = Color.countryHex(r.jumpCountry, SearchView.continentOf(r.jumpCountry)) || 'var(--muted)';
       const canJump = !!r.jumpCountry;
       const span = r.startYear!=null
         ? `${r.startYear}${(r.endYear!=null && r.endYear!==r.startYear) ? '–'+r.endYear : ''}`
@@ -5573,6 +5638,8 @@ const App = {
     document.getElementById('columnBoard').addEventListener('click', e=>{
       const arrow = e.target.closest('.page-arrow');
       if(arrow){ ColumnBoard.flipPage(arrow.classList.contains('left') ? -1 : 1); return; }
+      const addPageBtn = e.target.closest('.page-add-btn');
+      if(addPageBtn){ ColumnBoard.addPage(); return; }
       const addCircle = e.target.closest('.empty-slot-circle');
       if(addCircle){
         const emptySlot = addCircle.closest('.empty-slot');
