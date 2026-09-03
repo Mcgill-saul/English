@@ -1877,7 +1877,21 @@ const Parser = {
       }
     }
     rest = rest.trim();
-    return { year, endYear, month, day, datePrefix, rest, fullText: text };
+    // 行尾【国家名】覆盖：只对这一行生效，覆盖笔记frontmatter写的region_country
+    // （典型场景：region_country写的是大洲名，比如"欧洲"，但这一行想精确指到
+    // 某个具体国家，比如"法国"）。用全角括号【】而不是方括号[]——Obsidian自己的
+    // 双链语法是[[ ]]，标准Markdown里[文字](链接)/[^注脚]也占用了单方括号，
+    // 用全角括号能完全避开这些既有语法，编辑器不会有自动补全/联想干扰。
+    // 放在行尾而不是行首：日期前缀是从行首开始解析的（上面这一大段逻辑），
+    // 放行尾就不会跟已经在正常工作的日期解析绞在一起，是独立的最后一步，
+    // 提取完直接从rest里去掉，不会残留进最终显示的正文。
+    let regionOverride = null;
+    const regionTag = rest.match(/【([^【】]+)】\s*$/);
+    if(regionTag){
+      regionOverride = Parser.normalizeCountry(regionTag[1].trim());
+      rest = rest.slice(0, regionTag.index).trim();
+    }
+    return { year, endYear, month, day, datePrefix, rest, fullText: text, regionOverride };
   },
 
   /* 从正文里摘掉"## 时间线"这一段，只留其余部分（简述、经过……）。
@@ -2062,6 +2076,10 @@ const Parser = {
         timelineLines.forEach(t=>{
           events.push({
             ...common,
+            // 有行尾【国家名】覆盖就用它，没有就照常继承笔记frontmatter的region——
+            // 这样一条"欧洲"笔记下面，大部分行可以继续走大洲聚合，只有个别行
+            // 想精确指到具体国家时单独覆盖，不用把整条笔记拆开。
+            region: t.regionOverride ? [t.regionOverride] : common.region,
             keyEra: '',   // 细节条目不重复背进度条，进度条已经由主事件承担
             start: { year:t.year, month:t.month, day:t.day },
             end: t.endYear!=null ? { year:t.endYear, month:null, day:null } : null,
@@ -2754,7 +2772,13 @@ const DetailView = {
     html += `</div>`;
 
     const used = new Set();
-    const visibleEvs = evs.filter(e=>e.displayText);
+    // 正文分类栏只认"精确写了这个国家名"的事件，靠"region写大洲名"兜底匹配
+    // 进来的事件（比如region_country是"欧洲"、靠WorldMapData.CONTINENT_ALL
+    // 反查出来命中这个国家的）不算——那些事件只用来撑上面的跨度进度条
+    // （bgEvents，不受这个过滤影响），不该在每个国家的正文栏里重复铺一遍。
+    // scope.type!=='country' 这个大洲/大洲其他聚合视图不受影响，兜底匹配
+    // 该聚合还是聚合，这条限制只针对"具体某个国家自己的卡片"生效。
+    const visibleEvs = evs.filter(e=> e.displayText && (scope.type!=='country' || e.region.includes(scope.country)));
     FIXED_DOMAIN_ROWS.forEach(row=>{
       const list = visibleEvs.filter(e => e.domain.some(row.match)).sort(Utils.compareEventDate);
       list.forEach(e=>used.add(e));
@@ -2914,11 +2938,20 @@ const DetailView = {
       html += `<div class="bg-progress">${bgEvents.map(bg=>DetailView.renderBgItem(bg, color)).join('')}</div>`;
     }
 
-    if(!evs.length && !bgEvents.length){
+    // 跟 columnBodyHtml 用同一条限制：具体国家的悬浮卡/抽屉正文，只认精确
+    // 写了这个国家名的事件，大洲名兜底匹配进来的不算正文，只撑上面的跨度
+    // 进度条（bgEvents，不受这个过滤影响）——两处保持一致，不然分栏卡片
+    // 和地图弹窗看到的正文会对不上。这里先把过滤结果存进变量，下面的
+    // "暂无相关记录"判断要用过滤后的结果，不能再看原始的 evs.length——
+    // 不然会出现"evs里全是大洲兜底匹配、过滤完一条不剩，但因为原始evs不是
+    // 空的就不显示'暂无记录'"，最后留一片空白、什么提示都没有的情况。
+    const visibleEvs = evs.filter(e=> e.displayText && (scope.type!=='country' || e.region.includes(scope.country)));
+
+    if(!visibleEvs.length && !bgEvents.length){
       html += `<div class="detail-empty">这一年，暂无相关记录</div>`;
-    } else if(evs.length){
+    } else if(visibleEvs.length){
       const groups = {};
-      evs.filter(e=>e.displayText).forEach(e=>{
+      visibleEvs.forEach(e=>{
         const doms = e.domain.length? e.domain : ['未分类'];
         doms.forEach(d=>{ (groups[d]=groups[d]||[]).push(e); });
       });
