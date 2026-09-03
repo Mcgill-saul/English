@@ -1652,6 +1652,7 @@ const COUNTRY_ALIASES = {
   '埃及':'Egypt', '南非':'South Africa', '尼日利亚':'Nigeria', '肯尼亚':'Kenya',
   '埃塞俄比亚':'Ethiopia', '摩洛哥':'Morocco', '阿尔及利亚':'Algeria', '加纳':'Ghana',
   '新西兰':'New Zealand',
+  '波黑':'Bosnia and Herz.',
   '欧洲':'Europe', '亚洲':'Asia', '美洲':'Americas', '非洲':'Africa', '大洋洲':'Oceania'
 };
 
@@ -2202,13 +2203,24 @@ const Parser = {
     });
 
     // 国家名兜底提醒：region_country 里的值，经过中英文别名转换后
-    // 如果还是在 COUNTRY_CONTINENT 里找不到，说明这个国家彻底没登记过——
-    // 不会报错、但会在地图上"静默消失"，这里先汇总提醒，而不是等你自己发现少了数据。
+    // 如果在 COUNTRY_CONTINENT（精选重点追踪名单）和 WorldMapData.CONTINENT_ALL
+    // （176国完整地理数据）里都找不到，才是真的"这玩意我压根不认识"——不会
+    // 报错、但会在地图上"静默消失"，这里先汇总提醒，而不是等你自己发现少了数据。
+    // 只在 COUNTRY_CONTINENT 里查不到、但在 WorldMapData.CONTINENT_ALL 里能
+    // 查到的情况（比如波黑），不算真正的"未登记"：这个国家有完整地理数据，
+    // 会正常显示成灰色背景国家，只是没有被收进"精选重点追踪名单"、不会单独
+    // 高亮而已——这种情况不该报警告，之前的版本没做这层区分，会对这类国家
+    // 一直误报"不会显示在地图上"（实际上会显示，只是不是单独高亮的那种）。
+    // 额外加一句"未有中文映射"提示：如果两张表都查不到、且这个字符串本身
+    // 带中文字符，大概率不是"这个国家压根没数据"，而是 COUNTRY_ALIASES 里
+    // 没登记这个中文名的别名，用这条提示把"彻底没数据"和"中文名没登记"
+    // 这两种情况在提醒文案上区分开，排查起来更快知道该往哪个方向修。
+    const CJK_RE = /[\u4e00-\u9fa5]/;
     events.forEach(e=>{
-      (e.region||[]).forEach(r=>{ if(!COUNTRY_CONTINENT[r]) warnings.push(e.title+'：国家「'+r+'」未登记，不会显示在地图上'); });
+      (e.region||[]).forEach(r=>{ if(!COUNTRY_CONTINENT[r] && !WorldMapData.CONTINENT_ALL[r]) warnings.push(e.title+'：国家「'+r+'」未登记，不会显示在地图上'+(CJK_RE.test(r)?'，未有中文映射':'')); });
     });
     persons.forEach(p=>{
-      (p.country||[]).forEach(r=>{ if(!COUNTRY_CONTINENT[r]) warnings.push(p.title+'：国家「'+r+'」未登记，不会显示在地图上'); });
+      (p.country||[]).forEach(r=>{ if(!COUNTRY_CONTINENT[r] && !WorldMapData.CONTINENT_ALL[r]) warnings.push(p.title+'：国家「'+r+'」未登记，不会显示在地图上'+(CJK_RE.test(r)?'，未有中文映射':'')); });
     });
 
     /* "同代人物"看板专用校验：只看carrier是人（PERSON_CARRIERS）、且有可解析
@@ -2975,7 +2987,7 @@ const MapView = {
       path.setAttribute('d', d);
       path.setAttribute('class','country bg');
       path.dataset.continent = continent;
-      path.addEventListener('click', (ev)=>{ ev.stopPropagation(); MapView.openDrawer({type:'continent', continent}); });
+      path.addEventListener('click', (ev)=>{ ev.stopPropagation(); MapView.openDrawer({type:'continentOther', continent, exclude: COUNTRIES_BY_CONTINENT[continent] || []}); });
       svg.appendChild(path);
     });
 
@@ -3063,17 +3075,31 @@ const MapView = {
     });
   },
 
-  /* 未登记/背景国家：点击后按所在大洲打开右侧抽屉，展示该大洲当年的整体情况 */
+  /* 未登记/背景国家：点击后按所在大洲打开右侧抽屉，展示"这个大洲里没被
+     精选登记的国家"当年的整体情况（type:'continentOther'）。之前这里
+     走的是 type:'continent'，用的是 COUNTRIES_BY_CONTINENT（精选~50国
+     名单）去查，查出来的其实是"这个大洲里被精选高亮的那批国家"的事件，
+     跟点击的这个灰色国家自己毫无关系（它自己身上的事件反而不会出现），
+     标题也一直只显示"欧洲"这种大洲名，不会显示"欧洲其他"，没法从标题
+     区分展示的到底是哪一批。现在统一走 continentOther，标题按 scope.type
+     决定是否加"其他"后缀（复用 continentOfOtherKey 那条"大洲名+其他"的
+     拼接方式，保持全站措辞一致）。 */
   openDrawer(scope){
     const drawer = document.getElementById('drawer');
     const backdrop = document.getElementById('drawerBackdrop');
     const body = document.getElementById('drawerBody');
     const color = CONTINENT_HEX[scope.continent];
-    const title = CONTINENT_NAME_CN[scope.continent];
+    const baseTitle = CONTINENT_NAME_CN[scope.continent] || scope.continent;
+    const title = scope.type==='continentOther' ? baseTitle+'其他' : baseTitle;
     body.innerHTML = `<div class="detail-head"><span class="detail-swatch" style="background:${color}"></span><span class="detail-title">${Utils.escapeHtml(title)}</span></div>${DetailView.detailBodyHtml(scope)}`;
     drawer.classList.add('show');
     backdrop.classList.add('show');
+    // 把完整 scope（不只是 continent）存进 dataset，年份变化时的刷新逻辑
+    // 才能原样重建同一个 scope，而不是退化成硬编码的 type:'continent'——
+    // exclude 是个数组，JSON序列化存成字符串，读的时候再解析回来。
     drawer.dataset.continent = scope.continent;
+    drawer.dataset.scopeType = scope.type;
+    drawer.dataset.scopeExclude = scope.exclude ? JSON.stringify(scope.exclude) : '';
   },
   closeDrawer(){
     document.getElementById('drawer').classList.remove('show');
@@ -5274,7 +5300,14 @@ const App = {
     }
     const drawer = document.getElementById('drawer');
     if(drawer.classList.contains('show') && drawer.dataset.continent){
-      MapView.openDrawer({type:'continent', continent: drawer.dataset.continent});
+      // 按 openDrawer 存进 dataset 的原始 scope 重建，不要硬编码 type:'continent'——
+      // 不然"大洲其他"抽屉一遇到年份变化就会退化回错误的"大洲"聚合，参见
+      // openDrawer 顶部的注释。scopeType 缺失时（旧数据/兜底）按 continent 处理。
+      MapView.openDrawer({
+        type: drawer.dataset.scopeType || 'continent',
+        continent: drawer.dataset.continent,
+        exclude: drawer.dataset.scopeExclude ? JSON.parse(drawer.dataset.scopeExclude) : undefined
+      });
     }
   },
 
