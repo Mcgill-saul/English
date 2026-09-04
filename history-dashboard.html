@@ -498,16 +498,20 @@
   .page-arrow:hover svg{ stroke:var(--ink-soft); }
   .page-arrow:focus-visible{ outline:2px solid var(--global); outline-offset:2px; border-radius:6px; }
   /* "+新增一页"按钮：不常驻，只在翻到最后一页时才由JS插入这个元素（不在
-     最后一页时HTML里压根没有这个按钮，不是靠CSS隐藏），跟右箭头一样横向
-     贴 right:-76px（同一条竖线上，视觉对齐），纵向卡在右箭头正下方——
-     右箭头本身 top:50%+height:72px 垂直居中，它的下边缘是"50%+36px"，
-     这里再加12px呼吸间隙，就是 calc(50% + 48px)。图标风格照抄箭头（无
-     底色/边框、描边色跟随 var(--line)/hover变深），但整体做小一圈（44px
-     而不是72px），跟箭头保持视觉主次之分——箭头是常驻的主导航，这个是
-     偶尔才出现的次要操作。 */
+     最后一页时HTML里压根没有这个按钮，不是靠CSS隐藏），尺寸规格（72px
+     按钮、52px图标、同样的viewBox和stroke-width）直接照抄 .page-arrow，
+     不再单独做小一圈——之前想靠"整体缩小"跟箭头拉开主次，结果宽度不同、
+     同样用 right:-76px 反而导致两者中心点没对齐（right定的是右边缘位置，
+     宽度不一样中心就偏了，箭头72px、按钮44px，中心差了14px），图标本身
+     渲染尺寸更小、同样的stroke-width视觉上线条也变细了，两个问题都是
+     "为了区分主次"这个额外设计带来的副作用。现在尺寸完全跟箭头一致，
+     两个问题一起解决：中心天然对齐（同宽度+同right值），线条粗细也完全
+     一致（同样的图标渲染尺寸+同样的stroke-width）。
+     纵向位置：右箭头 top:50%+height:72px 垂直居中，下边缘在"50%+36px"，
+     这里再加12px呼吸间隙，就是 calc(50% + 48px)。 */
   .page-add-btn{
     position:absolute; top:calc(50% + 48px); right:-76px;
-    width:44px; height:44px; display:flex; align-items:center; justify-content:center;
+    width:72px; height:72px; display:flex; align-items:center; justify-content:center;
     cursor:pointer; background:none; border:none; padding:0; z-index:2;
   }
   .page-add-btn svg{ stroke:var(--line); transition:stroke .15s ease; }
@@ -622,11 +626,14 @@
   .schedule-hint{ font-size:var(--fs-sm); color:var(--muted); margin-top:14px; line-height:1.6; }
   .col-head{
     display:flex; align-items:center; flex-wrap:wrap; gap:8px 14px; margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid var(--line);
-    /* 统治者/执政者（.col-tenure-row）现在是这一行内部的一个 flex 子项，跟在
-       色点+国家码后面，不再另起一行——桌面端每栏宽度足够（column-board 是
-       4等分栏，容器最宽能到2400px，单栏轻松四五百像素起步），排得下完整姓名
-       +10格竖条+年份。flex-wrap:wrap 只是窄屏（比如手机上2栏布局）时的安全网：
-       真放不下就自然换到第二行，不会把内容硬挤变形或撑破卡片。 */
+    min-height:38px;
+    /* min-height 要覆盖.bg-track写死的27px内容高度，再加上这个元素自己的
+       padding-bottom:10px + border-bottom:1px——全局是box-sizing:border-box，
+       min-height包含padding和border在内，不是纯内容高度，之前直接写27px
+       就是漏算了这11px，导致没有进度条时（内容~15.6px+padding+border=
+       26.6px，勉强够到27）跟有进度条时（内容27px+padding+border=38px，
+       直接撑破27这个下限）算出来的实际高度根本没对齐，min-height形同虚设。
+       改成 27+10+1=38px 之后，两种情况才会稳定落在同一个高度上。 */
   }
   .col-swatch{ width:9px; height:9px; border-radius:50%; flex:none; }
   /* 常驻行：现在是标题行内部的一个 flex 子项（flex:1），占满色点+国家码之后
@@ -663,6 +670,16 @@
   .tenure-years{ font-size:var(--fs-xs); color:var(--muted); white-space:nowrap; }
   .bg-split{ display:flex; gap:8px; }
   .bg-split .bg-item{ flex:1; min-width:0; margin-bottom:0; }
+  /* .col-tenure-row 里的 .bg-item（统治者槽位空出来、被跨度事件顶替）
+     跟 .bg-split 那种"两条跨度事件并排"是同一类问题：flex子项默认
+     min-width是auto，不会主动压缩到比内容还窄，加min-width:0才能让
+     .bg-name 的 overflow:hidden/text-overflow:ellipsis 真正生效，
+     不然标题太长会把这一整行（连带右边的执政者信息）一起撑宽、甚至
+     挤到换行。margin-bottom清零，不然会在这个横向排列的行里被误当成
+     纵向间距，跟右边的执政者信息对不齐。 */
+  .col-tenure-row .bg-item{ flex:1; min-width:0; margin-bottom:0; }
+  .col-tenure-row .bg-track{ min-width:0; }
+  .col-tenure-row .bg-name{ min-width:0; }
   .col-slot{ margin-bottom:18px; padding-bottom:18px; border-bottom:1px dashed var(--line); min-height:191px; }
   .col-slot.coverage-slot{ min-height:0; }  /* 背景区不参与四栏对齐撑高，只要两行的高度就够 */
   /* 5条 .event-row（不换行）理论高度是 170.75px（每条 6+20.15+6+2，
@@ -726,7 +743,7 @@
   }
   .popover-close:hover{ color:var(--ink); }
   .detail-empty{ color:var(--muted); font-size:var(--fs-body); padding-top:2px; }
-  .detail-head{ display:flex; align-items:center; flex-wrap:wrap; gap:9px; margin-bottom:12px; padding-right:16px; }
+  .detail-head{ display:flex; align-items:center; flex-wrap:wrap; gap:9px; margin-bottom:12px; padding-right:16px; min-height:27px; }
   .detail-swatch{ width:9px; height:9px; border-radius:3px; flex-shrink:0; }
   .detail-title{ font-family:'Fraunces',serif; font-size:var(--fs-md); font-weight:600; }
 
@@ -1803,6 +1820,70 @@ const Parser = {
     return { ranges, invalid };
   },
 
+  /* "X0年代"/"X0年代初"/"X0年代中"/"X0年代末" 这种模糊年代说法，换算成一个
+     锚点年份（不是展开成整段十年）——初=X1，中=X5，末=X8，光写"X0年代"不带
+     初中末按中点处理=X5。只给 coverage 字段和"## 小说时间线"这两处用，
+     不接入 tenure（统治者在位/执政者任职一般都有精确年份可查，不该允许
+     模糊写法蒙混过关，混进同一个解析函数容易把本该报错提醒的情况误判成
+     合法数据）。返回null表示这段文字不是"X0年代..."这个格式，调用方
+     自己决定要不要再当成普通整数年份处理。 */
+  resolveFuzzyDecadeYear(text){
+    if(!text) return null;
+    const m = String(text).trim().match(/^(-?\d+)年代(初|中|末)?$/);
+    if(!m) return null;
+    const base = +m[1];
+    const offset = m[2]==='初' ? 1 : m[2]==='末' ? 8 : 5;
+    return base + offset;
+  },
+
+  /* coverage 字段专用的区间解析——跟 parseTenureRanges 共用"逗号分隔多段、
+     每段起始-结束"这层外壳，但每一段的起止两端，除了原来的纯数字，还
+     额外认"X0年代/初/中/末"这种模糊说法（调 resolveFuzzyDecadeYear 换算
+     成锚点年份）。三种写法都支持：
+     - 纯数字"start-end"：跟以前完全一样，label留空，chip照常显示数字
+     - 单独一个模糊说法（没有"-"，整段就是"1920年代末"这样）：换算成
+       一个点（start=end=锚点），label记下原始文字
+     - 两个模糊说法（或一模糊一数字）拼成一段，比如"1920年代末-1930年代初"：
+       两端各自换算，组成一段真实但比较窄的区间，label记下原始文字
+     label非空时，chip上显示原始文字而不是换算出来的数字——模糊说法换算出的
+     年份只用来决定"在哪年出现"，不能反过来假装自己精确到了具体某一年。 */
+  parseCoverageRanges(raw){
+    if(raw===undefined||raw===null||raw==='') return { ranges:[], invalid:[] };
+    const ranges = [];
+    const invalid = [];
+    const resolveEndpoint = s => /^-?\d+$/.test(s) ? +s : Parser.resolveFuzzyDecadeYear(s);
+    String(raw).split(',').forEach(seg=>{
+      const s = seg.trim();
+      if(!s) return;
+      // 先试纯数字"start-end"，原有格式完全兼容，不带label
+      const numMatch = s.match(/^(-?\d+)\s*-\s*(-?\d+)$/);
+      if(numMatch && +numMatch[2] >= +numMatch[1]){
+        ranges.push({ start:+numMatch[1], end:+numMatch[2], label:null });
+        return;
+      }
+      // 再试"单独一个模糊说法"，整段没有"-"
+      const singleAnchor = Parser.resolveFuzzyDecadeYear(s);
+      if(singleAnchor!=null){
+        ranges.push({ start:singleAnchor, end:singleAnchor, label:s });
+        return;
+      }
+      // 再试"两个模糊说法（或一模糊一数字）拼成一段"，按第一个"-"拆成两半
+      const dashIdx = s.indexOf('-');
+      if(dashIdx > 0){
+        const left = s.slice(0, dashIdx).trim();
+        const right = s.slice(dashIdx+1).trim();
+        const leftYear = resolveEndpoint(left);
+        const rightYear = resolveEndpoint(right);
+        if(leftYear!=null && rightYear!=null && rightYear>=leftYear){
+          ranges.push({ start:leftYear, end:rightYear, label:s });
+          return;
+        }
+      }
+      invalid.push(s);
+    });
+    return { ranges, invalid };
+  },
+
   /* reign_era 字段：只给统治者（carrier=统治者）用，记年号（或天皇时代名）
      用的——只写"年号-起始年"，不写结束年，因为结束年靠"下一个年号的起始年"
      自动推算（跟 tenure 段与段之间不用手动填衔接点是同一个道理），逗号分隔
@@ -1876,10 +1957,17 @@ const Parser = {
     const li = raw.match(/^\s*[-*]\s*(.+)$/);
     if(!li) return null;
     const text = li[1].trim();
-    const ym = text.match(/^(-?\d+)年?(?:\s*~\s*(-?\d+)年?)?/);
-    if(!ym) return null; // "- "后面不是年份开头，不认
-    const year = +ym[1];
-    const endYear = ym[2] ? +ym[2] : null;
+    // 日期开头除了纯数字年份，也认"X0年代/初/中/末"这种模糊说法（跟coverage
+    // 字段共用 Parser.resolveFuzzyDecadeYear 换算成锚点年份），"~"后面的
+    // 结束年同样两种写法都认。datePrefix 直接摘的是原始匹配文字（ym[0]），
+    // 不管用户写的是"1929年"还是"1920年代末"，摘出来的日期前缀都是原文
+    // 逐字照抄，不用额外处理就自动保留了模糊说法本来的文字。
+    const FUZZY_OR_NUM = '(?:-?\\d+年代(?:初|中|末)?|-?\\d+)';
+    const ym = text.match(new RegExp('^('+FUZZY_OR_NUM+')年?(?:\\s*~\\s*('+FUZZY_OR_NUM+')年?)?'));
+    if(!ym) return null; // "- "后面不是年份/模糊年代开头，不认
+    const resolveYearToken = tok => /^-?\d+$/.test(tok) ? +tok : Parser.resolveFuzzyDecadeYear(tok);
+    const year = resolveYearToken(ym[1]);
+    const endYear = ym[2] ? resolveYearToken(ym[2]) : null;
     let datePrefix = ym[0];
     let rest = text.slice(ym[0].length);
     const leadingMd = rest.match(/^(\d{1,2})月(\d{1,2})日/);
@@ -1993,7 +2081,7 @@ const Parser = {
 
   /* tag-registry 解析 */
   parseTagRegistry(body){
-    const result = {domain:[], carrier:[], countryMain:[], countrySecondary:[], executiveThreshold:{}};
+    const result = {domain:[], carrier:[], countryMain:[], countrySecondary:[], executiveThreshold:{}, rulerEndThreshold:{}};
     let section=null;
     for(const raw of body.split(/\r?\n/)){
       const h2 = raw.match(/^##\s+(.+)/);
@@ -2002,7 +2090,8 @@ const Parser = {
       if(h2){
         const t=h2[1].trim();
         section = t.includes('领域')?'domain': t.includes('载体')?'carrier': t.includes('国家')?'country'
-          : t.includes('执政者门槛')?'executiveThreshold': null;
+          : t.includes('执政者门槛')?'executiveThreshold'
+          : t.includes('统治者终止年份')?'rulerEndThreshold': null;
         continue;
       }
       if(h3 && section==='country'){
@@ -2010,11 +2099,14 @@ const Parser = {
         section = t.includes('主要')?'countryMain': t.includes('次要')?'countrySecondary':'country';
         continue;
       }
-      if(li && section==='executiveThreshold'){
+      if(li && (section==='executiveThreshold' || section==='rulerEndThreshold')){
         // "- China: 1912" 这种 key:value 格式，中英文冒号都认；没匹配上就跳过，
-        // 不产生警告——这是可选的手动覆盖表，格式随意写错了直接忽略，交给自动兜底逻辑接手
+        // 不产生警告——这是可选的手动覆盖表，格式随意写错了直接忽略。
+        // 统治者终止年份不像执政者门槛那样有"自动兜底"（见 scanVault 里
+        // rulerEndThreshold 的注释——自动兜底在数据没写全时会误判"已终止"，
+        // 失败方向不安全，所以这张表只认手动登记，没登记就维持原样不触发）。
         const kv = li[1].match(/^([^:：]+)[:：]\s*(-?\d+)/);
-        if(kv) result.executiveThreshold[Parser.normalizeCountry(kv[1].trim())] = +kv[2];
+        if(kv) result[section][Parser.normalizeCountry(kv[1].trim())] = +kv[2];
         continue;
       }
       if(li && section && result[section] && Array.isArray(result[section])) result[section].push(li[1].trim());
@@ -2038,7 +2130,7 @@ const Parser = {
      这是本命名空间唯一对外的入口，其余方法都是它的内部拆分步骤。 */
   async scanVault(dirHandle){
     const events=[], persons=[], warnings=[];
-    let tagRegistry = {domain:DEFAULT_DOMAINS, carrier:[], countryMain:[], countrySecondary:[], executiveThreshold:{}};
+    let tagRegistry = {domain:DEFAULT_DOMAINS, carrier:[], countryMain:[], countrySecondary:[], executiveThreshold:{}, rulerEndThreshold:{}};
 
     for await (const {handle, path} of Parser.walk(dirHandle)){
       if(path.startsWith('Templates/')) continue;
@@ -2143,7 +2235,7 @@ const Parser = {
         // 这一个——两个字段拆开写多段的话，谁跟谁配对全靠"第几个"这种脆弱的
         // 位置对应关系，容易两边字段改漏一处就错位，tenure 当初也是因为这个
         // 原因才设计成一个字段自己把 start-end 写在一起。
-        const { ranges: coverageRanges, invalid: coverageInvalid } = Parser.parseTenureRanges(fm.coverage);
+        const { ranges: coverageRanges, invalid: coverageInvalid } = Parser.parseCoverageRanges(fm.coverage);
         coverageInvalid.forEach(seg=>{ warnings.push(title+'：「coverage」字段里有一段没识别出「起始-结束」格式，已跳过——'+seg); });
         persons.push({
           title, path,
@@ -2300,12 +2392,22 @@ const Parser = {
       if(executiveThreshold[country]===undefined) executiveThreshold[country]=autoMinByCountry[country];
     });
 
+    // 统治者概念终止年份：只认 tag-registry 里手动登记的，不做自动兜底——
+    // 跟上面执政者门槛的"自动取最早起始年"刻意不对称。自动兜底如果改成
+    // "取所有已登记统治者任期里最晚的结束年"，这个值会随着笔记库慢慢写全
+    // 逐渐变大，在笔记还没写完整的阶段会算出一个偏低的门槛，把"其实还没
+    // 终止、只是这段历史还没补上笔记"误判成"已经终止"——这种误判不报错、
+    // 很难被发现，失败方向不安全。手动登记的失败方向相反：忘了登记 = 这个
+    // 国家的统治者槽位继续按老样子显示占位符"—"，不会有任何国家因为
+    // "没登记"而被误判，所以这张表就是原样透传，不额外计算兜底值。
+    const rulerEndThreshold = { ...tagRegistry.rulerEndThreshold };
+
     // 同一国家+同一carrier下，tenure 区间允许重叠——比如共治、摄政这类同一
     // 时期存在多位统治者/执政者的情况是真实历史，不算数据错误，所以不再校验
     // 重叠、也不再报警告。查询时（Query.currentByCarrierFor）会把当年所有
     // 命中的人一起返回，常驻行同时显示，不再是"只留最后一条覆盖前面的"。
 
-    return { events, persons, tagRegistry, warnings, executiveThreshold };
+    return { events, persons, tagRegistry, warnings, executiveThreshold, rulerEndThreshold };
   }
 };
 
@@ -2370,7 +2472,7 @@ const Color = {
    新增状态时也加在这里，不再随手声明新的裸露全局变量。
    ========================================================= */
 const Store = {
-  vault: { events:[], persons:[], tagRegistry:{domain:DEFAULT_DOMAINS, carrier:[], countryMain:[], countrySecondary:[], executiveThreshold:{}}, warnings:[], executiveThreshold:{} },
+  vault: { events:[], persons:[], tagRegistry:{domain:DEFAULT_DOMAINS, carrier:[], countryMain:[], countrySecondary:[], executiveThreshold:{}, rulerEndThreshold:{}}, warnings:[], executiveThreshold:{}, rulerEndThreshold:{} },
   currentYear: (function(){
     const saved = parseInt(localStorage.getItem('fwb_lastYear'), 10);
     return Number.isFinite(saved) ? saved : 1938;
@@ -2480,6 +2582,36 @@ const Query = {
   hasRulerConcept(country){
     return Store.vault.persons.some(p=> p.carrier==='统治者' && p.tenureRanges.length && p.country.includes(country));
   },
+  /* 统治者概念是否已经在这一年"终止"——不是"这一年查无数据"（真的有概念、
+     只是这年没查到具体人选，正常显示占位符"—"），而是"这个国家的统治者
+     概念本身翻篇了"（中国1912年之后、美国自始至终）。只认 tag-registry
+     里手动登记的终止年份（Store.vault.rulerEndThreshold，见 Parser.scanVault
+     里那条注释——特意不做自动兜底，笔记没写全时自动兜底会把"还没终止、
+     只是数据没补上"误判成"已经终止"，手动登记没有这个风险，忘了登记只是
+     维持原样，不会被误判）。没有统治者概念的国家永远算已终止，跟"—"占位
+     符收起的既有规则一致。 */
+  rulerConceptEndedByYear(country, year){
+    if(!Query.hasRulerConcept(country)) return true;
+    const threshold = Store.vault.rulerEndThreshold[country];
+    return threshold !== undefined && year > threshold;
+  },
+  /* 统治者槽位空出来（没概念，或者概念已经终止）时，挑一条跨度事件
+     （keyEra==='National'）搬上去顶替，跟执政者共享这一行剩下的空间。
+     按年份最早开始的那条优先——跨度事件本来就不追求月日精度，不用
+     Utils.compareEventDate那套"精度分层"规则，单纯按start.year比大小
+     就够。挑中的这一条，columnBodyHtml/detailBodyHtml 渲染下面常规的
+     跨度进度条区域时要把它排除掉，不然会同一条内容上下各显示一遍——
+     两处都是靠"country+year+统治者槽位状态"这同一套依据独立算一遍，
+     不需要互相传参数共享状态，算出来的"该挑哪一条"天然就是同一个答案。
+     没有统治者概念/概念已终止是必要条件，但不是充分条件——这一年压根
+     没有National事件时，返回null，调用方原样退回"—"占位符或者完全
+     不显示，不会凭空生造一个不存在的跨度事件。 */
+  headerBgEventFor(country, year){
+    if(Query.hasRulerConcept(country) && !Query.rulerConceptEndedByYear(country, year)) return null;
+    const natEvs = Query.eventsForCountryYear(country, year).filter(e=>e.keyEra==='National');
+    if(!natEvs.length) return null;
+    return natEvs.slice().sort((a,b)=>a.start.year-b.start.year)[0];
+  },
   /* 按 carrier 从 persons 里取某国家在当前年份命中的所有人——统治者、执政者
      共用这一份逻辑，只是传入的 carrier 不同。不局限于"当前正好显示哪个跨度
      事件"，只要这个人任意一段 tenure 区间盖到这一年就能查到，比绑定在某个
@@ -2542,9 +2674,10 @@ const Query = {
      后一段年号（不管属于谁）的起始年。这样"交接年份归前一位年号"这种
      史学惯例，不需要额外特判就能从区间语义里自然得出：1722年落在"康熙"
      这一段里（因为下一段"雍正"从1723年才开始），天然显示康熙。
-     这条时间线只覆盖"写了 reign_era 的人"；没写 reign_era 的人（大多数
-     执政者、多数欧洲君主）完全不受影响，仍然并入下面的纯 tenure 兜底
-     算法，行为不变。 */
+     这条时间线只覆盖"写了 reign_era 的人"；没写 reign_era 的人（多数
+     欧洲君主，比如没有年号制度的俄国沙皇）走的是下面的 buildTenureChain，
+     跟这条 buildEraChain 用同一套"找接班人、算末年归属"骨架，只是不产出
+     年号名——这两条链各自独立运作，不用互相知道对方的存在。 */
   /* 两个人的 tenureRanges 有没有"实质并存"：不是随便沾一年边就算——正常
      交接的两份笔记也经常因为"起始/结束年份该不该算左闭右开"这种笔误性质
      的写法差异，凑巧重叠1年（比如内禅/驾崩当年前后两人各自按"实际在位
@@ -2570,8 +2703,9 @@ const Query = {
         找下一位，会直接跳过 B、把 A 的年号一路连到 C 身上，把 B 真实在
         位的那段年份也一起吞并掉——B 没有年号可显示不代表这段时间不存在，
         只是"存在但年号未知"，链接应该在 B 这里断开，B 自己那段年份走
-        另一套"没有年号、纯 tenure 兜底显示第X/Y年"的逻辑（下面
-        currentRulerByCountryYear 里的 tenureOnlyPool）。
+        另一套"没有年号、纯 tenure 兜底显示第X/Y年"的逻辑（下面的
+        buildTenureChain——跟这条 buildEraChain 是同一套"找接班人、算
+        末年归属"骨架，只是不产出年号名，专门服务没写 reign_era 的人）。
      2) 就算候选池扩大到"所有人"，如果两人之间根本没有任何笔记记录这段
         空档（不是"没写年号"，是"压根没这个人的数据"），也不能无脑连接——
         history笔记不可能穷举每一年的统治者，尤其上古/中古史料残缺的朝代，
@@ -2642,8 +2776,9 @@ const Query = {
             end = nxt.immediate ? nxt.start+1 : Math.max(nxt.start, seg.start+1);
           } else {
             // 下一位没写年号：年号链到这里为止，边界=对方 tenure 起点，
-            // 对方那段年份走 tenureOnlyPool 兜底显示，不会被这段年号
-            // 继续吞并。
+            // 对方那段年份走 buildTenureChain 显示（同样具备"找接班人、
+            // 没接班人则末年归自己"的能力，不再是简单兜底），不会被这段
+            // 年号继续吞并。
             end = Math.max(nxt.start, seg.start+1);
           }
           break;
@@ -2657,20 +2792,59 @@ const Query = {
     });
     return chain;
   },
+  /* buildTenureChain：服务没写 reign_era 的统治者（多数欧洲君主、俄国这种
+     压根没有年号/纪年制度的国家），跟上面 buildEraChain 是同一套"找接班人、
+     算末年归属"骨架——唯一区别是操作对象换成纯 tenure 段，不产出年号名。
+     这条链存在的原因：原来这批人直接走 Utils.findAllCurrentByRange 硬算
+     左闭右开，完全不判断"有没有下一任接班"，导致"末年该不该归自己"这件事
+     实际上取决于这个人填没填 reign_era——填了的人（进 buildEraChain）末年
+     没接班人会被兜底还给自己，没填的人（原 tenureOnlyPool）永远不会。
+     这个不一致跟"有没有年号"这件事本身没有任何逻辑必然性，纯粹是原来
+     两条路径实现程度不一样，所以抽成同一套骨架，两条链都具备"没接班人
+     就把末年还给自己"的能力，年号只决定"显示的时候带不带年号名"，不再
+     决定"末年算不算自己"。
+     候选池（all）必须覆盖"这个国家所有统治者"——不管有没有写 reign_era，
+     道理跟 buildEraChain 那边完全一样：如果只在没写年号的人里面找接班人，
+     中间恰好接的是一位有年号的人时会被误判成"没人接班"，把本该让给对方
+     的末年错误地留在自己名下。算完之后只保留"没写 reign_era 的人"自己
+     产出的段——有年号的人的段，交给 buildEraChain 自己产出，这里跳过，
+     避免 currentRulerByCountryYear 里两条链对同一个人各出一份重复的 hit。 */
+  buildTenureChain(country){
+    const GAP_LIMIT_YEARS = 10;
+    const all = [];
+    Store.vault.persons.forEach(p=>{
+      if(p.carrier!=='统治者' || !p.country.includes(country) || !p.tenureRanges.length) return;
+      p.tenureRanges.forEach(r=> all.push({ person:p.title, start:r.start, tenureEnd:r.end, ranges:p.tenureRanges, hasEra:!!p.reignEra.length }));
+    });
+    all.sort((a,b)=>a.start-b.start);
+    const chain = [];
+    all.forEach((seg,i)=>{
+      if(seg.hasEra) return; // 有年号的人自己的段，交给 buildEraChain 产出，这里不重复
+      // 默认兜底：找不到能连接的下一位，末年 +1 还给自己——跟 buildEraChain
+      // 里那条"没人接手就该显示在自己名下"的兜底是同一个道理。
+      let end = seg.tenureEnd + 1;
+      for(let j=i+1;j<all.length;j++){
+        const nxt = all[j];
+        const sameRuler = nxt.person === seg.person;
+        if(sameRuler || Query.overlapYears(seg.ranges, nxt.ranges) < 2){
+          // 空档超过 GAP_LIMIT_YEARS，判定成"没数据"，不连接，维持默认兜底。
+          if(!sameRuler && (nxt.start - seg.tenureEnd) > GAP_LIMIT_YEARS) break;
+          end = Math.max(nxt.start, seg.start+1); // 真接班：边界让给下一位的起点
+          break;
+        }
+      }
+      chain.push({ name:seg.person, start:seg.start, end:Math.max(end, seg.start+1), reignEra:[] });
+    });
+    return chain;
+  },
   currentRulerByCountryYear(country, year){
     const eraChain = Query.buildEraChain(country);
     const eraHits = Utils.findAllCurrentByRange(eraChain, year);
-    // 没写 reign_era 的统治者（大多数执政者身份的君主、多数欧洲君主）不进
-    // 时间线，单独用纯 tenure 算法兜底查一遍——两边的人互不重叠，
-    // 直接拼起来即可。
-    const tenureOnlyPool = [];
-    Store.vault.persons.forEach(p=>{
-      if(p.carrier==='统治者' && p.country.includes(country) && !p.reignEra.length){
-        p.tenureRanges.forEach(r=> tenureOnlyPool.push({ name:p.title, start:r.start, end:r.end, reignEra:[] }));
-      }
-    });
-    tenureOnlyPool.sort((a,b)=>a.start-b.start);
-    const tenureHits = Utils.findAllCurrentByRange(tenureOnlyPool, year);
+    // 没写 reign_era 的统治者，现在也走"找接班人、算末年归属"这套骨架
+    // （buildTenureChain），不再是机械的左闭右开——"末年该不该归自己"
+    // 不再取决于填没填 reign_era，而是取决于有没有真实的下一任接班人。
+    const tenureChain = Query.buildTenureChain(country);
+    const tenureHits = Utils.findAllCurrentByRange(tenureChain, year);
     return [...eraHits, ...tenureHits];
   },
   eventsForContinentYear(continent, year){
@@ -2752,7 +2926,10 @@ const DetailView = {
      颜色用中性弱化色（不用国家/domain 主题色），跟这块内容本身的"弱化"定位对上。 */
   renderCoverageChips(coverageItems, wrapperClass){
     const chips = coverageItems.map(p=>{
-      const rangeText = p.coverageRanges.map(r=> r.start===r.end ? String(r.start) : (r.start+' – '+r.end)).join(' / ');
+      // label非空说明这段区间是从"X0年代/初/中/末"这种模糊说法换算来的，
+      // chip上要显示原始文字，不能显示换算出来的数字假装精确——数字只是
+      // 内部用来决定"在哪年出现"的锚点，不是笔记里真实写的年份。
+      const rangeText = p.coverageRanges.map(r=> r.label || (r.start===r.end ? String(r.start) : (r.start+' – '+r.end))).join(' / ');
       const summary = Parser.extractSection(p.body, '简述');
       return `<div class="coverage-chip" tabindex="0"
         data-range="${Utils.escapeHtml(rangeText)}"
@@ -2785,12 +2962,19 @@ const DetailView = {
     const shades = Color.domainShadeMap(scope.continent, scope.country);
     let html = '';
 
+    // 统治者槽位空出来时，headerBgEventFor 挑的那一条已经搬去了国家名那一行
+    // （DetailView.renderTenureRow），这里的常规跨度区域要把它排除掉，不然
+    // 会同一条内容上下各显示一遍。两处各自独立按"country+year+统治者槽位
+    // 状态"这同一套依据算一遍，不需要传参数共享状态，算出来的答案天然一致。
+    const headerBg = scope.type==='country' ? Query.headerBgEventFor(scope.country, Store.currentYear) : null;
+    const spanBgEvents = headerBg ? bgEvents.filter(e=>e!==headerBg) : bgEvents;
+
     html += `<div class="col-slot col-slot-span">`;
-    if(bgEvents.length){
+    if(spanBgEvents.length){
       // 按年份顺序两两配对：第1、2条一行，第3、4条一行……凑不满的最后一个独占一行
       const rows = [];
-      for(let k=0; k<bgEvents.length; k+=2){
-        rows.push(k+1 < bgEvents.length ? [bgEvents[k], bgEvents[k+1]] : [bgEvents[k]]);
+      for(let k=0; k<spanBgEvents.length; k+=2){
+        rows.push(k+1 < spanBgEvents.length ? [spanBgEvents[k], spanBgEvents[k+1]] : [spanBgEvents[k]]);
       }
       html += rows.map(row =>
         row.length === 2
@@ -2913,12 +3097,19 @@ const DetailView = {
     return `<span class="tenure-slot">${hits.map(hit=>DetailView.renderOneTenurePerson(hit, colorHex)).join('<span class="tenure-sep">|</span>')}</span>`;
   },
   /* 常驻行：左统治者、右执政者，两个槽位分别独立判断要不要出现——
-     统治者槽位由"这个国家有没有出现过统治者概念"决定（hasRulerConcept，
-     美国这种国家永远是 false，不是年份门槛问题）；执政者槽位由"有没有跨过
-     执政者门槛年份"决定（shouldShowExecutiveSlot，日本/中国在门槛之前是
-     false）。两者都不成立时整行不渲染（col-tenure-row:empty 兜底）；
-     只有一侧成立时，用 flex-end 把内容推到该在的一边（左侧独占就是默认的
-     flex-start，不用特殊处理；右侧独占才需要显式反过来）。
+     统治者槽位由"这个国家有没有出现过统治者概念、且概念在这一年还没终止"
+     决定（hasRulerConcept + rulerConceptEndedByYear，美国这种国家永远是
+     false，中国这种国家超过手动登记的终止年份之后也是false，不只是年份
+     门槛问题）；执政者槽位由"有没有跨过执政者门槛年份"决定
+     （shouldShowExecutiveSlot，日本/中国在门槛之前是false）。
+     统治者槽位空出来时（不管是压根没概念，还是概念已终止），优先挑一条
+     跨度事件（headerBgEventFor）顶替这个位置，跟执政者共享这一行——
+     这样"某些年份某些国家的统治者槽位空着浪费地方"这块空间能被利用起来，
+     而不是浪费掉、National跨度事件却只能干等在卡片下方自己的一整块区域里。
+     三者都不成立时整行不渲染（col-tenure-row:empty 兜底）；只有一侧成立时，
+     用 flex-end 把内容推到该在的一边（左侧独占——不管是统治者还是顶替的
+     跨度事件——就是默认的flex-start，不用特殊处理；右侧独占才需要显式
+     反过来）。
      分栏卡片、地图弹窗两处共用这一份（大洲级的抽屉没有具体国家，不适用）。
      调用方把它作为标题行（.col-head/.detail-head）内部的一个子元素嵌进去，
      跟色点+国家码/国名同一行显示（flex:1 占满剩余空间）——分栏卡片桌面端
@@ -2927,12 +3118,15 @@ const DetailView = {
      不下时仍靠标题行的 flex-wrap 自动换到下一行，不需要调用方关心，样式层
      已经兜底。 */
   renderTenureRow(country, colorHex){
-    const hasRuler = Query.hasRulerConcept(country);
+    const hasRuler = Query.hasRulerConcept(country) && !Query.rulerConceptEndedByYear(country, Store.currentYear);
     const showExec = Query.shouldShowExecutiveSlot(country, Store.currentYear);
-    if(!hasRuler && !showExec) return '';
-    const rulerHtml = hasRuler ? DetailView.renderTenureSlot(Query.currentRulerByCountryYear(country, Store.currentYear), colorHex) : '';
+    const headerBg = !hasRuler ? Query.headerBgEventFor(country, Store.currentYear) : null;
+    if(!hasRuler && !showExec && !headerBg) return '';
+    const rulerHtml = hasRuler
+      ? DetailView.renderTenureSlot(Query.currentRulerByCountryYear(country, Store.currentYear), colorHex)
+      : (headerBg ? DetailView.renderBgItem(headerBg, colorHex) : '');
     const execHtml = showExec ? DetailView.renderTenureSlot(Query.currentExecutiveFor(country, Store.currentYear), colorHex) : '';
-    const rowStyle = (!hasRuler && showExec) ? ' style="justify-content:flex-end"' : '';
+    const rowStyle = (!rulerHtml && showExec) ? ' style="justify-content:flex-end"' : '';
     return `<div class="col-tenure-row"${rowStyle}>${rulerHtml}${execHtml}</div>`;
   },
 
@@ -2965,8 +3159,13 @@ const DetailView = {
     const shades = Color.domainShadeMap(scope.continent, scope.country);
     let html = '';
 
-    if(bgEvents.length){
-      html += `<div class="bg-progress">${bgEvents.map(bg=>DetailView.renderBgItem(bg, color)).join('')}</div>`;
+    // 跟 columnBodyHtml 同一条规则：统治者槽位空出来时挑去顶替 .detail-head
+    // 标题行的那一条（DetailView.renderTenureRow 内部调用 headerBgEventFor），
+    // 这里的常规跨度区域要排除掉，不然同一条内容上下各显示一遍。
+    const headerBg = scope.type==='country' ? Query.headerBgEventFor(scope.country, Store.currentYear) : null;
+    const spanBgEvents = headerBg ? bgEvents.filter(e=>e!==headerBg) : bgEvents;
+    if(spanBgEvents.length){
+      html += `<div class="bg-progress">${spanBgEvents.map(bg=>DetailView.renderBgItem(bg, color)).join('')}</div>`;
     }
 
     // 跟 columnBodyHtml 用同一条限制：具体国家的悬浮卡/抽屉正文，只认精确
@@ -3390,7 +3589,7 @@ const ColumnBoard = {
     // 从DOM里消失，不占位置。
     const addPageHtml = ColumnBoard.pageIndex === totalPages - 1 ? `
       <button class="page-add-btn" id="colPageAddBtn" aria-label="新增一页">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <svg width="52" height="52" viewBox="0 0 20 20" fill="none">
           <path d="M10 4 V16 M4 10 H16" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>` : '';
