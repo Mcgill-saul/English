@@ -1059,10 +1059,9 @@
   }
   .tl-body .tl-year{ font-family:'IBM Plex Mono',monospace; font-size:var(--fs-xs); color:var(--muted); }
   .tl-body .tl-title{ font-size:var(--fs-body); line-height:1.5; }
-  .mentioned-group{ margin-top:16px; padding-top:12px; border-top:1px dashed var(--line); }
-  .mentioned-head{ font-size:var(--fs-xs); color:var(--muted); letter-spacing:.05em; margin-bottom:6px; }
-  .mentioned-row{ display:flex; gap:8px; align-items:baseline; padding:4px 0; font-size:var(--fs-sm); color:var(--ink-soft); }
-  .mentioned-year{ font-size:var(--fs-xs); color:var(--muted); min-width:34px; }
+  /* 时间线条目来源胶囊（独立event笔记/其他entity笔记时间线细节行），复用
+     .related-chip 胶囊视觉，只加行内间距——可点击的那种再叠加 .related-chip-link。 */
+  .tl-source-chip{ margin-left:8px; vertical-align:middle; }
 
   datalist{}
 
@@ -1839,8 +1838,12 @@ const Parser = {
   /* coverage 字段专用的区间解析——跟 parseTenureRanges 共用"逗号分隔多段、
      每段起始-结束"这层外壳，但每一段的起止两端，除了原来的纯数字，还
      额外认"X0年代/初/中/末"这种模糊说法（调 resolveFuzzyDecadeYear 换算
-     成锚点年份）。三种写法都支持：
+     成锚点年份）。四种写法都支持：
      - 纯数字"start-end"：跟以前完全一样，label留空，chip照常显示数字
+     - 单独一个纯数字（没有"-"，整段就是"1905"这样）：等价于"1905-1905"，
+       start=end=这个数字，label留空——之前这种写法会被判invalid，必须
+       手动补成"1905-1905"才认，跟下面"模糊说法可以单独一个"不一致，
+       这里补上让纯数字也能单独一个年份，不强制凑"start-end"
      - 单独一个模糊说法（没有"-"，整段就是"1920年代末"这样）：换算成
        一个点（start=end=锚点），label记下原始文字
      - 两个模糊说法（或一模糊一数字）拼成一段，比如"1920年代末-1930年代初"：
@@ -1859,6 +1862,12 @@ const Parser = {
       const numMatch = s.match(/^(-?\d+)\s*-\s*(-?\d+)$/);
       if(numMatch && +numMatch[2] >= +numMatch[1]){
         ranges.push({ start:+numMatch[1], end:+numMatch[2], label:null });
+        return;
+      }
+      // 再试"单独一个纯数字"（没有"-"，整段就是"1905"），等价于"1905-1905"，
+      // 不带label——跟"start-end"是同一种精确写法，只是省了重复数字
+      if(/^-?\d+$/.test(s)){
+        ranges.push({ start:+s, end:+s, label:null });
         return;
       }
       // 再试"单独一个模糊说法"，整段没有"-"
@@ -2258,15 +2267,51 @@ const Parser = {
       }
     }
 
-    // event 与 entity 的关联：不再用 subject 字段，改成扫正文里的 [[双链]]，
+    // event 与 entity 的关联：不再用 subject 字段，改成扫 [[双链]]，
     // 只认能对上 entity 标题名单的链接；第一个算主时间线，之后的算"相关提及"。
+    // 注意：这里扫的是 e.displayText（这个事件对象自己要展示的那段文字），
+    // 不是 e.body（整篇笔记原文）——一篇 event 笔记会拆成多个事件对象
+    // （一个"主事件"，displayText是整篇正文去掉简述/时间线等分段后剩下
+    // 的自由文本；再加「## 时间线」下每条细节行各自一个，displayText是
+    // 那一行自己的文字），这些对象虽然各自displayText不同，但之前全部
+    // 共享同一份完整的body。如果扫全部body，会导致：笔记里任意一处（哪怕
+    // 只是某一条跟这个人毫不相干的细节行）双链到了他，这篇笔记拆出来的
+    // 全部对象都会被判定成"提到了他"——于是他的「生平」时间线里会混进
+    // 整篇事件的全文内容、以及笔记里其它不相关的细节行（都以日期开头）。
+    // 改成只看每个对象自己的displayText后，只有真正包含这条双链的那一个
+    // 对象会被命中，其余的（不管是主事件全文，还是其它细节行）都不会被
+    // 误判进来。
     const entityTitles = new Set(persons.map(p=>p.title));
     events.forEach(e=>{
-      const links = Parser.extractWikilinks(e.body).filter(name=> entityTitles.has(name));
+      const links = Parser.extractWikilinks(e.displayText).filter(name=> entityTitles.has(name));
       if(links.length){
         e.mainEntity = links[0];
         e.mentionedEntities = [...new Set(links.slice(1))].filter(n=>n!==links[0]);
       }
+    });
+
+    // entity 笔记「## 时间线」细节行里链到*别的* entity 的，反向记一笔到
+    // 目标身上——「生平」正文以后要把这类内容跟自己的时间线拼在一起显示
+    // （点了来源胶囊能跳转），不进独立的"相关提及"分组。只认「## 时间线」
+    // 细节行（天然带年份，排得进按年份走的时间线），不含时间线之外的自由
+    // 正文（简述等）——那部分没有具体年份可以挂靠，讨论后决定直接舍弃。
+    // text 沿用"细节条目自动补主语"的同一个套路（t.datePrefix + p.title +
+    // t.rest），因为时间线行本来就默认省略主语（反正是自己笔记），照抄到
+    // 别人「生平」里就得把主语（这条记录来自谁）自己补上，不然读起来缺主语。
+    const crossMentions = {};
+    persons.forEach(p=>{
+      (p.timeline||[]).forEach(t=>{
+        const links = [...new Set(Parser.extractWikilinks(t.fullText).filter(name=> entityTitles.has(name) && name!==p.title))];
+        links.forEach(target=>{
+          if(!crossMentions[target]) crossMentions[target]=[];
+          crossMentions[target].push({
+            year: t.year,
+            text: t.datePrefix + p.title + t.rest,
+            fictional: p.fictional,
+            sourceTitle: p.title
+          });
+        });
+      });
     });
 
     // entity 正文"## 时间线"里逐行记的节点，之前只喂给了主体看板，
@@ -2407,7 +2452,7 @@ const Parser = {
     // 重叠、也不再报警告。查询时（Query.currentByCarrierFor）会把当年所有
     // 命中的人一起返回，常驻行同时显示，不再是"只留最后一条覆盖前面的"。
 
-    return { events, persons, tagRegistry, warnings, executiveThreshold, rulerEndThreshold };
+    return { events, persons, tagRegistry, warnings, executiveThreshold, rulerEndThreshold, crossMentions };
   }
 };
 
@@ -2472,7 +2517,7 @@ const Color = {
    新增状态时也加在这里，不再随手声明新的裸露全局变量。
    ========================================================= */
 const Store = {
-  vault: { events:[], persons:[], tagRegistry:{domain:DEFAULT_DOMAINS, carrier:[], countryMain:[], countrySecondary:[], executiveThreshold:{}, rulerEndThreshold:{}}, warnings:[], executiveThreshold:{}, rulerEndThreshold:{} },
+  vault: { events:[], persons:[], tagRegistry:{domain:DEFAULT_DOMAINS, carrier:[], countryMain:[], countrySecondary:[], executiveThreshold:{}, rulerEndThreshold:{}}, warnings:[], executiveThreshold:{}, rulerEndThreshold:{}, crossMentions:{} },
   currentYear: (function(){
     const saved = parseInt(localStorage.getItem('fwb_lastYear'), 10);
     return Number.isFinite(saved) ? saved : 1938;
@@ -4281,23 +4326,24 @@ const CompareView = {
     const items = [];
     // start_year/end_year 只作年份锚点（排序、年份轴匹配用），不再自动生成"出生/逝世"这两条展示项——
     // 这件事完全交给你正文"## 时间线"自己叙述，避免两边各写一次重复。
+    // 自己笔记的条目不带来源胶囊（source:null）。
     (person.timeline||[]).forEach(t=>{
-      items.push({year:t.year, title:t.fullText, fictional:person.fictional});
+      items.push({year:t.year, title:t.fullText, fictional:person.fictional, source:null});
     });
-    // 独立 event 笔记：正文第一个 [[双链]] 指回这个 entity 的，算主时间线
-    // （排除刚才由这个 entity 自己正文时间线合成出的事件，那些已经从 person.timeline 里算过一次了）
-    Store.vault.events.filter(e=> e.mainEntity === person.title && !e.fromEntityTimeline).forEach(e=>{
-      if(e.start) items.push({year:e.start.year, title:e.displayText, fictional:e.fictional});
+    // 独立 event 笔记：不管这个 entity 是正文第一个双链（主角）还是后面顺带
+    // 提到的（原来单独放"相关提及"footer，现在拼进正文同一个时间线），
+    // 都带上来源事件笔记标题的胶囊——event 笔记没有详情页可跳，胶囊不可点击。
+    Store.vault.events.filter(e=> !e.fromEntityTimeline && (e.mainEntity===person.title || (e.mentionedEntities||[]).includes(person.title))).forEach(e=>{
+      if(e.start) items.push({year:e.start.year, title:e.displayText, fictional:e.fictional, source:{label:e.title, clickable:false}});
+    });
+    // 其他 entity 笔记「## 时间线」细节行链到这个 entity 的（Parser.scanVault
+    // 里建的反查表 crossMentions）——带来源 entity 笔记标题的胶囊，可点击，
+    // 复用 related-chip-link 那套"点了把来源人物放进对比另一栏"的交互。
+    (Store.vault.crossMentions[person.title]||[]).forEach(m=>{
+      items.push({year:m.year, title:m.text, fictional:m.fictional, source:{label:m.sourceTitle, clickable:true}});
     });
     items.sort((a,b)=>a.year-b.year);
     return items;
-  },
-
-  /* 正文里链接顺序在这个 entity 之后出现（不是主角）的独立事件，弱化展示，不进主时间线 */
-  mentionedEventsFor(person){
-    if(!person) return [];
-    return Store.vault.events.filter(e=> (e.mentionedEntities||[]).includes(person.title) && e.start)
-      .sort((a,b)=>a.start.year-b.start.year);
   },
 
   // 出生年相差达到/超过这个数就认为"明显不是同一时代"，不按年份合并对齐，
@@ -4367,9 +4413,9 @@ const CompareView = {
     html += `<div class="compare-timeline">`;
     years.forEach(y=>{
       html += `<div class="cmp-row">
-        <div class="cmp-cell">${CompareView.renderYearCell(mapA.get(y), pA)}</div>
+        <div class="cmp-cell">${CompareView.renderYearCell(mapA.get(y), pA, 'A')}</div>
         <div class="cmp-year mono">${y}</div>
-        <div class="cmp-cell">${CompareView.renderYearCell(mapB.get(y), pB)}</div>
+        <div class="cmp-cell">${CompareView.renderYearCell(mapB.get(y), pB, 'B')}</div>
       </div>`;
     });
     html += `</div>`;
@@ -4385,12 +4431,22 @@ const CompareView = {
     return html;
   },
 
-  renderYearCell(items, person){
+  renderYearCell(items, person, side){
     if(!items || !items.length) return `<span class="cmp-empty">—</span>`;
     return items.map(it=>{
       const age = person.birth ? (it.year - person.birth.year) : null;
-      return `<div class="cmp-item">${age!==null?`<span class="cmp-item-age">${age}岁</span>`:''}${Utils.escapeHtml(Parser.stripWikilinkSyntax(it.title))}${it.fictional?' <span class="ev-fiction">· 虚构</span>':''}</div>`;
+      return `<div class="cmp-item">${age!==null?`<span class="cmp-item-age">${age}岁</span>`:''}${Utils.escapeHtml(Parser.stripWikilinkSyntax(it.title))}${it.fictional?' <span class="ev-fiction">· 虚构</span>':''}${CompareView.renderSourceChip(it.source, side)}</div>`;
     }).join('');
+  },
+
+  /* 时间线条目的来源胶囊——只有独立 event 笔记（不可点击）和其他 entity
+     笔记的时间线细节行（可点击，复用 related-chip-link 那套跳转交互）
+     两种带来源，自己笔记的条目 source 是 null，返回空字符串。 */
+  renderSourceChip(source, side){
+    if(!source) return '';
+    return source.clickable
+      ? `<span class="related-chip related-chip-link tl-source-chip" data-side="${side}" data-name="${Utils.escapeHtml(source.label)}">${Utils.escapeHtml(source.label)}</span>`
+      : `<span class="related-chip tl-source-chip">${Utils.escapeHtml(source.label)}</span>`;
   },
 
   // 头部：姓名/生卒年/简述，从原来 renderCol 顶部那段拆出来单独复用。
@@ -4409,24 +4465,14 @@ const CompareView = {
 
   hasFootContent(person){
     if(!person) return false;
-    return CompareView.mentionedEventsFor(person).length > 0 || (person.related||[]).length > 0;
+    // "相关提及"已经并入正文时间线（buildTimelineFor），这里只剩"相关"
+    // （frontmatter 手动登记的 related 字段）。
+    return (person.related||[]).length > 0;
   },
 
-  // 脚部：相关提及/相关，从原来 renderCol 底部那段拆出来单独复用。
+  // 脚部：相关，从原来 renderCol 底部那段拆出来单独复用。
   renderFoot(person, side){
     let html = `<div class="compare-col compare-col-foot">`;
-    const mentioned = CompareView.mentionedEventsFor(person);
-    if(mentioned.length){
-      html += `<div class="mentioned-group">
-        <div class="mentioned-head">相关提及</div>`;
-      mentioned.forEach(e=>{
-        html += `<div class="mentioned-row">
-          <span class="mentioned-title">${Utils.escapeHtml(Parser.stripWikilinkSyntax(e.displayText))}</span>
-          ${e.fictional?' <span class="ev-fiction">· 虚构</span>':''}
-        </div>`;
-      });
-      html += `</div>`;
-    }
     if((person.related||[]).length){
       html += `<div class="related-group">
         <div class="related-head">相关</div>
@@ -4464,21 +4510,9 @@ const CompareView = {
       html += `<div class="tl-item">
         <div class="tl-age">${age!==null? age+'岁':''}</div>
         <div class="tl-body"><div class="tl-year mono">${it.year}</div>
-        <div class="tl-title">${Utils.escapeHtml(Parser.stripWikilinkSyntax(it.title))}${it.fictional?' <span class="ev-fiction">· 虚构</span>':''}</div></div>
+        <div class="tl-title">${Utils.escapeHtml(Parser.stripWikilinkSyntax(it.title))}${it.fictional?' <span class="ev-fiction">· 虚构</span>':''}${CompareView.renderSourceChip(it.source, side)}</div></div>
       </div>`;
     });
-    const mentioned = CompareView.mentionedEventsFor(person);
-    if(mentioned.length){
-      html += `<div class="mentioned-group">
-        <div class="mentioned-head">相关提及</div>`;
-      mentioned.forEach(e=>{
-        html += `<div class="mentioned-row">
-          <span class="mentioned-title">${Utils.escapeHtml(Parser.stripWikilinkSyntax(e.displayText))}</span>
-          ${e.fictional?' <span class="ev-fiction">· 虚构</span>':''}
-        </div>`;
-      });
-      html += `</div>`;
-    }
     // related：笔记 frontmatter 里手动登记的关联对象，不限 entity/event。
     // 能在 Store.vault.persons 里查到的，做成可点击 chip——点一下顺着关系链把它设成对比的另一栏；
     // 查不到（多半是 event，或者写错名字）的，展示成纯文字，暂时没有可跳转的落点。
