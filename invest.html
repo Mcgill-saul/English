@@ -12,10 +12,12 @@
         --sp-*、字号刻度 --fs-* 和颜色变量），不要再继续叠内联style，否则设计系统的
         变量会形同虚设，债只会越滚越多。
 
-     2) 颜色纪律：总览页(#page-overview)的橙色"主角卡"皮肤(.card-hero / .card-hero-soft)
+     2) 颜色纪律：橙色"主角卡"皮肤(.card-hero / .card-hero-soft)——总览页(#page-overview)的
+        总市值卡/市值趋势卡，和组合看板页(#page-board)的KPI卡/市值趋势卡，共用同一套橙色皮肤——
         定性为独立的"强调色(accent)"，不纳入 --green/--red/--blue 那套"绿=盈利/红=亏损/
-        蓝=可交互"的语义色体系，两者互不干扰、各管各的场景。新增总览页卡片如果要用强调色，
-        用这套橙色；如果卡片本身在展示盈亏/趋势这类有语义的数据，仍然要走语义色，不要套用橙色。
+        蓝=可交互"的语义色体系，两者互不干扰、各管各的场景。新增总览页或看板页的卡片如果要用
+        强调色，用这套橙色；如果卡片本身在展示盈亏/趋势这类有语义的数据，仍然要走语义色，不要
+        套用橙色。
 
      3) 悬浮提示只有一套引擎，不要新建第二套。
         所有悬浮气泡都走 showAnchorTip() / showFollowTip() / hideTip()（定义在脚本区，
@@ -23,6 +25,21 @@
         用 showAnchorTip(el, html, {html:true})，canvas里没有DOM元素可锚定的场景用
         showFollowTip(x,y,text)。历史上这里曾经有三套并行实现（badge-circle的CSS ::after、
         业绩比较表格单元格的手写定位、多层饼图canvas悬浮的手写定位），已经合并，不要再拆出来。
+
+     4) 下面这几处"兼容旧数据"代码，看起来像legacy/死代码，但不要顺手删——
+        它们防的是你**浏览器localStorage里的历史存档**，不是这份内嵌的DEFAULTS数据；
+        DEFAULTS现在干净，不代表本地存档也一定是新格式，这一点没法从文件本身验证，
+        所以判断标准跟"纯代码死引用"（比如已经删掉的 _renderL1Board）不一样，不能用同一套方法确认：
+          - renderPerpetualPlan() 里 `p.groups.forEach(g=>{ if(g.level==null) g.level=1; })`
+            —— 防旧存档里的 PERPETUAL_PLAN.groups 条目没有 level 字段
+          - renderPerpetualPlan() 里 `if(!p.actualWithdrawals) p.actualWithdrawals={}`
+            —— 防旧存档里的 PERPETUAL_PLAN 还没有 actualWithdrawals 字段
+          - BOARD_NOTES 加载处的数组→{note,todo}迁移逻辑（搜"兼容迁移"）
+            —— 防旧存档里 BOARD_NOTES[l1] 还是扁平数组格式
+          - 品种id `ps\x01lv\x01组合名\x01拆分名称` 编码兼容分支（搜"纯字符串品种id"）
+            —— 当前 FUND_SOURCES 数据里还实际存在纯字符串品种id，这条不是假设性的，是真在用
+        这几条要删，前提是能确认所有渠道的历史存档（本地localStorage + 所有Gist备份）都已经是
+        新格式——这个确认没法只看这份文件就做，需要你自己去检查实际存档内容。
      ══════════════════════════════════════════════════════════════════ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
@@ -3225,7 +3242,6 @@ const TITLES={overview:'投资组合总览',holdings:'持仓明细',xirr:'收益
 let chartL5,chartL3,chartMkt;
 let chartScatter,chartBenchmark;
 let chartBoardMarket,chartBoardCcy;
-let _bdDrillL1 = null;
 
 /* 结构分布"大类"tab的条形图渲染——原来这里操作的是chartBoardType(甜甜圈)，7-8个大类甜甜圈色块太多不好分辨，
    改用跟总览"三级组合"同款的.bar-list。三处调用方(初始加载/重置/下钻)共用这一个函数，不再各写一份。 */
@@ -3470,8 +3486,6 @@ function _groupCashflows(level, groupName){
   const members=_groupL1Members(level, groupName);
   return CASHFLOWS.filter(c=>members.includes(c.l1||c.product));
 }
-// 跟 buildL1XirrFlows 同样的口径，泛化到任意层级：把分类下所有一级组合的成本流水
-// 合并、按时间排序，加上今日市值收口。
 // 跟 buildL1XirrFlows 同样的口径，泛化到任意层级：把分类下所有一级组合的成本流水
 // 合并、按时间排序，加上今日市值收口。
 // 注：共管持仓的"转让"不再生成任何 CASHFLOWS 记录（详见 _syncSharedProductRows），
@@ -6644,7 +6658,6 @@ function _groupTransfersDisplay(level, groupName){
   return rows.sort((a,b)=>a.date.localeCompare(b.date));
 }
 function _renderGroupBoard(lv, groupName){
-  _bdDrillL1 = lv===1 ? groupName : null; // legacy compat
   const prods = _groupProducts(lv, groupName);
   const total = totalCNY();
   const grpTotal = _groupMarketVal2(lv, groupName);
@@ -7213,8 +7226,6 @@ function _renderGroupBoard(lv, groupName){
   el.insertAdjacentHTML('beforeend', _boardPrincipalSplitHtml(lv, groupName, grpTotal, netCost));
 }
 
-// Legacy alias — kept so any existing call to _renderL1Board(l1) still works
-function _renderL1Board(l1name){ _renderGroupBoard(1, l1name); }
 // 类型分组顺序：已保存的在前，新出现的类型追加到末尾
 function allTypesInOrder(prods){
   const defined = [...new Set(prods.map(p=>p.type||'未分类'))];
