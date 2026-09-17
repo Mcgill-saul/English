@@ -40,6 +40,18 @@
             —— 当前 FUND_SOURCES 数据里还实际存在纯字符串品种id，这条不是假设性的，是真在用
         这几条要删，前提是能确认所有渠道的历史存档（本地localStorage + 所有Gist备份）都已经是
         新格式——这个确认没法只看这份文件就做，需要你自己去检查实际存档内容。
+
+     5) 新增一个顶层数据字段（比如以后要加个新的 XXX_PLAN）时，下面三处必须同步改，缺一处就会像
+        之前 BOARD_NOTES/FUND_SOURCES 那样——本地没存档时直接给空值、不退回读 DEFAULTS，在"把
+        导出文件挪到新设备打开"这个场景下把数据静默清空（这个bug真实发生过，见下面④这条兜底修复）：
+          ① _saved 退回初始化那一段（搜 "let BOARD_NOTES ="附近）——没有本地存档时要写成
+             `JSON.parse(JSON.stringify(DEFAULTS.XXX||默认空值))`，不能只写死的空值，
+             否则文件里明明带着数据，换个环境打开就丢了
+          ② lsSave() 里的 _collectData()（搜 "function _collectData"）——决定存到localStorage的字段
+          ③ exportHTML() 里手写的 dataBlock 数组（搜 "Build a fresh data block"）——决定导出文件带哪些字段，
+             这里跟②必须是同一份字段清单，两边对不上的话，会出现"本地存着但导出文件里没有"的情况
+        新增字段后，可以照着上面模拟场景的方法（构造一个_saved为null、DEFAULTS里有值的场景，实际跑一遍
+        初始化代码）验证一下，比只读代码更可靠。
      ══════════════════════════════════════════════════════════════════ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
@@ -619,7 +631,14 @@ let MARKET_PLAN = _saved && _saved.MARKET_PLAN
      baseMode:_saved.MARKET_PLAN.baseMode||'all',customTotal:_saved.MARKET_PLAN.customTotal||0,l3Sel:_saved.MARKET_PLAN.l3Sel||[]}
   : JSON.parse(JSON.stringify(DEFAULTS.MARKET_PLAN));
 function _genId(prefix){return prefix+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
-let BOARD_NOTES = (_saved && _saved.BOARD_NOTES && !Array.isArray(_saved.BOARD_NOTES)) ? _saved.BOARD_NOTES : {}; // 按一级组合名分组存储；兼容旧版本(数组)存档，直接丢弃重来
+// BOARD_NOTES/FUND_SOURCES/PRINCIPAL_SPLITS/SHARED_CF_NOTES 这四个字段，之前"没有本地存档时"
+// 是直接给空值，不像其它字段那样退回读 DEFAULTS——这在"把导出的文件挪到新设备/清过缓存的浏览器
+// 打开"这个场景下（此时 _saved 必然是 null，见上面 _saved 的定义），会把这几类数据全部清空，
+// 一旦之后触发过一次 lsSave() 存回本地，原数据就真的丢了。现在统一成跟其它字段一样的模式：
+// 没有本地存档就退回读文件里内嵌的 DEFAULTS（深拷贝，避免直接引用 DEFAULTS 原对象被意外改到）。
+let BOARD_NOTES = (_saved && _saved.BOARD_NOTES && !Array.isArray(_saved.BOARD_NOTES))
+  ? _saved.BOARD_NOTES
+  : JSON.parse(JSON.stringify(DEFAULTS.BOARD_NOTES||{})); // 按一级组合名分组存储；_saved 是旧版本(数组)存档时也退回 DEFAULTS，不再直接丢弃清空
 let BENCHMARK_PLAN = _saved && _saved.BENCHMARK_PLAN && _saved.BENCHMARK_PLAN.baseYear
   ? _saved.BENCHMARK_PLAN
   : (DEFAULTS.BENCHMARK_PLAN && DEFAULTS.BENCHMARK_PLAN.baseYear
@@ -632,12 +651,12 @@ let SHARED_PRODUCTS = _saved && _saved.SHARED_PRODUCTS
   : (DEFAULTS.SHARED_PRODUCTS && DEFAULTS.SHARED_PRODUCTS.length ? JSON.parse(JSON.stringify(DEFAULTS.SHARED_PRODUCTS)) : []);
 let SNAPSHOTS = _saved ? (_saved.SNAPSHOTS || []) : JSON.parse(JSON.stringify(DEFAULTS.SNAPSHOTS||[]));
 // 资金来源：跨一级组合的资金视角，纯参考聚合，不参与任何真实结算（见文件后段"资金来源"相关函数）
-let FUND_SOURCES = _saved ? (_saved.FUND_SOURCES || []) : [];
+let FUND_SOURCES = _saved ? (_saved.FUND_SOURCES || []) : JSON.parse(JSON.stringify(DEFAULTS.FUND_SOURCES||[]));
 // 本金拆分：给某个组合(按 "层级|组合名" 为key)设定几份本金各自的占比，纯展示用，跟资金来源是两个独立功能
-let PRINCIPAL_SPLITS = _saved ? (_saved.PRINCIPAL_SPLITS || {}) : {};
+let PRINCIPAL_SPLITS = _saved ? (_saved.PRINCIPAL_SPLITS || {}) : JSON.parse(JSON.stringify(DEFAULTS.PRINCIPAL_SPLITS||{}));
 // 一次性迁移：给还没有id的品种补上稳定id，供资金来源引用具体品种（数组下标不稳定，不能用来引用）
 PRODUCTS.forEach(p=>{ if(!p.id) p.id=_genId('pd'); });
-let SHARED_CF_NOTES = _saved ? (_saved.SHARED_CF_NOTES || {}) : {};
+let SHARED_CF_NOTES = _saved ? (_saved.SHARED_CF_NOTES || {}) : JSON.parse(JSON.stringify(DEFAULTS.SHARED_CF_NOTES||{}));
 let ACTUAL_CASHFLOWS = _saved ? (_saved.ACTUAL_CASHFLOWS || []) : JSON.parse(JSON.stringify(DEFAULTS.ACTUAL_CASHFLOWS||[]));
 let PERPETUAL_PLAN = _saved && _saved.PERPETUAL_PLAN
   ? _saved.PERPETUAL_PLAN
@@ -5605,7 +5624,10 @@ function exportHTML(){
     `  BOARD_NOTES:  ${JSON.stringify(BOARD_NOTES)},`,
     `  SNAPSHOTS:    ${JSON.stringify(SNAPSHOTS)},`,
     `  FUND_SOURCES: ${JSON.stringify(FUND_SOURCES)},`,
-    `  PRINCIPAL_SPLITS: ${JSON.stringify(PRINCIPAL_SPLITS)}`
+    `  PRINCIPAL_SPLITS: ${JSON.stringify(PRINCIPAL_SPLITS)},`,
+    `  REBAL_THRESH: ${JSON.stringify(REBAL_THRESH)},`,
+    `  SHARED_CF_NOTES: ${JSON.stringify(SHARED_CF_NOTES)},`,
+    `  XIRR_CALC_ROWS: ${JSON.stringify(_xirrCalcRows)}`
   ].join('\n');
 
   // Replace the DEFAULTS object inside the file
