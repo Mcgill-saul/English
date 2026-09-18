@@ -197,28 +197,11 @@ body {
   .sidebar { display: none; }
 }
 
-/* 手机端场景下拉：顶栏里替代左侧边栏做场景切换，桌面端不出现 */
+/* 场景下拉：曾经在手机端顶栏顶上单独占一行做场景切换，现在去掉了——
+   手机端进入场景后顶栏应该永远只是"搜索+图标"这一行，跟主页一致，切
+   场景改成先回主页再选。底层 select 和它的赋值逻辑还留着（不影响功
+   能，只是这个元素永远不显示），避免为了藏起来又去动一遍绑定它的JS */
 .mobile-scene-select { display: none; }
-@media (max-width: 768px) {
-  .mobile-scene-select {
-    display: block;
-    order: 1;
-    min-width: 100%;
-    padding: var(--sp-2) var(--sp-3);
-    font-size: 14px;
-    font-family: 'Noto Sans SC', sans-serif;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text);
-    -webkit-appearance: none;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235b6478' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right var(--sp-3) center;
-    padding-right: 32px;
-  }
-}
 
 /* ════════════════════════════════════════════════════════════
    顶栏（练习/编辑标签、场景搜索、返回主页、设置入口）
@@ -1003,10 +986,14 @@ body {
 }
 
 @media (max-width: 768px) {
-  /* 保证所有可点击元素有足够大的点击区域 */
-  button, .scene-item, .vocab-chip, .home-card, .gs-result-item {
+  /* 保证所有可点击元素有足够大的点击区域；.icon-btn 排除在外——它是仿
+     Grain 的固定 30×30 正圆图标按钮，跟着这条规则被拉到 44px 高就会变成
+     竖椭圆（就是上一版实际发生的问题），所以单独摘出来 */
+  button:not(.icon-btn), .scene-item, .vocab-chip, .home-card, .gs-result-item {
     min-height: var(--tap-min);
   }
+  /* 图标按钮维持固定 30×30，不受上面那条通用规则影响 */
+  .icon-btn { min-height: 30px; min-width: 30px; }
   /* 长按菜单在这几类卡片上禁用，避免误触弹出系统菜单 */
   .home-card, .scene-item, .vocab-chip {
     -webkit-touch-callout: none;
@@ -1136,6 +1123,7 @@ body {
         <button class="tab" id="tabEdit">编辑</button>  <!-- ← 顶栏「编辑」标签文字 -->
       </div>
       <div class="topbar-controls">
+        <img class="header-logo" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAADRklEQVR4nO2XMW8cVRDHf/P27e2dz2fZZw4TI6IQEgnkxBTEUlBAQgiECyQaOsRX4NtQ5QtQUNCDiEQBCCp3UQIpCELYWAZbOta7b98bij3f+bIb+/YaU2TK3bczvzfzn9n35OjvXeUCzVxk8GcA/wsA++QDVUVEkDmczaPmJwCUOLK44HFzuLMIpiHIGCCo0k06fP/rDo/TI97fvMPRv0OMmS0XgmBFWFLTqK5jANWAtS2+e7hDq9ejEyf4JBDNACAIuXfkvsChtJGZs1ApAQILccKf/+xz996XxFFFJlNmREhdxjuvbfHG1RuELAeZXUEV74LgfMHq4jKf3PmQyJyfUFXotFrkhaPbIHgtgKKIGFKXcf+PR1gT1Xw2CSIChfdcGbzI+srzKH7qfWOA0qlQ+IK9wwNsVAUIGlAtgwtCVjgGS31EDKhvEr8KYDD44FnuLvHRrXeJ5FQJBDRAp5VgjEFHUjMipHnGcZGTSLPZVgHIvWPRROwd7vP511+MRKiAoKrELcPHW9sMuqsUoUBGijciiBhUBa3pApH6vrCTBYKGwMall9ktUvq9FT7b/nQ8BzRA0o64v3OA2V2mtd5D8qKi+AzIawIZo3QXjisgYwAjhuHxkO2N2xzmKSFNWcSMx1pQZcEYvvnqNz54r8vllyK8BGQG1auCc5DnlnY7R3XyzVQJTtj6SZeggbLoJ++EdgEUio0F5zzDoTt3UqoqcRxhbYTWqLO2CwoNlaUKqJRtGseWXx4ecO/bR7Q7Fn3K2BOB7Nhzc3ON229eRmsW1rfhGTsSEbKs4ObmGhs3BuesLiGc86Spp9OZMQNnmarSakU8eLDPjz88pt22Uzs7rQkRyHPP9eurbL6+PnsGzjIRwfvApbUet7bWiaJTfa+QZcVYSwJ4r/T7Hbyv/7E1BpiAlDBGRj2vSmQNV64OiKKJeBEoioDLtbZajQBk5EyM8NfekJ9/+p0kKUV4UprllXb5LEwCluereq3MDFAe1eCtt19Ag3Lt1ed45Vp/yrEqpKkra31KC4ogosS2qG6q6cXEWiHLhBCkVlRPmwvGBKJIKy3bWAPOKdYqTY+gqlI7L+boAkaO5jk3V+3C7wXPAC4c4D9a/U0rnFlEbgAAAABJRU5ErkJggg==">  <!-- ← 跟主页同一个App图标，手机端专属 -->
         <div class="search-box topbar-search-input">
           <span class="search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
           <input id="topbarSearch" type="text" placeholder="Search" autocomplete="off">
