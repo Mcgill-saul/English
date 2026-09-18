@@ -2977,18 +2977,26 @@ const HorizontalTimeline = {
   },
   // 简单的行内避让——同一分类这一年如果好几条时间上有重叠，拆到第2、第3……
   // 子行摆开，不做拖拽/改色这些交互，先保证基本能看清楚不糊在一起。
+  // 边界判断：A的终点跟B的起点是同一天时算"交接"不算"重叠"，摆同一行——
+  // 两条色条视觉上头尾相接，没必要为这一天特地拆行。但有个例外：如果
+  // 两边都是单天的点（比如同一天看了两部电影，都画成.tl-dot），"交接"
+  // 其实是画在完全同一个位置，这种必须分行，不能因为边界相等就合并。
   packRows(items){
     const withJs = items.map(it=>({
       ...it, jsStart: dateObjToJSDate(it.start, false), jsEnd: dateObjToJSDate(it.end, true)
     })).sort((a,b)=>a.jsStart-b.jsStart);
     const rows = [];
     withJs.forEach(it=>{
+      const isPoint = it.jsStart.getTime()===it.jsEnd.getTime();
       let placed = -1;
       for(let r=0;r<rows.length;r++){
-        if(it.jsStart > rows[r].lastEnd){ placed=r; break; }
+        const row = rows[r];
+        const touching = it.jsStart.getTime()===row.lastEnd.getTime();
+        const overlapFree = it.jsStart > row.lastEnd || (touching && !(row.lastWasPoint && isPoint));
+        if(overlapFree){ placed=r; break; }
       }
-      if(placed===-1){ rows.push({lastEnd:it.jsEnd}); placed = rows.length-1; }
-      else rows[placed].lastEnd = it.jsEnd;
+      if(placed===-1){ rows.push({lastEnd:it.jsEnd, lastWasPoint:isPoint}); placed = rows.length-1; }
+      else { rows[placed].lastEnd = it.jsEnd; rows[placed].lastWasPoint = isPoint; }
       it.rowIndex = placed;
     });
     return { items: withJs, rowCount: rows.length || 1 };
@@ -3007,11 +3015,16 @@ const HorizontalTimeline = {
     }
     const { items, rowCount } = this.packRows(raw);
     let inner = '';
-    items.forEach(it=>{
+    items.forEach((it, i)=>{
       const leftR = this.yearRatio(it.jsStart, year);
       // 结束日期往后推一天再算比例，让横条视觉上盖到"结束当天"整天，
-      // 不是画到结束日的凌晨0点看起来像少了一天。
-      const endExclusive = new Date(it.jsEnd.getFullYear(), it.jsEnd.getMonth(), it.jsEnd.getDate()+1);
+      // 不是画到结束日的凌晨0点看起来像少了一天。但如果同一行紧接着
+      // 下一条记录的起点正好等于我的终点（交接），就不做这个+1天延伸——
+      // 不然两条色条会在交接这一天里各往对方那边多盖半天，看着像
+      // 相交而不是相切。这种情况下边界这一天视觉上直接归下一条。
+      const nextInRow = items.slice(i+1).find(n=>n.rowIndex===it.rowIndex);
+      const touchesNext = !!nextInRow && nextInRow.jsStart.getTime()===it.jsEnd.getTime();
+      const endExclusive = touchesNext ? it.jsEnd : new Date(it.jsEnd.getFullYear(), it.jsEnd.getMonth(), it.jsEnd.getDate()+1);
       const rightR = this.yearRatio(endExclusive, year);
       // 每个子行的"带状区域"从PAD开始往下数，条/点都以这个带状区域的
       // 垂直中点为准居中摆放——absolute定位的元素量的是.tl-track的边框盒，
