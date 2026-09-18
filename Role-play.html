@@ -296,25 +296,33 @@ body {
   }
 }
 
-/* 搜索框：不管在顶栏还是主页、桌面还是手机，外观统一是同一套胶囊样式——
-   背景色、圆角、内边距、字号、聚焦反馈都写在这一条共用规则里；每处具体
-   占多宽、跟谁同行，是位置/布局问题，各自在下面单独定义，不影响外观 */
-.home-search-input, .topbar-search-input {
+/* 搜索框：外观照抄 Grain 的搜索框——胶囊容器 + SVG 放大镜图标 + 裸 input，
+   不管主页还是顶栏、桌面还是手机，都是同一个 .search-box；各处只在外面
+   套的 .home-search-input / .topbar-search-input 上控制宽度这种布局属性 */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 999px;
-  padding: var(--sp-2) var(--sp-4);
-  font-size: 13px;
-  color: var(--text);
-  font-family: 'Noto Sans SC', sans-serif;
-  outline: none;
+  padding: 7px 14px;
   transition: border-color 0.15s, background 0.15s;
 }
-.home-search-input:focus, .topbar-search-input:focus {
-  border-color: var(--accent);
-  background: var(--surface);
+.search-box:focus-within { border-color: var(--accent); background: var(--surface); }
+.search-box .search-icon { color: var(--text3); flex-shrink: 0; display: flex; }
+.search-box .search-icon svg { width: 15px; height: 15px; }
+.search-box input {
+  border: none;
+  outline: none;
+  background: transparent;
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-family: 'Noto Sans SC', sans-serif;
+  color: var(--text);
 }
-.home-search-input::placeholder, .topbar-search-input::placeholder { color: var(--text3); }
+.search-box input::placeholder { color: var(--text3); }
 
 /* 顶栏搜索框：桌面端固定宽度（持续显示在顶栏里，不需要太宽）；
    手机端占这一行大部分宽度，图标按钮挤在右边 */
@@ -323,34 +331,41 @@ body {
   .topbar-search-input { flex: 1; min-width: 0; width: auto; }
 }
 
-/* 图标按钮：设置、手机端返回主页共用的中性样式（浅底细边框，不带状态色） */
+/* 图标按钮：外观照抄 Grain 的 .icon-btn——30×30 正圆、细边框、图标 15×15，
+   桌面手机统一同一个样子。桌面端的设置按钮是唯一例外：多带一个文字标签、
+   做成胶囊而不是纯圆（见下面 #gistBtn 桌面端单独规则），因为桌面有空间，
+   纯图标反而不够一眼看懂 */
 .icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  height: 36px;
-  padding: 0 var(--sp-4);
-  border-radius: 999px;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 50%;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text2);
-  font-size: 13px;
-  font-family: 'Noto Sans SC', sans-serif;
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
-  white-space: nowrap;
 }
+.icon-btn svg { width: 15px; height: 15px; }
 .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
-@media (max-width: 768px) {
-  .icon-btn {
-    flex-shrink: 0;
-    width: 36px;
+.icon-btn .gear-label { display: none; }
+@media (min-width: 769px) {
+  /* 桌面端设置按钮：图标 + "设置"文字，胶囊形状，跟手机端的纯图标圆形区分开 */
+  #gistBtn {
+    width: auto;
     height: 36px;
-    padding: 0;
-    font-size: 17px;
+    padding: 0 var(--sp-4);
+    border-radius: 999px;
+    gap: 6px;
   }
-  #gistBtn .gear-label { display: none; }
+  #gistBtn .gear-label {
+    display: inline;
+    font-size: 13px;
+    font-family: 'Noto Sans SC', sans-serif;
+  }
 }
 
 /* 手机端返回主页按钮：桌面端不出现（有左侧边栏就够了） */
@@ -748,11 +763,21 @@ body {
   margin-bottom: 6px;
 }
 @media (max-width: 768px) {
-  .home-header { padding: var(--sp-6) var(--sp-4) var(--sp-3); }
-  .home-title { font-size: 24px; }
-}
-@media (max-width: 480px) {
-  .home-title { font-size: 22px; }
+  /* 手机端不要标题/副标题了，这一块变成仿 Grain 头部的常驻贴顶工具栏：
+     固定高度、贴顶吸附，下面就是"图标 + 搜索 + 排序 + 设置"这一整排 */
+  .home-header {
+    position: sticky;
+    top: 0;
+    z-index: 14;
+    background: var(--bg);
+    padding: 0 var(--sp-4);
+    padding-top: env(safe-area-inset-top, 0);
+    height: 60px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+  }
+  .home-title { display: none; }
 }
 
 .home-sub-row {
@@ -770,14 +795,17 @@ body {
   letter-spacing: 0.05em;
 }
 @media (max-width: 768px) {
-  .home-sub-row { flex-direction: column; align-items: stretch; gap: 0; margin-bottom: var(--sp-3); }
-  .home-sub { font-size: 12px; margin-bottom: var(--sp-2); }
+  .home-sub { display: none; }
+  .home-sub-row { width: 100%; margin-bottom: 0; flex-wrap: nowrap; }
 }
 
 .home-toolbar { display: flex; gap: var(--sp-3); align-items: center; flex-wrap: wrap; }
 /* 外观（背景/圆角/内边距/字号）已经在跟顶栏搜索框共用的规则里定义了，
    这里只写主页这个位置特有的宽度策略：跟排序下拉同行，弹性伸缩 */
 .home-search-input { flex: 1; min-width: 180px; max-width: 320px; }
+@media (max-width: 768px) {
+  .home-toolbar { width: 100%; }
+}
 .home-sort-select {
   padding: var(--sp-2) 32px var(--sp-2) var(--sp-3);
   background: var(--surface);
@@ -799,19 +827,14 @@ body {
 }
 .home-sort-select:focus { border-color: var(--accent); }
 
-/* App 小图标：仿参考截图里搜索框左边那个 Logo 位。桌面端有侧边栏顶部的
-   app-name 顶着，这里就不重复放了；只在手机端主页这一排显示 */
-.app-badge {
+/* App 图标：仿 Grain 头部那个 Logo 位置，改用真实的 App 图标图片（跟
+   favicon 是同一张，两张对话卡片的图案）。桌面端有侧边栏顶部的 app-name
+   顶着，这里就不重复放了；只在手机端主页这一排显示 */
+.header-logo {
   display: none;
-  width: 32px;
-  height: 32px;
+  width: 26px;
+  height: auto;
   flex-shrink: 0;
-  border-radius: 9px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 16px;
-  align-items: center;
-  justify-content: center;
 }
 
 /* 排序切换 / 设置：手机端主页用跟顶栏一样的中性图标按钮（.icon-btn），
@@ -823,20 +846,13 @@ body {
     flex-wrap: nowrap; /* 一整排放下：图标 + 搜索框 + 排序 + 设置，不换行 */
     gap: var(--sp-2);
   }
-  .app-badge { display: flex; }
+  .header-logo { display: block; }
   .home-search-input { min-width: 0; max-width: none; }
-  /* 手动排序在手机端改成图标按钮触发（跟参考图里的三横线一致），
+  /* 手动排序在手机端改成图标按钮触发（跟 Grain 的三横线筛选图标一致），
      原来的下拉选择器让位隐藏，逻辑仍然是同一个 sortMode，见脚本里
      mobileSortToggle 的点击处理 */
   .home-sort-select { display: none; }
-  .mobile-sort-toggle, .mobile-home-settings {
-    display: inline-flex;
-    width: 36px;
-    height: 36px;
-    padding: 0;
-    font-size: 16px;
-    flex-shrink: 0;
-  }
+  .mobile-sort-toggle, .mobile-home-settings { display: inline-flex; }
 }
 
 /* 手机端没有编辑模式，新建场景（会跳转到编辑页）没有意义，直接隐藏 */
@@ -998,6 +1014,66 @@ body {
   }
 }
 
+/* ════════════════════════════════════════════════════════════
+   设置面板：桌面端居中卡片；手机端仿 Grain，从底部滑出的 sheet
+   ════════════════════════════════════════════════════════════ */
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 22, 26, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 9998;
+}
+.settings-overlay.show { opacity: 1; pointer-events: auto; }
+
+.settings-sheet {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -46%);
+  width: 380px;
+  max-width: 95vw;
+  max-height: 88vh;
+  overflow-y: auto;
+  background: var(--surface);
+  border-radius: 12px;
+  padding: var(--sp-5);
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.25s cubic-bezier(.2,.8,.2,1);
+  z-index: 9999;
+}
+.settings-sheet.show { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%); }
+
+.sheet-handle { display: none; }
+
+@media (max-width: 768px) {
+  /* 手机端改成从底部滑出的 sheet，不是居中卡片——跟 Grain 的备份面板一致 */
+  .settings-sheet {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transform: translateY(100%);
+    width: auto;
+    max-width: none;
+    border-radius: 20px 20px 0 0;
+    padding: 10px var(--sp-5) calc(var(--sp-5) + env(safe-area-inset-bottom, 0));
+  }
+  .settings-sheet.show { transform: translateY(0); }
+  .sheet-handle {
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 4px;
+    margin: 6px auto 14px;
+  }
+}
+
 /* 超小屏幕（≤480px）补充微调 */
 @media (max-width: 480px) {
   .p-title { font-size: 20px; }
@@ -1019,14 +1095,17 @@ body {
       <div class="home-sub-row">
         <div class="home-sub">English Dialogue · 选择场景开始练习</div>  <!-- ← 主页副标题，改这里 -->
         <div class="home-toolbar">
-          <div class="app-badge" aria-hidden="true">💬</div>  <!-- ← 手机端专属的App小图标，桌面端不显示 -->
-          <input class="home-search-input" id="homeSearchInput" type="text" placeholder="🔍 全局搜索…" autocomplete="off">
+          <img class="header-logo" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAADRklEQVR4nO2XMW8cVRDHf/P27e2dz2fZZw4TI6IQEgnkxBTEUlBAQgiECyQaOsRX4NtQ5QtQUNCDiEQBCCp3UQIpCELYWAZbOta7b98bij3f+bIb+/YaU2TK3bczvzfzn9n35OjvXeUCzVxk8GcA/wsA++QDVUVEkDmczaPmJwCUOLK44HFzuLMIpiHIGCCo0k06fP/rDo/TI97fvMPRv0OMmS0XgmBFWFLTqK5jANWAtS2+e7hDq9ejEyf4JBDNACAIuXfkvsChtJGZs1ApAQILccKf/+xz996XxFFFJlNmREhdxjuvbfHG1RuELAeZXUEV74LgfMHq4jKf3PmQyJyfUFXotFrkhaPbIHgtgKKIGFKXcf+PR1gT1Xw2CSIChfdcGbzI+srzKH7qfWOA0qlQ+IK9wwNsVAUIGlAtgwtCVjgGS31EDKhvEr8KYDD44FnuLvHRrXeJ5FQJBDRAp5VgjEFHUjMipHnGcZGTSLPZVgHIvWPRROwd7vP511+MRKiAoKrELcPHW9sMuqsUoUBGijciiBhUBa3pApH6vrCTBYKGwMall9ktUvq9FT7b/nQ8BzRA0o64v3OA2V2mtd5D8qKi+AzIawIZo3QXjisgYwAjhuHxkO2N2xzmKSFNWcSMx1pQZcEYvvnqNz54r8vllyK8BGQG1auCc5DnlnY7R3XyzVQJTtj6SZeggbLoJ++EdgEUio0F5zzDoTt3UqoqcRxhbYTWqLO2CwoNlaUKqJRtGseWXx4ecO/bR7Q7Fn3K2BOB7Nhzc3ON229eRmsW1rfhGTsSEbKs4ObmGhs3BuesLiGc86Spp9OZMQNnmarSakU8eLDPjz88pt22Uzs7rQkRyHPP9eurbL6+PnsGzjIRwfvApbUet7bWiaJTfa+QZcVYSwJ4r/T7Hbyv/7E1BpiAlDBGRj2vSmQNV64OiKKJeBEoioDLtbZajQBk5EyM8NfekJ9/+p0kKUV4UprllXb5LEwCluereq3MDFAe1eCtt19Ag3Lt1ed45Vp/yrEqpKkra31KC4ogosS2qG6q6cXEWiHLhBCkVlRPmwvGBKJIKy3bWAPOKdYqTY+gqlI7L+boAkaO5jk3V+3C7wXPAC4c4D9a/U0rnFlEbgAAAABJRU5ErkJggg==">  <!-- ← 手机端专属的App图标，桌面端不显示 -->
+          <div class="search-box home-search-input">
+            <span class="search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+            <input id="homeSearchInput" type="text" placeholder="Search" autocomplete="off">
+          </div>
           <select class="home-sort-select" id="homeSortSelect">
             <option value="manual">手动排序</option>
             <option value="alpha">按名称排序 A-Z</option>
           </select>
-          <button class="icon-btn mobile-sort-toggle" id="mobileSortToggle" title="手动排序（点击切换）">☰</button>
-          <button class="icon-btn mobile-home-settings" id="homeGistBtn" onclick="openGistPanel()" title="设置（导出 / 导入 / 云同步）">⚙</button>
+          <button class="icon-btn mobile-sort-toggle" id="mobileSortToggle" title="手动排序（点击切换）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
+          <button class="icon-btn mobile-home-settings" id="homeGistBtn" onclick="openGistPanel()" title="设置（导出 / 导入 / 云同步）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
           <button class="home-btn-new" onclick="newScene()">＋ 新建场景</button>  <!-- ← 主页新建按钮文字 -->
         </div>
       </div>
@@ -1057,10 +1136,13 @@ body {
         <button class="tab" id="tabEdit">编辑</button>  <!-- ← 顶栏「编辑」标签文字 -->
       </div>
       <div class="topbar-controls">
-        <input class="topbar-search-input" id="topbarSearch" type="text" placeholder="🔍 全局搜索…" autocomplete="off">
-        <button class="icon-btn mobile-home-btn" onclick="goHome()" title="返回主页">🏠</button>
+        <div class="search-box topbar-search-input">
+          <span class="search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+          <input id="topbarSearch" type="text" placeholder="Search" autocomplete="off">
+        </div>
+        <button class="icon-btn mobile-home-btn" onclick="goHome()" title="返回主页"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></button>
         <span class="save-msg" id="saveMsg">已保存 ✓</span>
-        <button class="icon-btn" id="gistBtn" onclick="openGistPanel()" title="设置（导出 / 导入 / 云同步）"><span class="gear-icon">⚙</span><span class="gear-label"> 设置</span></button>
+        <button class="icon-btn" id="gistBtn" onclick="openGistPanel()" title="设置（导出 / 导入 / 云同步）"><span class="gear-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="gear-label"> 设置</span></button>
       </div>
     </div>
     <div class="content" id="mainContent" data-dynamic=""></div>
@@ -1209,11 +1291,12 @@ function openGistPanel() {
   document.getElementById('gistToken').value = localStorage.getItem('rp_gist_token') || '';
   document.getElementById('gistId').value    = localStorage.getItem('rp_gist_id')    || '';
   document.getElementById('gistStatus').textContent = '';
-  const panel = document.getElementById('gistPanel');
-  panel.style.display = 'flex';
+  document.getElementById('gistPanelOverlay').classList.add('show');
+  document.getElementById('gistPanel').classList.add('show');
 }
 function closeGistPanel() {
-  document.getElementById('gistPanel').style.display = 'none';
+  document.getElementById('gistPanelOverlay').classList.remove('show');
+  document.getElementById('gistPanel').classList.remove('show');
 }
 
 function saveGistConfig() {
@@ -2340,12 +2423,13 @@ function renderAll() {
 </script>
 
 <!-- Settings Panel：本地备份（导出/导入）+ 云同步（Gist），统一入口 -->
-<div id="gistPanel" style="position: fixed; inset: 0px; z-index: 9999; background: rgba(0, 0, 0, 0.4); display: none; align-items: center; justify-content: center;">
-  <div style="background:var(--surface);border-radius:12px;padding:24px;width:380px;max-width:95vw;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-      <span style="font-weight:700;font-size:15px;">⚙ 设置</span>
-      <button onclick="closeGistPanel()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);line-height:1;">×</button>
-    </div>
+<div class="settings-overlay" id="gistPanelOverlay" onclick="closeGistPanel()"></div>
+<div class="settings-sheet" id="gistPanel">
+  <div class="sheet-handle"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+    <span style="font-weight:700;font-size:15px;">⚙ 设置</span>
+    <button onclick="closeGistPanel()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);line-height:1;">×</button>
+  </div>
 
     <!-- 本地备份 -->
     <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;">本地备份</div>
@@ -2382,7 +2466,6 @@ function renderAll() {
       </div>
       <div id="gistStatus" style="font-size: 12px; color: var(--q-accent); min-height: 18px; text-align: center;">上传成功 ✓ 11:23:19</div>
     </div>
-  </div>
 </div>
 
 </body></html>
