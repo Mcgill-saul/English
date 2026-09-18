@@ -3019,19 +3019,33 @@ const HorizontalTimeline = {
       // 不能指望CSS padding顶开。
       const bandTop = PAD + it.rowIndex*(BAR_H+GAP);
       const isSameDay = it.jsStart.getTime()===it.jsEnd.getTime();
-      // 悬浮title原来放的是笔记标题，但色条/色点上已经明文显示标题了，
-      // 悬浮再看一遍是重复信息。改成显示date值本身：单天就是那一天的
-      // 日期；有明确终点的跨度是"起点 ~ 终点"；没写终点（ongoing）固定
-      // 显示"起点 ~ 进行中"，不用真的把"今天"这个换算出来的日期打出来
-      // 冒充成"确定的终点"，容易让人误以为笔记里写死了这个日期。
+      // 悬浮title显示date值本身：有明确终点的跨度是"起点 ~ 终点"；没写
+      // 终点（ongoing）固定显示"起点 ~ 进行中"，不用真的把"今天"这个
+      // 换算出来的日期打出来冒充成"确定的终点"。单天的情况用.tl-dot
+      // 画成一个小竖条，竖条本身没地方放标题文字（不像色条还能溢出
+      // 显示），所以单天的悬浮title要把标题也带上，不能只显示日期——
+      // 不然完全看不出这个点是哪条记录（比如Movie分类，一天看的电影）。
       const startLabel = SpanRail.fmtDateObj(it.start);
-      const tipText = it.ongoing
-        ? `${startLabel} ~ 进行中`
-        : (isSameDay ? startLabel : `${startLabel} ~ ${SpanRail.fmtDateObj(it.end)}`);
-      const tip = Utils.escapeHtml(tipText);
+      let tip;
+      if(isSameDay){
+        // title属性里用&#10;这个HTML实体换行（比直接塞字面量\n更保险，
+        // 浏览器对属性值里裸换行符的处理不一致）；标题、日期要分别转义
+        // 之后再拼&#10;，不能对拼好的整串再转义一次，不然&#10;里的&
+        // 会被转成&amp;，变成显示"&#10;"这几个字符而不是真的换行。
+        // 悬浮框第一行是标题、第二行是日期。
+        tip = `${Utils.escapeHtml(it.title)}&#10;${Utils.escapeHtml(startLabel)}`;
+      } else if(it.ongoing){
+        tip = Utils.escapeHtml(`${startLabel} ~ 进行中`);
+      } else {
+        tip = Utils.escapeHtml(`${startLabel} ~ ${SpanRail.fmtDateObj(it.end)}`);
+      }
       if(isSameDay){
         const dotLeft = ((leftR+rightR)/2)*100;
-        inner += `<div class="tl-dot" style="left:${dotLeft}%;top:${bandTop}px;width:${DOT_W}px;height:${BAR_H}px;margin-left:${-DOT_W/2}px;background:${color}" title="${tip}"></div>`;
+        // 单天记录的竖条之前是纯色（100%不透明），比多天色条（22约13%不透明度）
+        // 深了一大截，两种在同一行并排出现时观感不统一。改成"CC"（约80%），
+        // 比色条深得多（毕竟只有5px宽，太淡了在轨道上会找不到），但不是
+        // 死黑一样刺眼的纯色块。
+        inner += `<div class="tl-dot" style="left:${dotLeft}%;top:${bandTop}px;width:${DOT_W}px;height:${BAR_H}px;margin-left:${-DOT_W/2}px;background:${color}CC" title="${tip}"></div>`;
       } else {
         const left = leftR*100;
         const width = Math.max((rightR-leftR)*100, 0.4);
