@@ -2,18 +2,18 @@
 const CACHE_NAME = 'english-v1';
 
 const CORE_ASSETS = [
-  '/English/Overview.html',
-  '/English/overview-manifest.json',
-  '/English/Fitness.html',
-  '/English/fitness-manifest.json',
-  "/English/Handful O'clock.html",
-  "/English/handful-oclock-manifest.json",
-  '/English/Pocket.html',
-  '/English/pocket-manifest.json',
-  '/English/Role-play.html',
-  '/English/roleplay-manifest.json',
-  '/English/Words.html',
-  '/English/words-manifest.json'
+  '/Habitat/Overview.html',
+  '/Habitat/overview-manifest.json',
+  '/Habitat/Fitness.html',
+  '/Habitat/fitness-manifest.json',
+  "/Habitat/Handful O'clock.html",
+  "/Habitat/handful-oclock-manifest.json",
+  '/Habitat/Pocket.html',
+  '/Habitat/pocket-manifest.json',
+  '/Habitat/Role-play.html',
+  '/Habitat/roleplay-manifest.json',
+  '/Habitat/Words.html',
+  '/Habitat/words-manifest.json'
 ];
 
 self.addEventListener('install', function(event) {
