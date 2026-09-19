@@ -339,6 +339,7 @@ body {
 }
 .icon-btn svg { width: 15px; height: 15px; }
 .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+.icon-btn .gear-icon { display: inline-flex; align-items: center; justify-content: center; }
 .icon-btn .gear-label { display: none; }
 @media (min-width: 769px) {
   /* 桌面端设置按钮：图标 + "设置"文字，胶囊形状，跟手机端的纯图标圆形区分开 */
@@ -2335,11 +2336,12 @@ window.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // 移动端：在顶栏添加搜索触发按钮
+    // 移动端：顶栏搜索框聚焦时自动滚动到可见区域（避免被弹出的键盘挡住）
     const searchInput = document.getElementById('topbarSearch');
     if (searchInput) {
-      searchInput.setAttribute('placeholder', '搜索…');
-      // 点击搜索输入框时自动滚动到可见区域
+      // 注意：占位符文字统一由 HTML 里的 placeholder="Search" 决定，
+      // 这里不要再 setAttribute 覆盖它——之前留了一行覆盖成中文"搜索…"，
+      // 导致主页显示 Search、进场景后又变回中文，就是这行代码干的
       searchInput.addEventListener('focus', function() {
         setTimeout(() => {
           this.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2384,17 +2386,10 @@ window.addEventListener('DOMContentLoaded', () => {
     }, 200);
   });
 
-  // ── 移动端安全区域适配 ──
-  if (CSS.supports('padding-bottom', 'env(safe-area-inset-bottom)')) {
-    const style = document.createElement('style');
-    style.textContent = `
-      @media (max-width: 768px) {
-        .app { padding-bottom: env(safe-area-inset-bottom, 0px); }
-        .home-grid { padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px)); }
-      }
-    `;
-    document.head.appendChild(style);
-  }
+  // 注：移动端安全区适配（notch/圆角屏留白）已经写进静态样式表了（.content /
+  // .home-header / .topbar 等处的 env(safe-area-inset-*)），不再需要在这里
+  // 运行时动态注入一个 <style> 标签——之前这里就是这么干的，每次刷新都会
+  // 在 <head> 里多插一份，是很早以前那一堆重复 style 块的源头，这次删掉
 
   // 初始化 sort select
   const sortSel = document.getElementById('homeSortSelect');
