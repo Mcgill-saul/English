@@ -1,5 +1,5 @@
 // Shared Service Worker - 部署在仓库根目录，scope 覆盖整站
-const CACHE_NAME = 'english-v1';
+const CACHE_NAME = 'habitat-v1';
 
 const CORE_ASSETS = [
   '/Habitat/Overview.html',
