@@ -2461,4 +2461,15 @@ function renderAll() {
     </div>
 </div>
 
+<script>
+// ── 注册 Service Worker（让 Chrome 识别为可安装 PWA）──────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('./sw.js')
+      .catch(function(err) {
+        console.warn('Service Worker 注册失败:', err);
+      });
+  });
+}
+</script>
 </body></html>
