@@ -570,7 +570,6 @@ body {
   text-transform: uppercase; color: var(--text3); margin-bottom: var(--sp-3);
 }
 
-.vocab-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 7px; margin-bottom: var(--sp-5); }
 .vocab-chip {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 8px; padding: 7px 11px; cursor: pointer;
@@ -582,7 +581,6 @@ body {
 .vocab-zh.hidden { color: transparent; letter-spacing: -0.05em; }
 .vocab-zh.hidden::after { content: '• • •'; color: var(--text3); letter-spacing: 0.1em; font-size: 10px; }
 @media (max-width: 768px) {
-  .vocab-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--sp-2); }
   .vocab-chip { padding: var(--sp-2) var(--sp-3); min-height: var(--tap-min); border-radius: 12px; }
   .vocab-en { font-size: 14px; }
   .vocab-zh { font-size: 12px; }
@@ -970,7 +968,7 @@ body {
   color: var(--text3); margin-right: var(--sp-2); letter-spacing: 0.06em;
 }
 .gs-highlight { background: var(--accent-light); color: var(--text); border-radius: 2px; }
-.gs-hint, .gs-no-result {
+.gs-no-result {
   padding: 16px var(--sp-3); font-size: 13px;
   color: var(--text3); text-align: center;
 }
@@ -1098,8 +1096,8 @@ body {
             <option value="alpha">按名称排序 A-Z</option>
           </select>
           <button class="icon-btn mobile-sort-toggle" id="mobileSortToggle" title="手动排序（点击切换）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
-          <button class="icon-btn mobile-home-settings" id="homeGistBtn" onclick="openGistPanel()" title="设置（导出 / 导入 / 云同步）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
-          <button class="home-btn-new" onclick="newScene()">＋ 新建场景</button>  <!-- ← 主页新建按钮文字 -->
+          <button class="icon-btn mobile-home-settings" id="homeGistBtn" onclick="App.sync.openGistPanel()" title="设置（导出 / 导入 / 云同步）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+          <button class="home-btn-new" onclick="App.scene.newScene()">＋ 新建场景</button>  <!-- ← 主页新建按钮文字 -->
         </div>
       </div>
     </div>
@@ -1112,7 +1110,7 @@ body {
       <div class="app-sub">English Dialogue</div>  <!-- ← 侧边栏副标题 -->
     </div>
     <div class="sidebar-body">
-      <div class="scene-item home-nav-item" onclick="goHome()" id="homeNavItem">
+      <div class="scene-item home-nav-item" onclick="App.scene.goHome()" id="homeNavItem">
         <span class="scene-item-name">🏠 主页</span>  <!-- ← 侧边栏主页入口文字 -->
       </div>
       <div id="sceneList" data-dynamic=""></div>
@@ -1134,9 +1132,9 @@ body {
           <span class="search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
           <input id="topbarSearch" type="text" placeholder="Search" autocomplete="off">
         </div>
-        <button class="icon-btn mobile-home-btn" onclick="goHome()" title="返回主页"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></button>
+        <button class="icon-btn mobile-home-btn" onclick="App.scene.goHome()" title="返回主页"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></button>
         <span class="save-msg" id="saveMsg">已保存 ✓</span>
-        <button class="icon-btn" id="gistBtn" onclick="openGistPanel()" title="设置（导出 / 导入 / 云同步）"><span class="gear-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="gear-label"> 设置</span></button>
+        <button class="icon-btn" id="gistBtn" onclick="App.sync.openGistPanel()" title="设置（导出 / 导入 / 云同步）"><span class="gear-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="gear-label"> 设置</span></button>
       </div>
     </div>
     <div class="content" id="mainContent" data-dynamic=""></div>
@@ -1165,1258 +1163,14 @@ body {
      不要依赖编辑这个 HTML 文件本身。
      ══════════════════════════════ -->
 
-<script>
-// ── APP CORE LOGIC ──
-// 应用名称唯一来源：以后改名字只改这一行，下面 applyAppName() 会把它同步
-// 到页面标题、iOS 主屏标题、侧边栏/主页的 LOGO 文字、导出文件名、Gist 描述
-const APP_NAME = 'Role play';
-
-// 把 APP_NAME 应用到所有展示/命名的地方，启动时调用一次即可
-function applyAppName() {
-  document.title = APP_NAME;
-  const appTitleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
-  if (appTitleMeta) appTitleMeta.setAttribute('content', APP_NAME);
-  const homeTitleEl = document.querySelector('.home-title');
-  if (homeTitleEl) homeTitleEl.textContent = APP_NAME;
-  const appNameEl = document.querySelector('.app-name');
-  if (appNameEl) appNameEl.textContent = APP_NAME;
-}
-
-const STORAGE_KEY = 'dialogue_scenes_v1';
-const GIST_FILENAME_RP = 'roleplay_data.json';
-const LS_GIST_KNOWN_VERSION_RP = 'rp_gist_known_version';
-const GIST_PUSH_DEBOUNCE_MS = 8000;
-const GIST_PUSH_MIN_INTERVAL_MS = 10000;
-// "脏标记"：本地有未推送到 Gist 的改动时置位，push/pull 成功后撕掉。
-// 启动同步（syncOnLoad）靠它判断该先 push 还是可以直接 pull，避免无条件
-// pull 把来不及推送的本地改动静默覆盖掉。
-const DIRTY_KEY = 'rp_gist_dirty';
-// 旧版本独立存储的排序状态（用于一次性迁移）
-const LEGACY_SORT_MODE_KEY = 'dialogue_scene_sort_mode';
-const LEGACY_SORT_ORDER_KEY = 'dialogue_scene_sort_order';
-
-// 读取数据：数据只有两个来源——localStorage（日常读写）和 Gist 云端
-// （可选，见 syncOnLoad）。不再有"文件里嵌入的数据快照"这个来源。
-// 返回 { scenes: [...], sortMode: 'manual'|'alpha' }
-function loadData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      // 新格式：{ scenes, sortMode, _ts }
-      if (parsed && !Array.isArray(parsed) && Array.isArray(parsed.scenes)) {
-        return { scenes: parsed.scenes, sortMode: parsed.sortMode === 'alpha' ? 'alpha' : 'manual' };
-      }
-      // 旧格式：纯场景数组，尝试用旧的排序状态迁移顺序
-      if (Array.isArray(parsed)) {
-        return migrateLegacyOrder(parsed);
-      }
-    }
-  } catch(e) { console.error(e); }
-  // 本地缓存也没有：全新的一次使用，从空场景列表开始
-  return { scenes: [], sortMode: 'manual' };
-}
-
-// 一次性迁移：把旧版本分开存储的手动排序顺序，合并进场景数组顺序本身
-function migrateLegacyOrder(scenesArray) {
-  let sortMode = 'manual';
-  try {
-    const legacyMode = localStorage.getItem(LEGACY_SORT_MODE_KEY);
-    if (legacyMode === 'alpha') sortMode = 'alpha';
-    const legacyOrderRaw = localStorage.getItem(LEGACY_SORT_ORDER_KEY);
-    if (legacyOrderRaw) {
-      const order = JSON.parse(legacyOrderRaw);
-      if (Array.isArray(order) && order.length) {
-        const orderMap = {};
-        order.forEach((id, i) => { orderMap[id] = i; });
-        const ordered = scenesArray.filter(s => orderMap.hasOwnProperty(s.id)).sort((a,b) => orderMap[a.id] - orderMap[b.id]);
-        const rest = scenesArray.filter(s => !orderMap.hasOwnProperty(s.id));
-        scenesArray = [...ordered, ...rest];
-      }
-    }
-  } catch(e) { /* 忽略迁移失败 */ }
-  return { scenes: scenesArray, sortMode };
-}
-
-// 只负责把数据写入本地缓存，不触发 Gist 自动同步。
-// 专门给"从云端拉取"这类场景用：数据本来就来自云端，没必要存完again立刻排队推送回去。
-// 把数据写入本地缓存。skipDirty=true 用于"数据本来就来自云端"的写入场景
-// （pull 落盘、冲突处理选"改用云端数据"），这类写入不代表本地有未同步的
-// 改动，不需要打脏标记；日常编辑走 saveData，默认会打标记
-function persistData(scenesArray, skipDirty) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ scenes: scenesArray, sortMode, _ts: Date.now() }));
-  if (!skipDirty) localStorage.setItem(DIRTY_KEY, '1');
-}
-
-// 保存数据到浏览器缓存，并自动推送 Gist。场景顺序与排序模式一起保存，保证多端一致。
-// 推送前会先与云端版本比对，若检测到云端已被其他设备更新，会弹出冲突提示而不是直接覆盖
-function saveData(scenesArray) {
-  persistData(scenesArray);
-  if (localStorage.getItem('rp_gist_token') && localStorage.getItem('rp_gist_id')) {
-    clearTimeout(saveData._gistTimer);
-    saveData._gistTimer = setTimeout(() => pushToGist(false), GIST_PUSH_DEBOUNCE_MS);
-  }
-}
-
-// ── 自动保存 ──
-// 所有会改动数据的操作都应该走这两个函数之一，不需要用户手动点"保存"：
-// - autoSaveNow()：结构性改动（增删轮次/替换句/关键词、拖拽排序等）立即存
-// - autoSaveDebounced()：文字类输入用，打字停顿 600ms 后才存，避免每敲一个
-//   字就写一次 localStorage。两者最终都调用 saveData()，成功后闪一下"已保存"提示
-const AUTOSAVE_DEBOUNCE_MS = 600;
-function autoSaveNow() {
-  saveData(scenes);
-  flashSaveMsg();
-}
-function autoSaveDebounced() {
-  clearTimeout(autoSaveDebounced._timer);
-  autoSaveDebounced._timer = setTimeout(autoSaveNow, AUTOSAVE_DEBOUNCE_MS);
-}
-function flashSaveMsg() {
-  const msg = document.getElementById('saveMsg');
-  if (!msg) return;
-  msg.classList.add('show');
-  clearTimeout(flashSaveMsg._timer);
-  flashSaveMsg._timer = setTimeout(() => msg.classList.remove('show'), 1800);
-}
-
-// ── GIST 同步 ──
-function openGistPanel() {
-  document.getElementById('gistToken').value = localStorage.getItem('rp_gist_token') || '';
-  document.getElementById('gistId').value    = localStorage.getItem('rp_gist_id')    || '';
-  document.getElementById('gistStatus').textContent = '';
-  document.getElementById('gistPanelOverlay').classList.add('show');
-  document.getElementById('gistPanel').classList.add('show');
-}
-function closeGistPanel() {
-  document.getElementById('gistPanelOverlay').classList.remove('show');
-  document.getElementById('gistPanel').classList.remove('show');
-}
-
-function saveGistConfig() {
-  const token  = document.getElementById('gistToken').value.trim();
-  const gistId = document.getElementById('gistId').value.trim();
-  if (!token) { setGistStatus('请填写 Token', 'error'); return; }
-  localStorage.setItem('rp_gist_token', token);
-  if (gistId) { localStorage.setItem('rp_gist_id', gistId); setGistStatus('配置已保存 ✓', 'ok'); updateGistBtn(true); }
-  else createGist(token);
-}
-
-async function createGist(token) {
-  setGistStatus('正在创建 Gist…', '');
-  try {
-    const res = await fetch('https://api.github.com/gists', {
-      method: 'POST',
-      headers: { Authorization: 'token ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description: APP_NAME + ' 云同步数据', public: false, files: { [GIST_FILENAME_RP]: { content: JSON.stringify({ scenes, sortMode }, null, 2) } } })
-    });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    localStorage.setItem('rp_gist_id', data.id);
-    if (data.updated_at) localStorage.setItem(LS_GIST_KNOWN_VERSION_RP, data.updated_at);
-    document.getElementById('gistId').value = data.id;
-    setGistStatus('Gist 创建成功，ID 已自动填入 ✓', 'ok');
-    updateGistBtn(true);
-  } catch(e) { setGistStatus('创建失败：' + e.message, 'error'); }
-}
-
-async function pushToGist(manual) {
-  const token  = localStorage.getItem('rp_gist_token');
-  const gistId = localStorage.getItem('rp_gist_id');
-  if (!token || !gistId) { if (manual) setGistStatus('请先配置 Token 和 Gist ID', 'error'); return; }
-  if (pushToGist._busy) { if (manual) setGistStatus('同步正在进行中，请稍候…', ''); return; }
-  if (!manual && (Date.now() - (pushToGist._lastPush||0) < GIST_PUSH_MIN_INTERVAL_MS)) return;
-  pushToGist._busy = true;
-  if (manual) setGistStatus('检查云端状态…', '');
-  // 上传前先确认云端版本没有被其他设备改过，避免静默覆盖
-  try {
-    const checkRes = await fetch('https://api.github.com/gists/' + gistId, {
-      headers: { Authorization: 'token ' + token }
-    });
-    if (!checkRes.ok) throw new Error('HTTP ' + checkRes.status);
-    const remote = await checkRes.json();
-    const known = localStorage.getItem(LS_GIST_KNOWN_VERSION_RP);
-    if (known && remote.updated_at && known !== remote.updated_at) {
-      pushToGist._busy = false;
-      if (manual) setGistStatus('检测到云端有更新，请先处理冲突', 'error');
-      showGistConflictBanner();
-      return;
-    }
-    await doPushGist(token, gistId, manual);
-  } catch(e) {
-    if (manual) setGistStatus('检查失败：' + e.message, 'error');
-  } finally {
-    pushToGist._busy = false;
-  }
-}
-
-async function doPushGist(token, gistId, manual) {
-  try {
-    const res = await fetch('https://api.github.com/gists/' + gistId, {
-      method: 'PATCH',
-      headers: { Authorization: 'token ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ files: { [GIST_FILENAME_RP]: { content: JSON.stringify({ scenes, sortMode }, null, 2) } } })
-    });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    pushToGist._lastPush = Date.now();
-    if (data.updated_at) localStorage.setItem(LS_GIST_KNOWN_VERSION_RP, data.updated_at);
-    localStorage.removeItem(DIRTY_KEY); // 推送成功，本地改动已同步到云端，撕掉脏标记
-    if (manual) { setGistStatus('上传成功 ✓ ' + new Date().toLocaleTimeString(), 'ok'); updateGistBtn(true); }
-  } catch(e) { if (manual) setGistStatus('上传失败：' + e.message, 'error'); }
-}
-
-// ── 冲突提示条：云端被其他设备改过时，暂停自动上传，等待用户决定 ──
-function showGistConflictBanner() {
-  if (document.getElementById('gistConflictBanner')) return;
-  const banner = document.createElement('div');
-  banner.id = 'gistConflictBanner';
-  banner.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:1200;background:var(--surface);border:1px solid #f59e0b;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.2);padding:14px 16px;max-width:340px;width:calc(100% - 32px);font-size:13px;line-height:1.6;color:var(--text);';
-  banner.innerHTML =
-    '<div style="margin-bottom:10px;">⚠️ 检测到云端有更新（可能来自其他设备），是否用本地数据覆盖云端？</div>' +
-    '<div style="display:flex;gap:8px;">' +
-      '<button onclick="resolveGistConflict(\'overwrite\')" style="flex:1;padding:8px 4px;background:#f59e0b;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">覆盖云端</button>' +
-      '<button onclick="resolveGistConflict(\'pull\')" style="flex:1;padding:8px 4px;background:var(--bg2);color:var(--accent);border:1px solid var(--accent);border-radius:6px;font-size:12px;cursor:pointer;">改用云端数据</button>' +
-      '<button onclick="resolveGistConflict(\'dismiss\')" style="flex:1;padding:8px 4px;background:var(--bg2);color:var(--text2);border:none;border-radius:6px;font-size:12px;cursor:pointer;">稍后再说</button>' +
-    '</div>';
-  document.body.appendChild(banner);
-}
-
-function resolveGistConflict(action) {
-  const banner = document.getElementById('gistConflictBanner');
-  if (banner) banner.remove();
-  if (action === 'overwrite') {
-    const token = localStorage.getItem('rp_gist_token'), gistId = localStorage.getItem('rp_gist_id');
-    pushToGist._busy = true;
-    doPushGist(token, gistId, true).finally(() => { pushToGist._busy = false; });
-  } else if (action === 'pull') {
-    pullFromGist(true);
-  }
-  // dismiss：不做任何事，本地修改仍保留，下次触发自动同步时会重新检测
-}
-
-async function pullFromGist(manual) {
-  const token  = localStorage.getItem('rp_gist_token');
-  const gistId = localStorage.getItem('rp_gist_id');
-  if (!token || !gistId) { if (manual) setGistStatus('请先配置 Token 和 Gist ID', 'error'); return; }
-  if (manual) setGistStatus('下载中…', '');
-  try {
-    const res = await fetch('https://api.github.com/gists/' + gistId, { headers: { Authorization: 'token ' + token } });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    const file = data.files && data.files[GIST_FILENAME_RP];
-    if (!file) throw new Error('Gist 中没有找到数据文件');
-    const content = JSON.parse(file.content);
-    // 新格式：{ scenes, sortMode }；旧格式：纯场景数组
-    if (Array.isArray(content)) {
-      scenes = content;
-    } else if (content && Array.isArray(content.scenes)) {
-      scenes = content.scenes;
-      sortMode = content.sortMode === 'alpha' ? 'alpha' : 'manual';
-    }
-    persistData(scenes, true); // 数据来自云端，不算本地未同步改动，不打脏标记
-    localStorage.removeItem(DIRTY_KEY); // 拉取成功，云端已是最新，此前如有脏标记一并清掉
-    if (data.updated_at) localStorage.setItem(LS_GIST_KNOWN_VERSION_RP, data.updated_at);
-    renderAll();
-    if (manual) setGistStatus('从云端刷新成功 ✓ ' + new Date().toLocaleTimeString(), 'ok');
-    updateGistBtn(true);
-  } catch(e) { if (manual) setGistStatus('失败：' + e.message, 'error'); }
-}
-
-// ── 启动同步：脏标记还在，说明本地有未推送的改动（比如编辑后没多久就关闭
-// 了页面，8 秒防抖窗口内没来得及 push），这时如果直接 pull，会把这次没
-// 推送的本地改动静默覆盖掉。所以脏标记在，先 push（自带版本号冲突检测，
-// 不会盲目覆盖云端其他设备的改动）；脏标记不在，说明本地干净，直接 pull
-// 云端最新数据即可 ──
-function syncOnLoad() {
-  if (localStorage.getItem(DIRTY_KEY)) {
-    pushToGist(false);
-  } else {
-    pullFromGist(false);
-  }
-}
-
-function setGistStatus(msg, type) {
-  const el = document.getElementById('gistStatus');
-  if (!el) return;
-  el.textContent = msg;
-  el.style.color = type === 'error' ? '#c04848' : type === 'ok' ? '#1f9d5f' : '#888';
-}
-
-function updateGistBtn(connected) {
-  const title = connected ? '设置（导出 / 导入 / 云同步）— 云同步已连接' : '设置（导出 / 导入 / 云同步）';
-  const btn = document.getElementById('gistBtn');
-  if (btn) btn.title = title;
-  const homeBtn = document.getElementById('homeGistBtn');
-  if (homeBtn) homeBtn.title = title;
-}
-
-const _loaded = loadData();
-let scenes = _loaded.scenes;
-let currentId = null; // 当前选中的场景ID，null 表示在主页
-let currentMode = 'practice'; // 当前模式：'practice'=练习，'edit'=编辑
-
-// ── 排序状态 ──
-// sortMode: 'manual'（场景数组本身的顺序，可拖拽调整） | 'alpha'（按名称排序）
-// 排序状态会和 scenes 一起保存/同步，确保桌面端与手机端顺序一致
-let sortMode = _loaded.sortMode;
-
-function getSortedScenes() {
-  if (sortMode === 'alpha') {
-    return [...scenes].sort((a, b) => (a.title || '').localeCompare(b.title || '', 'zh'));
-  }
-  // manual 模式：场景数组本身的顺序即为显示顺序
-  return [...scenes];
-}
-
-function currentScene() { return scenes.find(s => s.id === currentId); }
-
-// 渲染移动端场景下拉选择器：顺序与桌面端主页保持一致（getSortedScenes）
-function renderMobileSceneSelect() {
-  const mobileSel = document.getElementById('mobileSceneSelect');
-  if (!mobileSel) return;
-  const prevVal = mobileSel.value;
-  mobileSel.innerHTML = '';
-  const homeOpt = document.createElement('option');
-  homeOpt.value = '__home__';
-  homeOpt.textContent = '🏠 主页';
-  mobileSel.appendChild(homeOpt);
-  getSortedScenes().forEach(s => {
-    const opt = document.createElement('option');
-    opt.value = s.id;
-    opt.textContent = s.tag ? `📁 ${s.tag} · ${s.title}` : s.title;
-    mobileSel.appendChild(opt);
-  });
-  // 恢复选中状态
-  mobileSel.value = currentId === null ? '__home__' : currentId;
-  if (mobileSel.value === '' && prevVal) mobileSel.value = prevVal;
-}
-
-// 渲染左侧场景列表
-function renderSidebar() {
-  renderMobileSceneSelect();
-  const list = document.getElementById('sceneList');
-  if(!list) return;
-  list.innerHTML = '';
-  const homeItem = document.getElementById('homeNavItem');
-  if (homeItem) homeItem.classList.toggle('active', currentId === null);
-  scenes.forEach(s => {
-    const el = document.createElement('div');
-    el.className = 'scene-item' + (s.id === currentId ? ' active' : '');
-    el.dataset.sceneid = s.id;
-    el.innerHTML = `<span class="scene-item-name">${esc(s.title) || '未命名场景'}</span><span class="scene-del" title="删除" data-delid="${s.id}">×</span>`;
-    list.appendChild(el);
-  });
-}
-
-// 点击场景：切换到对应场景页面
-function selectScene(id) {
-  currentId = id;
-  renderSidebar();
-  renderMain();
-  // 同步手机端下拉选择器
-  const mobileSel = document.getElementById('mobileSceneSelect');
-  if (mobileSel) mobileSel.value = id;
-}
-
-// 回主页：currentId 设为 null 触发主页渲染
-function goHome() {
-  currentId = null;
-  renderSidebar();
-  renderMain();
-  // 同步手机端下拉选择器
-  const mobileSel = document.getElementById('mobileSceneSelect');
-  if (mobileSel) mobileSel.value = '__home__';
-}
-
-
-// 新建场景：生成唯一ID，初始化空数据，进入编辑模式
-function newScene() {
-  const id = 's' + Date.now();
-  scenes.push({
-    id, tag: '新场景', title: '新场景', desc: '',
-    rounds: [{ q: { en: '', zh: '', alts: [] }, a: { en: '', zh: '', alts: [] } }],
-    vocab: [], notes: ''
-  });
-  saveData(scenes);
-  selectScene(id);
-  switchMode('edit');
-}
-
-// 删除场景
-function delScene(id) {
-  if (scenes.length === 1) { alert('至少保留一个场景'); return; }
-  if (!confirm('确定删除这个场景吗？')) return;
-  scenes = scenes.filter(s => s.id !== id);
-  if (currentId === id) currentId = scenes.length ? scenes[0].id : null;
-  saveData(scenes);
-  renderSidebar();
-  renderMain();
-}
-
-// ── 切换练习/编辑模式 ──
-function switchMode(mode) {
-  currentMode = mode;
-  document.getElementById('tabPractice').classList.toggle('active', mode === 'practice');
-  document.getElementById('tabEdit').classList.toggle('active', mode === 'edit');
-  renderMain();
-}
-
-// （原手动保存按钮已移除，所有改动都会自动保存，见 autoSaveNow / autoSaveDebounced）
-
-// ── MAIN RENDER ──
-// 渲染主页：把所有场景渲染成卡片网格，支持搜索、排序、拖拽
-function renderHome() {
-  renderMobileSceneSelect();
-  const grid = document.getElementById('homeGrid');
-  grid.style.display = ''; // 确保卡片格可见（搜索后回主页时恢复）
-  const hr = document.getElementById('homeSearchResults');
-  if (hr && !document.getElementById('homeSearchInput')?.value) hr.style.display = 'none';
-  // 主页搜索走 homeSearchResults，这里只渲染卡片
-  const searchTerm = '';
-
-  // 同步 sortMode select（桌面下拉）和图标按钮（手机端）的状态提示
-  const sortSel = document.getElementById('homeSortSelect');
-  if (sortSel && sortSel.value !== sortMode) sortSel.value = sortMode;
-  const sortToggle = document.getElementById('mobileSortToggle');
-  if (sortToggle) sortToggle.title = sortMode === 'manual' ? '手动排序（点击切换为按名称排序）' : '按名称排序（点击切换为手动排序）';
-
-  // 获取排序后的场景
-  let sorted = getSortedScenes();
-
-  // 搜索过滤
-  if (searchTerm) {
-    sorted = sorted.filter(s => {
-      const tagMatch = (s.tag || '').toLowerCase().includes(searchTerm);
-      const titleMatch = (s.title || '').toLowerCase().includes(searchTerm);
-      return tagMatch || titleMatch;
-    });
-  }
-
-  const isDragMode = sortMode === 'manual';
-
-  if (sorted.length === 0) {
-    grid.innerHTML = `<div class="home-no-match">${searchTerm ? '没有找到匹配的场景' : '暂无场景，点击「＋ 新建场景」开始'}</div>`;
-    return;
-  }
-
-  grid.innerHTML = sorted.map((s, idx) => `
-    <div class="home-card${isDragMode ? ' drag-mode' : ''}" data-scene-id="${s.id}"
-         ${isDragMode ? 'draggable="true"' : ''}
-         onclick="${isDragMode ? 'event.preventDefault()' : `selectScene('${s.id}')`}">
-      <div class="home-card-title">${esc(s.title || '未命名场景')}</div>
-    </div>`).join('');
-
-  // 拖拽事件绑定
-  if (isDragMode) {
-    bindDragEvents();
-    // 恢复点击事件：拖拽模式下通过 JS 绑定，区分拖拽和点击
-    grid.querySelectorAll('.home-card').forEach(card => {
-      card.addEventListener('click', function(e) {
-        if (!wasDragging) {
-          selectScene(card.dataset.sceneId);
-        }
-      });
-    });
-  }
-}
-
-// 主渲染函数：currentId 为 null 时渲染主页，否则渲染对应场景
-function renderMain() {
-  const root = document.getElementById('appRoot');
-  
-  if (currentId === null) { 
-    // 主页模式
-    root.classList.add('home-view');
-    renderHome(); 
-    renderVocabSidebar();
-    return; 
-  }
-  
-  // 非主页模式
-  root.classList.remove('home-view');
-  const el = document.getElementById('mainContent');
-  if (!el) { renderVocabSidebar(); return; }
-  const s = currentScene();
-  if (!s) { 
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📖</div>请从左侧选择或新建一个场景</div>'; 
-    renderVocabSidebar();
-    return; 
-  }
-  if (currentMode === 'practice') el.innerHTML = renderPractice(s);
-  else el.innerHTML = renderEdit(s);
-  renderVocabSidebar();
-}
-
-// ── 关键词栏（常驻，见 .vocab-panel）──
-// 独立于 mainContent 渲染，只负责这一块，随 renderMain() 一起调用，不需要
-// 各个改动点各自记得同步。练习模式下没有关键词就收起（不占宽度）；编辑模式
-// 下始终显示（保留"+Add"入口）；主页/无场景时收起。
-function renderVocabSidebar() {
-  const panel = document.getElementById('vocabPanel');
-  if (!panel) return;
-  const s = currentId === null ? null : currentScene();
-
-  if (!s) { panel.classList.remove('show'); panel.innerHTML = ''; return; }
-
-  if (currentMode === 'edit') {
-    const vocabHtml = (s.vocab || []).map((v, i) => `
-      <div class="vocab-edit-row">
-        <input class="field-input vocab-en-input" style="flex:1" placeholder="英文" value="${esc(v.en)}" data-index="${i}">
-        <input class="field-input vocab-zh-input" style="flex:1" placeholder="中文" value="${esc(v.zh)}" data-index="${i}">
-        <button class="btn-rm btn-del-vocab" data-index="${i}">×</button>
-      </div>`).join('');
-    panel.innerHTML = `
-      <div class="practice-sidebar-title">关键词</div>
-      <div class="vocab-edit-list" id="vocabList">${vocabHtml}</div>
-      <button class="btn-add" id="btnAddVocab" style="margin-top:8px;width:100%">+ Add</button>`;
-    panel.classList.add('show');
-    return;
-  }
-
-  // 练习模式：只读展示；没有关键词就收起，不占宽度
-  if (s.vocab && s.vocab.length) {
-    panel.innerHTML = `
-      <div class="practice-sidebar-title">关键词</div>
-      ${s.vocab.map(v=>`<div class="vocab-chip"><div class="vocab-en">${esc(v.en)}</div><div class="vocab-zh${v.hidden?' hidden':''}">${esc(v.zh)}</div></div>`).join('')}`;
-    panel.classList.add('show');
-  } else {
-    panel.innerHTML = '';
-    panel.classList.remove('show');
-  }
-}
-
-// ── PRACTICE VIEW ──
-// 渲染练习模式：展示对话卡片、Alternatives 折叠（与对应卡片一一绑定）、关键词、笔记
-function renderPractice(s) {
-  const rounds = s.rounds.map((r, i) => {
-    const qHasContent = r.q.zh || (r.q.alts && r.q.alts.filter(x=>x).length);
-    const aHasContent = r.a.zh || (r.a.alts && r.a.alts.filter(x=>x).length);
-    const hasA2 = r.a2 && r.a2.en;
-    const a2HasContent = r.a2 && (r.a2.zh || (r.a2.alts && r.a2.alts.filter(x=>x).length));
-
-    // 渲染单个 Alternatives 面板：中文翻译默认遮罩，可点击单独显示/隐藏
-    const renderAltItems = (field, fieldName, zhHidden) => {
-      const zhItem = field.zh
-        ? `<div class="alt-item alt-item-zh${zhHidden ? ' hidden' : ''}" data-round-idx="${i}" data-field="${fieldName}">${esc(field.zh)}</div>`
-        : '';
-      const altItems = (field.alts||[]).filter(x=>x).map(a=>`<div class="alt-item">${esc(a)}</div>`).join('');
-      return zhItem + altItems;
-    };
-    const renderAltPanel = (hasContent, field, fieldName, zhHidden) => hasContent ? `
-          <button class="alt-toggle" onclick="toggleAlt(this)">
-            <span class="alt-arrow">▶</span> Alternatives
-          </button>
-          <div class="alt-body">${renderAltItems(field, fieldName, zhHidden)}</div>` : '';
-
-    return `
-    <div class="round">
-      <div class="round-label">ROUND ${String(i+1).padStart(2,'0')}${r.title ? `<span style="font-family:'Noto Sans SC',sans-serif;font-weight:400;font-size:12px;color:var(--text2);letter-spacing:0.02em;">${esc(r.title)}</span>` : ''}</div>
-      <div class="dialogue-row${hasA2 ? ' has-third' : ''}">
-        <div class="qa-block">
-          <div class="card card-q">
-            <div class="card-lbl">Q</div>
-            <p class="card-en">${esc(r.q.en)}</p>
-          </div>
-          ${renderAltPanel(qHasContent, r.q, 'q', r.q.zhHidden !== false)}
-        </div>
-        <div class="qa-block">
-          <div class="card card-a">
-            <div class="card-lbl">A</div>
-            <p class="card-en">${esc(r.a.en)}</p>
-          </div>
-          ${renderAltPanel(aHasContent, r.a, 'a', r.a.zhHidden !== false)}
-        </div>
-        ${hasA2 ? `<div class="qa-block">
-          <div class="card card-a2">
-            <div class="card-lbl">A2</div>
-            <p class="card-en">${esc(r.a2.en)}</p>
-          </div>
-          ${renderAltPanel(a2HasContent, r.a2, 'a2', r.a2.zhHidden !== false)}
-        </div>` : ''}
-      </div>
-    </div>`;
-  }).join('');
-
-  return `
-    <div class="practice">
-      <div class="practice-main">
-        <div class="p-header">
-          <div class="p-tag">${esc(s.tag)}</div>
-          <h1 class="p-title">${esc(s.title)}</h1>
-          ${s.desc ? `<p class="p-desc">${esc(s.desc)}</p>` : ''}
-        </div>
-        ${rounds}
-        <div class="p-section" style="margin-top:0.5rem">
-          <div class="p-section-title">我的笔记</div>
-          <textarea class="notes-area" id="notesArea" placeholder="写你觉得难的点、容易犯的错……">${esc(s.notes||'')}</textarea>
-        </div>
-      </div>
-    </div>`;
-}
-
-// ── EDIT VIEW ──
-// 渲染编辑模式：场景信息表单 + 对话轮次编辑。关键词编辑区已移到常驻的
-// .vocab-panel，由 renderVocabSidebar() 独立渲染，见该函数
-function renderEdit(s) {
-  const totalRounds = s.rounds.length;
-  const roundsHtml = s.rounds.map((r, i) => renderRoundEdit(r, i, totalRounds)).join('');
-
-  return `
-    <div class="edit">
-      <div class="edit-main">
-        <div class="edit-field">
-          <div class="field-label">标签 TAG</div>
-          <input class="field-input" id="editTag" placeholder="例：场景 01" value="${esc(s.tag)}">
-        </div>
-        <div class="edit-field">
-          <div class="field-label">场景标题</div>
-          <input class="field-input" id="editTitle" placeholder="例：✈️ 机场入关" value="${esc(s.title)}">
-        </div>
-        <div class="edit-field">
-          <div class="field-label">场景说明</div>
-          <textarea class="field-textarea" id="editDesc" placeholder="简单描述这个场景的背景">${esc(s.desc)}</textarea>
-        </div>
-        <div class="edit-section-title"><span>对话轮次</span></div>
-        <div class="rounds-list" id="roundsList">${roundsHtml}</div>
-        <button class="btn-add-round" id="btnAddRound">+ Add Round</button>
-      </div>
-    </div>`;
-}
-
-// 渲染单个对话轮次的编辑区（Q / A / A2 三列）
-function renderRoundEdit(r, i, totalRounds) {
-  const qAlts = (r.q.alts||[]).map((a,j) => renderAltInput('q',i,j,a)).join('');
-  const aAlts = (r.a.alts||[]).map((a,j) => renderAltInput('a',i,j,a)).join('');
-  const a2Alts = ((r.a2&&r.a2.alts)||[]).map((a,j) => renderAltInput('a2',i,j,a)).join('');
-  
-  const showUp = i > 0;
-  const showDown = i < totalRounds - 1;
-
-  return `
-    <div class="round-edit" id="round-${i}">
-      <div class="round-edit-head">
-        <span class="round-edit-num">ROUND ${String(i+1).padStart(2,'0')}</span>
-        <input class="mini-input round-title-input" data-index="${i}" placeholder="轮次标题（选填）" value="${esc(r.title||'')}" style="flex:1;margin:0 10px;font-size:12px;">
-        <div class="round-actions">
-          ${showUp ? `<button class="btn-sort-round btn-round-up" data-index="${i}" title="上移">▲</button>` : ''}
-          ${showDown ? `<button class="btn-sort-round btn-round-down" data-index="${i}" title="下移">▼</button>` : ''}
-          <button class="btn-del-round btn-round-del" data-index="${i}" title="删除此轮">×</button>
-        </div>
-      </div>
-      <div class="round-grid">
-        <div>
-          <div class="round-col-label lbl-q">问</div>
-          <input class="mini-input round-en-q" data-index="${i}" placeholder="英文问句" value="${esc(r.q.en)}">
-          <input class="mini-input round-zh-q" data-index="${i}" placeholder="中文翻译" value="${esc(r.q.zh)}">
-          <div class="alt-edit-label" style="margin-top:8px">其他问法</div>
-          <div class="alt-inputs">${qAlts}</div>
-          <button class="btn-add-alt btn-add-alt-q" data-index="${i}">+ Add</button>
-        </div>
-        <div>
-          <div class="round-col-label lbl-a">答</div>
-          <input class="mini-input ans round-en-a" data-index="${i}" placeholder="英文回答" value="${esc(r.a.en)}">
-          <input class="mini-input ans round-zh-a" data-index="${i}" placeholder="中文翻译" value="${esc(r.a.zh)}">
-          <div class="alt-edit-label" style="margin-top:8px">其他说法</div>
-          <div class="alt-inputs">${aAlts}</div>
-          <button class="btn-add-alt btn-add-alt-a" data-index="${i}">+ Add</button>
-        </div>
-        <div>
-          <div class="round-col-label lbl-a">A2 <span style="font-size:10px;color:var(--text3);font-weight:400">（选填）</span></div>
-          <input class="mini-input ans round-en-a2" data-index="${i}" placeholder="A 的继续回应（选填）" value="${esc(r.a2&&r.a2.en||'')}">
-          <input class="mini-input ans round-zh-a2" data-index="${i}" placeholder="中文翻译（选填）" value="${esc(r.a2&&r.a2.zh||'')}">
-          <div class="alt-edit-label" style="margin-top:8px">其他说法</div>
-          <div class="alt-inputs">${a2Alts}</div>
-          <button class="btn-add-alt btn-add-alt-a2" data-index="${i}">+ Add</button>
-        </div>
-      </div>
-    </div>`;
-}
-
-function renderAltInput(side, ri, ai, val) {
-  return `
-    <div class="alt-input-row">
-      <input class="alt-mini alt-input-field" placeholder="替换说法" value="${esc(val)}" data-ri="${ri}" data-side="${side}" data-ai="${ai}">
-      <button class="btn-rm-alt btn-del-alt" data-ri="${ri}" data-side="${side}" data-ai="${ai}">×</button>
-    </div>`;
-}
-
-// 转义特殊字符，防止内容破坏 HTML 结构（不用改）
-function esc(str) {
-  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ── 拖拽排序 ──
-let dragSrcId = null;
-let wasDragging = false;
-
-function bindDragEvents() {
-  const cards = document.querySelectorAll('.home-card.drag-mode');
-  cards.forEach(card => {
-    card.addEventListener('dragstart', handleDragStart);
-    card.addEventListener('dragover', handleDragOver);
-    card.addEventListener('dragenter', handleDragEnter);
-    card.addEventListener('dragleave', handleDragLeave);
-    card.addEventListener('drop', handleDrop);
-    card.addEventListener('dragend', handleDragEnd);
-    // 点击追踪
-    card.addEventListener('mousedown', () => { wasDragging = false; });
-    card.addEventListener('drag', () => { wasDragging = true; });
-    card.addEventListener('dragend', () => {
-      setTimeout(() => { wasDragging = false; }, 50);
-    });
-  });
-}
-
-function handleDragStart(e) {
-  dragSrcId = this.dataset.sceneId;
-  this.classList.add('dragging');
-  e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('text/plain', dragSrcId);
-}
-
-function handleDragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-}
-
-function handleDragEnter(e) {
-  e.preventDefault();
-  if (this.dataset.sceneId !== dragSrcId) {
-    this.classList.add('drag-over');
-  }
-}
-
-function handleDragLeave() {
-  this.classList.remove('drag-over');
-}
-
-function handleDrop(e) {
-  e.preventDefault();
-  this.classList.remove('drag-over');
-  const targetId = this.dataset.sceneId;
-  if (dragSrcId && targetId && dragSrcId !== targetId) {
-    // 直接重排 scenes 数组本身，顺序会随 saveData 一起保存/同步到所有端
-    const srcIdx = scenes.findIndex(s => s.id === dragSrcId);
-    const tgtIdx = scenes.findIndex(s => s.id === targetId);
-    if (srcIdx === -1 || tgtIdx === -1) return;
-    const [moved] = scenes.splice(srcIdx, 1);
-    const newTgtIdx = scenes.findIndex(s => s.id === targetId);
-    scenes.splice(newTgtIdx, 0, moved);
-    saveData(scenes);
-    renderHome();
-  }
-}
-
-function handleDragEnd() {
-  this.classList.remove('dragging');
-  document.querySelectorAll('.home-card.drag-over').forEach(c => c.classList.remove('drag-over'));
-}
-
-// ── 全局搜索（内嵌，无弹层）──
-function openGlobalSearch() {
-  // 兼容旧调用，聚焦到顶栏搜索框
-  const inp = document.getElementById('topbarSearch');
-  if (inp) inp.focus();
-}
-function closeGlobalSearch() {
-  const dd = document.getElementById('topbarDropdown');
-  if (dd) dd.classList.remove('show');
-}
-
-function doGlobalSearch(term, bodyEl) {
-  const body = bodyEl || document.getElementById('gsBody');
-  if (!body) return;
-  if (!term || term.trim().length < 1) {
-    body.innerHTML = '';
-    if (body.id === 'topbarDropdown') body.classList.remove('show');
-    if (body.id === 'homeSearchResults') body.style.display = 'none';
-    return;
-  }
-  const lower = term.toLowerCase();
-  const results = []; // { sceneId, sceneTitle, type, text, context }
-
-  scenes.forEach(s => {
-    // tag
-    if ((s.tag || '').toLowerCase().includes(lower)) {
-      results.push({ sceneId: s.id, sceneTitle: s.title, type: '标签', text: s.tag });
-    }
-    // title
-    if ((s.title || '').toLowerCase().includes(lower)) {
-      results.push({ sceneId: s.id, sceneTitle: s.title, type: '标题', text: s.title });
-    }
-    // desc
-    if ((s.desc || '').toLowerCase().includes(lower)) {
-      results.push({ sceneId: s.id, sceneTitle: s.title, type: '描述', text: s.desc });
-    }
-    // notes
-    if ((s.notes || '').toLowerCase().includes(lower)) {
-      results.push({ sceneId: s.id, sceneTitle: s.title, type: '笔记', text: s.notes });
-    }
-    // rounds
-    (s.rounds || []).forEach((r, ri) => {
-      ['q', 'a', 'a2'].forEach(side => {
-        const obj = side === 'a2' ? (r.a2 || {}) : r[side];
-        if (!obj) return;
-        if ((obj.en || '').toLowerCase().includes(lower)) {
-          results.push({ sceneId: s.id, sceneTitle: s.title, type: `Round${ri+1} ${side.toUpperCase()}`, text: obj.en });
-        }
-        if ((obj.zh || '').toLowerCase().includes(lower)) {
-          results.push({ sceneId: s.id, sceneTitle: s.title, type: `Round${ri+1} ${side.toUpperCase()} 中文`, text: obj.zh });
-        }
-        (obj.alts || []).forEach(alt => {
-          if ((alt || '').toLowerCase().includes(lower)) {
-            results.push({ sceneId: s.id, sceneTitle: s.title, type: `Round${ri+1} ${side.toUpperCase()} Alt`, text: alt });
-          }
-        });
-      });
-    });
-    // vocab
-    (s.vocab || []).forEach(v => {
-      if ((v.en || '').toLowerCase().includes(lower)) {
-        results.push({ sceneId: s.id, sceneTitle: s.title, type: '词汇 EN', text: v.en });
-      }
-      if ((v.zh || '').toLowerCase().includes(lower)) {
-        results.push({ sceneId: s.id, sceneTitle: s.title, type: '词汇 ZH', text: v.zh });
-      }
-    });
-  });
-
-  if (results.length === 0) {
-    body.innerHTML = '<div class="gs-no-result">没有找到匹配的内容</div>';
-    return;
-  }
-
-  // 按场景分组
-  const groups = {};
-  results.forEach(r => {
-    if (!groups[r.sceneId]) groups[r.sceneId] = { title: r.sceneTitle, items: [] };
-    groups[r.sceneId].items.push(r);
-  });
-
-  let html = '';
-  Object.entries(groups).forEach(([sceneId, g]) => {
-    html += `<div class="gs-group">
-      <div class="gs-group-title">${esc(g.title)}</div>`;
-    g.items.forEach(item => {
-      const highlighted = highlightMatch(item.text, lower);
-      html += `<button class="gs-result-item" data-scene-id="${sceneId}" onclick="goToSceneFromSearch('${sceneId}')">
-        <span class="gs-result-type">${esc(item.type)}</span>${highlighted}
-      </button>`;
-    });
-    html += '</div>';
-  });
-  body.innerHTML = html;
-  if (body.id === 'topbarDropdown') body.classList.add('show');
-  if (body.id === 'homeSearchResults') body.style.display = 'block';
-}
-
-function highlightMatch(text, term) {
-  if (!term) return esc(text);
-  const escaped = esc(text);
-  const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(`(${escapedTerm})`, 'gi');
-  return escaped.replace(regex, '<span class="gs-highlight">$1</span>');
-}
-
-function goToSceneFromSearch(id) {
-  // 清空搜索框和结果
-  const ts = document.getElementById('topbarSearch');
-  const hs = document.getElementById('homeSearchInput');
-  if (ts) ts.value = '';
-  if (hs) hs.value = '';
-  closeGlobalSearch();
-  const dd = document.getElementById('topbarDropdown');
-  if (dd) { dd.classList.remove('show'); dd.innerHTML = ''; }
-  const hr = document.getElementById('homeSearchResults');
-  if (hr) { hr.style.display = 'none'; hr.innerHTML = ''; }
-  selectScene(id);
-}
-// 所有按钮点击都在这里统一处理，用 classList 判断是哪个按钮
-document.body.addEventListener('click', (e) => {
-  // 左侧项目切换（home-nav-item 是主页入口，跳过，让它自己的 onclick 处理）
-  const sceneItem = e.target.closest('.scene-item');
-  if (sceneItem && !e.target.classList.contains('scene-del') && !sceneItem.classList.contains('home-nav-item')) {
-    const id = sceneItem.dataset.sceneid;
-    if (id) selectScene(id);
-    return;
-  }
-  // 左侧项目删除
-  if (e.target.classList.contains('scene-del')) {
-    delScene(e.target.dataset.delid);
-    return;
-  }
-  // 展开代替文本
-  if (e.target.classList.contains('alt-toggle')) {
-    e.target.classList.toggle('open');
-    e.target.nextElementSibling.classList.toggle('open');
-    return;
-  }
-  // Alternatives 中文翻译隐藏/点亮
-  if (e.target.classList.contains('alt-item-zh')) {
-    e.target.classList.toggle('hidden');
-    const s = currentScene();
-    const idx = parseInt(e.target.dataset.roundIdx);
-    const field = e.target.dataset.field;
-    if (s && s.rounds[idx] && s.rounds[idx][field]) {
-      s.rounds[idx][field].zhHidden = e.target.classList.contains('hidden');
-      autoSaveNow();
-    }
-    return;
-  }
-  // 卡片词汇隐藏/点亮
-  const vocabChip = e.target.closest('.vocab-chip');
-  if (vocabChip) {
-    const zhEl = vocabChip.querySelector('.vocab-zh');
-    zhEl.classList.toggle('hidden');
-    const s = currentScene();
-    if (s && s.vocab) {
-      const enText = vocabChip.querySelector('.vocab-en').textContent.trim();
-      const v = s.vocab.find(x => x.en === enText);
-      if (v) v.hidden = zhEl.classList.contains('hidden');
-      autoSaveNow();
-    }
-    return;
-  }
-  // 删除对话流
-  if (e.target.classList.contains('btn-round-del')) {
-    const idx = parseInt(e.target.dataset.index);
-    const s = currentScene();
-    if(s.rounds.length === 1) { alert('至少保留一轮对话'); return; }
-    s.rounds.splice(idx, 1); autoSaveNow(); renderMain(); return;
-  }
-  // 上移轮次
-  if (e.target.classList.contains('btn-round-up')) {
-    const idx = parseInt(e.target.dataset.index);
-    const s = currentScene();
-    if(idx > 0) {
-      [s.rounds[idx], s.rounds[idx-1]] = [s.rounds[idx-1], s.rounds[idx]];
-      autoSaveNow(); renderMain();
-    }
-    return;
-  }
-  // 下移轮次
-  if (e.target.classList.contains('btn-round-down')) {
-    const idx = parseInt(e.target.dataset.index);
-    const s = currentScene();
-    if(idx < s.rounds.length - 1) {
-      [s.rounds[idx], s.rounds[idx+1]] = [s.rounds[idx+1], s.rounds[idx]];
-      autoSaveNow(); renderMain();
-    }
-    return;
-  }
-  // 增加替换句
-  if (e.target.classList.contains('btn-add-alt-q') || e.target.classList.contains('btn-add-alt-a') || e.target.classList.contains('btn-add-alt-a2')) {
-    const idx = parseInt(e.target.dataset.index);
-    const s = currentScene();
-    if (e.target.classList.contains('btn-add-alt-a2')) {
-      if (!s.rounds[idx].a2) s.rounds[idx].a2 = { en: '', zh: '', alts: [] };
-      if (!s.rounds[idx].a2.alts) s.rounds[idx].a2.alts = [];
-      s.rounds[idx].a2.alts.push('');
-    } else {
-      const side = e.target.classList.contains('btn-add-alt-q') ? 'q' : 'a';
-      if(!s.rounds[idx][side].alts) s.rounds[idx][side].alts = [];
-      s.rounds[idx][side].alts.push('');
-    }
-    autoSaveNow(); renderMain(); return;
-  }
-  // 删除替换句
-  if (e.target.classList.contains('btn-del-alt')) {
-    const ri = parseInt(e.target.dataset.ri);
-    const ai = parseInt(e.target.dataset.ai);
-    const side = e.target.dataset.side;
-    if (side === 'a2') {
-      const s = currentScene();
-      if (s.rounds[ri].a2) s.rounds[ri].a2.alts.splice(ai, 1);
-    } else {
-      currentScene().rounds[ri][side].alts.splice(ai, 1);
-    }
-    autoSaveNow(); renderMain(); return;
-  }
-  // 删除单词
-  if (e.target.classList.contains('btn-del-vocab')) {
-    const idx = parseInt(e.target.dataset.index);
-    currentScene().vocab.splice(idx, 1);
-    autoSaveNow(); renderMain(); return;
-  }
-  
-  // 顶层动作捕获
-  if (e.target.id === 'btnAddRound') { currentScene().rounds.push({ q:{en:'',zh:'',alts:[]}, a:{en:'',zh:'',alts:[]}, a2:null, title:'' }); autoSaveNow(); renderMain(); }
-  if (e.target.id === 'btnAddVocab') { if(!currentScene().vocab) currentScene().vocab=[]; currentScene().vocab.push({en:'',zh:''}); autoSaveNow(); renderMain(); }
-});
-
-document.body.addEventListener('input', (e) => {
-  const s = currentScene(); if (!s) return;
-  if (e.target.id === 'editTag') { s.tag = e.target.value; }
-  if (e.target.id === 'editTitle') { s.title = e.target.value; renderSidebar(); }
-  if (e.target.id === 'editDesc') { s.desc = e.target.value; }
-  
-  if (e.target.classList.contains('round-title-input')) s.rounds[e.target.dataset.index].title = e.target.value;
-  if (e.target.classList.contains('round-en-q')) s.rounds[e.target.dataset.index].q.en = e.target.value;
-  if (e.target.classList.contains('round-zh-q')) s.rounds[e.target.dataset.index].q.zh = e.target.value;
-  if (e.target.classList.contains('round-en-a')) s.rounds[e.target.dataset.index].a.en = e.target.value;
-  if (e.target.classList.contains('round-zh-a')) s.rounds[e.target.dataset.index].a.zh = e.target.value;
-  if (e.target.classList.contains('round-en-a2')) {
-    const idx = e.target.dataset.index;
-    if (!s.rounds[idx].a2) s.rounds[idx].a2 = { en: '', zh: '', alts: [] };
-    s.rounds[idx].a2.en = e.target.value;
-  }
-  if (e.target.classList.contains('round-zh-a2')) {
-    const idx = e.target.dataset.index;
-    if (!s.rounds[idx].a2) s.rounds[idx].a2 = { en: '', zh: '', alts: [] };
-    s.rounds[idx].a2.zh = e.target.value;
-  }
-  
-  if (e.target.classList.contains('alt-input-field')) {
-    const ri = e.target.dataset.ri;
-    const ai = e.target.dataset.ai;
-    const side = e.target.dataset.side;
-    s.rounds[ri][side].alts[ai] = e.target.value;
-  }
-  if (e.target.classList.contains('vocab-en-input')) s.vocab[e.target.dataset.index].en = e.target.value;
-  if (e.target.classList.contains('vocab-zh-input')) s.vocab[e.target.dataset.index].zh = e.target.value;
-
-  autoSaveDebounced(); // 上面任何一处文字改动，停止打字 600ms 后自动落盘
-});
-
-document.body.addEventListener('change', (e) => {
-  if (e.target.id === 'notesArea' && currentScene()) {
-    currentScene().notes = e.target.value;
-    autoSaveNow();
-  }
-});
-
-document.getElementById('tabPractice').addEventListener('click', () => switchMode('practice'));
-document.getElementById('tabEdit').addEventListener('click', () => switchMode('edit'));
-document.getElementById('btnNewScene').addEventListener('click', newScene);
-
-// ── 导出：纯数据 JSON，不再克隆整个页面 ──
-// 只是本地备份/迁移用，真正的多端同步靠 Gist（见 syncOnLoad）
-function exportJSON() {
-  saveData(scenes);
-  const payload = { scenes, sortMode, exportedAt: new Date().toISOString() };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
-  const downloadLink = document.createElement('a');
-  downloadLink.href = URL.createObjectURL(blob);
-  const nameSlug = APP_NAME.trim().toLowerCase().replace(/\s+/g, '-');
-  downloadLink.download = nameSlug + '-backup-' + new Date().toISOString().slice(0, 10) + '.json';
-  document.body.appendChild(downloadLink);
-  downloadLink.click();
-  document.body.removeChild(downloadLink);
-  URL.revokeObjectURL(downloadLink.href);
-}
-
-// ── 导入：读取本地 JSON 备份文件，校验结构后覆盖当前数据 ──
-// 由隐藏的 <input type="file" id="importFileInput"> 触发，见下方事件绑定
-function importJSON(file) {
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const content = JSON.parse(e.target.result);
-      let importedScenes, importedSortMode = 'manual';
-      if (Array.isArray(content)) {
-        importedScenes = content;
-      } else if (content && Array.isArray(content.scenes)) {
-        importedScenes = content.scenes;
-        importedSortMode = content.sortMode === 'alpha' ? 'alpha' : 'manual';
-      } else {
-        throw new Error('文件格式不正确，找不到 scenes 数组');
-      }
-      if (!confirm('导入将覆盖当前本地数据（共 ' + importedScenes.length + ' 个场景），确定继续吗？')) return;
-      scenes = importedScenes;
-      sortMode = importedSortMode;
-      saveData(scenes); // 导入视为本地新改动，正常走脏标记 + 自动推送
-      renderAll();
-      alert('导入成功，共 ' + importedScenes.length + ' 个场景');
-    } catch(err) {
-      alert('导入失败：' + err.message);
-    }
-  };
-  reader.readAsText(file);
-}
-
-
-// ── 全局搜索按钮 ──
-// btnGlobalSearch 已移除，弹层相关监听已清除
-
-// ── 主页搜索框：实时全局搜索 ──
-document.getElementById('homeSearchInput').addEventListener('input', function() {
-  const results = document.getElementById('homeSearchResults');
-  if (!results) return;
-  const term = this.value.trim();
-  if (!term) {
-    results.style.display = 'none';
-    results.innerHTML = '';
-    renderHome();
-    return;
-  }
-  // 隐藏卡片格，显示搜索结果
-  document.getElementById('homeGrid').style.display = 'none';
-  doGlobalSearch(term, results);
-});
-
-// ── 主页排序选择器 ──
-document.getElementById('homeSortSelect').addEventListener('change', function() {
-  sortMode = this.value;
-  saveData(scenes);
-  if (currentId === null) renderHome();
-});
-
-// ── 手机端主页排序图标按钮：跟上面那个下拉是同一个 sortMode，
-//    点一下在 manual / alpha 之间切换，逻辑对齐、只是触发方式不同 ──
-document.getElementById('mobileSortToggle').addEventListener('click', function() {
-  sortMode = sortMode === 'manual' ? 'alpha' : 'manual';
-  saveData(scenes);
-  if (currentId === null) renderHome();
-});
-
-// ── 顶栏搜索框：实时搜索，结果显示在下拉 ──
-document.getElementById('topbarSearch').addEventListener('input', function() {
-  let dd = document.getElementById('topbarDropdown');
-  if (!dd) {
-    dd = document.createElement('div');
-    dd.id = 'topbarDropdown';
-    dd.className = 'topbar-search-dropdown';
-    document.querySelector('.topbar').style.position = 'relative';
-    document.querySelector('.topbar').appendChild(dd);
-  }
-  doGlobalSearch(this.value.trim(), dd);
-});
-// 点击页面其他地方关闭下拉
-document.addEventListener('click', function(e) {
-  const dd = document.getElementById('topbarDropdown');
-  if (dd && !dd.contains(e.target) && e.target.id !== 'topbarSearch') {
-    dd.classList.remove('show');
-  }
-});
-
-// ── Ctrl+K 全局搜索快捷键 ──
-document.addEventListener('keydown', function(e) {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-    e.preventDefault();
-    const inp = document.getElementById('topbarSearch');
-    if (inp) inp.focus();
-  }
-  // ESC 关闭顶栏下拉
-  if (e.key === 'Escape') {
-    const dd = document.getElementById('topbarDropdown');
-    if (dd) dd.classList.remove('show');
-  }
-});
-
-window.addEventListener('DOMContentLoaded', () => {
-  applyAppName();
-
-  // 设置面板里的导入文件选择器；放在这里而不是脚本顶层是因为该 input 现在
-  // 位于本段脚本代码结束之后（设置面板的 DOM），脚本顶层执行时它还不存在
-  document.getElementById('importFileInput').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    importJSON(file);
-    e.target.value = ''; // 清空，允许连续导入同名文件时也能触发 change
-  });
-
-  // ── 移动端检测与环境适配 ──
-  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 768;
-  if (isMobile) {
-    document.documentElement.classList.add('is-mobile');
-
-    // 手机端场景下拉选择器
-    const mobileSel = document.getElementById('mobileSceneSelect');
-    if (mobileSel) {
-      renderMobileSceneSelect();
-      mobileSel.addEventListener('change', function() {
-        const val = this.value;
-        if (val === '__home__') {
-          goHome();
-        } else {
-          selectScene(val);
-          switchMode('practice');
-        }
-      });
-    }
-
-    // 移动端：顶栏搜索框聚焦时自动滚动到可见区域（避免被弹出的键盘挡住）
-    const searchInput = document.getElementById('topbarSearch');
-    if (searchInput) {
-      // 注意：占位符文字统一由 HTML 里的 placeholder="Search" 决定，
-      // 这里不要再 setAttribute 覆盖它——之前留了一行覆盖成中文"搜索…"，
-      // 导致主页显示 Search、进场景后又变回中文，就是这行代码干的
-      searchInput.addEventListener('focus', function() {
-        setTimeout(() => {
-          this.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 300);
-      });
-    }
-  }
-
-  // ── 全局触摸事件增强 ──
-  // 防止双击缩放（移动端常见问题）
-  document.addEventListener('dblclick', function(e) {
-    if (isMobile) {
-      e.preventDefault();
-    }
-  }, { passive: false });
-
-  // 卡片触摸反馈：点击时短暂高亮
-  document.addEventListener('touchstart', function(e) {
-    const card = e.target.closest('.home-card, .scene-item, .vocab-chip, .round-edit');
-    if (card) {
-      card.style.transition = 'transform 0.1s, opacity 0.1s';
-      card.style.transform = 'scale(0.97)';
-      card.style.opacity = '0.85';
-    }
-  }, { passive: true });
-
-  function resetCardTouch(e) {
-    const card = e.target.closest('.home-card, .scene-item, .vocab-chip, .round-edit');
-    if (card) { card.style.transform = ''; card.style.opacity = ''; }
-  }
-  document.addEventListener('touchend', resetCardTouch, { passive: true });
-  document.addEventListener('touchcancel', resetCardTouch, { passive: true });
-
-  // ── 屏幕旋转适配 ──
-  window.addEventListener('orientationchange', function() {
-    // 旋转后重新适配搜索下拉位置
-    setTimeout(() => {
-      const dd = document.getElementById('topbarDropdown');
-      if (dd && dd.classList.contains('show')) {
-        dd.style.maxHeight = (window.innerHeight * 0.5) + 'px';
-      }
-    }, 200);
-  });
-
-  // 注：移动端安全区适配（notch/圆角屏留白）已经写进静态样式表了（.content /
-  // .home-header / .topbar 等处的 env(safe-area-inset-*)），不再需要在这里
-  // 运行时动态注入一个 <style> 标签——之前这里就是这么干的，每次刷新都会
-  // 在 <head> 里多插一份，是很早以前那一堆重复 style 块的源头，这次删掉
-
-  // 初始化 sort select
-  const sortSel = document.getElementById('homeSortSelect');
-  if (sortSel) sortSel.value = sortMode;
-  renderSidebar();
-  renderMain();
-
-  // 初始化 Gist 按钮状态，并按脏标记决定启动时是先 push 还是直接 pull
-  if (localStorage.getItem('rp_gist_token') && localStorage.getItem('rp_gist_id')) {
-    updateGistBtn(true);
-    syncOnLoad();
-  }
-});
-
-function renderAll() {
-  renderSidebar();
-  renderMain();
-}
-</script>
 
 <!-- Settings Panel：本地备份（导出/导入）+ 云同步（Gist），统一入口 -->
-<div class="settings-overlay" id="gistPanelOverlay" onclick="closeGistPanel()"></div>
+<div class="settings-overlay" id="gistPanelOverlay" onclick="App.sync.closeGistPanel()"></div>
 <div class="settings-sheet" id="gistPanel">
   <div class="sheet-handle"></div>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
     <span style="font-weight:700;font-size:15px;">⚙ 设置</span>
-    <button onclick="closeGistPanel()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);line-height:1;">×</button>
+    <button onclick="App.sync.closeGistPanel()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);line-height:1;">×</button>
   </div>
 
     <!-- 本地备份 -->
@@ -2425,7 +1179,7 @@ function renderAll() {
       导出成 JSON 文件存起来，或者从之前的备份文件导入（会覆盖当前数据）
     </div>
     <div style="display:flex;gap:8px;margin-bottom:20px;">
-      <button onclick="exportJSON()" style="flex:1;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:13px;">导出</button>
+      <button onclick="App.storage.exportJSON()" style="flex:1;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:13px;">导出</button>
       <button onclick="document.getElementById('importFileInput').click()" style="flex:1;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:13px;">导入</button>
     </div>
     <input type="file" id="importFileInput" accept="application/json" style="display:none">
@@ -2448,13 +1202,1305 @@ function renderAll() {
         <input id="gistId" placeholder="留空则自动创建新 Gist" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:monospace;">
       </div>
       <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
-        <button onclick="saveGistConfig()" style="flex:1;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;">保存配置</button>
-        <button onclick="pushToGist(true)" style="padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px;">立即上传</button>
-        <button onclick="pullFromGist(true)" style="padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px;">从云端刷新</button>
+        <button onclick="App.sync.saveGistConfig()" style="flex:1;padding:8px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;">保存配置</button>
+        <button onclick="App.sync.pushToGist(true)" style="padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px;">立即上传</button>
+        <button onclick="App.sync.pullFromGist(true)" style="padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px;">从云端刷新</button>
       </div>
       <div id="gistStatus" style="font-size: 12px; color: var(--q-accent); min-height: 18px; text-align: center;">上传成功 ✓ 11:23:19</div>
     </div>
 </div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// Role play —— 全部逻辑挂在唯一的顶层命名空间 App 下（仿 Grain 项目的
+// App.xxx 架构），不在 script 顶层裸声明变量/函数。新增独立功能开新分组，
+// 扩展已有功能则在对应分组里加。调试时控制台可以直接用 App.state.scenes
+// 查看数据。
+// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+// Role play —— 全部逻辑挂在唯一的顶层命名空间 App 下（仿 Grain 项目的
+// App.xxx 架构），不在 script 顶层裸声明变量/函数。新增独立功能开新分组，
+// 扩展已有功能则在对应分组里加。调试时控制台可以直接用 App.state.scenes
+// 查看数据。
+// ══════════════════════════════════════════════════════════════
+const App = {
+  // 应用名称唯一来源：以后改名字只改这一行，App.render.applyAppName() 会把它同步
+  // 到页面标题、iOS 主屏标题、侧边栏/主页的 LOGO 文字、导出文件名、Gist 描述
+  config: {
+    APP_NAME: 'Role play',
+    STORAGE_KEY: 'dialogue_scenes_v1',
+    GIST_FILENAME_RP: 'roleplay_data.json',
+    LS_GIST_KNOWN_VERSION_RP: 'rp_gist_known_version',
+    GIST_PUSH_DEBOUNCE_MS: 8000,
+    GIST_PUSH_MIN_INTERVAL_MS: 10000,
+    // "脏标记"：本地有未推送到 Gist 的改动时置位，push/pull 成功后撕掉。
+    // 启动同步（App.sync.syncOnLoad）靠它判断该先 push 还是可以直接 pull，
+    // 避免无条件 pull 把来不及推送的本地改动静默覆盖掉。
+    DIRTY_KEY: 'rp_gist_dirty',
+    // 旧版本独立存储的排序状态（用于一次性迁移）
+    LEGACY_SORT_MODE_KEY: 'dialogue_scene_sort_mode',
+    LEGACY_SORT_ORDER_KEY: 'dialogue_scene_sort_order',
+    // 文字类输入防抖自动保存的等待时间
+    AUTOSAVE_DEBOUNCE_MS: 600
+  },
+
+  // 运行期状态；scenes/sortMode 的真正初始值在 App.init() 里从
+  // App.storage.loadData() 读取后赋值，这里只是占位形状
+  state: {
+    scenes: [],
+    currentId: null,      // 当前选中的场景ID，null 表示在主页
+    currentMode: 'practice', // 当前模式：'practice'=练习，'edit'=编辑
+    sortMode: 'manual',    // 'manual'（拖拽顺序） | 'alpha'（按名称排序）
+    dragSrcId: null,
+    wasDragging: false
+  },
+
+  storage: {
+    // 读取数据：数据只有两个来源——localStorage（日常读写）和 Gist 云端
+    // （可选，见 App.sync.syncOnLoad）。不再有"文件里嵌入的数据快照"这个来源。
+    // 返回 { scenes: [...], sortMode: 'manual'|'alpha' }
+    loadData() {
+      try {
+        const raw = localStorage.getItem(App.config.STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          // 新格式：{ scenes, sortMode, _ts }
+          if (parsed && !Array.isArray(parsed) && Array.isArray(parsed.scenes)) {
+            return { scenes: parsed.scenes, sortMode: parsed.sortMode === 'alpha' ? 'alpha' : 'manual' };
+          }
+          // 旧格式：纯场景数组，尝试用旧的排序状态迁移顺序
+          if (Array.isArray(parsed)) {
+            return App.storage.migrateLegacyOrder(parsed);
+          }
+        }
+      } catch(e) { console.error(e); }
+      // 本地缓存也没有：全新的一次使用，从空场景列表开始
+      return { scenes: [], sortMode: 'manual' };
+    },
+
+    // 一次性迁移：把旧版本分开存储的手动排序顺序，合并进场景数组顺序本身
+    migrateLegacyOrder(scenesArray) {
+      // 注意：这里的 sortMode 是本函数的局部变量（迁移过程中算出来的临时
+      // 排序状态，还没决定要不要采用），跟 App.state.sortMode 是两回事，
+      // 不要写成 App.state.sortMode
+      let sortMode = 'manual';
+      try {
+        const legacyMode = localStorage.getItem(App.config.LEGACY_SORT_MODE_KEY);
+        if (legacyMode === 'alpha') sortMode = 'alpha';
+        const legacyOrderRaw = localStorage.getItem(App.config.LEGACY_SORT_ORDER_KEY);
+        if (legacyOrderRaw) {
+          const order = JSON.parse(legacyOrderRaw);
+          if (Array.isArray(order) && order.length) {
+            const orderMap = {};
+            order.forEach((id, i) => { orderMap[id] = i; });
+            const ordered = scenesArray.filter(s => orderMap.hasOwnProperty(s.id)).sort((a,b) => orderMap[a.id] - orderMap[b.id]);
+            const rest = scenesArray.filter(s => !orderMap.hasOwnProperty(s.id));
+            scenesArray = [...ordered, ...rest];
+          }
+        }
+      } catch(e) { /* 忽略迁移失败 */ }
+      return { scenes: scenesArray, sortMode };
+    },
+
+    // 只负责把数据写入本地缓存，不触发 Gist 自动同步。
+    // 专门给"从云端拉取"这类场景用：数据本来就来自云端，没必要存完again立刻排队推送回去。
+    // 把数据写入本地缓存。skipDirty=true 用于"数据本来就来自云端"的写入场景
+    // （pull 落盘、冲突处理选"改用云端数据"），这类写入不代表本地有未同步的
+    // 改动，不需要打脏标记；日常编辑走 App.storage.saveData，默认会打标记
+    persistData(scenesArray, skipDirty) {
+      localStorage.setItem(App.config.STORAGE_KEY, JSON.stringify({ scenes: scenesArray, sortMode: App.state.sortMode, _ts: Date.now() }));
+      if (!skipDirty) localStorage.setItem(App.config.DIRTY_KEY, '1');
+    },
+
+    // 保存数据到浏览器缓存，并自动推送 Gist。场景顺序与排序模式一起保存，保证多端一致。
+    // 推送前会先与云端版本比对，若检测到云端已被其他设备更新，会弹出冲突提示而不是直接覆盖
+    saveData(scenesArray) {
+      App.storage.persistData(scenesArray);
+      if (App.sync.isConfigured()) {
+        clearTimeout(App.storage.saveData._gistTimer);
+        App.storage.saveData._gistTimer = setTimeout(() => App.sync.pushToGist(false), App.config.GIST_PUSH_DEBOUNCE_MS);
+      }
+    },
+
+    autoSaveNow() {
+      App.storage.saveData(App.state.scenes);
+      App.storage.flashSaveMsg();
+    },
+
+    autoSaveDebounced() {
+      clearTimeout(App.storage.autoSaveDebounced._timer);
+      App.storage.autoSaveDebounced._timer = setTimeout(App.storage.autoSaveNow, App.config.AUTOSAVE_DEBOUNCE_MS);
+    },
+
+    flashSaveMsg() {
+      const msg = document.getElementById('saveMsg');
+      if (!msg) return;
+      msg.classList.add('show');
+      clearTimeout(App.storage.flashSaveMsg._timer);
+      App.storage.flashSaveMsg._timer = setTimeout(() => msg.classList.remove('show'), 1800);
+    },
+
+    // ── 导出：纯数据 JSON，不再克隆整个页面 ──
+    // 只是本地备份/迁移用，真正的多端同步靠 Gist（见 App.sync.syncOnLoad）
+    exportJSON() {
+      App.storage.saveData(App.state.scenes);
+      const payload = { scenes: App.state.scenes, sortMode: App.state.sortMode, exportedAt: new Date().toISOString() };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+      const downloadLink = document.createElement('a');
+      downloadLink.href = URL.createObjectURL(blob);
+      const nameSlug = App.config.APP_NAME.trim().toLowerCase().replace(/\s+/g, '-');
+      downloadLink.download = nameSlug + '-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      URL.revokeObjectURL(downloadLink.href);
+    },
+
+    // ── 导入：读取本地 JSON 备份文件，校验结构后覆盖当前数据 ──
+    // 由隐藏的 <input type="file" id="importFileInput"> 触发，见下方事件绑定
+    importJSON(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const content = JSON.parse(e.target.result);
+          let importedScenes, importedSortMode = 'manual';
+          if (Array.isArray(content)) {
+            importedScenes = content;
+          } else if (content && Array.isArray(content.scenes)) {
+            importedScenes = content.scenes;
+            importedSortMode = content.sortMode === 'alpha' ? 'alpha' : 'manual';
+          } else {
+            throw new Error('文件格式不正确，找不到 App.state.scenes 数组');
+          }
+          if (!confirm('导入将覆盖当前本地数据（共 ' + importedScenes.length + ' 个场景），确定继续吗？')) return;
+          App.state.scenes = importedScenes;
+          App.state.sortMode = importedSortMode;
+          App.storage.saveData(App.state.scenes); // 导入视为本地新改动，正常走脏标记 + 自动推送
+          App.render.renderAll();
+          alert('导入成功，共 ' + importedScenes.length + ' 个场景');
+        } catch(err) {
+          alert('导入失败：' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+  },
+
+  sync: {
+    // ── GIST 同步 ──
+    openGistPanel() {
+      document.getElementById('gistToken').value = localStorage.getItem('rp_gist_token') || '';
+      document.getElementById('gistId').value    = localStorage.getItem('rp_gist_id')    || '';
+      document.getElementById('gistStatus').textContent = '';
+      document.getElementById('gistPanelOverlay').classList.add('show');
+      document.getElementById('gistPanel').classList.add('show');
+    },
+
+    closeGistPanel() {
+      document.getElementById('gistPanelOverlay').classList.remove('show');
+      document.getElementById('gistPanel').classList.remove('show');
+    },
+
+    saveGistConfig() {
+      const token  = document.getElementById('gistToken').value.trim();
+      const gistId = document.getElementById('gistId').value.trim();
+      if (!token) { App.sync.setGistStatus('请填写 Token', 'error'); return; }
+      localStorage.setItem('rp_gist_token', token);
+      if (gistId) { localStorage.setItem('rp_gist_id', gistId); App.sync.setGistStatus('配置已保存 ✓', 'ok'); App.sync.updateGistBtn(true); }
+      else App.sync.createGist(token);
+    },
+
+    async createGist(token) {
+      App.sync.setGistStatus('正在创建 Gist…', '');
+      try {
+        const res = await fetch('https://api.github.com/gists', {
+          method: 'POST',
+          headers: { Authorization: 'token ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ description: App.config.APP_NAME + ' 云同步数据', public: false, files: { [App.config.GIST_FILENAME_RP]: { content: JSON.stringify({ scenes: App.state.scenes, sortMode: App.state.sortMode }, null, 2) } } })
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        localStorage.setItem('rp_gist_id', data.id);
+        if (data.updated_at) localStorage.setItem(App.config.LS_GIST_KNOWN_VERSION_RP, data.updated_at);
+        document.getElementById('gistId').value = data.id;
+        App.sync.setGistStatus('Gist 创建成功，ID 已自动填入 ✓', 'ok');
+        App.sync.updateGistBtn(true);
+      } catch(e) { App.sync.setGistStatus('创建失败：' + e.message, 'error'); }
+    },
+
+    async pushToGist(manual) {
+      const token  = localStorage.getItem('rp_gist_token');
+      const gistId = localStorage.getItem('rp_gist_id');
+      if (!token || !gistId) { if (manual) App.sync.setGistStatus('请先配置 Token 和 Gist ID', 'error'); return; }
+      if (App.sync.pushToGist._busy) { if (manual) App.sync.setGistStatus('同步正在进行中，请稍候…', ''); return; }
+      if (!manual && (Date.now() - (App.sync.pushToGist._lastPush||0) < App.config.GIST_PUSH_MIN_INTERVAL_MS)) return;
+      App.sync.pushToGist._busy = true;
+      if (manual) App.sync.setGistStatus('检查云端状态…', '');
+      // 上传前先确认云端版本没有被其他设备改过，避免静默覆盖
+      try {
+        const checkRes = await fetch('https://api.github.com/gists/' + gistId, {
+          headers: { Authorization: 'token ' + token }
+        });
+        if (!checkRes.ok) throw new Error('HTTP ' + checkRes.status);
+        const remote = await checkRes.json();
+        const known = localStorage.getItem(App.config.LS_GIST_KNOWN_VERSION_RP);
+        if (known && remote.updated_at && known !== remote.updated_at) {
+          App.sync.pushToGist._busy = false;
+          if (manual) App.sync.setGistStatus('检测到云端有更新，请先处理冲突', 'error');
+          App.sync.showGistConflictBanner();
+          return;
+        }
+        await App.sync.doPushGist(token, gistId, manual);
+      } catch(e) {
+        if (manual) App.sync.setGistStatus('检查失败：' + e.message, 'error');
+      } finally {
+        App.sync.pushToGist._busy = false;
+      }
+    },
+
+    async doPushGist(token, gistId, manual) {
+      try {
+        const res = await fetch('https://api.github.com/gists/' + gistId, {
+          method: 'PATCH',
+          headers: { Authorization: 'token ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ files: { [App.config.GIST_FILENAME_RP]: { content: JSON.stringify({ scenes: App.state.scenes, sortMode: App.state.sortMode }, null, 2) } } })
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        App.sync.pushToGist._lastPush = Date.now();
+        if (data.updated_at) localStorage.setItem(App.config.LS_GIST_KNOWN_VERSION_RP, data.updated_at);
+        localStorage.removeItem(App.config.DIRTY_KEY); // 推送成功，本地改动已同步到云端，撕掉脏标记
+        if (manual) { App.sync.setGistStatus('上传成功 ✓ ' + new Date().toLocaleTimeString(), 'ok'); App.sync.updateGistBtn(true); }
+      } catch(e) { if (manual) App.sync.setGistStatus('上传失败：' + e.message, 'error'); }
+    },
+
+    // ── 冲突提示条：云端被其他设备改过时，暂停自动上传，等待用户决定 ──
+    showGistConflictBanner() {
+      if (document.getElementById('gistConflictBanner')) return;
+      const banner = document.createElement('div');
+      banner.id = 'gistConflictBanner';
+      banner.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:1200;background:var(--surface);border:1px solid #f59e0b;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.2);padding:14px 16px;max-width:340px;width:calc(100% - 32px);font-size:13px;line-height:1.6;color:var(--text);';
+      banner.innerHTML =
+        '<div style="margin-bottom:10px;">⚠️ 检测到云端有更新（可能来自其他设备），是否用本地数据覆盖云端？</div>' +
+        '<div style="display:flex;gap:8px;">' +
+          '<button onclick="App.sync.resolveGistConflict(\'overwrite\')" style="flex:1;padding:8px 4px;background:#f59e0b;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">覆盖云端</button>' +
+          '<button onclick="App.sync.resolveGistConflict(\'pull\')" style="flex:1;padding:8px 4px;background:var(--bg2);color:var(--accent);border:1px solid var(--accent);border-radius:6px;font-size:12px;cursor:pointer;">改用云端数据</button>' +
+          '<button onclick="App.sync.resolveGistConflict(\'dismiss\')" style="flex:1;padding:8px 4px;background:var(--bg2);color:var(--text2);border:none;border-radius:6px;font-size:12px;cursor:pointer;">稍后再说</button>' +
+        '</div>';
+      document.body.appendChild(banner);
+    },
+
+    resolveGistConflict(action) {
+      const banner = document.getElementById('gistConflictBanner');
+      if (banner) banner.remove();
+      if (action === 'overwrite') {
+        const token = localStorage.getItem('rp_gist_token'), gistId = localStorage.getItem('rp_gist_id');
+        App.sync.pushToGist._busy = true;
+        App.sync.doPushGist(token, gistId, true).finally(() => { App.sync.pushToGist._busy = false; });
+      } else if (action === 'pull') {
+        App.sync.pullFromGist(true);
+      }
+      // dismiss：不做任何事，本地修改仍保留，下次触发自动同步时会重新检测
+    },
+
+    async pullFromGist(manual) {
+      const token  = localStorage.getItem('rp_gist_token');
+      const gistId = localStorage.getItem('rp_gist_id');
+      if (!token || !gistId) { if (manual) App.sync.setGistStatus('请先配置 Token 和 Gist ID', 'error'); return; }
+      if (manual) App.sync.setGistStatus('下载中…', '');
+      try {
+        const res = await fetch('https://api.github.com/gists/' + gistId, { headers: { Authorization: 'token ' + token } });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        const file = data.files && data.files[App.config.GIST_FILENAME_RP];
+        if (!file) throw new Error('Gist 中没有找到数据文件');
+        const content = JSON.parse(file.content);
+        // 新格式：{ scenes, sortMode }；旧格式：纯场景数组
+        if (Array.isArray(content)) {
+          App.state.scenes = content;
+        } else if (content && Array.isArray(content.scenes)) {
+          App.state.scenes = content.scenes;
+          App.state.sortMode = content.sortMode === 'alpha' ? 'alpha' : 'manual';
+        }
+        App.storage.persistData(App.state.scenes, true); // 数据来自云端，不算本地未同步改动，不打脏标记
+        localStorage.removeItem(App.config.DIRTY_KEY); // 拉取成功，云端已是最新，此前如有脏标记一并清掉
+        if (data.updated_at) localStorage.setItem(App.config.LS_GIST_KNOWN_VERSION_RP, data.updated_at);
+        App.render.renderAll();
+        if (manual) App.sync.setGistStatus('从云端刷新成功 ✓ ' + new Date().toLocaleTimeString(), 'ok');
+        App.sync.updateGistBtn(true);
+      } catch(e) { if (manual) App.sync.setGistStatus('失败：' + e.message, 'error'); }
+    },
+
+    // 是否已经配置好 Gist 同步（token+id 都存在）。仿 Grain 的写法，把这个
+    // 判断收进 App.sync 自己管，调用方（比如 App.init()）不用再自己拼
+    // localStorage.getItem(...) 判断一遍
+    isConfigured() {
+      return !!(localStorage.getItem('rp_gist_token') && localStorage.getItem('rp_gist_id'));
+    },
+
+    // ── 启动同步：脏标记还在，说明本地有未推送的改动（比如编辑后没多久就关闭
+    // 了页面，8 秒防抖窗口内没来得及 push），这时如果直接 pull，会把这次没
+    // 推送的本地改动静默覆盖掉。所以脏标记在，先 push（自带版本号冲突检测，
+    // 不会盲目覆盖云端其他设备的改动）；脏标记不在，说明本地干净，直接 pull
+    // 云端最新数据即可。没配置 Gist 就直接跳过，调用方不用自己先判断一遍 ──
+    syncOnLoad() {
+      if (!App.sync.isConfigured()) return;
+      if (localStorage.getItem(App.config.DIRTY_KEY)) {
+        App.sync.pushToGist(false);
+      } else {
+        App.sync.pullFromGist(false);
+      }
+    },
+
+    setGistStatus(msg, type) {
+      const el = document.getElementById('gistStatus');
+      if (!el) return;
+      el.textContent = msg;
+      el.style.color = type === 'error' ? '#c04848' : type === 'ok' ? '#1f9d5f' : '#888';
+    },
+
+    updateGistBtn(connected) {
+      const title = connected ? '设置（导出 / 导入 / 云同步）— 云同步已连接' : '设置（导出 / 导入 / 云同步）';
+      const btn = document.getElementById('gistBtn');
+      if (btn) btn.title = title;
+      const homeBtn = document.getElementById('homeGistBtn');
+      if (homeBtn) homeBtn.title = title;
+    }
+  },
+
+  scene: {
+    getSortedScenes() {
+      if (App.state.sortMode === 'alpha') {
+        return [...App.state.scenes].sort((a, b) => (a.title || '').localeCompare(b.title || '', 'zh'));
+      }
+      // manual 模式：场景数组本身的顺序即为显示顺序
+      return [...App.state.scenes];
+    },
+
+    currentScene() { return App.state.scenes.find(s => s.id === App.state.currentId); },
+
+    // 点击场景：切换到对应场景页面
+    selectScene(id) {
+      App.state.currentId = id;
+      App.render.renderSidebar();
+      App.render.renderMain();
+      // 同步手机端下拉选择器
+      const mobileSel = document.getElementById('mobileSceneSelect');
+      if (mobileSel) mobileSel.value = id;
+    },
+
+    // 回主页：App.state.currentId 设为 null 触发主页渲染
+    goHome() {
+      App.state.currentId = null;
+      App.render.renderSidebar();
+      App.render.renderMain();
+      // 同步手机端下拉选择器
+      const mobileSel = document.getElementById('mobileSceneSelect');
+      if (mobileSel) mobileSel.value = '__home__';
+    },
+
+    // 新建场景：生成唯一ID，初始化空数据，进入编辑模式
+    newScene() {
+      const id = 's' + Date.now();
+      App.state.scenes.push({
+        id, tag: '新场景', title: '新场景', desc: '',
+        rounds: [{ q: { en: '', zh: '', alts: [] }, a: { en: '', zh: '', alts: [] } }],
+        vocab: [], notes: ''
+      });
+      App.storage.saveData(App.state.scenes);
+      App.scene.selectScene(id);
+      App.scene.switchMode('edit');
+    },
+
+    // 删除场景
+    delScene(id) {
+      if (App.state.scenes.length === 1) { alert('至少保留一个场景'); return; }
+      if (!confirm('确定删除这个场景吗？')) return;
+      App.state.scenes = App.state.scenes.filter(s => s.id !== id);
+      if (App.state.currentId === id) App.state.currentId = App.state.scenes.length ? App.state.scenes[0].id : null;
+      App.storage.saveData(App.state.scenes);
+      App.render.renderSidebar();
+      App.render.renderMain();
+    },
+
+    // ── 切换练习/编辑模式 ──
+    switchMode(mode) {
+      App.state.currentMode = mode;
+      document.getElementById('tabPractice').classList.toggle('active', mode === 'practice');
+      document.getElementById('tabEdit').classList.toggle('active', mode === 'edit');
+      App.render.renderMain();
+    }
+  },
+
+  render: {
+    // 把 App.config.APP_NAME 应用到所有展示/命名的地方，启动时调用一次即可
+    applyAppName() {
+      document.title = App.config.APP_NAME;
+      const appTitleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+      if (appTitleMeta) appTitleMeta.setAttribute('content', App.config.APP_NAME);
+      const homeTitleEl = document.querySelector('.home-title');
+      if (homeTitleEl) homeTitleEl.textContent = App.config.APP_NAME;
+      const appNameEl = document.querySelector('.app-name');
+      if (appNameEl) appNameEl.textContent = App.config.APP_NAME;
+    },
+
+    // 渲染移动端场景下拉选择器：顺序与桌面端主页保持一致（App.scene.getSortedScenes）
+    renderMobileSceneSelect() {
+      const mobileSel = document.getElementById('mobileSceneSelect');
+      if (!mobileSel) return;
+      const prevVal = mobileSel.value;
+      mobileSel.innerHTML = '';
+      const homeOpt = document.createElement('option');
+      homeOpt.value = '__home__';
+      homeOpt.textContent = '🏠 主页';
+      mobileSel.appendChild(homeOpt);
+      App.scene.getSortedScenes().forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.tag ? `📁 ${s.tag} · ${s.title}` : s.title;
+        mobileSel.appendChild(opt);
+      });
+      // 恢复选中状态
+      mobileSel.value = App.state.currentId === null ? '__home__' : App.state.currentId;
+      if (mobileSel.value === '' && prevVal) mobileSel.value = prevVal;
+    },
+
+    // 渲染左侧场景列表
+    renderSidebar() {
+      App.render.renderMobileSceneSelect();
+      const list = document.getElementById('sceneList');
+      if(!list) return;
+      list.innerHTML = '';
+      const homeItem = document.getElementById('homeNavItem');
+      if (homeItem) homeItem.classList.toggle('active', App.state.currentId === null);
+      App.state.scenes.forEach(s => {
+        const el = document.createElement('div');
+        el.className = 'scene-item' + (s.id === App.state.currentId ? ' active' : '');
+        el.dataset.sceneid = s.id;
+        el.innerHTML = `<span class="scene-item-name">${App.utils.esc(s.title) || '未命名场景'}</span><span class="scene-del" title="删除" data-delid="${s.id}">×</span>`;
+        list.appendChild(el);
+      });
+    },
+
+    // （原手动保存按钮已移除，所有改动都会自动保存，见 App.storage.autoSaveNow / App.storage.autoSaveDebounced）
+
+    // ── MAIN RENDER ──
+    // 渲染主页：把所有场景渲染成卡片网格，支持搜索、排序、拖拽
+    renderHome() {
+      App.render.renderMobileSceneSelect();
+      const grid = document.getElementById('homeGrid');
+      grid.style.display = ''; // 确保卡片格可见（搜索后回主页时恢复）
+      const hr = document.getElementById('homeSearchResults');
+      if (hr && !document.getElementById('homeSearchInput')?.value) hr.style.display = 'none';
+      // 主页搜索走 homeSearchResults，这里只渲染卡片
+      const searchTerm = '';
+
+      // 同步 App.state.sortMode select（桌面下拉）和图标按钮（手机端）的状态提示
+      const sortSel = document.getElementById('homeSortSelect');
+      if (sortSel && sortSel.value !== App.state.sortMode) sortSel.value = App.state.sortMode;
+      const sortToggle = document.getElementById('mobileSortToggle');
+      if (sortToggle) sortToggle.title = App.state.sortMode === 'manual' ? '手动排序（点击切换为按名称排序）' : '按名称排序（点击切换为手动排序）';
+
+      // 获取排序后的场景
+      let sorted = App.scene.getSortedScenes();
+
+      // 搜索过滤
+      if (searchTerm) {
+        sorted = sorted.filter(s => {
+          const tagMatch = (s.tag || '').toLowerCase().includes(searchTerm);
+          const titleMatch = (s.title || '').toLowerCase().includes(searchTerm);
+          return tagMatch || titleMatch;
+        });
+      }
+
+      const isDragMode = App.state.sortMode === 'manual';
+
+      if (sorted.length === 0) {
+        grid.innerHTML = `<div class="home-no-match">${searchTerm ? '没有找到匹配的场景' : '暂无场景，点击「＋ 新建场景」开始'}</div>`;
+        return;
+      }
+
+      grid.innerHTML = sorted.map((s, idx) => `
+        <div class="home-card${isDragMode ? ' drag-mode' : ''}" data-scene-id="${s.id}"
+             ${isDragMode ? 'draggable="true"' : ''}
+             onclick="${isDragMode ? 'event.preventDefault()' : `App.scene.selectScene('${s.id}')`}">
+          <div class="home-card-title">${App.utils.esc(s.title || '未命名场景')}</div>
+        </div>`).join('');
+
+      // 拖拽事件绑定
+      if (isDragMode) {
+        App.dnd.bindDragEvents();
+        // 恢复点击事件：拖拽模式下通过 JS 绑定，区分拖拽和点击
+        grid.querySelectorAll('.home-card').forEach(card => {
+          card.addEventListener('click', function(e) {
+            if (!App.state.wasDragging) {
+              App.scene.selectScene(card.dataset.sceneId);
+            }
+          });
+        });
+      }
+    },
+
+    // 主渲染函数：App.state.currentId 为 null 时渲染主页，否则渲染对应场景
+    renderMain() {
+      const root = document.getElementById('appRoot');
+  
+      if (App.state.currentId === null) { 
+        // 主页模式
+        root.classList.add('home-view');
+        App.render.renderHome(); 
+        App.render.renderVocabSidebar();
+        return; 
+      }
+  
+      // 非主页模式
+      root.classList.remove('home-view');
+      const el = document.getElementById('mainContent');
+      if (!el) { App.render.renderVocabSidebar(); return; }
+      const s = App.scene.currentScene();
+      if (!s) { 
+        el.innerHTML = '<div class="empty-state"><div class="empty-icon">📖</div>请从左侧选择或新建一个场景</div>'; 
+        App.render.renderVocabSidebar();
+        return; 
+      }
+      if (App.state.currentMode === 'practice') el.innerHTML = App.render.renderPractice(s);
+      else el.innerHTML = App.render.renderEdit(s);
+      App.render.renderVocabSidebar();
+    },
+
+    // ── 关键词栏（常驻，见 .vocab-panel）──
+    // 独立于 mainContent 渲染，只负责这一块，随 App.render.renderMain() 一起调用，不需要
+    // 各个改动点各自记得同步。练习模式下没有关键词就收起（不占宽度）；编辑模式
+    // 下始终显示（保留"+Add"入口）；主页/无场景时收起。
+    renderVocabSidebar() {
+      const panel = document.getElementById('vocabPanel');
+      if (!panel) return;
+      const s = App.state.currentId === null ? null : App.scene.currentScene();
+
+      if (!s) { panel.classList.remove('show'); panel.innerHTML = ''; return; }
+
+      if (App.state.currentMode === 'edit') {
+        const vocabHtml = (s.vocab || []).map((v, i) => `
+          <div class="vocab-edit-row">
+            <input class="field-input vocab-en-input" style="flex:1" placeholder="英文" value="${App.utils.esc(v.en)}" data-index="${i}">
+            <input class="field-input vocab-zh-input" style="flex:1" placeholder="中文" value="${App.utils.esc(v.zh)}" data-index="${i}">
+            <button class="btn-rm btn-del-vocab" data-index="${i}">×</button>
+          </div>`).join('');
+        panel.innerHTML = `
+          <div class="practice-sidebar-title">关键词</div>
+          <div class="vocab-edit-list" id="vocabList">${vocabHtml}</div>
+          <button class="btn-add" id="btnAddVocab" style="margin-top:8px;width:100%">+ Add</button>`;
+        panel.classList.add('show');
+        return;
+      }
+
+      // 练习模式：只读展示；没有关键词就收起，不占宽度
+      if (s.vocab && s.vocab.length) {
+        panel.innerHTML = `
+          <div class="practice-sidebar-title">关键词</div>
+          ${s.vocab.map(v=>`<div class="vocab-chip"><div class="vocab-en">${App.utils.esc(v.en)}</div><div class="vocab-zh${v.hidden?' hidden':''}">${App.utils.esc(v.zh)}</div></div>`).join('')}`;
+        panel.classList.add('show');
+      } else {
+        panel.innerHTML = '';
+        panel.classList.remove('show');
+      }
+    },
+
+    // ── PRACTICE VIEW ──
+    // 渲染练习模式：展示对话卡片、Alternatives 折叠（与对应卡片一一绑定）、关键词、笔记
+    renderPractice(s) {
+      const rounds = s.rounds.map((r, i) => {
+        const qHasContent = r.q.zh || (r.q.alts && r.q.alts.filter(x=>x).length);
+        const aHasContent = r.a.zh || (r.a.alts && r.a.alts.filter(x=>x).length);
+        const hasA2 = r.a2 && r.a2.en;
+        const a2HasContent = r.a2 && (r.a2.zh || (r.a2.alts && r.a2.alts.filter(x=>x).length));
+
+        // 渲染单个 Alternatives 面板：中文翻译默认遮罩，可点击单独显示/隐藏
+        const renderAltItems = (field, fieldName, zhHidden) => {
+          const zhItem = field.zh
+            ? `<div class="alt-item alt-item-zh${zhHidden ? ' hidden' : ''}" data-round-idx="${i}" data-field="${fieldName}">${App.utils.esc(field.zh)}</div>`
+            : '';
+          const altItems = (field.alts||[]).filter(x=>x).map(a=>`<div class="alt-item">${App.utils.esc(a)}</div>`).join('');
+          return zhItem + altItems;
+        };
+        const renderAltPanel = (hasContent, field, fieldName, zhHidden) => hasContent ? `
+              <button class="alt-toggle">
+                <span class="alt-arrow">▶</span> Alternatives
+              </button>
+              <div class="alt-body">${renderAltItems(field, fieldName, zhHidden)}</div>` : '';
+
+        return `
+        <div class="round">
+          <div class="round-label">ROUND ${String(i+1).padStart(2,'0')}${r.title ? `<span style="font-family:'Noto Sans SC',sans-serif;font-weight:400;font-size:12px;color:var(--text2);letter-spacing:0.02em;">${App.utils.esc(r.title)}</span>` : ''}</div>
+          <div class="dialogue-row${hasA2 ? ' has-third' : ''}">
+            <div class="qa-block">
+              <div class="card card-q">
+                <div class="card-lbl">Q</div>
+                <p class="card-en">${App.utils.esc(r.q.en)}</p>
+              </div>
+              ${renderAltPanel(qHasContent, r.q, 'q', r.q.zhHidden !== false)}
+            </div>
+            <div class="qa-block">
+              <div class="card card-a">
+                <div class="card-lbl">A</div>
+                <p class="card-en">${App.utils.esc(r.a.en)}</p>
+              </div>
+              ${renderAltPanel(aHasContent, r.a, 'a', r.a.zhHidden !== false)}
+            </div>
+            ${hasA2 ? `<div class="qa-block">
+              <div class="card card-a2">
+                <div class="card-lbl">A2</div>
+                <p class="card-en">${App.utils.esc(r.a2.en)}</p>
+              </div>
+              ${renderAltPanel(a2HasContent, r.a2, 'a2', r.a2.zhHidden !== false)}
+            </div>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+
+      return `
+        <div class="practice">
+          <div class="practice-main">
+            <div class="p-header">
+              <div class="p-tag">${App.utils.esc(s.tag)}</div>
+              <h1 class="p-title">${App.utils.esc(s.title)}</h1>
+              ${s.desc ? `<p class="p-desc">${App.utils.esc(s.desc)}</p>` : ''}
+            </div>
+            ${rounds}
+            <div class="p-section" style="margin-top:0.5rem">
+              <div class="p-section-title">我的笔记</div>
+              <textarea class="notes-area" id="notesArea" placeholder="写你觉得难的点、容易犯的错……">${App.utils.esc(s.notes||'')}</textarea>
+            </div>
+          </div>
+        </div>`;
+    },
+
+    // ── EDIT VIEW ──
+    // 渲染编辑模式：场景信息表单 + 对话轮次编辑。关键词编辑区已移到常驻的
+    // .vocab-panel，由 App.render.renderVocabSidebar() 独立渲染，见该函数
+    renderEdit(s) {
+      const totalRounds = s.rounds.length;
+      const roundsHtml = s.rounds.map((r, i) => App.render.renderRoundEdit(r, i, totalRounds)).join('');
+
+      return `
+        <div class="edit">
+          <div class="edit-main">
+            <div class="edit-field">
+              <div class="field-label">标签 TAG</div>
+              <input class="field-input" id="editTag" placeholder="例：场景 01" value="${App.utils.esc(s.tag)}">
+            </div>
+            <div class="edit-field">
+              <div class="field-label">场景标题</div>
+              <input class="field-input" id="editTitle" placeholder="例：✈️ 机场入关" value="${App.utils.esc(s.title)}">
+            </div>
+            <div class="edit-field">
+              <div class="field-label">场景说明</div>
+              <textarea class="field-textarea" id="editDesc" placeholder="简单描述这个场景的背景">${App.utils.esc(s.desc)}</textarea>
+            </div>
+            <div class="edit-section-title"><span>对话轮次</span></div>
+            <div class="rounds-list" id="roundsList">${roundsHtml}</div>
+            <button class="btn-add-round" id="btnAddRound">+ Add Round</button>
+          </div>
+        </div>`;
+    },
+
+    // 渲染单个对话轮次的编辑区（Q / A / A2 三列）
+    renderRoundEdit(r, i, totalRounds) {
+      const qAlts = (r.q.alts||[]).map((a,j) => App.render.renderAltInput('q',i,j,a)).join('');
+      const aAlts = (r.a.alts||[]).map((a,j) => App.render.renderAltInput('a',i,j,a)).join('');
+      const a2Alts = ((r.a2&&r.a2.alts)||[]).map((a,j) => App.render.renderAltInput('a2',i,j,a)).join('');
+  
+      const showUp = i > 0;
+      const showDown = i < totalRounds - 1;
+
+      return `
+        <div class="round-edit" id="round-${i}">
+          <div class="round-edit-head">
+            <span class="round-edit-num">ROUND ${String(i+1).padStart(2,'0')}</span>
+            <input class="mini-input round-title-input" data-index="${i}" placeholder="轮次标题（选填）" value="${App.utils.esc(r.title||'')}" style="flex:1;margin:0 10px;font-size:12px;">
+            <div class="round-actions">
+              ${showUp ? `<button class="btn-sort-round btn-round-up" data-index="${i}" title="上移">▲</button>` : ''}
+              ${showDown ? `<button class="btn-sort-round btn-round-down" data-index="${i}" title="下移">▼</button>` : ''}
+              <button class="btn-del-round btn-round-del" data-index="${i}" title="删除此轮">×</button>
+            </div>
+          </div>
+          <div class="round-grid">
+            <div>
+              <div class="round-col-label lbl-q">问</div>
+              <input class="mini-input round-en-q" data-index="${i}" placeholder="英文问句" value="${App.utils.esc(r.q.en)}">
+              <input class="mini-input round-zh-q" data-index="${i}" placeholder="中文翻译" value="${App.utils.esc(r.q.zh)}">
+              <div class="alt-edit-label" style="margin-top:8px">其他问法</div>
+              <div class="alt-inputs">${qAlts}</div>
+              <button class="btn-add-alt btn-add-alt-q" data-index="${i}">+ Add</button>
+            </div>
+            <div>
+              <div class="round-col-label lbl-a">答</div>
+              <input class="mini-input ans round-en-a" data-index="${i}" placeholder="英文回答" value="${App.utils.esc(r.a.en)}">
+              <input class="mini-input ans round-zh-a" data-index="${i}" placeholder="中文翻译" value="${App.utils.esc(r.a.zh)}">
+              <div class="alt-edit-label" style="margin-top:8px">其他说法</div>
+              <div class="alt-inputs">${aAlts}</div>
+              <button class="btn-add-alt btn-add-alt-a" data-index="${i}">+ Add</button>
+            </div>
+            <div>
+              <div class="round-col-label lbl-a">A2 <span style="font-size:10px;color:var(--text3);font-weight:400">（选填）</span></div>
+              <input class="mini-input ans round-en-a2" data-index="${i}" placeholder="A 的继续回应（选填）" value="${App.utils.esc(r.a2&&r.a2.en||'')}">
+              <input class="mini-input ans round-zh-a2" data-index="${i}" placeholder="中文翻译（选填）" value="${App.utils.esc(r.a2&&r.a2.zh||'')}">
+              <div class="alt-edit-label" style="margin-top:8px">其他说法</div>
+              <div class="alt-inputs">${a2Alts}</div>
+              <button class="btn-add-alt btn-add-alt-a2" data-index="${i}">+ Add</button>
+            </div>
+          </div>
+        </div>`;
+    },
+
+    renderAltInput(side, ri, ai, val) {
+      return `
+        <div class="alt-input-row">
+          <input class="alt-mini alt-input-field" placeholder="替换说法" value="${App.utils.esc(val)}" data-ri="${ri}" data-side="${side}" data-ai="${ai}">
+          <button class="btn-rm-alt btn-del-alt" data-ri="${ri}" data-side="${side}" data-ai="${ai}">×</button>
+        </div>`;
+    },
+
+    renderAll() {
+      App.render.renderSidebar();
+      App.render.renderMain();
+    }
+  },
+
+  dnd: {
+    bindDragEvents() {
+      const cards = document.querySelectorAll('.home-card.drag-mode');
+      cards.forEach(card => {
+        card.addEventListener('dragstart', App.dnd.handleDragStart);
+        card.addEventListener('dragover', App.dnd.handleDragOver);
+        card.addEventListener('dragenter', App.dnd.handleDragEnter);
+        card.addEventListener('dragleave', App.dnd.handleDragLeave);
+        card.addEventListener('drop', App.dnd.handleDrop);
+        card.addEventListener('dragend', App.dnd.handleDragEnd);
+        // 点击追踪
+        card.addEventListener('mousedown', () => { App.state.wasDragging = false; });
+        card.addEventListener('drag', () => { App.state.wasDragging = true; });
+        card.addEventListener('dragend', () => {
+          setTimeout(() => { App.state.wasDragging = false; }, 50);
+        });
+      });
+    },
+
+    handleDragStart(e) {
+      App.state.dragSrcId = this.dataset.sceneId;
+      this.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', App.state.dragSrcId);
+    },
+
+    handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    },
+
+    handleDragEnter(e) {
+      e.preventDefault();
+      if (this.dataset.sceneId !== App.state.dragSrcId) {
+        this.classList.add('drag-over');
+      }
+    },
+
+    handleDragLeave() {
+      this.classList.remove('drag-over');
+    },
+
+    handleDrop(e) {
+      e.preventDefault();
+      this.classList.remove('drag-over');
+      const targetId = this.dataset.sceneId;
+      if (App.state.dragSrcId && targetId && App.state.dragSrcId !== targetId) {
+        // 直接重排 App.state.scenes 数组本身，顺序会随 App.storage.saveData 一起保存/同步到所有端
+        const srcIdx = App.state.scenes.findIndex(s => s.id === App.state.dragSrcId);
+        const tgtIdx = App.state.scenes.findIndex(s => s.id === targetId);
+        if (srcIdx === -1 || tgtIdx === -1) return;
+        const [moved] = App.state.scenes.splice(srcIdx, 1);
+        const newTgtIdx = App.state.scenes.findIndex(s => s.id === targetId);
+        App.state.scenes.splice(newTgtIdx, 0, moved);
+        App.storage.saveData(App.state.scenes);
+        App.render.renderHome();
+      }
+    },
+
+    handleDragEnd() {
+      this.classList.remove('dragging');
+      document.querySelectorAll('.home-card.drag-over').forEach(c => c.classList.remove('drag-over'));
+    }
+  },
+
+  search: {
+    // ── 全局搜索（内嵌，无弹层）──
+    closeGlobalSearch() {
+      const dd = document.getElementById('topbarDropdown');
+      if (dd) dd.classList.remove('show');
+    },
+
+    doGlobalSearch(term, bodyEl) {
+      const body = bodyEl || document.getElementById('gsBody');
+      if (!body) return;
+      if (!term || term.trim().length < 1) {
+        body.innerHTML = '';
+        if (body.id === 'topbarDropdown') body.classList.remove('show');
+        if (body.id === 'homeSearchResults') body.style.display = 'none';
+        return;
+      }
+      const lower = term.toLowerCase();
+      const results = []; // { sceneId, sceneTitle, type, text, context }
+
+      App.state.scenes.forEach(s => {
+        // tag
+        if ((s.tag || '').toLowerCase().includes(lower)) {
+          results.push({ sceneId: s.id, sceneTitle: s.title, type: '标签', text: s.tag });
+        }
+        // title
+        if ((s.title || '').toLowerCase().includes(lower)) {
+          results.push({ sceneId: s.id, sceneTitle: s.title, type: '标题', text: s.title });
+        }
+        // desc
+        if ((s.desc || '').toLowerCase().includes(lower)) {
+          results.push({ sceneId: s.id, sceneTitle: s.title, type: '描述', text: s.desc });
+        }
+        // notes
+        if ((s.notes || '').toLowerCase().includes(lower)) {
+          results.push({ sceneId: s.id, sceneTitle: s.title, type: '笔记', text: s.notes });
+        }
+        // rounds
+        (s.rounds || []).forEach((r, ri) => {
+          ['q', 'a', 'a2'].forEach(side => {
+            const obj = side === 'a2' ? (r.a2 || {}) : r[side];
+            if (!obj) return;
+            if ((obj.en || '').toLowerCase().includes(lower)) {
+              results.push({ sceneId: s.id, sceneTitle: s.title, type: `Round${ri+1} ${side.toUpperCase()}`, text: obj.en });
+            }
+            if ((obj.zh || '').toLowerCase().includes(lower)) {
+              results.push({ sceneId: s.id, sceneTitle: s.title, type: `Round${ri+1} ${side.toUpperCase()} 中文`, text: obj.zh });
+            }
+            (obj.alts || []).forEach(alt => {
+              if ((alt || '').toLowerCase().includes(lower)) {
+                results.push({ sceneId: s.id, sceneTitle: s.title, type: `Round${ri+1} ${side.toUpperCase()} Alt`, text: alt });
+              }
+            });
+          });
+        });
+        // vocab
+        (s.vocab || []).forEach(v => {
+          if ((v.en || '').toLowerCase().includes(lower)) {
+            results.push({ sceneId: s.id, sceneTitle: s.title, type: '词汇 EN', text: v.en });
+          }
+          if ((v.zh || '').toLowerCase().includes(lower)) {
+            results.push({ sceneId: s.id, sceneTitle: s.title, type: '词汇 ZH', text: v.zh });
+          }
+        });
+      });
+
+      if (results.length === 0) {
+        body.innerHTML = '<div class="gs-no-result">没有找到匹配的内容</div>';
+        return;
+      }
+
+      // 按场景分组
+      const groups = {};
+      results.forEach(r => {
+        if (!groups[r.sceneId]) groups[r.sceneId] = { title: r.sceneTitle, items: [] };
+        groups[r.sceneId].items.push(r);
+      });
+
+      let html = '';
+      Object.entries(groups).forEach(([sceneId, g]) => {
+        html += `<div class="gs-group">
+          <div class="gs-group-title">${App.utils.esc(g.title)}</div>`;
+        g.items.forEach(item => {
+          const highlighted = App.search.highlightMatch(item.text, lower);
+          html += `<button class="gs-result-item" data-scene-id="${sceneId}" onclick="App.search.goToSceneFromSearch('${sceneId}')">
+            <span class="gs-result-type">${App.utils.esc(item.type)}</span>${highlighted}
+          </button>`;
+        });
+        html += '</div>';
+      });
+      body.innerHTML = html;
+      if (body.id === 'topbarDropdown') body.classList.add('show');
+      if (body.id === 'homeSearchResults') body.style.display = 'block';
+    },
+
+    highlightMatch(text, term) {
+      if (!term) return App.utils.esc(text);
+      const escaped = App.utils.esc(text);
+      const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(${escapedTerm})`, 'gi');
+      return escaped.replace(regex, '<span class="gs-highlight">$1</span>');
+    },
+
+    goToSceneFromSearch(id) {
+      // 清空搜索框和结果
+      const ts = document.getElementById('topbarSearch');
+      const hs = document.getElementById('homeSearchInput');
+      if (ts) ts.value = '';
+      if (hs) hs.value = '';
+      App.search.closeGlobalSearch();
+      const dd = document.getElementById('topbarDropdown');
+      if (dd) { dd.classList.remove('show'); dd.innerHTML = ''; }
+      const hr = document.getElementById('homeSearchResults');
+      if (hr) { hr.style.display = 'none'; hr.innerHTML = ''; }
+      App.scene.selectScene(id);
+    }
+  },
+
+  utils: {
+    // 转义特殊字符，防止内容破坏 HTML 结构（不用改）
+    esc(str) {
+      return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+  },
+
+  // ── 启动 ──
+  // 页面上所有需要的 DOM 在这个脚本执行时已经解析完成（脚本标签放在
+  // body 最后），不需要再等 DOMContentLoaded
+  init() {
+    const _loaded = App.storage.loadData();
+    App.state.scenes = _loaded.scenes;
+    App.state.sortMode = _loaded.sortMode;
+
+    App.render.applyAppName();
+
+    // 所有按钮点击都在这里统一处理，用 classList 判断是哪个按钮
+    document.body.addEventListener('click', (e) => {
+      // 左侧项目切换（home-nav-item 是主页入口，跳过，让它自己的 onclick 处理）
+      const sceneItem = e.target.closest('.scene-item');
+      if (sceneItem && !e.target.classList.contains('scene-del') && !sceneItem.classList.contains('home-nav-item')) {
+        const id = sceneItem.dataset.sceneid;
+        if (id) App.scene.selectScene(id);
+        return;
+      }
+      // 左侧项目删除
+      if (e.target.classList.contains('scene-del')) {
+        App.scene.delScene(e.target.dataset.delid);
+        return;
+      }
+      // 展开代替文本
+      if (e.target.classList.contains('alt-toggle')) {
+        e.target.classList.toggle('open');
+        e.target.nextElementSibling.classList.toggle('open');
+        return;
+      }
+      // Alternatives 中文翻译隐藏/点亮
+      if (e.target.classList.contains('alt-item-zh')) {
+        e.target.classList.toggle('hidden');
+        const s = App.scene.currentScene();
+        const idx = parseInt(e.target.dataset.roundIdx);
+        const field = e.target.dataset.field;
+        if (s && s.rounds[idx] && s.rounds[idx][field]) {
+          s.rounds[idx][field].zhHidden = e.target.classList.contains('hidden');
+          App.storage.autoSaveNow();
+        }
+        return;
+      }
+      // 卡片词汇隐藏/点亮
+      const vocabChip = e.target.closest('.vocab-chip');
+      if (vocabChip) {
+        const zhEl = vocabChip.querySelector('.vocab-zh');
+        zhEl.classList.toggle('hidden');
+        const s = App.scene.currentScene();
+        if (s && s.vocab) {
+          const enText = vocabChip.querySelector('.vocab-en').textContent.trim();
+          const v = s.vocab.find(x => x.en === enText);
+          if (v) v.hidden = zhEl.classList.contains('hidden');
+          App.storage.autoSaveNow();
+        }
+        return;
+      }
+      // 删除对话流
+      if (e.target.classList.contains('btn-round-del')) {
+        const idx = parseInt(e.target.dataset.index);
+        const s = App.scene.currentScene();
+        if(s.rounds.length === 1) { alert('至少保留一轮对话'); return; }
+        s.rounds.splice(idx, 1); App.storage.autoSaveNow(); App.render.renderMain(); return;
+      }
+      // 上移轮次
+      if (e.target.classList.contains('btn-round-up')) {
+        const idx = parseInt(e.target.dataset.index);
+        const s = App.scene.currentScene();
+        if(idx > 0) {
+          [s.rounds[idx], s.rounds[idx-1]] = [s.rounds[idx-1], s.rounds[idx]];
+          App.storage.autoSaveNow(); App.render.renderMain();
+        }
+        return;
+      }
+      // 下移轮次
+      if (e.target.classList.contains('btn-round-down')) {
+        const idx = parseInt(e.target.dataset.index);
+        const s = App.scene.currentScene();
+        if(idx < s.rounds.length - 1) {
+          [s.rounds[idx], s.rounds[idx+1]] = [s.rounds[idx+1], s.rounds[idx]];
+          App.storage.autoSaveNow(); App.render.renderMain();
+        }
+        return;
+      }
+      // 增加替换句
+      if (e.target.classList.contains('btn-add-alt-q') || e.target.classList.contains('btn-add-alt-a') || e.target.classList.contains('btn-add-alt-a2')) {
+        const idx = parseInt(e.target.dataset.index);
+        const s = App.scene.currentScene();
+        if (e.target.classList.contains('btn-add-alt-a2')) {
+          if (!s.rounds[idx].a2) s.rounds[idx].a2 = { en: '', zh: '', alts: [] };
+          if (!s.rounds[idx].a2.alts) s.rounds[idx].a2.alts = [];
+          s.rounds[idx].a2.alts.push('');
+        } else {
+          const side = e.target.classList.contains('btn-add-alt-q') ? 'q' : 'a';
+          if(!s.rounds[idx][side].alts) s.rounds[idx][side].alts = [];
+          s.rounds[idx][side].alts.push('');
+        }
+        App.storage.autoSaveNow(); App.render.renderMain(); return;
+      }
+      // 删除替换句
+      if (e.target.classList.contains('btn-del-alt')) {
+        const ri = parseInt(e.target.dataset.ri);
+        const ai = parseInt(e.target.dataset.ai);
+        const side = e.target.dataset.side;
+        if (side === 'a2') {
+          const s = App.scene.currentScene();
+          if (s.rounds[ri].a2) s.rounds[ri].a2.alts.splice(ai, 1);
+        } else {
+          App.scene.currentScene().rounds[ri][side].alts.splice(ai, 1);
+        }
+        App.storage.autoSaveNow(); App.render.renderMain(); return;
+      }
+      // 删除单词
+      if (e.target.classList.contains('btn-del-vocab')) {
+        const idx = parseInt(e.target.dataset.index);
+        App.scene.currentScene().vocab.splice(idx, 1);
+        App.storage.autoSaveNow(); App.render.renderMain(); return;
+      }
+  
+      // 顶层动作捕获
+      if (e.target.id === 'btnAddRound') { App.scene.currentScene().rounds.push({ q:{en:'',zh:'',alts:[]}, a:{en:'',zh:'',alts:[]}, a2:null, title:'' }); App.storage.autoSaveNow(); App.render.renderMain(); }
+      if (e.target.id === 'btnAddVocab') { if(!App.scene.currentScene().vocab) App.scene.currentScene().vocab=[]; App.scene.currentScene().vocab.push({en:'',zh:''}); App.storage.autoSaveNow(); App.render.renderMain(); }
+    });
+
+    document.body.addEventListener('input', (e) => {
+      const s = App.scene.currentScene(); if (!s) return;
+      if (e.target.id === 'editTag') { s.tag = e.target.value; }
+      if (e.target.id === 'editTitle') { s.title = e.target.value; App.render.renderSidebar(); }
+      if (e.target.id === 'editDesc') { s.desc = e.target.value; }
+  
+      if (e.target.classList.contains('round-title-input')) s.rounds[e.target.dataset.index].title = e.target.value;
+      if (e.target.classList.contains('round-en-q')) s.rounds[e.target.dataset.index].q.en = e.target.value;
+      if (e.target.classList.contains('round-zh-q')) s.rounds[e.target.dataset.index].q.zh = e.target.value;
+      if (e.target.classList.contains('round-en-a')) s.rounds[e.target.dataset.index].a.en = e.target.value;
+      if (e.target.classList.contains('round-zh-a')) s.rounds[e.target.dataset.index].a.zh = e.target.value;
+      if (e.target.classList.contains('round-en-a2')) {
+        const idx = e.target.dataset.index;
+        if (!s.rounds[idx].a2) s.rounds[idx].a2 = { en: '', zh: '', alts: [] };
+        s.rounds[idx].a2.en = e.target.value;
+      }
+      if (e.target.classList.contains('round-zh-a2')) {
+        const idx = e.target.dataset.index;
+        if (!s.rounds[idx].a2) s.rounds[idx].a2 = { en: '', zh: '', alts: [] };
+        s.rounds[idx].a2.zh = e.target.value;
+      }
+  
+      if (e.target.classList.contains('alt-input-field')) {
+        const ri = e.target.dataset.ri;
+        const ai = e.target.dataset.ai;
+        const side = e.target.dataset.side;
+        s.rounds[ri][side].alts[ai] = e.target.value;
+      }
+      if (e.target.classList.contains('vocab-en-input')) s.vocab[e.target.dataset.index].en = e.target.value;
+      if (e.target.classList.contains('vocab-zh-input')) s.vocab[e.target.dataset.index].zh = e.target.value;
+
+      App.storage.autoSaveDebounced(); // 上面任何一处文字改动，停止打字 600ms 后自动落盘
+    });
+
+    document.body.addEventListener('change', (e) => {
+      if (e.target.id === 'notesArea' && App.scene.currentScene()) {
+        App.scene.currentScene().notes = e.target.value;
+        App.storage.autoSaveNow();
+      }
+    });
+
+    document.getElementById('tabPractice').addEventListener('click', () => App.scene.switchMode('practice'));
+    document.getElementById('tabEdit').addEventListener('click', () => App.scene.switchMode('edit'));
+    document.getElementById('btnNewScene').addEventListener('click', App.scene.newScene);
+
+    // ── 导出：纯数据 JSON，不再克隆整个页面 ──
+    // 只是本地备份/迁移用，真正的多端同步靠 Gist（见 App.sync.syncOnLoad）
+
+
+
+    // ── 全局搜索按钮 ──
+    // btnGlobalSearch 已移除，弹层相关监听已清除
+
+    // ── 主页搜索框：实时全局搜索 ──
+    document.getElementById('homeSearchInput').addEventListener('input', function() {
+      const results = document.getElementById('homeSearchResults');
+      if (!results) return;
+      const term = this.value.trim();
+      if (!term) {
+        results.style.display = 'none';
+        results.innerHTML = '';
+        App.render.renderHome();
+        return;
+      }
+      // 隐藏卡片格，显示搜索结果
+      document.getElementById('homeGrid').style.display = 'none';
+      App.search.doGlobalSearch(term, results);
+    });
+
+    // ── 主页排序选择器 ──
+    document.getElementById('homeSortSelect').addEventListener('change', function() {
+      App.state.sortMode = this.value;
+      App.storage.saveData(App.state.scenes);
+      if (App.state.currentId === null) App.render.renderHome();
+    });
+
+    // ── 手机端主页排序图标按钮：跟上面那个下拉是同一个 App.state.sortMode，
+    //    点一下在 manual / alpha 之间切换，逻辑对齐、只是触发方式不同 ──
+    document.getElementById('mobileSortToggle').addEventListener('click', function() {
+      App.state.sortMode = App.state.sortMode === 'manual' ? 'alpha' : 'manual';
+      App.storage.saveData(App.state.scenes);
+      if (App.state.currentId === null) App.render.renderHome();
+    });
+
+    // ── 顶栏搜索框：实时搜索，结果显示在下拉 ──
+    document.getElementById('topbarSearch').addEventListener('input', function() {
+      let dd = document.getElementById('topbarDropdown');
+      if (!dd) {
+        dd = document.createElement('div');
+        dd.id = 'topbarDropdown';
+        dd.className = 'topbar-search-dropdown';
+        document.querySelector('.topbar').style.position = 'relative';
+        document.querySelector('.topbar').appendChild(dd);
+      }
+      App.search.doGlobalSearch(this.value.trim(), dd);
+    });
+    // 点击页面其他地方关闭下拉
+    document.addEventListener('click', function(e) {
+      const dd = document.getElementById('topbarDropdown');
+      if (dd && !dd.contains(e.target) && e.target.id !== 'topbarSearch') {
+        dd.classList.remove('show');
+      }
+    });
+
+    // ── Ctrl+K 全局搜索快捷键 ──
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        const inp = document.getElementById('topbarSearch');
+        if (inp) inp.focus();
+      }
+      // ESC 关闭顶栏下拉
+      if (e.key === 'Escape') {
+        const dd = document.getElementById('topbarDropdown');
+        if (dd) dd.classList.remove('show');
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      App.render.applyAppName();
+
+      // 设置面板里的导入文件选择器；放在这里而不是脚本顶层是因为该 input 现在
+      // 位于本段脚本代码结束之后（设置面板的 DOM），脚本顶层执行时它还不存在
+      document.getElementById('importFileInput').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        App.storage.importJSON(file);
+        e.target.value = ''; // 清空，允许连续导入同名文件时也能触发 change
+      });
+
+      // ── 移动端检测与环境适配 ──
+      const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 768;
+      if (isMobile) {
+        document.documentElement.classList.add('is-mobile');
+
+        // 手机端场景下拉选择器
+        const mobileSel = document.getElementById('mobileSceneSelect');
+        if (mobileSel) {
+          App.render.renderMobileSceneSelect();
+          mobileSel.addEventListener('change', function() {
+            const val = this.value;
+            if (val === '__home__') {
+              App.scene.goHome();
+            } else {
+              App.scene.selectScene(val);
+              App.scene.switchMode('practice');
+            }
+          });
+        }
+
+        // 移动端：顶栏搜索框聚焦时自动滚动到可见区域（避免被弹出的键盘挡住）
+        const searchInput = document.getElementById('topbarSearch');
+        if (searchInput) {
+          // 注意：占位符文字统一由 HTML 里的 placeholder="Search" 决定，
+          // 这里不要再 setAttribute 覆盖它——之前留了一行覆盖成中文"搜索…"，
+          // 导致主页显示 Search、进场景后又变回中文，就是这行代码干的
+          searchInput.addEventListener('focus', function() {
+            setTimeout(() => {
+              this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
+          });
+        }
+      }
+
+      // ── 全局触摸事件增强 ──
+      // 防止双击缩放（移动端常见问题）
+      document.addEventListener('dblclick', function(e) {
+        if (isMobile) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+
+      // 卡片触摸反馈：点击时短暂高亮
+      document.addEventListener('touchstart', function(e) {
+        const card = e.target.closest('.home-card, .scene-item, .vocab-chip, .round-edit');
+        if (card) {
+          card.style.transition = 'transform 0.1s, opacity 0.1s';
+          card.style.transform = 'scale(0.97)';
+          card.style.opacity = '0.85';
+        }
+      }, { passive: true });
+
+      function resetCardTouch(e) {
+        const card = e.target.closest('.home-card, .scene-item, .vocab-chip, .round-edit');
+        if (card) { card.style.transform = ''; card.style.opacity = ''; }
+      }
+      document.addEventListener('touchend', resetCardTouch, { passive: true });
+      document.addEventListener('touchcancel', resetCardTouch, { passive: true });
+
+      // ── 屏幕旋转适配 ──
+      window.addEventListener('orientationchange', function() {
+        // 旋转后重新适配搜索下拉位置
+        setTimeout(() => {
+          const dd = document.getElementById('topbarDropdown');
+          if (dd && dd.classList.contains('show')) {
+            dd.style.maxHeight = (window.innerHeight * 0.5) + 'px';
+          }
+        }, 200);
+      });
+
+      // 注：移动端安全区适配（notch/圆角屏留白）已经写进静态样式表了（.content /
+      // .home-header / .topbar 等处的 env(safe-area-inset-*)），不再需要在这里
+      // 运行时动态注入一个 <style> 标签——之前这里就是这么干的，每次刷新都会
+      // 在 <head> 里多插一份，是很早以前那一堆重复 style 块的源头，这次删掉
+
+      // 初始化 sort select
+      const sortSel = document.getElementById('homeSortSelect');
+      if (sortSel) sortSel.value = App.state.sortMode;
+      App.render.renderSidebar();
+      App.render.renderMain();
+
+      // 初始化 Gist 按钮状态；配没配置好，syncOnLoad() 自己会判断
+      if (App.sync.isConfigured()) App.sync.updateGistBtn(true);
+      App.sync.syncOnLoad();
+    });
+
+  }
+};
+
+App.init();
+window.App = App; // 方便控制台调试
+</script>
 
 <script>
 // ── 注册 Service Worker（让 Chrome 识别为可安装 PWA）──────
